@@ -25,6 +25,8 @@ const OVERTIME_12_PLUS_FACTOR = 2;
 const OVERTIME_14_PLUS_FACTOR = 2.5;
 const STANDARD_OVERTIME_FACTOR = 1;
 const HALF_DAY_FACTOR = 0.75;
+const DRONE_TARIFF_AMOUNT = 50;
+const RONIN_4D_TARIFF_AMOUNT = 50;
 
 function parseTimeToMinutes(time) {
   if (!/^\d{2}:\d{2}$/.test(time)) {
@@ -207,8 +209,11 @@ function calculateTariff(input, customSettings = {}) {
   const pureNightAmount = pureNightHours * hourlyRate * settings.pureNightFactor;
   const overlapNightAmount = nightOvertimeHours * hourlyRate * settings.nightOverlapSurchargeFactor;
   const nightAmount = nightTariffEnabled ? pureNightAmount + overlapNightAmount : 0;
+  const droneTariffAmount = input.enableDroneTariff ? DRONE_TARIFF_AMOUNT : 0;
+  const ronin4dTariffAmount = input.enableRonin4dTariff ? RONIN_4D_TARIFF_AMOUNT : 0;
+  const extraTariffAmount = droneTariffAmount + ronin4dTariffAmount;
 
-  const subtotalExVat = baseAmount + overtimeAmount + nightAmount;
+  const subtotalExVat = baseAmount + overtimeAmount + nightAmount + extraTariffAmount;
   const vatAmount = subtotalExVat * (settings.vatPercent / 100);
   const totalIncVat = subtotalExVat + vatAmount;
 
@@ -238,6 +243,9 @@ function calculateTariff(input, customSettings = {}) {
     pureNightAmount: nightTariffEnabled ? pureNightAmount : 0,
     overlapNightAmount: nightTariffEnabled ? overlapNightAmount : 0,
     nightAmount,
+    droneTariffAmount,
+    ronin4dTariffAmount,
+    extraTariffAmount,
     subtotalExVat,
     vatAmount,
     totalIncVat,

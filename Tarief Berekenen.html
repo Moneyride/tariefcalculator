@@ -368,6 +368,7 @@ summary {
   padding-bottom: 16px;
 }
 
+.input-options,
 .checkbox-stack,
 .night-settings {
   display: grid;
@@ -441,6 +442,7 @@ summary {
 
   .page-header,
   .time-grid,
+  .input-options,
   .settings-grid,
   .checkbox-stack,
   .night-settings {
@@ -587,6 +589,7 @@ summary {
   }
 
   .time-grid,
+  .input-options,
   .settings-grid,
   .checkbox-stack,
   .night-settings {
@@ -713,6 +716,17 @@ summary {
             </div>
           </div>
 
+          <div class="input-options">
+            <label class="checkbox-label">
+              <input type="checkbox" name="enableDroneTariff">
+              <span>Drone tarief (+€50)</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="enableRonin4dTariff">
+              <span>Ronin 4D tarief (+€50)</span>
+            </label>
+          </div>
+
           <p class="notice" id="next-day-notice" hidden>
             Eindtijd wordt geïnterpreteerd als de volgende kalenderdag.
           </p>
@@ -803,6 +817,8 @@ summary {
             <div><dt>Basistarief</dt><dd data-result="baseAmount">€ 0,00</dd></div>
             <div><dt>Overurenbedrag</dt><dd data-result="overtimeAmount">€ 0,00</dd></div>
             <div><dt>Nachtbedrag</dt><dd data-result="nightAmount">€ 0,00</dd></div>
+            <div><dt>Drone tarief</dt><dd data-result="droneTariffAmount">€ 0,00</dd></div>
+            <div><dt>Ronin 4D tarief</dt><dd data-result="ronin4dTariffAmount">€ 0,00</dd></div>
             <div><dt>Totaal exclusief btw</dt><dd data-result="subtotalExVat">€ 0,00</dd></div>
             <div><dt>Btw</dt><dd data-result="vatAmount">€ 0,00</dd></div>
             <div class="total"><dt>Factuurbedrag inclusief btw</dt><dd data-result="totalIncVat">€ 0,00</dd></div>
@@ -844,6 +860,8 @@ const OVERTIME_12_PLUS_FACTOR = 2;
 const OVERTIME_14_PLUS_FACTOR = 2.5;
 const STANDARD_OVERTIME_FACTOR = 1;
 const HALF_DAY_FACTOR = 0.75;
+const DRONE_TARIFF_AMOUNT = 50;
+const RONIN_4D_TARIFF_AMOUNT = 50;
 
 function parseTimeToMinutes(time) {
   if (!/^\d{2}:\d{2}$/.test(time)) {
@@ -1026,8 +1044,11 @@ function calculateTariff(input, customSettings = {}) {
   const pureNightAmount = pureNightHours * hourlyRate * settings.pureNightFactor;
   const overlapNightAmount = nightOvertimeHours * hourlyRate * settings.nightOverlapSurchargeFactor;
   const nightAmount = nightTariffEnabled ? pureNightAmount + overlapNightAmount : 0;
+  const droneTariffAmount = input.enableDroneTariff ? DRONE_TARIFF_AMOUNT : 0;
+  const ronin4dTariffAmount = input.enableRonin4dTariff ? RONIN_4D_TARIFF_AMOUNT : 0;
+  const extraTariffAmount = droneTariffAmount + ronin4dTariffAmount;
 
-  const subtotalExVat = baseAmount + overtimeAmount + nightAmount;
+  const subtotalExVat = baseAmount + overtimeAmount + nightAmount + extraTariffAmount;
   const vatAmount = subtotalExVat * (settings.vatPercent / 100);
   const totalIncVat = subtotalExVat + vatAmount;
 
@@ -1057,6 +1078,9 @@ function calculateTariff(input, customSettings = {}) {
     pureNightAmount: nightTariffEnabled ? pureNightAmount : 0,
     overlapNightAmount: nightTariffEnabled ? overlapNightAmount : 0,
     nightAmount,
+    droneTariffAmount,
+    ronin4dTariffAmount,
+    extraTariffAmount,
     subtotalExVat,
     vatAmount,
     totalIncVat,
@@ -1195,6 +1219,14 @@ function buildSummary(result) {
     lines.push(`Nachturen: ${formatHours(result.nightHours)}`);
   }
 
+  if (result.droneTariffAmount > 0) {
+    lines.push(`Drone tarief: ${euroFormatter.format(result.droneTariffAmount)}`);
+  }
+
+  if (result.ronin4dTariffAmount > 0) {
+    lines.push(`Ronin 4D tarief: ${euroFormatter.format(result.ronin4dTariffAmount)}`);
+  }
+
   lines.push(`Exclusief btw: ${euroFormatter.format(result.subtotalExVat)}`);
 
   return lines.join("\n");
@@ -1204,11 +1236,14 @@ function updateCalculation() {
   if (!form.reportValidity() || !settingsForm.reportValidity()) return;
 
   const settings = getSettingsFromForm();
+  const formData = new FormData(form);
 
   const result = calculateTariff(
     {
       startTime: form.elements.namedItem("startTime").value,
-      endTime: form.elements.namedItem("endTime").value
+      endTime: form.elements.namedItem("endTime").value,
+      enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
+      enableRonin4dTariff: readCheckbox(formData, "enableRonin4dTariff")
     },
     settings
   );
@@ -1224,6 +1259,8 @@ function updateCalculation() {
   setResult("baseAmount", result.baseAmount, formatEuro);
   setResult("overtimeAmount", result.overtimeAmount, formatEuro);
   setResult("nightAmount", result.nightAmount, formatEuro);
+  setResult("droneTariffAmount", result.droneTariffAmount, formatEuro);
+  setResult("ronin4dTariffAmount", result.ronin4dTariffAmount, formatEuro);
   setResult("subtotalExVat", result.subtotalExVat, formatEuro);
   setResult("vatAmount", result.vatAmount, formatEuro);
   setResult("totalIncVat", result.totalIncVat, formatEuro);

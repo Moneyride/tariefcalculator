@@ -165,3 +165,22 @@ test("12 uur werkdag stelt de overuurgrens uit tot 12 uur werktijd", () => {
   assertMoney(result.overtimeAmount, 75);
   assertMoney(result.subtotalExVat, 525);
 });
+
+test("drone en Ronin 4D tarief tellen als vaste toeslag mee in totaal exclusief btw", () => {
+  const result = calculateTariff(
+    {
+      startTime: "08:00",
+      endTime: "18:00",
+      enableDroneTariff: true,
+      enableRonin4dTariff: true
+    },
+    DEFAULT_SETTINGS
+  );
+
+  assertMoney(result.droneTariffAmount, 50);
+  assertMoney(result.ronin4dTariffAmount, 50);
+  assertMoney(result.extraTariffAmount, 100);
+  assertMoney(result.subtotalExVat, 550);
+  assertMoney(result.vatAmount, 115.5);
+  assertMoney(result.totalIncVat, 665.5);
+});

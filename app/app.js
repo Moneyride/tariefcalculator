@@ -116,6 +116,14 @@ function buildSummary(result) {
     lines.push(`Nachturen: ${formatHours(result.nightHours)}`);
   }
 
+  if (result.droneTariffAmount > 0) {
+    lines.push(`Drone tarief: ${euroFormatter.format(result.droneTariffAmount)}`);
+  }
+
+  if (result.ronin4dTariffAmount > 0) {
+    lines.push(`Ronin 4D tarief: ${euroFormatter.format(result.ronin4dTariffAmount)}`);
+  }
+
   lines.push(`Exclusief btw: ${euroFormatter.format(result.subtotalExVat)}`);
 
   return lines.join("\n");
@@ -125,11 +133,14 @@ function updateCalculation() {
   if (!form.reportValidity() || !settingsForm.reportValidity()) return;
 
   const settings = getSettingsFromForm();
+  const formData = new FormData(form);
 
   const result = calculateTariff(
     {
       startTime: form.elements.namedItem("startTime").value,
-      endTime: form.elements.namedItem("endTime").value
+      endTime: form.elements.namedItem("endTime").value,
+      enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
+      enableRonin4dTariff: readCheckbox(formData, "enableRonin4dTariff")
     },
     settings
   );
@@ -145,6 +156,8 @@ function updateCalculation() {
   setResult("baseAmount", result.baseAmount, formatEuro);
   setResult("overtimeAmount", result.overtimeAmount, formatEuro);
   setResult("nightAmount", result.nightAmount, formatEuro);
+  setResult("droneTariffAmount", result.droneTariffAmount, formatEuro);
+  setResult("ronin4dTariffAmount", result.ronin4dTariffAmount, formatEuro);
   setResult("subtotalExVat", result.subtotalExVat, formatEuro);
   setResult("vatAmount", result.vatAmount, formatEuro);
   setResult("totalIncVat", result.totalIncVat, formatEuro);
