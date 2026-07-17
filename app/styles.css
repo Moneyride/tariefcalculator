@@ -370,12 +370,43 @@ summary {
   gap: 0 8px;
 }
 
+.input-options {
+  gap: 10px;
+  margin: 14px 16px 0;
+}
+
+.extra-option {
+  display: grid;
+  align-content: start;
+  min-height: 52px;
+  border: 1px solid #edf2f5;
+  border-radius: 6px;
+  background: #f8fbfc;
+}
+
+.extra-option .checkbox-label {
+  min-height: 50px;
+  padding: 10px 12px;
+}
+
+.extra-field {
+  display: grid;
+  gap: 6px;
+  padding: 0 12px 12px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.extra-field input {
+  background: #fff;
+}
+
 .night-settings[hidden] {
   display: none;
 }
 
-.kilometer-input[hidden],
-.parking-input[hidden] {
+.extra-field[hidden] {
   display: none;
 }
 
@@ -476,6 +507,11 @@ summary {
   }
 
   .time-control {
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+
+  .input-options {
     margin-left: 12px;
     margin-right: 12px;
   }
@@ -594,14 +630,30 @@ summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .input-options {
+    gap: 2mm;
+    margin: 2.5mm 4mm 0;
+  }
+
+  .extra-option {
+    min-height: auto;
+    border-radius: 0;
+  }
+
   .settings-grid {
     padding-bottom: 2mm;
   }
 
+  .extra-option .checkbox-label,
   .checkbox-label {
     min-height: auto;
     padding: 2.2mm 4mm 0;
     gap: 2mm;
+    font-size: 8pt;
+  }
+
+  .extra-field {
+    padding: 1mm 4mm 2mm;
     font-size: 8pt;
   }
 

@@ -4,9 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Tarief Berekenen</title>
-    <link rel="stylesheet" href="styles.css?v=20260717ab">
-    <script src="calculator.js?v=20260717ab" defer></script>
-    <script src="app.js?v=20260717ab" defer></script>
+    <link rel="stylesheet" href="styles.css?v=20260717ac">
+    <script src="calculator.js?v=20260717ac" defer></script>
+    <script src="app.js?v=20260717ac" defer></script>
   </head>
   <body>
     <main class="app-shell">
@@ -50,30 +50,38 @@
           </div>
 
           <div class="input-options">
-            <label class="checkbox-label">
-              <input type="checkbox" name="enableDroneTariff">
-              <span>Drone tarief (+€50)</span>
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" name="enableRonin4dTariff">
-              <span>Ronin 4D tarief (+€50)</span>
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" name="enableKilometers">
-              <span>Kilometers rekenen</span>
-            </label>
-            <label class="kilometer-input" id="kilometer-input" hidden>
-              <span>Aantal gereden km</span>
-              <input type="number" name="kilometers" min="0" step="0.1" value="0">
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" name="enableParkingCosts">
-              <span>Parkeer/onkosten rekenen</span>
-            </label>
-            <label class="parking-input" id="parking-input" hidden>
-              <span>Parkeer/onkosten</span>
-              <input type="number" name="parkingCosts" min="0" step="0.01" value="0">
-            </label>
+            <div class="extra-option">
+              <label class="checkbox-label">
+                <input type="checkbox" name="enableDroneTariff">
+                <span>Drone tarief (+€50)</span>
+              </label>
+            </div>
+            <div class="extra-option">
+              <label class="checkbox-label">
+                <input type="checkbox" name="enableRonin4dTariff">
+                <span>Ronin 4D tarief (+€50)</span>
+              </label>
+            </div>
+            <div class="extra-option">
+              <label class="checkbox-label">
+                <input type="checkbox" name="enableKilometers">
+                <span>Kilometers rekenen</span>
+              </label>
+              <label class="extra-field" id="kilometer-input" hidden>
+                <span>Aantal gereden km</span>
+                <input type="number" name="kilometers" min="0" step="0.1" value="0">
+              </label>
+            </div>
+            <div class="extra-option">
+              <label class="checkbox-label">
+                <input type="checkbox" name="enableParkingCosts">
+                <span>Parkeer/onkosten rekenen</span>
+              </label>
+              <label class="extra-field" id="parking-input" hidden>
+                <span>Parkeer/onkosten</span>
+                <input type="number" name="parkingCosts" min="0" step="0.01" value="0">
+              </label>
+            </div>
           </div>
 
           <p class="notice" id="next-day-notice" hidden>
