@@ -12,7 +12,8 @@ const DEFAULT_SETTINGS = {
   nightOverlapSurchargeFactor: 1,
   nightStart: "00:00",
   nightEnd: "06:00",
-  nightRoundingMinutes: 15
+  nightRoundingMinutes: 15,
+  kilometerRate: 0.55
 };
 
 const MINUTES_PER_DAY = 24 * 60;
@@ -211,7 +212,9 @@ function calculateTariff(input, customSettings = {}) {
   const nightAmount = nightTariffEnabled ? pureNightAmount + overlapNightAmount : 0;
   const droneTariffAmount = input.enableDroneTariff ? DRONE_TARIFF_AMOUNT : 0;
   const ronin4dTariffAmount = input.enableRonin4dTariff ? RONIN_4D_TARIFF_AMOUNT : 0;
-  const extraTariffAmount = droneTariffAmount + ronin4dTariffAmount;
+  const kilometers = input.enableKilometers ? Math.max(0, Number(input.kilometers) || 0) : 0;
+  const kilometerAmount = kilometers * settings.kilometerRate;
+  const extraTariffAmount = droneTariffAmount + ronin4dTariffAmount + kilometerAmount;
 
   const subtotalExVat = baseAmount + overtimeAmount + nightAmount + extraTariffAmount;
   const vatAmount = subtotalExVat * (settings.vatPercent / 100);
@@ -245,6 +248,8 @@ function calculateTariff(input, customSettings = {}) {
     nightAmount,
     droneTariffAmount,
     ronin4dTariffAmount,
+    kilometers,
+    kilometerAmount,
     extraTariffAmount,
     subtotalExVat,
     vatAmount,

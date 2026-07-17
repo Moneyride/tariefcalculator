@@ -15,6 +15,7 @@ const saveSettingsButton = document.querySelector("#save-settings");
 const copyStatus = document.querySelector("#copy-status");
 const settingsStatus = document.querySelector("#settings-status");
 const details = document.querySelector("#settings-panel");
+const kilometerInput = document.querySelector("#kilometer-input");
 
 const euroFormatter = new Intl.NumberFormat("nl-NL", {
   style: "currency",
@@ -64,7 +65,8 @@ function getSettingsFromForm() {
     nightOverlapSurchargeFactor: DEFAULT_SETTINGS.nightOverlapSurchargeFactor,
     nightStart: formData.get("nightStart"),
     nightEnd: formData.get("nightEnd"),
-    nightRoundingMinutes: DEFAULT_SETTINGS.nightRoundingMinutes
+    nightRoundingMinutes: DEFAULT_SETTINGS.nightRoundingMinutes,
+    kilometerRate: readNumber(formData, "kilometerRate")
   };
 }
 
@@ -124,6 +126,10 @@ function buildSummary(result) {
     lines.push(`Ronin 4D tarief: ${euroFormatter.format(result.ronin4dTariffAmount)}`);
   }
 
+  if (result.kilometerAmount > 0) {
+    lines.push(`Kilometers: ${numberFormatter.format(result.kilometers)} km × ${euroFormatter.format(result.settings.kilometerRate)} = ${euroFormatter.format(result.kilometerAmount)}`);
+  }
+
   lines.push(`Exclusief btw: ${euroFormatter.format(result.subtotalExVat)}`);
 
   return lines.join("\n");
@@ -140,7 +146,9 @@ function updateCalculation() {
       startTime: form.elements.namedItem("startTime").value,
       endTime: form.elements.namedItem("endTime").value,
       enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
-      enableRonin4dTariff: readCheckbox(formData, "enableRonin4dTariff")
+      enableRonin4dTariff: readCheckbox(formData, "enableRonin4dTariff"),
+      enableKilometers: readCheckbox(formData, "enableKilometers"),
+      kilometers: readNumber(formData, "kilometers")
     },
     settings
   );
@@ -158,6 +166,7 @@ function updateCalculation() {
   setResult("nightAmount", result.nightAmount, formatEuro);
   setResult("droneTariffAmount", result.droneTariffAmount, formatEuro);
   setResult("ronin4dTariffAmount", result.ronin4dTariffAmount, formatEuro);
+  setResult("kilometerAmount", result.kilometerAmount, formatEuro);
   setResult("subtotalExVat", result.subtotalExVat, formatEuro);
   setResult("vatAmount", result.vatAmount, formatEuro);
   setResult("totalIncVat", result.totalIncVat, formatEuro);
@@ -181,6 +190,11 @@ function saveCurrentSettings() {
 function updateNightSettingsVisibility() {
   const nightEnabled = settingsForm.elements.namedItem("enableNightTariff").checked;
   document.querySelector("#night-time-settings").hidden = !nightEnabled;
+}
+
+function updateKilometerVisibility() {
+  const kilometersEnabled = form.elements.namedItem("enableKilometers").checked;
+  kilometerInput.hidden = !kilometersEnabled;
 }
 
 function markCalculationStale() {
@@ -335,6 +349,7 @@ function setupTimePicker(field) {
 populateSettings(getSavedSettings());
 updateCalculation();
 updateNightSettingsVisibility();
+updateKilometerVisibility();
 
 document.querySelectorAll("[data-time-picker]").forEach(setupTimePicker);
 document.addEventListener("click", (event) => {
@@ -345,6 +360,10 @@ document.addEventListener("keydown", (event) => {
 });
 
 form.addEventListener("input", markCalculationStale);
+form.addEventListener("change", () => {
+  updateKilometerVisibility();
+  markCalculationStale();
+});
 settingsForm.addEventListener("input", markCalculationStale);
 settingsForm.addEventListener("change", () => {
   updateNightSettingsVisibility();

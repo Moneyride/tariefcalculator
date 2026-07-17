@@ -4,9 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Tarief Berekenen</title>
-    <link rel="stylesheet" href="styles.css?v=20260717z">
-    <script src="calculator.js?v=20260717z" defer></script>
-    <script src="app.js?v=20260717z" defer></script>
+    <link rel="stylesheet" href="styles.css?v=20260717aa">
+    <script src="calculator.js?v=20260717aa" defer></script>
+    <script src="app.js?v=20260717aa" defer></script>
   </head>
   <body>
     <main class="app-shell">
@@ -58,6 +58,14 @@
               <input type="checkbox" name="enableRonin4dTariff">
               <span>Ronin 4D tarief (+€50)</span>
             </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="enableKilometers">
+              <span>Kilometers rekenen</span>
+            </label>
+            <label class="kilometer-input" id="kilometer-input" hidden>
+              <span>Aantal gereden km</span>
+              <input type="number" name="kilometers" min="0" step="0.1" value="0">
+            </label>
           </div>
 
           <p class="notice" id="next-day-notice" hidden>
@@ -88,6 +96,7 @@
               <option value="12">Gebaseerd op 12 uur</option>
             </select>
           </label>
+          <label><span>Km vergoeding</span><input type="number" name="kilometerRate" min="0" step="0.01" required></label>
           <div class="checkbox-stack">
             <label class="checkbox-label">
               <input type="checkbox" name="enableOvertime10To12">
@@ -152,6 +161,7 @@
             <div><dt>Nachtbedrag</dt><dd data-result="nightAmount">€ 0,00</dd></div>
             <div><dt>Drone tarief</dt><dd data-result="droneTariffAmount">€ 0,00</dd></div>
             <div><dt>Ronin 4D tarief</dt><dd data-result="ronin4dTariffAmount">€ 0,00</dd></div>
+            <div><dt>Kilometervergoeding</dt><dd data-result="kilometerAmount">€ 0,00</dd></div>
             <div><dt>Totaal exclusief btw</dt><dd data-result="subtotalExVat">€ 0,00</dd></div>
             <div><dt>Btw</dt><dd data-result="vatAmount">€ 0,00</dd></div>
             <div class="total"><dt>Factuurbedrag inclusief btw</dt><dd data-result="totalIncVat">€ 0,00</dd></div>

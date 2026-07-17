@@ -184,3 +184,19 @@ test("drone en Ronin 4D tarief tellen als vaste toeslag mee in totaal exclusief 
   assertMoney(result.vatAmount, 115.5);
   assertMoney(result.totalIncVat, 665.5);
 });
+
+test("kilometers gebruiken het ingestelde bedrag per gereden kilometer", () => {
+  const result = calculateTariff(
+    {
+      startTime: "08:00",
+      endTime: "18:00",
+      enableKilometers: true,
+      kilometers: 120
+    },
+    { ...DEFAULT_SETTINGS, kilometerRate: 0.6 }
+  );
+
+  assert.equal(result.kilometers, 120);
+  assertMoney(result.kilometerAmount, 72);
+  assertMoney(result.subtotalExVat, 522);
+});
