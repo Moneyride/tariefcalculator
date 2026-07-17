@@ -16,6 +16,7 @@ const copyStatus = document.querySelector("#copy-status");
 const settingsStatus = document.querySelector("#settings-status");
 const details = document.querySelector("#settings-panel");
 const kilometerInput = document.querySelector("#kilometer-input");
+const parkingInput = document.querySelector("#parking-input");
 
 const euroFormatter = new Intl.NumberFormat("nl-NL", {
   style: "currency",
@@ -130,6 +131,10 @@ function buildSummary(result) {
     lines.push(`Kilometers: ${numberFormatter.format(result.kilometers)} km × ${euroFormatter.format(result.settings.kilometerRate)} = ${euroFormatter.format(result.kilometerAmount)}`);
   }
 
+  if (result.parkingAmount > 0) {
+    lines.push(`Parkeer/onkosten: ${euroFormatter.format(result.parkingAmount)}`);
+  }
+
   lines.push(`Exclusief btw: ${euroFormatter.format(result.subtotalExVat)}`);
 
   return lines.join("\n");
@@ -148,7 +153,9 @@ function updateCalculation() {
       enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
       enableRonin4dTariff: readCheckbox(formData, "enableRonin4dTariff"),
       enableKilometers: readCheckbox(formData, "enableKilometers"),
-      kilometers: readNumber(formData, "kilometers")
+      kilometers: readNumber(formData, "kilometers"),
+      enableParkingCosts: readCheckbox(formData, "enableParkingCosts"),
+      parkingCosts: readNumber(formData, "parkingCosts")
     },
     settings
   );
@@ -167,6 +174,7 @@ function updateCalculation() {
   setResult("droneTariffAmount", result.droneTariffAmount, formatEuro);
   setResult("ronin4dTariffAmount", result.ronin4dTariffAmount, formatEuro);
   setResult("kilometerAmount", result.kilometerAmount, formatEuro);
+  setResult("parkingAmount", result.parkingAmount, formatEuro);
   setResult("subtotalExVat", result.subtotalExVat, formatEuro);
   setResult("vatAmount", result.vatAmount, formatEuro);
   setResult("totalIncVat", result.totalIncVat, formatEuro);
@@ -195,6 +203,11 @@ function updateNightSettingsVisibility() {
 function updateKilometerVisibility() {
   const kilometersEnabled = form.elements.namedItem("enableKilometers").checked;
   kilometerInput.hidden = !kilometersEnabled;
+}
+
+function updateParkingVisibility() {
+  const parkingEnabled = form.elements.namedItem("enableParkingCosts").checked;
+  parkingInput.hidden = !parkingEnabled;
 }
 
 function markCalculationStale() {
@@ -350,6 +363,7 @@ populateSettings(getSavedSettings());
 updateCalculation();
 updateNightSettingsVisibility();
 updateKilometerVisibility();
+updateParkingVisibility();
 
 document.querySelectorAll("[data-time-picker]").forEach(setupTimePicker);
 document.addEventListener("click", (event) => {
@@ -362,6 +376,7 @@ document.addEventListener("keydown", (event) => {
 form.addEventListener("input", markCalculationStale);
 form.addEventListener("change", () => {
   updateKilometerVisibility();
+  updateParkingVisibility();
   markCalculationStale();
 });
 settingsForm.addEventListener("input", markCalculationStale);

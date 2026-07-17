@@ -381,7 +381,8 @@ summary {
   display: none;
 }
 
-.kilometer-input[hidden] {
+.kilometer-input[hidden],
+.parking-input[hidden] {
   display: none;
 }
 
@@ -737,6 +738,14 @@ summary {
               <span>Aantal gereden km</span>
               <input type="number" name="kilometers" min="0" step="0.1" value="0">
             </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="enableParkingCosts">
+              <span>Parkeer/onkosten rekenen</span>
+            </label>
+            <label class="parking-input" id="parking-input" hidden>
+              <span>Parkeer/onkosten</span>
+              <input type="number" name="parkingCosts" min="0" step="0.01" value="0">
+            </label>
           </div>
 
           <p class="notice" id="next-day-notice" hidden>
@@ -833,6 +842,7 @@ summary {
             <div><dt>Drone tarief</dt><dd data-result="droneTariffAmount">€ 0,00</dd></div>
             <div><dt>Ronin 4D tarief</dt><dd data-result="ronin4dTariffAmount">€ 0,00</dd></div>
             <div><dt>Kilometervergoeding</dt><dd data-result="kilometerAmount">€ 0,00</dd></div>
+            <div><dt>Parkeer/onkosten</dt><dd data-result="parkingAmount">€ 0,00</dd></div>
             <div><dt>Totaal exclusief btw</dt><dd data-result="subtotalExVat">€ 0,00</dd></div>
             <div><dt>Btw</dt><dd data-result="vatAmount">€ 0,00</dd></div>
             <div class="total"><dt>Factuurbedrag inclusief btw</dt><dd data-result="totalIncVat">€ 0,00</dd></div>
@@ -1063,7 +1073,8 @@ function calculateTariff(input, customSettings = {}) {
   const ronin4dTariffAmount = input.enableRonin4dTariff ? RONIN_4D_TARIFF_AMOUNT : 0;
   const kilometers = input.enableKilometers ? Math.max(0, Number(input.kilometers) || 0) : 0;
   const kilometerAmount = kilometers * settings.kilometerRate;
-  const extraTariffAmount = droneTariffAmount + ronin4dTariffAmount + kilometerAmount;
+  const parkingAmount = input.enableParkingCosts ? Math.max(0, Number(input.parkingCosts) || 0) : 0;
+  const extraTariffAmount = droneTariffAmount + ronin4dTariffAmount + kilometerAmount + parkingAmount;
 
   const subtotalExVat = baseAmount + overtimeAmount + nightAmount + extraTariffAmount;
   const vatAmount = subtotalExVat * (settings.vatPercent / 100);
@@ -1099,6 +1110,7 @@ function calculateTariff(input, customSettings = {}) {
     ronin4dTariffAmount,
     kilometers,
     kilometerAmount,
+    parkingAmount,
     extraTariffAmount,
     subtotalExVat,
     vatAmount,
@@ -1138,6 +1150,7 @@ const copyStatus = document.querySelector("#copy-status");
 const settingsStatus = document.querySelector("#settings-status");
 const details = document.querySelector("#settings-panel");
 const kilometerInput = document.querySelector("#kilometer-input");
+const parkingInput = document.querySelector("#parking-input");
 
 const euroFormatter = new Intl.NumberFormat("nl-NL", {
   style: "currency",
@@ -1252,6 +1265,10 @@ function buildSummary(result) {
     lines.push(`Kilometers: ${numberFormatter.format(result.kilometers)} km × ${euroFormatter.format(result.settings.kilometerRate)} = ${euroFormatter.format(result.kilometerAmount)}`);
   }
 
+  if (result.parkingAmount > 0) {
+    lines.push(`Parkeer/onkosten: ${euroFormatter.format(result.parkingAmount)}`);
+  }
+
   lines.push(`Exclusief btw: ${euroFormatter.format(result.subtotalExVat)}`);
 
   return lines.join("\n");
@@ -1270,7 +1287,9 @@ function updateCalculation() {
       enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
       enableRonin4dTariff: readCheckbox(formData, "enableRonin4dTariff"),
       enableKilometers: readCheckbox(formData, "enableKilometers"),
-      kilometers: readNumber(formData, "kilometers")
+      kilometers: readNumber(formData, "kilometers"),
+      enableParkingCosts: readCheckbox(formData, "enableParkingCosts"),
+      parkingCosts: readNumber(formData, "parkingCosts")
     },
     settings
   );
@@ -1289,6 +1308,7 @@ function updateCalculation() {
   setResult("droneTariffAmount", result.droneTariffAmount, formatEuro);
   setResult("ronin4dTariffAmount", result.ronin4dTariffAmount, formatEuro);
   setResult("kilometerAmount", result.kilometerAmount, formatEuro);
+  setResult("parkingAmount", result.parkingAmount, formatEuro);
   setResult("subtotalExVat", result.subtotalExVat, formatEuro);
   setResult("vatAmount", result.vatAmount, formatEuro);
   setResult("totalIncVat", result.totalIncVat, formatEuro);
@@ -1317,6 +1337,11 @@ function updateNightSettingsVisibility() {
 function updateKilometerVisibility() {
   const kilometersEnabled = form.elements.namedItem("enableKilometers").checked;
   kilometerInput.hidden = !kilometersEnabled;
+}
+
+function updateParkingVisibility() {
+  const parkingEnabled = form.elements.namedItem("enableParkingCosts").checked;
+  parkingInput.hidden = !parkingEnabled;
 }
 
 function markCalculationStale() {
@@ -1472,6 +1497,7 @@ populateSettings(getSavedSettings());
 updateCalculation();
 updateNightSettingsVisibility();
 updateKilometerVisibility();
+updateParkingVisibility();
 
 document.querySelectorAll("[data-time-picker]").forEach(setupTimePicker);
 document.addEventListener("click", (event) => {
@@ -1484,6 +1510,7 @@ document.addEventListener("keydown", (event) => {
 form.addEventListener("input", markCalculationStale);
 form.addEventListener("change", () => {
   updateKilometerVisibility();
+  updateParkingVisibility();
   markCalculationStale();
 });
 settingsForm.addEventListener("input", markCalculationStale);

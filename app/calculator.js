@@ -214,7 +214,8 @@ function calculateTariff(input, customSettings = {}) {
   const ronin4dTariffAmount = input.enableRonin4dTariff ? RONIN_4D_TARIFF_AMOUNT : 0;
   const kilometers = input.enableKilometers ? Math.max(0, Number(input.kilometers) || 0) : 0;
   const kilometerAmount = kilometers * settings.kilometerRate;
-  const extraTariffAmount = droneTariffAmount + ronin4dTariffAmount + kilometerAmount;
+  const parkingAmount = input.enableParkingCosts ? Math.max(0, Number(input.parkingCosts) || 0) : 0;
+  const extraTariffAmount = droneTariffAmount + ronin4dTariffAmount + kilometerAmount + parkingAmount;
 
   const subtotalExVat = baseAmount + overtimeAmount + nightAmount + extraTariffAmount;
   const vatAmount = subtotalExVat * (settings.vatPercent / 100);
@@ -250,6 +251,7 @@ function calculateTariff(input, customSettings = {}) {
     ronin4dTariffAmount,
     kilometers,
     kilometerAmount,
+    parkingAmount,
     extraTariffAmount,
     subtotalExVat,
     vatAmount,

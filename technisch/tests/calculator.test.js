@@ -200,3 +200,19 @@ test("kilometers gebruiken het ingestelde bedrag per gereden kilometer", () => {
   assertMoney(result.kilometerAmount, 72);
   assertMoney(result.subtotalExVat, 522);
 });
+
+test("parkeer en onkosten tellen als ingevuld bedrag mee in totaal exclusief btw", () => {
+  const result = calculateTariff(
+    {
+      startTime: "08:00",
+      endTime: "18:00",
+      enableParkingCosts: true,
+      parkingCosts: 18.75
+    },
+    DEFAULT_SETTINGS
+  );
+
+  assertMoney(result.parkingAmount, 18.75);
+  assertMoney(result.extraTariffAmount, 18.75);
+  assertMoney(result.subtotalExVat, 468.75);
+});

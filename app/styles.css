@@ -374,7 +374,8 @@ summary {
   display: none;
 }
 
-.kilometer-input[hidden] {
+.kilometer-input[hidden],
+.parking-input[hidden] {
   display: none;
 }
 

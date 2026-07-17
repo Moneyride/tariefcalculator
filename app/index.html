@@ -4,9 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Tarief Berekenen</title>
-    <link rel="stylesheet" href="styles.css?v=20260717aa">
-    <script src="calculator.js?v=20260717aa" defer></script>
-    <script src="app.js?v=20260717aa" defer></script>
+    <link rel="stylesheet" href="styles.css?v=20260717ab">
+    <script src="calculator.js?v=20260717ab" defer></script>
+    <script src="app.js?v=20260717ab" defer></script>
   </head>
   <body>
     <main class="app-shell">
@@ -65,6 +65,14 @@
             <label class="kilometer-input" id="kilometer-input" hidden>
               <span>Aantal gereden km</span>
               <input type="number" name="kilometers" min="0" step="0.1" value="0">
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="enableParkingCosts">
+              <span>Parkeer/onkosten rekenen</span>
+            </label>
+            <label class="parking-input" id="parking-input" hidden>
+              <span>Parkeer/onkosten</span>
+              <input type="number" name="parkingCosts" min="0" step="0.01" value="0">
             </label>
           </div>
 
@@ -162,6 +170,7 @@
             <div><dt>Drone tarief</dt><dd data-result="droneTariffAmount">€ 0,00</dd></div>
             <div><dt>Ronin 4D tarief</dt><dd data-result="ronin4dTariffAmount">€ 0,00</dd></div>
             <div><dt>Kilometervergoeding</dt><dd data-result="kilometerAmount">€ 0,00</dd></div>
+            <div><dt>Parkeer/onkosten</dt><dd data-result="parkingAmount">€ 0,00</dd></div>
             <div><dt>Totaal exclusief btw</dt><dd data-result="subtotalExVat">€ 0,00</dd></div>
             <div><dt>Btw</dt><dd data-result="vatAmount">€ 0,00</dd></div>
             <div class="total"><dt>Factuurbedrag inclusief btw</dt><dd data-result="totalIncVat">€ 0,00</dd></div>
