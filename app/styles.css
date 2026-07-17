@@ -1,17 +1,24 @@
 :root {
   color-scheme: light;
-  --bg: #f4f7f9;
+  --bg: #f3f5f2;
   --panel: #ffffff;
-  --line: #d7e2ea;
-  --head: #d9edf8;
-  --head-strong: #bfddea;
-  --text: #17313f;
-  --muted: #5b707c;
-  --accent: #1b6f98;
-  --accent-dark: #155675;
-  --warning: #7a4a00;
-  --warning-bg: #fff5d7;
-  --shadow: 0 10px 28px rgba(24, 58, 74, 0.08);
+  --panel-subtle: #f8faf8;
+  --line: #d9dfdc;
+  --line-strong: #c6d0cb;
+  --head: #e2f1eb;
+  --head-strong: #b9dccf;
+  --text: #0d2e2c;
+  --muted: #687975;
+  --accent: #08665f;
+  --accent-dark: #034b47;
+  --accent-soft: #e2f2ec;
+  --mint: #7fc8ad;
+  --orange: #ff6b18;
+  --orange-dark: #db5108;
+  --orange-soft: #fff0e7;
+  --warning: #7f480e;
+  --warning-bg: #fff4df;
+  --shadow: 0 1px 2px rgba(9, 47, 44, 0.04), 0 12px 32px rgba(9, 47, 44, 0.06);
 }
 
 * {
@@ -22,7 +29,9 @@ body {
   margin: 0;
   min-height: 100vh;
   overflow-x: hidden;
-  background: var(--bg);
+  background:
+    linear-gradient(180deg, #edf3ef 0, var(--bg) 240px),
+    var(--bg);
   color: var(--text);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -34,27 +43,56 @@ select {
 }
 
 .app-shell {
-  width: min(1080px, calc(100% - 32px));
+  width: min(1120px, calc(100% - 40px));
   margin: 0 auto;
-  padding: 40px 0 48px;
+  padding: 48px 0 64px;
 }
 
 .page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 18px 20px;
-  background: var(--head);
-  border: 1px solid var(--head-strong);
-  border-radius: 8px 8px 0 0;
+  gap: 24px;
+  min-height: 92px;
+  padding: 22px 26px;
+  overflow: hidden;
+  background: #073f3d;
+  border: 1px solid #073f3d;
+  border-radius: 8px;
+  box-shadow: 0 16px 40px rgba(3, 55, 52, 0.14);
+  color: #f8fbfa;
+}
+
+.page-header::after {
+  width: 8px;
+  height: 42px;
+  flex: 0 0 auto;
+  border-radius: 4px;
+  background: var(--orange);
+  content: "";
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.header-mark {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .header-brand {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 800;
+  margin: 0 0 0 auto;
+  color: rgba(248, 251, 250, 0.68);
+  font-size: 0.72rem;
+  font-weight: 700;
   text-align: right;
   text-transform: uppercase;
 }
@@ -75,11 +113,14 @@ h3 {
 }
 
 h1 {
-  font-size: clamp(1.7rem, 4vw, 2.4rem);
+  color: #f8fbfa;
+  font-size: clamp(1.75rem, 4vw, 2.35rem);
+  font-weight: 650;
 }
 
 h2 {
-  font-size: 1rem;
+  font-size: 1.05rem;
+  font-weight: 750;
 }
 
 h3 {
@@ -88,8 +129,8 @@ h3 {
 
 .calculator-grid {
   display: grid;
-  gap: 16px;
-  margin-top: 22px;
+  gap: 18px;
+  margin-top: 24px;
 }
 
 .panel {
@@ -100,20 +141,20 @@ h3 {
 }
 
 .panel-header {
-  padding: 12px 16px;
-  background: var(--head);
+  padding: 15px 18px;
+  background: var(--panel-subtle);
   border-bottom: 1px solid var(--line);
   border-radius: 8px 8px 0 0;
 }
 
 .input-panel {
-  padding-bottom: 16px;
+  padding-bottom: 18px;
 }
 
 label {
   display: grid;
-  gap: 6px;
-  padding: 14px 16px 0;
+  gap: 7px;
+  padding: 16px 18px 0;
   color: var(--muted);
   font-size: 0.9rem;
   font-weight: 700;
@@ -124,22 +165,22 @@ label {
 }
 
 .time-field label {
-  padding: 14px 16px 0;
+  padding: 16px 18px 0;
 }
 
 .time-control {
   position: relative;
   display: flex;
-  margin: 6px 16px 0;
+  margin: 7px 18px 0;
   touch-action: manipulation;
 }
 
 input,
 select {
   width: 100%;
-  min-height: 42px;
-  padding: 8px 10px;
-  border: 1px solid #b8c8d1;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
   border-radius: 6px;
   color: var(--text);
   background: #fff;
@@ -149,16 +190,17 @@ input[readonly] {
   cursor: pointer;
 }
 
-input:focus {
-  outline: 3px solid rgba(27, 111, 152, 0.18);
-  border-color: var(--accent);
+input:focus,
+select:focus {
+  outline: 3px solid rgba(255, 107, 24, 0.16);
+  border-color: var(--orange);
 }
 
 .time-control input[data-time-picker] {
   display: block;
   padding-right: 48px;
-  border-left: 1px solid #b8c8d1;
-  border-right: 1px solid #b8c8d1;
+  border-left: 1px solid var(--line-strong);
+  border-right: 1px solid var(--line-strong);
   border-radius: 6px;
   text-align: left;
   font-variant-numeric: tabular-nums;
@@ -171,18 +213,18 @@ input:focus {
   top: 1px;
   right: 1px;
   width: 42px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0;
   border-color: transparent;
-  border-left: 1px solid #d7e2ea;
+  border-left: 1px solid var(--line);
   border-radius: 0 5px 5px 0;
-  background: #f8fbfc;
+  background: var(--panel-subtle);
   color: var(--accent);
   touch-action: manipulation;
 }
 
 .time-picker-trigger:hover {
-  background: #eaf4f8;
+  background: var(--accent-soft);
 }
 
 .clock-icon {
@@ -224,10 +266,10 @@ input:focus {
   width: min(230px, calc(100vw - 48px));
   max-height: 260px;
   overflow: hidden;
-  border: 1px solid #9fb4c0;
+  border: 1px solid var(--line-strong);
   border-radius: 6px;
   background: #fff;
-  box-shadow: 0 14px 34px rgba(24, 58, 74, 0.18);
+  box-shadow: 0 18px 42px rgba(3, 55, 52, 0.18);
   touch-action: manipulation;
 }
 
@@ -244,7 +286,7 @@ input:focus {
 }
 
 .time-picker-column + .time-picker-column {
-  border-left: 1px solid #edf2f5;
+  border-left: 1px solid var(--line);
 }
 
 .time-picker-column button {
@@ -253,7 +295,7 @@ input:focus {
   border: 0;
   border-radius: 4px;
   background: #fff;
-  color: #1d2f39;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
   font-weight: 800;
   touch-action: manipulation;
@@ -261,7 +303,7 @@ input:focus {
 
 .time-picker-column button:hover,
 .time-picker-column button.active {
-  background: #1578d4;
+  background: var(--accent);
   color: #fff;
 }
 
@@ -272,9 +314,9 @@ input:focus {
 }
 
 .notice {
-  margin: 14px 16px 0;
-  padding: 10px 12px;
-  border: 1px solid #f1d17a;
+  margin: 16px 18px 0;
+  padding: 11px 13px;
+  border: 1px solid #efc982;
   border-radius: 6px;
   background: var(--warning-bg);
   color: var(--warning);
@@ -285,12 +327,12 @@ input:focus {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  padding: 16px 16px 0;
+  padding: 18px 18px 0;
 }
 
 button {
-  min-height: 42px;
-  padding: 9px 14px;
+  min-height: 44px;
+  padding: 10px 16px;
   border: 1px solid var(--accent);
   border-radius: 6px;
   background: var(--accent);
@@ -303,39 +345,58 @@ button:hover {
   background: var(--accent-dark);
 }
 
+button:focus-visible,
+summary:focus-visible,
+.checkbox-label:focus-within {
+  outline: 3px solid rgba(255, 107, 24, 0.2);
+  outline-offset: 2px;
+}
+
+#recalculate {
+  min-width: 148px;
+  border-color: var(--orange);
+  background: var(--orange);
+  box-shadow: 0 7px 18px rgba(219, 81, 8, 0.18);
+}
+
+#recalculate:hover {
+  border-color: var(--orange-dark);
+  background: var(--orange-dark);
+}
+
 button.secondary {
   background: #fff;
   color: var(--accent);
 }
 
 button.secondary:hover {
-  background: #eaf4f8;
+  background: var(--accent-soft);
 }
 
 .copy-status {
   min-height: 1.3em;
-  margin: 8px 16px 0;
+  margin: 8px 18px 0;
   color: var(--accent-dark);
   font-weight: 700;
 }
 
 .result-sections {
   display: grid;
-  gap: 14px;
-  padding: 14px 16px 16px;
+  gap: 16px;
+  padding: 16px 18px 18px;
 }
 
 .result-section {
   overflow: hidden;
-  border: 1px solid #edf2f5;
+  border: 1px solid var(--line);
   border-radius: 6px;
   background: #fff;
 }
 
 .result-section h3 {
-  padding: 8px 12px;
-  border-bottom: 1px solid #edf2f5;
-  background: #f8fbfc;
+  padding: 10px 13px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-subtle);
   color: var(--accent-dark);
   font-weight: 800;
   text-transform: uppercase;
@@ -350,12 +411,12 @@ button.secondary:hover {
   grid-template-columns: minmax(0, 1fr) max-content;
   gap: 16px;
   align-items: center;
-  padding: 9px 12px;
-  border-bottom: 1px solid #edf2f5;
+  padding: 10px 13px;
+  border-bottom: 1px solid #e8ecea;
 }
 
 .result-list div:nth-child(even) {
-  background: #f8fbfc;
+  background: #fafbf9;
 }
 
 .result-list div:last-child {
@@ -376,10 +437,11 @@ dd {
 
 .result-summary {
   border-color: var(--head-strong);
+  box-shadow: inset 3px 0 0 var(--mint);
 }
 
 .result-summary h3 {
-  background: var(--head);
+  background: var(--accent-soft);
 }
 
 .result-summary .result-list div {
@@ -388,8 +450,13 @@ dd {
 }
 
 .result-list .total {
-  background: var(--head);
-  font-size: 1.08rem;
+  background: #073f3d;
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+.result-list .total dt {
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .settings-panel {
@@ -397,17 +464,26 @@ dd {
 }
 
 summary {
-  padding: 14px 16px;
-  background: var(--head);
+  padding: 16px 18px;
+  background: var(--panel-subtle);
   cursor: pointer;
   font-weight: 800;
+}
+
+summary:hover {
+  background: var(--accent-soft);
+}
+
+.settings-panel[open] > summary {
+  border-bottom: 1px solid var(--line);
+  color: var(--accent-dark);
 }
 
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(260px, 1fr));
-  gap: 12px;
-  padding: 16px;
+  gap: 14px;
+  padding: 18px;
 }
 
 .input-options,
@@ -425,16 +501,16 @@ summary {
   gap: 0 8px;
   min-width: 0;
   margin: 0;
-  padding: 0 0 14px;
-  border: 1px solid #edf2f5;
+  padding: 2px 0 16px;
+  border: 1px solid var(--line);
   border-radius: 6px;
-  background: #fbfdfe;
+  background: var(--panel-subtle);
 }
 
 .settings-section legend {
   margin-left: 10px;
   padding: 0 6px;
-  color: var(--accent-dark);
+  color: var(--accent);
   font-size: 0.78rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -468,17 +544,23 @@ summary {
 }
 
 .input-options {
-  gap: 10px;
-  margin: 14px 16px 0;
+  gap: 12px;
+  margin: 16px 18px 0;
 }
 
 .extra-option {
   display: grid;
   align-content: start;
   min-height: 52px;
-  border: 1px solid #edf2f5;
+  border: 1px solid var(--line);
   border-radius: 6px;
-  background: #f8fbfc;
+  background: var(--panel-subtle);
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.extra-option:has(input[type="checkbox"]:checked) {
+  border-color: var(--head-strong);
+  background: var(--accent-soft);
 }
 
 .extra-option .checkbox-label {
@@ -520,7 +602,7 @@ summary {
 .checkbox-label input {
   width: 18px;
   min-height: 18px;
-  accent-color: var(--accent);
+  accent-color: var(--orange);
   cursor: pointer;
 }
 
@@ -538,7 +620,8 @@ summary {
   flex-wrap: wrap;
   gap: 12px;
   grid-column: 1 / -1;
-  padding: 16px;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--line);
 }
 
 .settings-status {
@@ -551,9 +634,14 @@ summary {
 .footer-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 14px;
   flex-wrap: wrap;
-  margin-top: 16px;
+  margin-top: 22px;
+  padding-top: 4px;
+}
+
+.footer-actions button {
+  min-width: 190px;
 }
 
 .print-footer {
@@ -562,8 +650,8 @@ summary {
 
 @media (max-width: 760px) {
   .app-shell {
-    width: min(100% - 16px, 1080px);
-    padding: 10px 0 20px;
+    width: min(100% - 20px, 1080px);
+    padding: 14px 0 28px;
   }
 
   .page-header,
@@ -577,12 +665,35 @@ summary {
   }
 
   .page-header {
-    display: grid;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    min-height: auto;
+    padding: 18px;
     border-radius: 8px;
   }
 
+  .page-header::after {
+    display: none;
+  }
+
+  .header-title {
+    width: 100%;
+  }
+
+  .header-mark {
+    width: 38px;
+    height: 38px;
+  }
+
   .header-brand {
+    width: 100%;
+    margin-left: 52px;
     text-align: left;
+  }
+
+  h1 {
+    font-size: clamp(1.55rem, 8vw, 2rem);
   }
 
   .result-list div {
@@ -609,23 +720,27 @@ summary {
 
   label,
   .time-field label {
-    padding-left: 12px;
-    padding-right: 12px;
+    padding-left: 14px;
+    padding-right: 14px;
   }
 
   .time-control {
-    margin-left: 12px;
-    margin-right: 12px;
+    margin-left: 14px;
+    margin-right: 14px;
   }
 
   .input-options {
-    margin-left: 12px;
-    margin-right: 12px;
+    margin-left: 14px;
+    margin-right: 14px;
   }
 
   .button-row {
-    padding-left: 12px;
-    padding-right: 12px;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  #recalculate {
+    width: 100%;
   }
 }
 
