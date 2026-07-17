@@ -478,32 +478,32 @@ button.secondary:hover {
 }
 
 .calculate-action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  min-height: 92px;
-  padding: 18px 22px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 10px 28px rgba(31, 41, 55, 0.05);
-  -webkit-backdrop-filter: blur(24px) saturate(108%);
-  backdrop-filter: blur(24px) saturate(108%);
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  min-height: 0;
+  padding: 8px 0;
 }
 
 .calculate-action .notice {
-  flex: 1 1 auto;
+  width: fit-content;
+  max-width: 100%;
   margin: 0;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  font-weight: 650;
+  text-align: center;
 }
 
 .calculate-action .button-row {
-  flex: 0 0 auto;
   padding: 0;
 }
 
 .calculate-action #recalculate {
-  min-width: 220px;
+  min-width: 255px;
+  min-height: 58px;
+  padding: 15px 26px;
+  font-size: 1.05rem;
 }
 
 .result-panel {
@@ -1044,9 +1044,8 @@ summary:hover {
   }
 
   .calculate-action {
-    display: grid;
-    gap: 14px;
-    padding: 18px 20px;
+    gap: 8px;
+    padding: 8px 0;
   }
 
   .calculate-action .button-row {
@@ -1054,7 +1053,7 @@ summary:hover {
   }
 
   .calculate-action .notice {
-    width: 100%;
+    width: fit-content;
   }
 
   #recalculate {
