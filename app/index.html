@@ -4,9 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Tarief Berekenen</title>
-    <link rel="stylesheet" href="styles.css?v=20260717ad">
-    <script src="calculator.js?v=20260717ad" defer></script>
-    <script src="app.js?v=20260717ad" defer></script>
+    <link rel="stylesheet" href="styles.css?v=20260717ae">
+    <script src="calculator.js?v=20260717ae" defer></script>
+    <script src="app.js?v=20260717ae" defer></script>
   </head>
   <body>
     <main class="app-shell">
@@ -179,26 +179,43 @@
             <h2>Berekening</h2>
           </div>
 
-          <dl class="result-list">
-            <div><dt>Totaal gewerkte uren</dt><dd data-result="totalHours">0 uur</dd></div>
-            <div><dt>Aantal overuren</dt><dd data-result="overtimeHours">0 uur</dd></div>
-            <div><dt>Overuren tegen 150%</dt><dd data-result="overtime10To12Hours">0 uur</dd></div>
-            <div><dt>Overuren tegen 200%</dt><dd data-result="overtimeFrom12Hours">0 uur</dd></div>
-            <div><dt>Overuren tegen 250%</dt><dd data-result="overtimeFrom14Hours">0 uur</dd></div>
-            <div><dt>Nachturen totaal</dt><dd data-result="nightHours">0 uur</dd></div>
-            <div><dt>Overlap nacht/overuren</dt><dd data-result="nightOvertimeHours">0 uur</dd></div>
-            <div><dt>Pure nachturen (geen overuren)</dt><dd data-result="pureNightHours">0 uur</dd></div>
-            <div><dt>Basistarief</dt><dd data-result="baseAmount">€ 0,00</dd></div>
-            <div><dt>Overurenbedrag</dt><dd data-result="overtimeAmount">€ 0,00</dd></div>
-            <div><dt>Nachtbedrag</dt><dd data-result="nightAmount">€ 0,00</dd></div>
-            <div><dt>Drone tarief</dt><dd data-result="droneTariffAmount">€ 0,00</dd></div>
-            <div><dt>Ronin 4D tarief</dt><dd data-result="ronin4dTariffAmount">€ 0,00</dd></div>
-            <div><dt>Kilometervergoeding</dt><dd data-result="kilometerAmount">€ 0,00</dd></div>
-            <div><dt>Parkeer/onkosten</dt><dd data-result="parkingAmount">€ 0,00</dd></div>
-            <div><dt>Totaal exclusief btw</dt><dd data-result="subtotalExVat">€ 0,00</dd></div>
-            <div><dt>Btw</dt><dd data-result="vatAmount">€ 0,00</dd></div>
-            <div class="total"><dt>Factuurbedrag inclusief btw</dt><dd data-result="totalIncVat">€ 0,00</dd></div>
-          </dl>
+          <div class="result-sections">
+            <section class="result-section">
+              <h3>Uren</h3>
+              <dl class="result-list">
+                <div><dt>Totaal gewerkte uren</dt><dd data-result="totalHours">0 uur</dd></div>
+                <div><dt>Aantal overuren</dt><dd data-result="overtimeHours">0 uur</dd></div>
+                <div><dt>Overuren tegen 150%</dt><dd data-result="overtime10To12Hours">0 uur</dd></div>
+                <div><dt>Overuren tegen 200%</dt><dd data-result="overtimeFrom12Hours">0 uur</dd></div>
+                <div><dt>Overuren tegen 250%</dt><dd data-result="overtimeFrom14Hours">0 uur</dd></div>
+                <div><dt>Nachturen totaal</dt><dd data-result="nightHours">0 uur</dd></div>
+                <div><dt>Overlap nacht/overuren</dt><dd data-result="nightOvertimeHours">0 uur</dd></div>
+                <div><dt>Pure nachturen (geen overuren)</dt><dd data-result="pureNightHours">0 uur</dd></div>
+              </dl>
+            </section>
+
+            <section class="result-section">
+              <h3>Bedragen</h3>
+              <dl class="result-list">
+                <div><dt>Basistarief</dt><dd data-result="baseAmount">€ 0,00</dd></div>
+                <div><dt>Overurenbedrag</dt><dd data-result="overtimeAmount">€ 0,00</dd></div>
+                <div><dt>Nachtbedrag</dt><dd data-result="nightAmount">€ 0,00</dd></div>
+                <div><dt>Drone tarief</dt><dd data-result="droneTariffAmount">€ 0,00</dd></div>
+                <div><dt>Ronin 4D tarief</dt><dd data-result="ronin4dTariffAmount">€ 0,00</dd></div>
+                <div><dt>Kilometervergoeding</dt><dd data-result="kilometerAmount">€ 0,00</dd></div>
+                <div><dt>Parkeer/onkosten</dt><dd data-result="parkingAmount">€ 0,00</dd></div>
+              </dl>
+            </section>
+
+            <section class="result-section result-summary">
+              <h3>Factuur</h3>
+              <dl class="result-list">
+                <div><dt>Totaal exclusief btw</dt><dd data-result="subtotalExVat">€ 0,00</dd></div>
+                <div><dt>Btw</dt><dd data-result="vatAmount">€ 0,00</dd></div>
+                <div class="total"><dt>Factuurbedrag inclusief btw</dt><dd data-result="totalIncVat">€ 0,00</dd></div>
+              </dl>
+            </section>
+          </div>
         </section>
       </section>
 
