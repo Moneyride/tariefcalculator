@@ -4,9 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Tarief Berekenen</title>
-    <link rel="stylesheet" href="styles.css?v=20260717ac">
-    <script src="calculator.js?v=20260717ac" defer></script>
-    <script src="app.js?v=20260717ac" defer></script>
+    <link rel="stylesheet" href="styles.css?v=20260717ad">
+    <script src="calculator.js?v=20260717ad" defer></script>
+    <script src="app.js?v=20260717ad" defer></script>
   </head>
   <body>
     <main class="app-shell">
@@ -100,57 +100,73 @@
         <details class="panel settings-panel" id="settings-panel">
         <summary>Instellingen</summary>
         <form id="settings-form" class="settings-grid">
-          <label><span>Dagtarief</span><input type="number" name="dayRate" min="0" step="0.01" required></label>
-          <label class="checkbox-label half-day-setting">
-            <input type="checkbox" name="enableHalfDayUnder6Hours">
-            <span>Halve dag rekenen bij maximaal 6 uur werktijd (75%)</span>
-          </label>
-          <label>
-            <span>Werkdag tijden</span>
-            <select name="normalDayHours" required>
-              <option value="10">Gebaseerd op 10 uur</option>
-              <option value="12">Gebaseerd op 12 uur</option>
-            </select>
-          </label>
-          <label><span>Km vergoeding</span><input type="number" name="kilometerRate" min="0" step="0.01" required></label>
-          <div class="checkbox-stack">
-            <label class="checkbox-label">
-              <input type="checkbox" name="enableOvertime10To12">
-              <span>Overuren tegen 150%</span>
+          <fieldset class="settings-section settings-section-basic">
+            <legend>Basis</legend>
+            <label><span>Dagtarief</span><input type="number" name="dayRate" min="0" step="0.01" required></label>
+            <label>
+              <span>Werkdag tijden</span>
+              <select name="normalDayHours" required>
+                <option value="10">Gebaseerd op 10 uur</option>
+                <option value="12">Gebaseerd op 12 uur</option>
+              </select>
             </label>
-            <label class="checkbox-label">
-              <input type="checkbox" name="enableOvertimeFrom12">
-              <span>Overuren tegen 200% vanaf 12 uur werktijd</span>
+            <label class="checkbox-label half-day-setting">
+              <input type="checkbox" name="enableHalfDayUnder6Hours">
+              <span>Halve dag rekenen bij maximaal 6 uur werktijd (75%)</span>
             </label>
-            <label class="checkbox-label">
-              <input type="checkbox" name="enableOvertimeFrom14">
-              <span>Overuren tegen 250% vanaf 14 uur werktijd</span>
-            </label>
+          </fieldset>
+
+          <fieldset class="settings-section settings-section-overtime">
+            <legend>Overuren</legend>
+            <div class="checkbox-stack">
+              <label class="checkbox-label">
+                <input type="checkbox" name="enableOvertime10To12">
+                <span>Overuren tegen 150%</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" name="enableOvertimeFrom12">
+                <span>Overuren tegen 200% vanaf 12 uur werktijd</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" name="enableOvertimeFrom14">
+                <span>Overuren tegen 250% vanaf 14 uur werktijd</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset class="settings-section settings-section-night">
+            <legend>Nacht</legend>
             <label class="checkbox-label">
               <input type="checkbox" name="enableNightTariff">
               <span>Nacht tarief</span>
             </label>
-          </div>
-          <div class="night-settings" id="night-time-settings">
-            <div class="time-field settings-time-field">
-              <label for="nightStart">Nachtperiode start</label>
-              <div class="time-control">
-                <input id="nightStart" type="text" name="nightStart" data-time-picker readonly required>
-                <button class="time-picker-trigger" type="button" aria-label="Nachtperiode start kiezen" title="Tijd kiezen">
-                  <span class="clock-icon" aria-hidden="true"></span>
-                </button>
+            <div class="night-settings" id="night-time-settings">
+              <div class="time-field settings-time-field">
+                <label for="nightStart">Nachtperiode start</label>
+                <div class="time-control">
+                  <input id="nightStart" type="text" name="nightStart" data-time-picker readonly required>
+                  <button class="time-picker-trigger" type="button" aria-label="Nachtperiode start kiezen" title="Tijd kiezen">
+                    <span class="clock-icon" aria-hidden="true"></span>
+                  </button>
+                </div>
+              </div>
+              <div class="time-field settings-time-field">
+                <label for="nightEnd">Nachtperiode einde</label>
+                <div class="time-control">
+                  <input id="nightEnd" type="text" name="nightEnd" data-time-picker readonly required>
+                  <button class="time-picker-trigger" type="button" aria-label="Nachtperiode einde kiezen" title="Tijd kiezen">
+                    <span class="clock-icon" aria-hidden="true"></span>
+                  </button>
+                </div>
               </div>
             </div>
-            <div class="time-field settings-time-field">
-              <label for="nightEnd">Nachtperiode einde</label>
-              <div class="time-control">
-                <input id="nightEnd" type="text" name="nightEnd" data-time-picker readonly required>
-                <button class="time-picker-trigger" type="button" aria-label="Nachtperiode einde kiezen" title="Tijd kiezen">
-                  <span class="clock-icon" aria-hidden="true"></span>
-                </button>
-              </div>
-            </div>
-          </div>
+          </fieldset>
+
+          <fieldset class="settings-section settings-section-expenses">
+            <legend>Vergoedingen</legend>
+            <label><span>Km vergoeding</span><input type="number" name="kilometerRate" min="0" step="0.01" required></label>
+          </fieldset>
+
           <div class="settings-actions">
             <button type="button" id="save-settings">Instellingen opslaan</button>
             <p class="settings-status" id="settings-status" aria-live="polite"></p>
