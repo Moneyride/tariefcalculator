@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tariefcalculator</title>
+    <link rel="stylesheet" href="styles.css?v=20260717y">
+    <script src="calculator.js?v=20260717y" defer></script>
+    <script src="app.js?v=20260717y" defer></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="page-header">
+        <div>
+          <h1>Tariefcalculator</h1>
+        </div>
+      </header>
+
+      <section class="calculator-grid">
+        <form class="panel input-panel" id="calculator-form">
+          <div class="panel-header">
+            <h2>Invoer</h2>
+          </div>
+
+          <label>
+            <span>Datum</span>
+            <input type="date" name="date">
+          </label>
+
+          <div class="time-grid">
+            <div class="time-field">
+              <label for="startTime">Starttijd</label>
+              <div class="time-control">
+                <input id="startTime" type="text" name="startTime" value="08:00" data-time-picker readonly required>
+                <button class="time-picker-trigger" type="button" aria-label="Starttijd kiezen" title="Tijd kiezen">
+                  <span class="clock-icon" aria-hidden="true"></span>
+                </button>
+              </div>
+            </div>
+
+            <div class="time-field">
+              <label for="endTime">Eindtijd</label>
+              <div class="time-control">
+                <input id="endTime" type="text" name="endTime" value="18:00" data-time-picker readonly required>
+                <button class="time-picker-trigger" type="button" aria-label="Eindtijd kiezen" title="Tijd kiezen">
+                  <span class="clock-icon" aria-hidden="true"></span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <p class="notice" id="next-day-notice" hidden>
+            Eindtijd wordt geïnterpreteerd als de volgende kalenderdag.
+          </p>
+          <p class="notice stale-notice" id="calculation-status" hidden>
+            Wijzigingen nog niet berekend.
+          </p>
+
+          <div class="button-row">
+            <button type="button" id="recalculate">Berekenen</button>
+          </div>
+          <p class="copy-status" id="copy-status" aria-live="polite"></p>
+        </form>
+
+        <details class="panel settings-panel" id="settings-panel">
+        <summary>Instellingen</summary>
+        <form id="settings-form" class="settings-grid">
+          <label><span>Dagtarief</span><input type="number" name="dayRate" min="0" step="0.01" required></label>
+          <label class="checkbox-label half-day-setting">
+            <input type="checkbox" name="enableHalfDayUnder6Hours">
+            <span>Halve dag rekenen bij maximaal 6 uur werktijd</span>
+          </label>
+          <label>
+            <span>Werkdag tijden</span>
+            <select name="normalDayHours" required>
+              <option value="10">Gebaseerd op 10 uur</option>
+              <option value="12">Gebaseerd op 12 uur</option>
+            </select>
+          </label>
+          <div class="checkbox-stack">
+            <label class="checkbox-label">
+              <input type="checkbox" name="enableOvertime10To12">
+              <span>Overuren 10-12 uur werktijd (150%)</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="enableOvertimeFrom12">
+              <span>Overuren vanaf 12 uur werktijd (200%)</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="enableOvertimeFrom14">
+              <span>Overuren vanaf 14 uur werktijd (250%)</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="enableNightTariff">
+              <span>Nacht tarief</span>
+            </label>
+          </div>
+          <div class="night-settings" id="night-time-settings">
+            <div class="time-field settings-time-field">
+              <label for="nightStart">Nachtperiode start</label>
+              <div class="time-control">
+                <input id="nightStart" type="text" name="nightStart" data-time-picker readonly required>
+                <button class="time-picker-trigger" type="button" aria-label="Nachtperiode start kiezen" title="Tijd kiezen">
+                  <span class="clock-icon" aria-hidden="true"></span>
+                </button>
+              </div>
+            </div>
+            <div class="time-field settings-time-field">
+              <label for="nightEnd">Nachtperiode einde</label>
+              <div class="time-control">
+                <input id="nightEnd" type="text" name="nightEnd" data-time-picker readonly required>
+                <button class="time-picker-trigger" type="button" aria-label="Nachtperiode einde kiezen" title="Tijd kiezen">
+                  <span class="clock-icon" aria-hidden="true"></span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="settings-actions">
+            <button type="button" id="save-settings">Instellingen opslaan</button>
+            <p class="settings-status" id="settings-status" aria-live="polite"></p>
+          </div>
+        </form>
+      </details>
+
+        <section class="panel result-panel" aria-live="polite">
+          <div class="panel-header">
+            <h2>Berekening</h2>
+          </div>
+
+          <dl class="result-list">
+            <div><dt>Totaal gewerkte uren</dt><dd data-result="totalHours">0 uur</dd></div>
+            <div><dt>Aantal overuren</dt><dd data-result="overtimeHours">0 uur</dd></div>
+            <div><dt>Overuren 10-12 uur werktijd (150%)</dt><dd data-result="overtime10To12Hours">0 uur</dd></div>
+            <div><dt>Overuren vanaf 12 uur werktijd (200%)</dt><dd data-result="overtimeFrom12Hours">0 uur</dd></div>
+            <div><dt>Overuren vanaf 14 uur werktijd (250%)</dt><dd data-result="overtimeFrom14Hours">0 uur</dd></div>
+            <div><dt>Nachturen totaal</dt><dd data-result="nightHours">0 uur</dd></div>
+            <div><dt>Overlap nacht/overuren</dt><dd data-result="nightOvertimeHours">0 uur</dd></div>
+            <div><dt>Pure nachturen (geen overuren)</dt><dd data-result="pureNightHours">0 uur</dd></div>
+            <div><dt>Basistarief</dt><dd data-result="baseAmount">€ 0,00</dd></div>
+            <div><dt>Overurenbedrag</dt><dd data-result="overtimeAmount">€ 0,00</dd></div>
+            <div><dt>Nachtbedrag</dt><dd data-result="nightAmount">€ 0,00</dd></div>
+            <div><dt>Totaal exclusief btw</dt><dd data-result="subtotalExVat">€ 0,00</dd></div>
+            <div><dt>Btw</dt><dd data-result="vatAmount">€ 0,00</dd></div>
+            <div class="total"><dt>Factuurbedrag inclusief btw</dt><dd data-result="totalIncVat">€ 0,00</dd></div>
+          </dl>
+        </section>
+      </section>
+
+      <div class="footer-actions">
+        <button type="button" id="copy-summary">Kopiëren voor factuur</button>
+        <button class="secondary" type="button" id="save-pdf">Pdf opslaan</button>
+      </div>
+      <p class="print-footer">Powered by Reichgelt Media Group</p>
+    </main>
+  </body>
+</html>

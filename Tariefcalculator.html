@@ -1,0 +1,1390 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tariefcalculator</title>
+    <style>
+:root {
+  color-scheme: light;
+  --bg: #f4f7f9;
+  --panel: #ffffff;
+  --line: #d7e2ea;
+  --head: #d9edf8;
+  --head-strong: #bfddea;
+  --text: #17313f;
+  --muted: #5b707c;
+  --accent: #1b6f98;
+  --accent-dark: #155675;
+  --warning: #7a4a00;
+  --warning-bg: #fff5d7;
+  --shadow: 0 10px 28px rgba(24, 58, 74, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.app-shell {
+  width: min(1080px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 28px 0;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  background: var(--head);
+  border: 1px solid var(--head-strong);
+  border-radius: 8px 8px 0 0;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+h1,
+h2 {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+h1 {
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+}
+
+h2 {
+  font-size: 1rem;
+}
+
+.calculator-grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.panel-header {
+  padding: 12px 16px;
+  background: var(--head);
+  border-bottom: 1px solid var(--line);
+  border-radius: 8px 8px 0 0;
+}
+
+.input-panel {
+  padding-bottom: 16px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.time-field {
+  display: grid;
+}
+
+.time-field label {
+  padding: 14px 16px 0;
+}
+
+.time-control {
+  position: relative;
+  display: flex;
+  margin: 6px 16px 0;
+  touch-action: manipulation;
+}
+
+input,
+select {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid #b8c8d1;
+  border-radius: 6px;
+  color: var(--text);
+  background: #fff;
+}
+
+input[readonly] {
+  cursor: pointer;
+}
+
+input:focus {
+  outline: 3px solid rgba(27, 111, 152, 0.18);
+  border-color: var(--accent);
+}
+
+.time-control input[data-time-picker] {
+  display: block;
+  padding-right: 48px;
+  border-left: 1px solid #b8c8d1;
+  border-right: 1px solid #b8c8d1;
+  border-radius: 6px;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+  font-weight: 400;
+}
+
+.time-picker-trigger {
+  display: block;
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 42px;
+  min-height: 40px;
+  padding: 0;
+  border-color: transparent;
+  border-left: 1px solid #d7e2ea;
+  border-radius: 0 5px 5px 0;
+  background: #f8fbfc;
+  color: var(--accent);
+  touch-action: manipulation;
+}
+
+.time-picker-trigger:hover {
+  background: #eaf4f8;
+}
+
+.clock-icon {
+  position: relative;
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.clock-icon::before,
+.clock-icon::after {
+  position: absolute;
+  left: 7px;
+  bottom: 7px;
+  width: 2px;
+  content: "";
+  background: currentColor;
+  transform-origin: bottom center;
+}
+
+.clock-icon::before {
+  height: 6px;
+}
+
+.clock-icon::after {
+  height: 5px;
+  transform: rotate(90deg);
+}
+
+.time-picker {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: min(230px, calc(100vw - 48px));
+  max-height: 260px;
+  overflow: hidden;
+  border: 1px solid #9fb4c0;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(24, 58, 74, 0.18);
+  touch-action: manipulation;
+}
+
+.time-picker[hidden] {
+  display: none;
+}
+
+.time-picker-column {
+  display: grid;
+  gap: 2px;
+  max-height: 260px;
+  padding: 6px;
+  overflow-y: auto;
+}
+
+.time-picker-column + .time-picker-column {
+  border-left: 1px solid #edf2f5;
+}
+
+.time-picker-column button {
+  min-height: 38px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: #fff;
+  color: #1d2f39;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  touch-action: manipulation;
+}
+
+.time-picker-column button:hover,
+.time-picker-column button.active {
+  background: #1578d4;
+  color: #fff;
+}
+
+.time-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+.notice {
+  margin: 14px 16px 0;
+  padding: 10px 12px;
+  border: 1px solid #f1d17a;
+  border-radius: 6px;
+  background: var(--warning-bg);
+  color: var(--warning);
+  font-weight: 700;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 16px 16px 0;
+}
+
+button {
+  min-height: 42px;
+  padding: 9px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+button:hover {
+  background: var(--accent-dark);
+}
+
+button.secondary {
+  background: #fff;
+  color: var(--accent);
+}
+
+button.secondary:hover {
+  background: #eaf4f8;
+}
+
+.copy-status {
+  min-height: 1.3em;
+  margin: 8px 16px 0;
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+.result-list {
+  margin: 0;
+}
+
+.result-list div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: 16px;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid #edf2f5;
+}
+
+.result-list div:nth-child(even) {
+  background: #f8fbfc;
+}
+
+.result-list div:last-child {
+  border-bottom: 0;
+}
+
+dt {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  text-align: right;
+}
+
+.result-list .total {
+  background: var(--head);
+  font-size: 1.05rem;
+}
+
+.settings-panel {
+  overflow: visible;
+}
+
+summary {
+  padding: 14px 16px;
+  background: var(--head);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 0 8px;
+  padding-bottom: 16px;
+}
+
+.checkbox-stack,
+.night-settings {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 0 8px;
+}
+
+.night-settings[hidden] {
+  display: none;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 14px 16px 0;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.checkbox-label input {
+  width: 18px;
+  min-height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.checkbox-label span {
+  line-height: 1.25;
+}
+
+.half-day-setting {
+  grid-column: 1 / -1;
+}
+
+.settings-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  grid-column: 1 / -1;
+  padding: 16px;
+}
+
+.settings-status {
+  min-height: 1.3em;
+  margin: 0;
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+.footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.print-footer {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .app-shell {
+    width: min(100% - 16px, 1080px);
+    padding: 10px 0 20px;
+  }
+
+  .page-header,
+  .time-grid,
+  .settings-grid,
+  .checkbox-stack,
+  .night-settings {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header {
+    display: grid;
+    border-radius: 8px;
+  }
+
+  .result-list div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  dd {
+    text-align: left;
+  }
+
+  .footer-actions {
+    justify-content: stretch;
+  }
+
+  .footer-actions button {
+    width: 100%;
+  }
+
+  label,
+  .time-field label {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .time-control {
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+
+  .button-row {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 10mm;
+}
+
+@media print {
+  :root {
+    --head: #d9edf8;
+    --line: #b9ccd6;
+    --text: #17313f;
+    --muted: #425866;
+  }
+
+  * {
+    box-shadow: none !important;
+  }
+
+  html,
+  body {
+    background: #fff;
+    font-size: 9pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .app-shell {
+    width: 100%;
+    padding: 0;
+  }
+
+  .page-header {
+    padding: 8mm 8mm 6mm;
+    border-radius: 0;
+    border-color: var(--line);
+  }
+
+  .eyebrow {
+    font-size: 7pt;
+  }
+
+  h1 {
+    font-size: 18pt;
+  }
+
+  h2,
+  summary {
+    font-size: 10pt;
+  }
+
+  .calculator-grid {
+    display: grid;
+    grid-template-columns: 0.8fr 1.2fr;
+    gap: 4mm;
+    margin-top: 4mm;
+  }
+
+  .input-panel,
+  .settings-panel,
+  .result-panel {
+    break-inside: avoid;
+  }
+
+  .result-panel {
+    grid-column: 1 / -1;
+  }
+
+  .panel {
+    border-radius: 0;
+  }
+
+  .panel-header,
+  summary {
+    padding: 3mm 4mm;
+    border-radius: 0;
+  }
+
+  .input-panel {
+    padding-bottom: 3mm;
+  }
+
+  label,
+  .time-field label {
+    padding: 2.5mm 4mm 0;
+    gap: 1mm;
+    font-size: 8pt;
+  }
+
+  .time-control {
+    margin: 1mm 4mm 0;
+  }
+
+  input,
+  select {
+    min-height: 8mm;
+    padding: 1.5mm 2mm;
+    border-color: #cbd8df;
+    border-radius: 0;
+    font-size: 9pt;
+  }
+
+  .time-grid,
+  .settings-grid,
+  .checkbox-stack,
+  .night-settings {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .settings-grid {
+    padding-bottom: 2mm;
+  }
+
+  .checkbox-label {
+    min-height: auto;
+    padding: 2.2mm 4mm 0;
+    gap: 2mm;
+    font-size: 8pt;
+  }
+
+  .checkbox-label input {
+    width: 4mm;
+    min-height: 4mm;
+  }
+
+  .settings-actions,
+  .button-row,
+  .footer-actions,
+  .copy-status,
+  .settings-status,
+  .time-picker,
+  .time-picker-trigger,
+  .notice[hidden],
+  #calculation-status {
+    display: none;
+  }
+
+  .time-control input {
+    padding-right: 2mm;
+  }
+
+  .notice:not([hidden]) {
+    margin: 2mm 4mm 0;
+    padding: 2mm;
+    border-radius: 0;
+    font-size: 8pt;
+  }
+
+  .result-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-top: 1px solid #edf2f5;
+  }
+
+  .result-list div {
+    min-height: 8.5mm;
+    padding: 2mm 4mm;
+    border-bottom: 1px solid #edf2f5;
+  }
+
+  .result-list .total {
+    grid-column: 1 / -1;
+    min-height: 10mm;
+    font-size: 11pt;
+  }
+
+  dt {
+    font-size: 8pt;
+  }
+
+  dd {
+    font-size: 10pt;
+  }
+
+  .print-footer {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    display: block;
+    margin: 0;
+    color: #6b7f89;
+    font-size: 6pt;
+    letter-spacing: 0;
+  }
+}
+
+</style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="page-header">
+        <div>
+          <h1>Tariefcalculator</h1>
+        </div>
+      </header>
+
+      <section class="calculator-grid">
+        <form class="panel input-panel" id="calculator-form">
+          <div class="panel-header">
+            <h2>Invoer</h2>
+          </div>
+
+          <label>
+            <span>Datum</span>
+            <input type="date" name="date">
+          </label>
+
+          <div class="time-grid">
+            <div class="time-field">
+              <label for="startTime">Starttijd</label>
+              <div class="time-control">
+                <input id="startTime" type="text" name="startTime" value="08:00" data-time-picker readonly required>
+                <button class="time-picker-trigger" type="button" aria-label="Starttijd kiezen" title="Tijd kiezen">
+                  <span class="clock-icon" aria-hidden="true"></span>
+                </button>
+              </div>
+            </div>
+
+            <div class="time-field">
+              <label for="endTime">Eindtijd</label>
+              <div class="time-control">
+                <input id="endTime" type="text" name="endTime" value="18:00" data-time-picker readonly required>
+                <button class="time-picker-trigger" type="button" aria-label="Eindtijd kiezen" title="Tijd kiezen">
+                  <span class="clock-icon" aria-hidden="true"></span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <p class="notice" id="next-day-notice" hidden>
+            Eindtijd wordt geïnterpreteerd als de volgende kalenderdag.
+          </p>
+          <p class="notice stale-notice" id="calculation-status" hidden>
+            Wijzigingen nog niet berekend.
+          </p>
+
+          <div class="button-row">
+            <button type="button" id="recalculate">Berekenen</button>
+          </div>
+          <p class="copy-status" id="copy-status" aria-live="polite"></p>
+        </form>
+
+        <details class="panel settings-panel" id="settings-panel">
+        <summary>Instellingen</summary>
+        <form id="settings-form" class="settings-grid">
+          <label><span>Dagtarief</span><input type="number" name="dayRate" min="0" step="0.01" required></label>
+          <label class="checkbox-label half-day-setting">
+            <input type="checkbox" name="enableHalfDayUnder6Hours">
+            <span>Halve dag rekenen bij maximaal 6 uur werktijd</span>
+          </label>
+          <label>
+            <span>Werkdag tijden</span>
+            <select name="normalDayHours" required>
+              <option value="10">Gebaseerd op 10 uur</option>
+              <option value="12">Gebaseerd op 12 uur</option>
+            </select>
+          </label>
+          <div class="checkbox-stack">
+            <label class="checkbox-label">
+              <input type="checkbox" name="enableOvertime10To12">
+              <span>Overuren 10-12 uur werktijd (150%)</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="enableOvertimeFrom12">
+              <span>Overuren vanaf 12 uur werktijd (200%)</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="enableOvertimeFrom14">
+              <span>Overuren vanaf 14 uur werktijd (250%)</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="enableNightTariff">
+              <span>Nacht tarief</span>
+            </label>
+          </div>
+          <div class="night-settings" id="night-time-settings">
+            <div class="time-field settings-time-field">
+              <label for="nightStart">Nachtperiode start</label>
+              <div class="time-control">
+                <input id="nightStart" type="text" name="nightStart" data-time-picker readonly required>
+                <button class="time-picker-trigger" type="button" aria-label="Nachtperiode start kiezen" title="Tijd kiezen">
+                  <span class="clock-icon" aria-hidden="true"></span>
+                </button>
+              </div>
+            </div>
+            <div class="time-field settings-time-field">
+              <label for="nightEnd">Nachtperiode einde</label>
+              <div class="time-control">
+                <input id="nightEnd" type="text" name="nightEnd" data-time-picker readonly required>
+                <button class="time-picker-trigger" type="button" aria-label="Nachtperiode einde kiezen" title="Tijd kiezen">
+                  <span class="clock-icon" aria-hidden="true"></span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="settings-actions">
+            <button type="button" id="save-settings">Instellingen opslaan</button>
+            <p class="settings-status" id="settings-status" aria-live="polite"></p>
+          </div>
+        </form>
+      </details>
+
+        <section class="panel result-panel" aria-live="polite">
+          <div class="panel-header">
+            <h2>Berekening</h2>
+          </div>
+
+          <dl class="result-list">
+            <div><dt>Totaal gewerkte uren</dt><dd data-result="totalHours">0 uur</dd></div>
+            <div><dt>Aantal overuren</dt><dd data-result="overtimeHours">0 uur</dd></div>
+            <div><dt>Overuren 10-12 uur werktijd (150%)</dt><dd data-result="overtime10To12Hours">0 uur</dd></div>
+            <div><dt>Overuren vanaf 12 uur werktijd (200%)</dt><dd data-result="overtimeFrom12Hours">0 uur</dd></div>
+            <div><dt>Overuren vanaf 14 uur werktijd (250%)</dt><dd data-result="overtimeFrom14Hours">0 uur</dd></div>
+            <div><dt>Nachturen totaal</dt><dd data-result="nightHours">0 uur</dd></div>
+            <div><dt>Overlap nacht/overuren</dt><dd data-result="nightOvertimeHours">0 uur</dd></div>
+            <div><dt>Pure nachturen (geen overuren)</dt><dd data-result="pureNightHours">0 uur</dd></div>
+            <div><dt>Basistarief</dt><dd data-result="baseAmount">€ 0,00</dd></div>
+            <div><dt>Overurenbedrag</dt><dd data-result="overtimeAmount">€ 0,00</dd></div>
+            <div><dt>Nachtbedrag</dt><dd data-result="nightAmount">€ 0,00</dd></div>
+            <div><dt>Totaal exclusief btw</dt><dd data-result="subtotalExVat">€ 0,00</dd></div>
+            <div><dt>Btw</dt><dd data-result="vatAmount">€ 0,00</dd></div>
+            <div class="total"><dt>Factuurbedrag inclusief btw</dt><dd data-result="totalIncVat">€ 0,00</dd></div>
+          </dl>
+        </section>
+      </section>
+
+      <div class="footer-actions">
+        <button type="button" id="copy-summary">Kopiëren voor factuur</button>
+        <button class="secondary" type="button" id="save-pdf">Pdf opslaan</button>
+      </div>
+      <p class="print-footer">Powered by Reichgelt Media Group</p>
+    </main>
+    <script>
+(() => {
+const DEFAULT_SETTINGS = {
+  dayRate: 450,
+  normalDayHours: 10,
+  vatPercent: 21,
+  enableHalfDayUnder6Hours: false,
+  enableOvertime10To12: true,
+  enableOvertimeFrom12: true,
+  enableOvertimeFrom14: false,
+  enableNightTariff: true,
+  pureNightFactor: 2,
+  nightOverlapSurchargeFactor: 1,
+  nightStart: "00:00",
+  nightEnd: "06:00",
+  nightRoundingMinutes: 15
+};
+
+const MINUTES_PER_DAY = 24 * 60;
+const MINUTES_PER_HOUR = 60;
+const OVERTIME_10_TO_12_START = 10;
+const OVERTIME_12_PLUS_START = 12;
+const OVERTIME_14_PLUS_START = 14;
+const OVERTIME_10_TO_12_FACTOR = 1.5;
+const OVERTIME_12_PLUS_FACTOR = 2;
+const OVERTIME_14_PLUS_FACTOR = 2.5;
+
+function parseTimeToMinutes(time) {
+  if (!/^\d{2}:\d{2}$/.test(time)) {
+    throw new Error("Gebruik een tijd in het formaat uu:mm.");
+  }
+
+  const [hours, minutes] = time.split(":").map(Number);
+  if (hours > 23 || minutes > 59) {
+    throw new Error("Gebruik een geldige tijd.");
+  }
+
+  return hours * MINUTES_PER_HOUR + minutes;
+}
+
+function minutesToHours(minutes) {
+  return minutes / MINUTES_PER_HOUR;
+}
+
+function roundUpToInterval(minutes, intervalMinutes) {
+  if (minutes <= 0) return 0;
+  return Math.ceil(minutes / intervalMinutes) * intervalMinutes;
+}
+
+function getWorkInterval(startTime, endTime) {
+  const start = parseTimeToMinutes(startTime);
+  let end = parseTimeToMinutes(endTime);
+  let endsNextDay = false;
+
+  if (end <= start) {
+    end += MINUTES_PER_DAY;
+    endsNextDay = true;
+  }
+
+  return {
+    start,
+    end,
+    totalMinutes: end - start,
+    endsNextDay
+  };
+}
+
+function getOverlapMinutes(aStart, aEnd, bStart, bEnd) {
+  return Math.max(0, Math.min(aEnd, bEnd) - Math.max(aStart, bStart));
+}
+
+function getNightWindows(interval, settings) {
+  const nightStart = parseTimeToMinutes(settings.nightStart);
+  const nightEnd = parseTimeToMinutes(settings.nightEnd);
+  const windows = [];
+  const startsNextDay = nightEnd <= nightStart;
+
+  for (let day = -1; day <= 1; day += 1) {
+    const base = day * MINUTES_PER_DAY;
+    const start = base + nightStart;
+    const end = base + nightEnd + (startsNextDay ? MINUTES_PER_DAY : 0);
+
+    if (end > interval.start && start < interval.end) {
+      windows.push({ start, end });
+    }
+  }
+
+  return windows;
+}
+
+function getTotalOverlapWithWindows(intervalStart, intervalEnd, windows) {
+  return windows.reduce(
+    (total, window) => total + getOverlapMinutes(intervalStart, intervalEnd, window.start, window.end),
+    0
+  );
+}
+
+function getWorkedHoursInRange(totalHours, startHour, endHour = Infinity) {
+  return Math.max(0, Math.min(totalHours, endHour) - startHour);
+}
+
+function calculateOvertimeAmount(totalHours, hourlyRate, settings) {
+  const overtime10To12Hours = settings.enableOvertime10To12
+    ? getWorkedHoursInRange(totalHours, Math.max(settings.normalDayHours, OVERTIME_10_TO_12_START), OVERTIME_12_PLUS_START)
+    : 0;
+  const overtimeFrom12Hours = settings.enableOvertimeFrom12
+    ? getWorkedHoursInRange(
+        totalHours,
+        Math.max(settings.normalDayHours, OVERTIME_12_PLUS_START),
+        settings.enableOvertimeFrom14 ? OVERTIME_14_PLUS_START : Infinity
+      )
+    : 0;
+  const overtimeFrom14Hours = settings.enableOvertimeFrom14
+    ? getWorkedHoursInRange(totalHours, Math.max(settings.normalDayHours, OVERTIME_14_PLUS_START))
+    : 0;
+
+  return {
+    overtime10To12Hours,
+    overtimeFrom12Hours,
+    overtimeFrom14Hours,
+    overtime10To12Amount: overtime10To12Hours * hourlyRate * OVERTIME_10_TO_12_FACTOR,
+    overtimeFrom12Amount: overtimeFrom12Hours * hourlyRate * OVERTIME_12_PLUS_FACTOR,
+    overtimeFrom14Amount: overtimeFrom14Hours * hourlyRate * OVERTIME_14_PLUS_FACTOR
+  };
+}
+
+function calculateTariff(input, customSettings = {}) {
+  const settings = { ...DEFAULT_SETTINGS, ...customSettings };
+  const interval = getWorkInterval(input.startTime, input.endTime);
+  const hourlyRate = settings.dayRate / settings.normalDayHours;
+  const totalHours = minutesToHours(interval.totalMinutes);
+  const baseAmount = settings.enableHalfDayUnder6Hours && totalHours <= 6 ? settings.dayRate / 2 : settings.dayRate;
+
+  const normalMinutes = settings.normalDayHours * MINUTES_PER_HOUR;
+  const overtimeStart = interval.start + normalMinutes;
+  const overtimeMinutes = Math.max(0, interval.end - overtimeStart);
+  const overtimeHours = minutesToHours(overtimeMinutes);
+
+  const nightWindows = getNightWindows(interval, settings);
+  const rawNightMinutes = getTotalOverlapWithWindows(interval.start, interval.end, nightWindows);
+  const roundedNightMinutes = roundUpToInterval(rawNightMinutes, settings.nightRoundingMinutes);
+
+  const rawNightOvertimeMinutes =
+    overtimeMinutes > 0 ? getTotalOverlapWithWindows(overtimeStart, interval.end, nightWindows) : 0;
+  const roundedNightOvertimeMinutes = Math.min(
+    roundedNightMinutes,
+    roundUpToInterval(rawNightOvertimeMinutes, settings.nightRoundingMinutes)
+  );
+
+  const pureNightMinutes = Math.max(0, roundedNightMinutes - roundedNightOvertimeMinutes);
+  const nightHours = minutesToHours(roundedNightMinutes);
+  const nightOvertimeHours = minutesToHours(roundedNightOvertimeMinutes);
+  const pureNightHours = minutesToHours(pureNightMinutes);
+
+  const overtime = calculateOvertimeAmount(totalHours, hourlyRate, settings);
+  const overtimeAmount =
+    overtime.overtime10To12Amount + overtime.overtimeFrom12Amount + overtime.overtimeFrom14Amount;
+  const nightTariffEnabled = Boolean(settings.enableNightTariff);
+  const pureNightAmount = pureNightHours * hourlyRate * settings.pureNightFactor;
+  const overlapNightAmount = nightOvertimeHours * hourlyRate * settings.nightOverlapSurchargeFactor;
+  const nightAmount = nightTariffEnabled ? pureNightAmount + overlapNightAmount : 0;
+
+  const subtotalExVat = baseAmount + overtimeAmount + nightAmount;
+  const vatAmount = subtotalExVat * (settings.vatPercent / 100);
+  const totalIncVat = subtotalExVat + vatAmount;
+
+  return {
+    settings,
+    interval,
+    hourlyRate,
+    totalHours,
+    overtimeHours,
+    overtime10To12Hours: overtime.overtime10To12Hours,
+    overtimeFrom12Hours: overtime.overtimeFrom12Hours,
+    overtimeFrom14Hours: overtime.overtimeFrom14Hours,
+    firstOvertimeHours: overtime.overtime10To12Hours,
+    nextOvertimeHours: overtime.overtimeFrom12Hours + overtime.overtimeFrom14Hours,
+    nightHours: nightTariffEnabled ? nightHours : 0,
+    nightOvertimeHours: nightTariffEnabled ? nightOvertimeHours : 0,
+    pureNightHours: nightTariffEnabled ? pureNightHours : 0,
+    baseAmount,
+    overtime10To12Amount: overtime.overtime10To12Amount,
+    overtimeFrom12Amount: overtime.overtimeFrom12Amount,
+    overtimeFrom14Amount: overtime.overtimeFrom14Amount,
+    firstOvertimeAmount: overtime.overtime10To12Amount,
+    nextOvertimeAmount: overtime.overtimeFrom12Amount + overtime.overtimeFrom14Amount,
+    overtimeAmount,
+    pureNightAmount: nightTariffEnabled ? pureNightAmount : 0,
+    overlapNightAmount: nightTariffEnabled ? overlapNightAmount : 0,
+    nightAmount,
+    subtotalExVat,
+    vatAmount,
+    totalIncVat,
+    endsNextDay: interval.endsNextDay
+  };
+}
+
+globalThis.TariffCalculator = {
+  DEFAULT_SETTINGS,
+  calculateOvertimeAmount,
+  calculateTariff,
+  getWorkInterval,
+  minutesToHours,
+  parseTimeToMinutes,
+  roundUpToInterval
+};
+})();
+
+  </script>
+  <script>
+const { DEFAULT_SETTINGS, calculateTariff } = globalThis.TariffCalculator;
+
+const SETTINGS_KEY = "cameraTariefCalculatorSettings";
+const HOURS = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, "0"));
+const QUARTER_HOURS = ["00", "15", "30", "45"];
+
+const form = document.querySelector("#calculator-form");
+const settingsForm = document.querySelector("#settings-form");
+const nextDayNotice = document.querySelector("#next-day-notice");
+const calculationStatus = document.querySelector("#calculation-status");
+const recalculateButton = document.querySelector("#recalculate");
+const copyButton = document.querySelector("#copy-summary");
+const pdfButton = document.querySelector("#save-pdf");
+const saveSettingsButton = document.querySelector("#save-settings");
+const copyStatus = document.querySelector("#copy-status");
+const settingsStatus = document.querySelector("#settings-status");
+const details = document.querySelector("#settings-panel");
+
+const euroFormatter = new Intl.NumberFormat("nl-NL", {
+  style: "currency",
+  currency: "EUR"
+});
+
+const numberFormatter = new Intl.NumberFormat("nl-NL", {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2
+});
+
+let calculationIsStale = false;
+let settingsWasOpenBeforePrint = false;
+
+function getSavedSettings() {
+  try {
+    return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}") };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+function saveSettings(settings) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function readNumber(formData, name) {
+  return Number(String(formData.get(name)).replace(",", "."));
+}
+
+function readCheckbox(formData, name) {
+  return formData.get(name) === "on";
+}
+
+function getSettingsFromForm() {
+  const formData = new FormData(settingsForm);
+  return {
+    dayRate: readNumber(formData, "dayRate"),
+    normalDayHours: readNumber(formData, "normalDayHours"),
+    vatPercent: DEFAULT_SETTINGS.vatPercent,
+    enableHalfDayUnder6Hours: readCheckbox(formData, "enableHalfDayUnder6Hours"),
+    enableOvertime10To12: readCheckbox(formData, "enableOvertime10To12"),
+    enableOvertimeFrom12: readCheckbox(formData, "enableOvertimeFrom12"),
+    enableOvertimeFrom14: readCheckbox(formData, "enableOvertimeFrom14"),
+    enableNightTariff: readCheckbox(formData, "enableNightTariff"),
+    pureNightFactor: DEFAULT_SETTINGS.pureNightFactor,
+    nightOverlapSurchargeFactor: DEFAULT_SETTINGS.nightOverlapSurchargeFactor,
+    nightStart: formData.get("nightStart"),
+    nightEnd: formData.get("nightEnd"),
+    nightRoundingMinutes: DEFAULT_SETTINGS.nightRoundingMinutes
+  };
+}
+
+function populateSettings(settings) {
+  Object.entries(settings).forEach(([key, value]) => {
+    const field = settingsForm.elements.namedItem(key);
+    if (!field) return;
+    if (field.type === "checkbox") {
+      field.checked = Boolean(value);
+    } else {
+      field.value = value;
+    }
+  });
+}
+
+function formatHours(value) {
+  if (!Number.isFinite(value) || value <= 0) return "-";
+  return `${numberFormatter.format(value)} uur`;
+}
+
+function formatEuro(value) {
+  if (!Number.isFinite(value) || value <= 0) return "-";
+  return euroFormatter.format(value);
+}
+
+function setResult(name, value, formatter = formatHours) {
+  const el = document.querySelector(`[data-result="${name}"]`);
+  if (el) el.textContent = formatter(value);
+}
+
+function buildSummary(result) {
+  const date = form.elements.namedItem("date").value;
+  const startTime = form.elements.namedItem("startTime").value;
+  const endTime = form.elements.namedItem("endTime").value;
+  const lines = [];
+
+  if (date) {
+    lines.push(`Datum: ${date}`);
+  }
+
+  lines.push(`Tijden: ${startTime} tot ${endTime}${result.endsNextDay ? " (volgende dag)" : ""}`);
+  lines.push(`Totaal gewerkt: ${formatHours(result.totalHours)}`);
+
+  if (result.overtimeHours > 0) {
+    lines.push(`Overuren: ${formatHours(result.overtimeHours)}`);
+  }
+
+  if (result.nightHours > 0) {
+    lines.push(`Nachturen: ${formatHours(result.nightHours)}`);
+  }
+
+  lines.push(`Exclusief btw: ${euroFormatter.format(result.subtotalExVat)}`);
+
+  return lines.join("\n");
+}
+
+function updateCalculation() {
+  if (!form.reportValidity() || !settingsForm.reportValidity()) return;
+
+  const settings = getSettingsFromForm();
+
+  const result = calculateTariff(
+    {
+      startTime: form.elements.namedItem("startTime").value,
+      endTime: form.elements.namedItem("endTime").value
+    },
+    settings
+  );
+
+  setResult("totalHours", result.totalHours);
+  setResult("overtimeHours", result.overtimeHours);
+  setResult("overtime10To12Hours", result.overtime10To12Hours);
+  setResult("overtimeFrom12Hours", result.overtimeFrom12Hours);
+  setResult("overtimeFrom14Hours", result.overtimeFrom14Hours);
+  setResult("nightHours", result.nightHours);
+  setResult("nightOvertimeHours", result.nightOvertimeHours);
+  setResult("pureNightHours", result.pureNightHours);
+  setResult("baseAmount", result.baseAmount, formatEuro);
+  setResult("overtimeAmount", result.overtimeAmount, formatEuro);
+  setResult("nightAmount", result.nightAmount, formatEuro);
+  setResult("subtotalExVat", result.subtotalExVat, formatEuro);
+  setResult("vatAmount", result.vatAmount, formatEuro);
+  setResult("totalIncVat", result.totalIncVat, formatEuro);
+
+  nextDayNotice.hidden = !result.endsNextDay;
+  form.dataset.summary = buildSummary(result);
+  calculationIsStale = false;
+  calculationStatus.hidden = true;
+}
+
+function saveCurrentSettings() {
+  if (!settingsForm.reportValidity()) return;
+
+  saveSettings(getSettingsFromForm());
+  settingsStatus.textContent = "Instellingen opgeslagen.";
+  setTimeout(() => {
+    settingsStatus.textContent = "";
+  }, 2500);
+}
+
+function updateNightSettingsVisibility() {
+  const nightEnabled = settingsForm.elements.namedItem("enableNightTariff").checked;
+  document.querySelector("#night-time-settings").hidden = !nightEnabled;
+}
+
+function markCalculationStale() {
+  if (!form.dataset.summary) return;
+  calculationIsStale = true;
+  calculationStatus.hidden = false;
+}
+
+async function copySummary() {
+  if (calculationIsStale) {
+    copyStatus.textContent = "Bereken eerst opnieuw.";
+    setTimeout(() => {
+      copyStatus.textContent = "";
+    }, 2000);
+    return;
+  }
+
+  const summary = form.dataset.summary || "";
+
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(summary);
+    } else {
+      copyWithTextarea(summary);
+    }
+
+    copyStatus.textContent = "Gekopieerd";
+  } catch {
+    try {
+      copyWithTextarea(summary);
+      copyStatus.textContent = "Gekopieerd";
+    } catch {
+      copyStatus.textContent = "Kopiëren is niet toegestaan door de browser.";
+    }
+  }
+
+  setTimeout(() => {
+    copyStatus.textContent = "";
+  }, 2000);
+}
+
+function copyWithTextarea(text) {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.top = "0";
+  textarea.style.left = "-9999px";
+  document.body.append(textarea);
+  textarea.select();
+
+  const copied = document.execCommand("copy");
+  textarea.remove();
+
+  if (!copied) {
+    throw new Error("Kopiëren mislukt.");
+  }
+}
+
+function getTimeParts(value) {
+  const [hour = "00", minute = "00"] = String(value).split(":");
+  return {
+    hour: HOURS.includes(hour) ? hour : "00",
+    minute: QUARTER_HOURS.includes(minute) ? minute : "00"
+  };
+}
+
+function setTimeValue(field, hour, minute) {
+  field.value = `${hour}:${minute}`;
+  field.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function closeTimePickers(exceptPicker) {
+  document.querySelectorAll(".time-picker").forEach((picker) => {
+    if (picker !== exceptPicker) picker.hidden = true;
+  });
+}
+
+function renderTimePicker(field, picker) {
+  const { hour: selectedHour, minute: selectedMinute } = getTimeParts(field.value);
+  const hourColumn = picker.querySelector("[data-time-column='hours']");
+  const minuteColumn = picker.querySelector("[data-time-column='minutes']");
+
+  hourColumn.replaceChildren(
+    ...HOURS.map((hour) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = hour;
+      button.dataset.timePart = "hour";
+      button.dataset.timeValue = hour;
+      button.className = hour === selectedHour ? "active" : "";
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        setTimeValue(field, hour, getTimeParts(field.value).minute);
+        renderTimePicker(field, picker);
+      });
+      return button;
+    })
+  );
+
+  minuteColumn.replaceChildren(
+    ...QUARTER_HOURS.map((minute) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = minute;
+      button.dataset.timePart = "minute";
+      button.dataset.timeValue = minute;
+      button.className = minute === selectedMinute ? "active" : "";
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        setTimeValue(field, getTimeParts(field.value).hour, minute);
+        picker.hidden = true;
+      });
+      return button;
+    })
+  );
+}
+
+function setupTimePicker(field) {
+  const control = field.closest(".time-control");
+  const trigger = control.querySelector(".time-picker-trigger");
+  const picker = document.createElement("div");
+  picker.className = "time-picker";
+  picker.hidden = true;
+  picker.innerHTML = `
+    <div class="time-picker-column" data-time-column="hours" aria-label="Uren"></div>
+    <div class="time-picker-column" data-time-column="minutes" aria-label="Minuten"></div>
+  `;
+  control.append(picker);
+
+  picker.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
+  picker.addEventListener("touchstart", (event) => {
+    event.stopPropagation();
+  }, { passive: true });
+
+  const openPicker = (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    renderTimePicker(field, picker);
+    closeTimePickers(picker);
+    picker.hidden = false;
+  };
+
+  field.addEventListener("click", openPicker);
+  trigger.addEventListener("click", openPicker);
+  field.addEventListener("touchend", openPicker);
+  trigger.addEventListener("touchend", openPicker);
+}
+
+populateSettings(getSavedSettings());
+updateCalculation();
+updateNightSettingsVisibility();
+
+document.querySelectorAll("[data-time-picker]").forEach(setupTimePicker);
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".time-control")) closeTimePickers();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeTimePickers();
+});
+
+form.addEventListener("input", markCalculationStale);
+settingsForm.addEventListener("input", markCalculationStale);
+settingsForm.addEventListener("change", () => {
+  updateNightSettingsVisibility();
+  markCalculationStale();
+});
+recalculateButton.addEventListener("click", updateCalculation);
+copyButton.addEventListener("click", copySummary);
+saveSettingsButton.addEventListener("click", saveCurrentSettings);
+pdfButton.addEventListener("click", () => window.print());
+
+window.addEventListener("beforeprint", () => {
+  settingsWasOpenBeforePrint = details.open;
+  details.open = true;
+  closeTimePickers();
+});
+
+window.addEventListener("afterprint", () => {
+  details.open = settingsWasOpenBeforePrint;
+});
+
+details.addEventListener("toggle", () => {
+  localStorage.setItem("cameraTariefSettingsOpen", String(details.open));
+});
+details.open = localStorage.getItem("cameraTariefSettingsOpen") === "true";
+
+  </script>
+  </body>
+</html>
