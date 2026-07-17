@@ -23,6 +23,8 @@ const OVERTIME_14_PLUS_START = 14;
 const OVERTIME_10_TO_12_FACTOR = 1.5;
 const OVERTIME_12_PLUS_FACTOR = 2;
 const OVERTIME_14_PLUS_FACTOR = 2.5;
+const STANDARD_OVERTIME_FACTOR = 1;
+const HALF_DAY_FACTOR = 0.75;
 
 function parseTimeToMinutes(time) {
   if (!/^\d{2}:\d{2}$/.test(time)) {
@@ -98,28 +100,70 @@ function getWorkedHoursInRange(totalHours, startHour, endHour = Infinity) {
   return Math.max(0, Math.min(totalHours, endHour) - startHour);
 }
 
+function getOvertimeFactorForRange(startHour, settings) {
+  if (startHour >= OVERTIME_14_PLUS_START && settings.enableOvertimeFrom14) {
+    return OVERTIME_14_PLUS_FACTOR;
+  }
+
+  if (startHour >= OVERTIME_12_PLUS_START && settings.enableOvertimeFrom12) {
+    return OVERTIME_12_PLUS_FACTOR;
+  }
+
+  if (settings.enableOvertime10To12) {
+    return OVERTIME_10_TO_12_FACTOR;
+  }
+
+  return STANDARD_OVERTIME_FACTOR;
+}
+
 function calculateOvertimeAmount(totalHours, hourlyRate, settings) {
-  const overtime10To12Hours = settings.enableOvertime10To12
-    ? getWorkedHoursInRange(totalHours, Math.max(settings.normalDayHours, OVERTIME_10_TO_12_START), OVERTIME_12_PLUS_START)
-    : 0;
-  const overtimeFrom12Hours = settings.enableOvertimeFrom12
-    ? getWorkedHoursInRange(
-        totalHours,
-        Math.max(settings.normalDayHours, OVERTIME_12_PLUS_START),
-        settings.enableOvertimeFrom14 ? OVERTIME_14_PLUS_START : Infinity
-      )
-    : 0;
-  const overtimeFrom14Hours = settings.enableOvertimeFrom14
-    ? getWorkedHoursInRange(totalHours, Math.max(settings.normalDayHours, OVERTIME_14_PLUS_START))
-    : 0;
+  const overtimeStartHour = settings.normalDayHours;
+  const ranges = [
+    { start: overtimeStartHour, end: OVERTIME_12_PLUS_START },
+    { start: Math.max(overtimeStartHour, OVERTIME_12_PLUS_START), end: OVERTIME_14_PLUS_START },
+    { start: Math.max(overtimeStartHour, OVERTIME_14_PLUS_START), end: Infinity }
+  ];
+
+  let standardOvertimeHours = 0;
+  let overtime10To12Hours = 0;
+  let overtimeFrom12Hours = 0;
+  let overtimeFrom14Hours = 0;
+  let standardOvertimeAmount = 0;
+  let overtime10To12Amount = 0;
+  let overtimeFrom12Amount = 0;
+  let overtimeFrom14Amount = 0;
+
+  ranges.forEach((range) => {
+    const hours = getWorkedHoursInRange(totalHours, range.start, range.end);
+    if (hours <= 0) return;
+
+    const factor = getOvertimeFactorForRange(range.start, settings);
+    const amount = hours * hourlyRate * factor;
+
+    if (factor === OVERTIME_14_PLUS_FACTOR) {
+      overtimeFrom14Hours += hours;
+      overtimeFrom14Amount += amount;
+    } else if (factor === OVERTIME_12_PLUS_FACTOR) {
+      overtimeFrom12Hours += hours;
+      overtimeFrom12Amount += amount;
+    } else if (factor === OVERTIME_10_TO_12_FACTOR) {
+      overtime10To12Hours += hours;
+      overtime10To12Amount += amount;
+    } else {
+      standardOvertimeHours += hours;
+      standardOvertimeAmount += amount;
+    }
+  });
 
   return {
+    standardOvertimeHours,
     overtime10To12Hours,
     overtimeFrom12Hours,
     overtimeFrom14Hours,
-    overtime10To12Amount: overtime10To12Hours * hourlyRate * OVERTIME_10_TO_12_FACTOR,
-    overtimeFrom12Amount: overtimeFrom12Hours * hourlyRate * OVERTIME_12_PLUS_FACTOR,
-    overtimeFrom14Amount: overtimeFrom14Hours * hourlyRate * OVERTIME_14_PLUS_FACTOR
+    standardOvertimeAmount,
+    overtime10To12Amount,
+    overtimeFrom12Amount,
+    overtimeFrom14Amount
   };
 }
 
@@ -128,7 +172,9 @@ function calculateTariff(input, customSettings = {}) {
   const interval = getWorkInterval(input.startTime, input.endTime);
   const hourlyRate = settings.dayRate / settings.normalDayHours;
   const totalHours = minutesToHours(interval.totalMinutes);
-  const baseAmount = settings.enableHalfDayUnder6Hours && totalHours <= 6 ? settings.dayRate / 2 : settings.dayRate;
+  const baseAmount = settings.enableHalfDayUnder6Hours && totalHours <= 6
+    ? settings.dayRate * HALF_DAY_FACTOR
+    : settings.dayRate;
 
   const normalMinutes = settings.normalDayHours * MINUTES_PER_HOUR;
   const overtimeStart = interval.start + normalMinutes;
@@ -153,7 +199,10 @@ function calculateTariff(input, customSettings = {}) {
 
   const overtime = calculateOvertimeAmount(totalHours, hourlyRate, settings);
   const overtimeAmount =
-    overtime.overtime10To12Amount + overtime.overtimeFrom12Amount + overtime.overtimeFrom14Amount;
+    overtime.standardOvertimeAmount +
+    overtime.overtime10To12Amount +
+    overtime.overtimeFrom12Amount +
+    overtime.overtimeFrom14Amount;
   const nightTariffEnabled = Boolean(settings.enableNightTariff);
   const pureNightAmount = pureNightHours * hourlyRate * settings.pureNightFactor;
   const overlapNightAmount = nightOvertimeHours * hourlyRate * settings.nightOverlapSurchargeFactor;
@@ -169,6 +218,7 @@ function calculateTariff(input, customSettings = {}) {
     hourlyRate,
     totalHours,
     overtimeHours,
+    standardOvertimeHours: overtime.standardOvertimeHours,
     overtime10To12Hours: overtime.overtime10To12Hours,
     overtimeFrom12Hours: overtime.overtimeFrom12Hours,
     overtimeFrom14Hours: overtime.overtimeFrom14Hours,
@@ -178,6 +228,7 @@ function calculateTariff(input, customSettings = {}) {
     nightOvertimeHours: nightTariffEnabled ? nightOvertimeHours : 0,
     pureNightHours: nightTariffEnabled ? pureNightHours : 0,
     baseAmount,
+    standardOvertimeAmount: overtime.standardOvertimeAmount,
     overtime10To12Amount: overtime.overtime10To12Amount,
     overtimeFrom12Amount: overtime.overtimeFrom12Amount,
     overtimeFrom14Amount: overtime.overtimeFrom14Amount,

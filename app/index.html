@@ -68,7 +68,7 @@
           <label><span>Dagtarief</span><input type="number" name="dayRate" min="0" step="0.01" required></label>
           <label class="checkbox-label half-day-setting">
             <input type="checkbox" name="enableHalfDayUnder6Hours">
-            <span>Halve dag rekenen bij maximaal 6 uur werktijd</span>
+            <span>Halve dag rekenen bij maximaal 6 uur werktijd (75%)</span>
           </label>
           <label>
             <span>Werkdag tijden</span>
@@ -80,15 +80,15 @@
           <div class="checkbox-stack">
             <label class="checkbox-label">
               <input type="checkbox" name="enableOvertime10To12">
-              <span>Overuren 10-12 uur werktijd (150%)</span>
+              <span>Overuren tegen 150%</span>
             </label>
             <label class="checkbox-label">
               <input type="checkbox" name="enableOvertimeFrom12">
-              <span>Overuren vanaf 12 uur werktijd (200%)</span>
+              <span>Overuren tegen 200% vanaf 12 uur werktijd</span>
             </label>
             <label class="checkbox-label">
               <input type="checkbox" name="enableOvertimeFrom14">
-              <span>Overuren vanaf 14 uur werktijd (250%)</span>
+              <span>Overuren tegen 250% vanaf 14 uur werktijd</span>
             </label>
             <label class="checkbox-label">
               <input type="checkbox" name="enableNightTariff">
@@ -130,9 +130,9 @@
           <dl class="result-list">
             <div><dt>Totaal gewerkte uren</dt><dd data-result="totalHours">0 uur</dd></div>
             <div><dt>Aantal overuren</dt><dd data-result="overtimeHours">0 uur</dd></div>
-            <div><dt>Overuren 10-12 uur werktijd (150%)</dt><dd data-result="overtime10To12Hours">0 uur</dd></div>
-            <div><dt>Overuren vanaf 12 uur werktijd (200%)</dt><dd data-result="overtimeFrom12Hours">0 uur</dd></div>
-            <div><dt>Overuren vanaf 14 uur werktijd (250%)</dt><dd data-result="overtimeFrom14Hours">0 uur</dd></div>
+            <div><dt>Overuren tegen 150%</dt><dd data-result="overtime10To12Hours">0 uur</dd></div>
+            <div><dt>Overuren tegen 200%</dt><dd data-result="overtimeFrom12Hours">0 uur</dd></div>
+            <div><dt>Overuren tegen 250%</dt><dd data-result="overtimeFrom14Hours">0 uur</dd></div>
             <div><dt>Nachturen totaal</dt><dd data-result="nightHours">0 uur</dd></div>
             <div><dt>Overlap nacht/overuren</dt><dd data-result="nightOvertimeHours">0 uur</dd></div>
             <div><dt>Pure nachturen (geen overuren)</dt><dd data-result="pureNightHours">0 uur</dd></div>

@@ -91,10 +91,77 @@ test("overuren vanaf 14 uur werktijd kunnen tegen 250% worden gerekend", () => {
   assertMoney(result.overtimeAmount, 427.5);
 });
 
-test("halve dag rekent halve basisvergoeding bij maximaal 6 uur werktijd", () => {
+test("halve dag rekent 75 procent basisvergoeding bij maximaal 6 uur werktijd", () => {
   const result = calculate("08:00", "14:00", { enableHalfDayUnder6Hours: true });
 
   assert.equal(result.totalHours, 6);
-  assertMoney(result.baseAmount, 225);
-  assertMoney(result.subtotalExVat, 225);
+  assertMoney(result.baseAmount, 337.5);
+  assertMoney(result.subtotalExVat, 337.5);
+});
+
+test("meer dan 6 uur gebruikt automatisch het minimale volledige dagtarief", () => {
+  const result = calculate("08:00", "14:15", { enableHalfDayUnder6Hours: true });
+
+  assert.equal(result.totalHours, 6.25);
+  assert.equal(result.overtimeHours, 0);
+  assertMoney(result.baseAmount, 450);
+  assertMoney(result.subtotalExVat, 450);
+});
+
+test("zonder overuur-checkboxes worden overuren tegen 100 procent gerekend", () => {
+  const result = calculate("08:00", "20:00", {
+    enableOvertime10To12: false,
+    enableOvertimeFrom12: false,
+    enableOvertimeFrom14: false
+  });
+
+  assert.equal(result.totalHours, 12);
+  assert.equal(result.overtimeHours, 2);
+  assert.equal(result.standardOvertimeHours, 2);
+  assertMoney(result.overtimeAmount, 90);
+  assertMoney(result.subtotalExVat, 540);
+});
+
+test("alleen 150 procent aangevinkt rekent alle overuren tegen 150 procent", () => {
+  const result = calculate("08:00", "22:00", {
+    enableOvertime10To12: true,
+    enableOvertimeFrom12: false,
+    enableOvertimeFrom14: false
+  });
+
+  assert.equal(result.totalHours, 14);
+  assert.equal(result.overtimeHours, 4);
+  assert.equal(result.overtime10To12Hours, 4);
+  assert.equal(result.overtimeFrom12Hours, 0);
+  assertMoney(result.overtimeAmount, 270);
+  assertMoney(result.subtotalExVat, 720);
+});
+
+test("200 procent neemt pas vanaf 12 uur werktijd over als die checkbox aan staat", () => {
+  const result = calculate("08:00", "23:00", {
+    enableOvertime10To12: true,
+    enableOvertimeFrom12: true,
+    enableOvertimeFrom14: false
+  });
+
+  assert.equal(result.totalHours, 15);
+  assert.equal(result.overtime10To12Hours, 2);
+  assert.equal(result.overtimeFrom12Hours, 3);
+  assert.equal(result.overtimeFrom14Hours, 0);
+  assertMoney(result.overtimeAmount, 405);
+});
+
+test("12 uur werkdag stelt de overuurgrens uit tot 12 uur werktijd", () => {
+  const result = calculate("08:00", "21:00", {
+    normalDayHours: 12,
+    enableOvertime10To12: true,
+    enableOvertimeFrom12: true,
+    enableOvertimeFrom14: false
+  });
+
+  assert.equal(result.totalHours, 13);
+  assert.equal(result.overtimeHours, 1);
+  assert.equal(result.overtimeFrom12Hours, 1);
+  assertMoney(result.overtimeAmount, 75);
+  assertMoney(result.subtotalExVat, 525);
 });
