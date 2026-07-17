@@ -29,7 +29,7 @@ const numberFormatter = new Intl.NumberFormat("nl-NL", {
 });
 
 let calculationIsStale = false;
-let settingsWasOpenBeforePrint = false;
+let latestResult = null;
 
 function getSavedSettings() {
   try {
@@ -96,6 +96,104 @@ function formatEuro(value) {
 function setResult(name, value, formatter = formatHours) {
   const el = document.querySelector(`[data-result="${name}"]`);
   if (el) el.textContent = formatter(value);
+}
+
+function setPrintValue(name, value) {
+  const el = document.querySelector(`[data-print="${name}"]`);
+  if (el) el.textContent = value;
+}
+
+function formatCalculation(hours, hourlyRate, factor) {
+  return `${numberFormatter.format(hours)} uur × ${euroFormatter.format(hourlyRate)} × ${numberFormatter.format(factor * 100)}%`;
+}
+
+function addPrintCalculationLine(container, label, calculation, amount) {
+  if (!Number.isFinite(amount) || amount <= 0) return;
+
+  const row = document.createElement("div");
+  const description = document.createElement("div");
+  const title = document.createElement("strong");
+  const formula = document.createElement("span");
+  const value = document.createElement("strong");
+
+  title.textContent = label;
+  formula.textContent = calculation;
+  value.textContent = euroFormatter.format(amount);
+  description.append(title, formula);
+  row.append(description, value);
+  container.append(row);
+}
+
+function renderPrintBreakdown(result) {
+  if (!result) return;
+
+  const date = form.elements.namedItem("date").value;
+  const startTime = form.elements.namedItem("startTime").value;
+  const endTime = form.elements.namedItem("endTime").value;
+  const lines = document.querySelector("#print-calculation-lines");
+  const usesHalfDayRate = result.baseAmount < result.settings.dayRate;
+
+  setPrintValue("date", date || "Niet ingevuld");
+  setPrintValue("times", `${startTime} tot ${endTime}${result.endsNextDay ? " (volgende dag)" : ""}`);
+  setPrintValue("totalHours", formatHours(result.totalHours));
+  setPrintValue("subtotalExVat", euroFormatter.format(result.subtotalExVat));
+  setPrintValue("vatAmount", euroFormatter.format(result.vatAmount));
+  setPrintValue("totalIncVat", euroFormatter.format(result.totalIncVat));
+
+  lines.replaceChildren();
+  addPrintCalculationLine(
+    lines,
+    usesHalfDayRate ? "Halve dagvergoeding" : "Minimale dagvergoeding",
+    usesHalfDayRate
+      ? `75% van ${euroFormatter.format(result.settings.dayRate)}`
+      : `Dagtarief voor maximaal ${numberFormatter.format(result.settings.normalDayHours)} uur`,
+    result.baseAmount
+  );
+  addPrintCalculationLine(
+    lines,
+    "Overuren tegen 100%",
+    formatCalculation(result.standardOvertimeHours, result.hourlyRate, 1),
+    result.standardOvertimeAmount
+  );
+  addPrintCalculationLine(
+    lines,
+    "Overuren tegen 150%",
+    formatCalculation(result.overtime10To12Hours, result.hourlyRate, 1.5),
+    result.overtime10To12Amount
+  );
+  addPrintCalculationLine(
+    lines,
+    "Overuren tegen 200%",
+    formatCalculation(result.overtimeFrom12Hours, result.hourlyRate, 2),
+    result.overtimeFrom12Amount
+  );
+  addPrintCalculationLine(
+    lines,
+    "Overuren tegen 250%",
+    formatCalculation(result.overtimeFrom14Hours, result.hourlyRate, 2.5),
+    result.overtimeFrom14Amount
+  );
+  addPrintCalculationLine(
+    lines,
+    "Pure nachturen",
+    `${formatCalculation(result.pureNightHours, result.hourlyRate, 2)} (geen overuren)`,
+    result.pureNightAmount
+  );
+  addPrintCalculationLine(
+    lines,
+    "Extra nachttoeslag bij overuren",
+    `${formatCalculation(result.nightOvertimeHours, result.hourlyRate, 1)} (overuurvergoeding staat hierboven)`,
+    result.overlapNightAmount
+  );
+  addPrintCalculationLine(lines, "Drone tarief", "Vaste toeslag", result.droneTariffAmount);
+  addPrintCalculationLine(lines, "Ronin 4D tarief", "Vaste toeslag", result.ronin4dTariffAmount);
+  addPrintCalculationLine(
+    lines,
+    "Kilometervergoeding",
+    `${numberFormatter.format(result.kilometers)} km × ${euroFormatter.format(result.settings.kilometerRate)}`,
+    result.kilometerAmount
+  );
+  addPrintCalculationLine(lines, "Parkeer/onkosten", "Ingevoerde onkosten", result.parkingAmount);
 }
 
 function buildSummary(result) {
@@ -181,6 +279,8 @@ function updateCalculation() {
 
   nextDayNotice.hidden = !result.endsNextDay;
   form.dataset.summary = buildSummary(result);
+  latestResult = result;
+  renderPrintBreakdown(result);
   calculationIsStale = false;
   calculationStatus.hidden = true;
 }
@@ -390,13 +490,8 @@ saveSettingsButton.addEventListener("click", saveCurrentSettings);
 pdfButton.addEventListener("click", () => window.print());
 
 window.addEventListener("beforeprint", () => {
-  settingsWasOpenBeforePrint = details.open;
-  details.open = true;
+  renderPrintBreakdown(latestResult);
   closeTimePickers();
-});
-
-window.addEventListener("afterprint", () => {
-  details.open = settingsWasOpenBeforePrint;
 });
 
 details.addEventListener("toggle", () => {

@@ -7,9 +7,9 @@
     <title>Tarief Berekenen</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
-    <link rel="stylesheet" href="styles.css?v=20260717am">
-    <script src="calculator.js?v=20260717am" defer></script>
-    <script src="app.js?v=20260717am" defer></script>
+    <link rel="stylesheet" href="styles.css?v=20260717an">
+    <script src="calculator.js?v=20260717an" defer></script>
+    <script src="app.js?v=20260717an" defer></script>
   </head>
   <body>
     <main class="app-shell">
@@ -233,6 +233,31 @@
         <button class="secondary" type="button" id="save-pdf">Pdf opslaan</button>
         <p class="copy-status" id="copy-status" aria-live="polite"></p>
       </div>
+
+      <section class="print-breakdown" aria-label="Onderbouwing factuur">
+        <header class="print-breakdown-header">
+          <div>
+            <p class="print-kicker">Onderbouwing factuur</p>
+            <h2>Berekening van de vergoeding</h2>
+          </div>
+          <dl class="print-job-meta">
+            <div><dt>Datum</dt><dd data-print="date">-</dd></div>
+            <div><dt>Tijden</dt><dd data-print="times">-</dd></div>
+            <div><dt>Totaal gewerkt</dt><dd data-print="totalHours">-</dd></div>
+          </dl>
+        </header>
+
+        <div class="print-breakdown-body">
+          <h3>Opbouw exclusief btw</h3>
+          <div class="print-calculation-lines" id="print-calculation-lines"></div>
+        </div>
+
+        <dl class="print-totals">
+          <div><dt>Totaal exclusief btw</dt><dd data-print="subtotalExVat">-</dd></div>
+          <div><dt>Btw (21%)</dt><dd data-print="vatAmount">-</dd></div>
+          <div class="print-grand-total"><dt>Factuurbedrag inclusief btw</dt><dd data-print="totalIncVat">-</dd></div>
+        </dl>
+      </section>
       <p class="print-footer">Powered by Reichgelt Media Group</p>
       </div>
     </main>

@@ -46,6 +46,8 @@ test("16:00 tot 03:00 berekent nacht-overuur-overlap met alleen extra nachttoesl
   assert.equal(result.pureNightHours, 2);
   assert.equal(result.nightOvertimeHours, 1);
   assertMoney(result.overtimeAmount, 67.5);
+  assertMoney(result.pureNightAmount, 180);
+  assertMoney(result.overlapNightAmount, 45);
   assertMoney(result.nightAmount, 225);
   assertMoney(result.subtotalExVat, 742.5);
 });
@@ -78,6 +80,7 @@ test("nacht-overuur-overlap rondt naar begonnen kwartier en telt niet dubbel vol
   assert.equal(result.nightOvertimeHours, 0.25);
   assert.equal(result.pureNightHours, 0);
   assertMoney(result.overtimeAmount, 1.13);
+  assertMoney(result.overlapNightAmount, 11.25);
   assertMoney(result.nightAmount, 11.25);
 });
 

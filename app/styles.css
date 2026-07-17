@@ -915,6 +915,10 @@ summary:hover {
   display: none;
 }
 
+.print-breakdown {
+  display: none;
+}
+
 @media (max-width: 760px) {
   .app-shell {
     width: min(100% - 16px, 1080px);
@@ -1400,5 +1404,142 @@ summary:hover {
     color: #6b7f89;
     font-size: 6pt;
     letter-spacing: 0;
+  }
+
+  .calculator-grid,
+  .footer-actions {
+    display: none;
+  }
+
+  .print-breakdown {
+    display: block;
+    padding: 7mm 6mm 12mm;
+    color: var(--text);
+  }
+
+  .print-breakdown-header {
+    display: grid;
+    grid-template-columns: 0.85fr 1.15fr;
+    gap: 8mm;
+    align-items: end;
+    padding-bottom: 5mm;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .print-kicker {
+    margin: 0 0 1.5mm;
+    color: var(--muted);
+    font-size: 7pt;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .print-breakdown h2 {
+    margin: 0;
+    color: var(--accent-dark);
+    font-size: 17pt;
+    line-height: 1.15;
+  }
+
+  .print-job-meta {
+    display: grid;
+    gap: 1.5mm;
+    margin: 0;
+  }
+
+  .print-job-meta > div {
+    display: grid;
+    grid-template-columns: 30mm 1fr;
+    gap: 4mm;
+    padding-bottom: 1.5mm;
+    border-bottom: 1px solid #edf2f5;
+  }
+
+  .print-job-meta dt,
+  .print-job-meta dd {
+    font-size: 8pt;
+  }
+
+  .print-breakdown-body {
+    margin-top: 7mm;
+  }
+
+  .print-breakdown-body h3 {
+    margin: 0 0 2mm;
+    color: var(--accent-dark);
+    font-size: 9pt;
+  }
+
+  .print-calculation-lines {
+    border-top: 1px solid var(--line);
+  }
+
+  .print-calculation-lines > div {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8mm;
+    align-items: center;
+    min-height: 11mm;
+    padding: 2.3mm 3mm;
+    border-bottom: 1px solid #e5ecef;
+    break-inside: avoid;
+  }
+
+  .print-calculation-lines > div > div {
+    display: grid;
+    gap: 0.8mm;
+  }
+
+  .print-calculation-lines strong {
+    color: var(--text);
+    font-size: 8.5pt;
+  }
+
+  .print-calculation-lines span {
+    color: var(--muted);
+    font-size: 7.5pt;
+  }
+
+  .print-calculation-lines > div > strong {
+    min-width: 28mm;
+    font-size: 9pt;
+    text-align: right;
+  }
+
+  .print-totals {
+    width: 88mm;
+    margin: 7mm 0 0 auto;
+    border-top: 1px solid var(--line);
+  }
+
+  .print-totals > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 8mm;
+    padding: 2.5mm 3mm;
+    border-bottom: 1px solid #e5ecef;
+  }
+
+  .print-totals dt,
+  .print-totals dd {
+    color: var(--text);
+    font-size: 8.5pt;
+  }
+
+  .print-totals .print-grand-total {
+    margin-top: 2mm;
+    padding: 4mm 3mm;
+    border: 1px solid #b9d0c7;
+    background: #edf5f1;
+  }
+
+  .print-totals .print-grand-total dt {
+    font-weight: 700;
+  }
+
+  .print-totals .print-grand-total dd {
+    color: var(--accent-dark);
+    font-size: 13pt;
+    font-weight: 800;
   }
 }
