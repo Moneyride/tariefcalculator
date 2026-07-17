@@ -7,9 +7,9 @@
     <title>Tarief Berekenen</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
-    <link rel="stylesheet" href="styles.css?v=20260717aj">
-    <script src="calculator.js?v=20260717aj" defer></script>
-    <script src="app.js?v=20260717aj" defer></script>
+    <link rel="stylesheet" href="styles.css?v=20260717al">
+    <script src="calculator.js?v=20260717al" defer></script>
+    <script src="app.js?v=20260717al" defer></script>
   </head>
   <body>
     <main class="app-shell">
@@ -95,14 +95,6 @@
           <p class="notice" id="next-day-notice" hidden>
             Eindtijd wordt geïnterpreteerd als de volgende kalenderdag.
           </p>
-          <p class="notice stale-notice" id="calculation-status" hidden>
-            Wijzigingen nog niet berekend.
-          </p>
-
-          <div class="button-row">
-            <button type="button" id="recalculate">Berekenen</button>
-          </div>
-          <p class="copy-status" id="copy-status" aria-live="polite"></p>
         </form>
 
         <details class="settings-panel" id="settings-panel">
@@ -182,6 +174,15 @@
         </form>
       </details>
 
+        <section class="calculate-action" aria-label="Berekening uitvoeren">
+          <p class="notice stale-notice" id="calculation-status" hidden>
+            Wijzigingen nog niet berekend.
+          </p>
+          <div class="button-row">
+            <button type="button" id="recalculate">Berekenen</button>
+          </div>
+        </section>
+
         <section class="result-panel" aria-live="polite">
           <div class="result-header">
             <h2>Resultaat</h2>
@@ -230,6 +231,7 @@
       <div class="footer-actions">
         <button type="button" id="copy-summary">Kopiëren voor factuur</button>
         <button class="secondary" type="button" id="save-pdf">Pdf opslaan</button>
+        <p class="copy-status" id="copy-status" aria-live="polite"></p>
       </div>
       <p class="print-footer">Powered by Reichgelt Media Group</p>
       </div>
