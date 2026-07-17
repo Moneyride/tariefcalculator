@@ -7,9 +7,9 @@
     <title>Tarief Berekenen</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
-    <link rel="stylesheet" href="styles.css?v=20260717ah">
-    <script src="calculator.js?v=20260717ah" defer></script>
-    <script src="app.js?v=20260717ah" defer></script>
+    <link rel="stylesheet" href="styles.css?v=20260717ai">
+    <script src="calculator.js?v=20260717ai" defer></script>
+    <script src="app.js?v=20260717ai" defer></script>
   </head>
   <body>
     <main class="app-shell">
@@ -27,12 +27,14 @@
             <h2>Invoer</h2>
           </div>
 
-          <label>
-            <span>Datum</span>
-            <input type="date" name="date">
-          </label>
+          <section class="form-section planning-section">
+            <h3>Planning</h3>
+            <div class="planning-grid">
+              <label class="date-field">
+                <span>Datum</span>
+                <input type="date" name="date">
+              </label>
 
-          <div class="time-grid">
             <div class="time-field">
               <label for="startTime">Starttijd</label>
               <div class="time-control">
@@ -52,42 +54,46 @@
                 </button>
               </div>
             </div>
-          </div>
+            </div>
+          </section>
 
-          <div class="input-options">
-            <div class="extra-option">
-              <label class="checkbox-label">
-                <input type="checkbox" name="enableDroneTariff">
-                <span>Drone tarief (+€50)</span>
-              </label>
+          <section class="form-section options-section">
+            <h3>Opties</h3>
+            <div class="input-options">
+              <div class="extra-option">
+                <label class="checkbox-label">
+                  <input type="checkbox" name="enableDroneTariff">
+                  <span>Drone tarief (+€50)</span>
+                </label>
+              </div>
+              <div class="extra-option">
+                <label class="checkbox-label">
+                  <input type="checkbox" name="enableRonin4dTariff">
+                  <span>Ronin 4D tarief (+€50)</span>
+                </label>
+              </div>
+              <div class="extra-option">
+                <label class="checkbox-label">
+                  <input type="checkbox" name="enableKilometers">
+                  <span>Kilometers rekenen</span>
+                </label>
+                <label class="extra-field" id="kilometer-input" hidden>
+                  <span>Aantal gereden km</span>
+                  <input type="number" name="kilometers" min="0" step="0.1" value="0">
+                </label>
+              </div>
+              <div class="extra-option">
+                <label class="checkbox-label">
+                  <input type="checkbox" name="enableParkingCosts">
+                  <span>Parkeer/onkosten rekenen</span>
+                </label>
+                <label class="extra-field" id="parking-input" hidden>
+                  <span>Parkeer/onkosten</span>
+                  <input type="number" name="parkingCosts" min="0" step="0.01" value="0">
+                </label>
+              </div>
             </div>
-            <div class="extra-option">
-              <label class="checkbox-label">
-                <input type="checkbox" name="enableRonin4dTariff">
-                <span>Ronin 4D tarief (+€50)</span>
-              </label>
-            </div>
-            <div class="extra-option">
-              <label class="checkbox-label">
-                <input type="checkbox" name="enableKilometers">
-                <span>Kilometers rekenen</span>
-              </label>
-              <label class="extra-field" id="kilometer-input" hidden>
-                <span>Aantal gereden km</span>
-                <input type="number" name="kilometers" min="0" step="0.1" value="0">
-              </label>
-            </div>
-            <div class="extra-option">
-              <label class="checkbox-label">
-                <input type="checkbox" name="enableParkingCosts">
-                <span>Parkeer/onkosten rekenen</span>
-              </label>
-              <label class="extra-field" id="parking-input" hidden>
-                <span>Parkeer/onkosten</span>
-                <input type="number" name="parkingCosts" min="0" step="0.01" value="0">
-              </label>
-            </div>
-          </div>
+          </section>
 
           <p class="notice" id="next-day-notice" hidden>
             Eindtijd wordt geïnterpreteerd als de volgende kalenderdag.
@@ -179,8 +185,8 @@
         </form>
       </details>
 
-        <section class="panel result-panel" aria-live="polite">
-          <div class="panel-header">
+        <section class="result-panel" aria-live="polite">
+          <div class="result-header">
             <h2>Berekening</h2>
           </div>
 

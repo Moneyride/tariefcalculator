@@ -10,29 +10,29 @@
     <style>
 :root {
   color-scheme: light;
-  --bg: #f3f5f2;
+  --bg: #f7f8fa;
   --panel: #ffffff;
-  --panel-subtle: #f8faf8;
-  --line: #d9dfdc;
-  --line-strong: #c6d0cb;
-  --head: #e2f1eb;
-  --head-strong: #b9dccf;
-  --text: #0d2e2c;
-  --muted: #687975;
-  --accent: #08665f;
-  --accent-dark: #034b47;
-  --accent-soft: #e2f2ec;
+  --panel-subtle: rgba(255, 255, 255, 0.42);
+  --line: #e8eaed;
+  --line-strong: #d9dde2;
+  --head: rgba(255, 255, 255, 0.72);
+  --head-strong: rgba(255, 255, 255, 0.82);
+  --text: #1f2937;
+  --muted: #6b7280;
+  --accent: #1f4335;
+  --accent-dark: #17342a;
+  --accent-soft: #e9f1ed;
   --mint: #7fc8ad;
   --orange: #ff6b18;
   --orange-dark: #db5108;
   --orange-soft: #fff0e7;
   --warning: #7f480e;
   --warning-bg: #fff4df;
-  --glass: rgba(248, 250, 248, 0.82);
-  --glass-strong: rgba(255, 255, 255, 0.9);
-  --glass-soft: rgba(255, 255, 255, 0.58);
-  --glass-line: rgba(255, 255, 255, 0.52);
-  --shadow: 0 1px 1px rgba(10, 31, 29, 0.08), 0 20px 54px rgba(10, 27, 25, 0.18);
+  --glass: rgba(255, 255, 255, 0.62);
+  --glass-strong: rgba(255, 255, 255, 0.78);
+  --glass-soft: rgba(255, 255, 255, 0.42);
+  --glass-line: rgba(255, 255, 255, 0.46);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
 }
 
 * {
@@ -52,17 +52,17 @@ body::before {
   position: fixed;
   inset: 0;
   z-index: -2;
-  background:
-    linear-gradient(180deg, rgba(7, 23, 22, 0.18), rgba(7, 23, 22, 0.52)),
-    url("background.png") center center / cover no-repeat;
+  background: url("background.png") center center / cover no-repeat;
   content: "";
+  filter: blur(3px) saturate(78%);
+  transform: scale(1.012);
 }
 
 body::after {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: rgba(8, 23, 22, 0.12);
+  background: linear-gradient(180deg, rgba(13, 24, 21, 0.28), rgba(13, 24, 21, 0.46));
   content: "";
   pointer-events: none;
 }
@@ -76,38 +76,32 @@ select {
 .app-shell {
   position: relative;
   z-index: 0;
-  width: min(1120px, calc(100% - 40px));
+  width: min(1200px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 12px 0 56px;
+  padding: 0 0 64px;
 }
 
 .page-header {
-  position: sticky;
-  top: 12px;
-  z-index: 30;
+  position: static;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  min-height: 92px;
-  padding: 22px 26px;
+  min-height: 82px;
+  padding: 18px 26px;
   overflow: hidden;
-  background: rgba(4, 48, 46, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 8px;
-  box-shadow: 0 16px 44px rgba(3, 25, 24, 0.28);
-  color: #f8fbfa;
-  -webkit-backdrop-filter: blur(22px) saturate(125%);
-  backdrop-filter: blur(22px) saturate(125%);
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+  box-shadow: var(--shadow);
+  color: var(--text);
+  -webkit-backdrop-filter: blur(28px) saturate(110%);
+  backdrop-filter: blur(28px) saturate(110%);
 }
 
 .page-header::after {
-  width: 8px;
-  height: 42px;
-  flex: 0 0 auto;
-  border-radius: 4px;
-  background: var(--orange);
-  content: "";
+  display: none;
 }
 
 .header-title {
@@ -118,17 +112,17 @@ select {
 }
 
 .header-mark {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   flex: 0 0 auto;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 0;
   border-radius: 50%;
   object-fit: cover;
 }
 
 .header-brand {
   margin: 0 0 0 auto;
-  color: rgba(248, 251, 250, 0.68);
+  color: var(--accent);
   font-size: 0.72rem;
   font-weight: 700;
   text-align: right;
@@ -151,14 +145,14 @@ h3 {
 }
 
 h1 {
-  color: #f8fbfa;
-  font-size: clamp(1.75rem, 4vw, 2.35rem);
-  font-weight: 650;
+  color: var(--accent);
+  font-size: clamp(1.75rem, 4vw, 2.2rem);
+  font-weight: 700;
 }
 
 h2 {
-  font-size: 1.05rem;
-  font-weight: 750;
+  font-size: 1.35rem;
+  font-weight: 700;
 }
 
 h3 {
@@ -167,8 +161,8 @@ h3 {
 
 .calculator-grid {
   display: grid;
-  gap: 18px;
-  margin-top: 18px;
+  gap: 28px;
+  margin-top: 28px;
 }
 
 .panel {
@@ -176,25 +170,55 @@ h3 {
   border: 1px solid var(--glass-line);
   border-radius: 8px;
   box-shadow: var(--shadow);
-  -webkit-backdrop-filter: blur(24px) saturate(118%);
-  backdrop-filter: blur(24px) saturate(118%);
+  -webkit-backdrop-filter: blur(30px) saturate(110%);
+  backdrop-filter: blur(30px) saturate(110%);
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.panel:hover {
+  background: rgba(255, 255, 255, 0.66);
 }
 
 .panel-header {
-  padding: 15px 18px;
-  background: rgba(255, 255, 255, 0.34);
-  border-bottom: 1px solid rgba(198, 208, 203, 0.72);
+  padding: 24px 28px 8px;
+  background: transparent;
+  border-bottom: 0;
   border-radius: 8px 8px 0 0;
 }
 
 .input-panel {
-  padding-bottom: 18px;
+  padding-bottom: 28px;
+}
+
+.form-section {
+  padding: 24px 28px 0;
+}
+
+.form-section + .form-section {
+  margin-top: 28px;
+  padding-top: 28px;
+  border-top: 1px solid rgba(255, 255, 255, 0.42);
+}
+
+.form-section > h3 {
+  margin-bottom: 16px;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.planning-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr 1fr;
+  gap: 18px;
+  align-items: end;
 }
 
 label {
   display: grid;
-  gap: 7px;
-  padding: 16px 18px 0;
+  gap: 8px;
+  padding: 0;
   color: var(--muted);
   font-size: 0.9rem;
   font-weight: 700;
@@ -205,28 +229,29 @@ label {
 }
 
 .time-field label {
-  padding: 16px 18px 0;
+  padding: 0;
 }
 
 .time-control {
   position: relative;
   display: flex;
-  margin: 7px 18px 0;
+  margin: 8px 0 0;
   touch-action: manipulation;
 }
 
 input,
 select {
   width: 100%;
-  min-height: 46px;
-  padding: 10px 12px;
-  border: 1px solid rgba(162, 181, 174, 0.66);
+  min-height: 54px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
   border-radius: 6px;
   color: var(--text);
-  background: rgba(255, 255, 255, 0.66);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.64), 0 1px 2px rgba(31, 41, 55, 0.04);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
+  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
 }
 
 input[readonly] {
@@ -235,8 +260,10 @@ input[readonly] {
 
 input:focus,
 select:focus {
-  outline: 3px solid rgba(255, 107, 24, 0.16);
+  outline: 0;
   border-color: var(--orange);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 0 0 4px rgba(255, 106, 26, 0.14);
 }
 
 .time-control input[data-time-picker] {
@@ -256,7 +283,7 @@ select:focus {
   top: 1px;
   right: 1px;
   width: 42px;
-  min-height: 44px;
+  min-height: 52px;
   padding: 0;
   border-color: transparent;
   border-left: 1px solid rgba(162, 181, 174, 0.5);
@@ -359,7 +386,7 @@ select:focus {
 }
 
 .notice {
-  margin: 16px 18px 0;
+  margin: 20px 28px 0;
   padding: 11px 13px;
   border: 1px solid #efc982;
   border-radius: 6px;
@@ -371,23 +398,25 @@ select:focus {
 .button-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  padding: 18px 18px 0;
+  gap: 12px;
+  padding: 28px 28px 0;
 }
 
 button {
-  min-height: 44px;
-  padding: 10px 16px;
+  min-height: 50px;
+  padding: 13px 22px;
   border: 1px solid var(--accent);
   border-radius: 6px;
   background: var(--accent);
   color: white;
   cursor: pointer;
   font-weight: 800;
+  transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 }
 
 button:hover {
   background: var(--accent-dark);
+  transform: translateY(-1px);
 }
 
 button:focus-visible,
@@ -398,10 +427,10 @@ summary:focus-visible,
 }
 
 #recalculate {
-  min-width: 148px;
+  min-width: 190px;
   border-color: var(--orange);
   background: var(--orange);
-  box-shadow: 0 7px 18px rgba(219, 81, 8, 0.18);
+  box-shadow: 0 10px 24px rgba(255, 106, 26, 0.22);
 }
 
 #recalculate:hover {
@@ -420,89 +449,124 @@ button.secondary:hover {
 
 .copy-status {
   min-height: 1.3em;
-  margin: 8px 18px 0;
+  margin: 10px 28px 0;
   color: var(--accent-dark);
   font-weight: 700;
+}
+
+.result-panel {
+  padding-top: 4px;
+}
+
+.result-header {
+  padding: 0 2px;
+  color: #fff;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.28);
 }
 
 .result-sections {
   display: grid;
-  gap: 16px;
-  padding: 16px 18px 18px;
+  gap: 28px;
+  padding: 20px 0 0;
 }
 
 .result-section {
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.58);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.5);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .result-section h3 {
-  padding: 10px 13px;
-  border-bottom: 1px solid rgba(198, 208, 203, 0.58);
-  background: rgba(255, 255, 255, 0.34);
-  color: var(--accent-dark);
+  padding: 0 2px 12px;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.86);
   font-weight: 800;
   text-transform: uppercase;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.24);
 }
 
 .result-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
   margin: 0;
 }
 
 .result-list div {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content;
+  display: flex;
+  min-width: 0;
+  min-height: 112px;
+  flex-direction: column;
+  justify-content: space-between;
   gap: 16px;
-  align-items: center;
-  padding: 10px 13px;
-  border-bottom: 1px solid rgba(213, 223, 218, 0.68);
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: var(--shadow);
+  -webkit-backdrop-filter: blur(24px) saturate(108%);
+  backdrop-filter: blur(24px) saturate(108%);
+  transition: background-color 150ms ease, transform 150ms ease;
 }
 
-.result-list div:nth-child(even) {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.result-list div:last-child {
-  border-bottom: 0;
+.result-list div:hover {
+  background: rgba(255, 255, 255, 0.78);
+  transform: translateY(-1px);
 }
 
 dt {
   color: var(--muted);
-  font-weight: 700;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.4;
 }
 
 dd {
   margin: 0;
+  color: var(--text);
+  font-size: 1.35rem;
   font-variant-numeric: tabular-nums;
-  font-weight: 800;
-  text-align: right;
+  font-weight: 750;
+  line-height: 1.2;
+  text-align: left;
 }
 
 .result-summary {
-  border-color: var(--head-strong);
-  box-shadow: inset 3px 0 0 var(--mint);
+  border: 0;
+  box-shadow: none;
 }
 
 .result-summary h3 {
-  background: rgba(226, 242, 236, 0.72);
+  background: transparent;
 }
 
-.result-summary .result-list div {
-  padding-top: 12px;
-  padding-bottom: 12px;
+.result-summary .result-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .result-list .total {
-  background: #073f3d;
+  grid-column: 1 / -1;
+  min-height: 164px;
+  padding: 26px;
+  background: rgba(31, 67, 53, 0.9);
   color: #fff;
-  font-size: 1.1rem;
+  box-shadow: 0 14px 34px rgba(17, 45, 35, 0.22);
+}
+
+.result-list .total:hover {
+  background: rgba(31, 67, 53, 0.96);
 }
 
 .result-list .total dt {
   color: rgba(255, 255, 255, 0.72);
+  font-size: 0.9rem;
+}
+
+.result-list .total dd {
+  color: #fff;
+  font-size: clamp(2rem, 5vw, 2.8rem);
 }
 
 .settings-panel {
@@ -510,26 +574,28 @@ dd {
 }
 
 summary {
-  padding: 16px 18px;
-  background: rgba(255, 255, 255, 0.3);
+  padding: 22px 28px;
+  background: transparent;
   cursor: pointer;
-  font-weight: 800;
+  font-size: 1.05rem;
+  font-weight: 750;
+  transition: color 150ms ease, background-color 150ms ease;
 }
 
 summary:hover {
-  background: rgba(226, 242, 236, 0.64);
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .settings-panel[open] > summary {
-  border-bottom: 1px solid var(--line);
+  border-bottom: 0;
   color: var(--accent-dark);
 }
 
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(260px, 1fr));
-  gap: 14px;
-  padding: 18px;
+  gap: 28px;
+  padding: 4px 28px 28px;
 }
 
 .input-options,
@@ -544,19 +610,20 @@ summary:hover {
 .settings-section {
   display: grid;
   grid-template-columns: repeat(2, minmax(180px, 1fr));
-  gap: 0 8px;
+  gap: 0 18px;
   min-width: 0;
   margin: 0;
-  padding: 2px 0 16px;
-  border: 1px solid rgba(255, 255, 255, 0.58);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.4);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  padding: 18px 0 0;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.44);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .settings-section legend {
-  margin-left: 10px;
-  padding: 0 6px;
+  margin-left: 0;
+  padding: 0 10px 0 0;
   color: var(--accent);
   font-size: 0.78rem;
   font-weight: 800;
@@ -570,7 +637,7 @@ summary:hover {
 
 .settings-section > label,
 .settings-section .time-field label {
-  padding-top: 10px;
+  padding-top: 12px;
 }
 
 .settings-section .checkbox-stack,
@@ -592,34 +659,39 @@ summary:hover {
 
 .input-options {
   gap: 12px;
-  margin: 16px 18px 0;
+  margin: 0;
 }
 
 .extra-option {
   display: grid;
   align-content: start;
-  min-height: 52px;
-  border: 1px solid rgba(255, 255, 255, 0.58);
+  min-height: 64px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
   border-radius: 6px;
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), 0 4px 14px rgba(31, 41, 55, 0.03);
+  transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease;
+}
+
+.extra-option:hover {
   background: rgba(255, 255, 255, 0.42);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
-  transition: border-color 150ms ease, background-color 150ms ease;
+  transform: translateY(-1px);
 }
 
 .extra-option:has(input[type="checkbox"]:checked) {
-  border-color: var(--head-strong);
-  background: rgba(226, 242, 236, 0.76);
+  border-color: rgba(31, 67, 53, 0.22);
+  background: rgba(233, 241, 237, 0.68);
 }
 
 .extra-option .checkbox-label {
-  min-height: 50px;
-  padding: 10px 12px;
+  min-height: 62px;
+  padding: 12px 16px;
 }
 
 .extra-field {
   display: grid;
   gap: 6px;
-  padding: 0 12px 12px;
+  padding: 0 16px 16px;
   color: var(--muted);
   font-size: 0.86rem;
   font-weight: 700;
@@ -640,18 +712,53 @@ summary:hover {
 .checkbox-label {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 42px;
-  padding: 14px 16px 0;
+  gap: 12px;
+  min-height: 48px;
+  padding: 12px 0 0;
   color: var(--text);
   cursor: pointer;
 }
 
-.checkbox-label input {
-  width: 18px;
-  min-height: 18px;
-  accent-color: var(--orange);
+.checkbox-label input[type="checkbox"] {
+  position: relative;
+  width: 42px;
+  min-width: 42px;
+  height: 24px;
+  min-height: 24px;
+  padding: 0;
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(107, 114, 128, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(31, 41, 55, 0.08);
   cursor: pointer;
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.checkbox-label input[type="checkbox"]::before {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(31, 41, 55, 0.18);
+  content: "";
+  transition: transform 150ms ease;
+}
+
+.checkbox-label input[type="checkbox"]:checked {
+  background: var(--accent);
+}
+
+.checkbox-label input[type="checkbox"]:checked::before {
+  transform: translateX(18px);
+}
+
+.checkbox-label input[type="checkbox"]:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 4px rgba(255, 106, 26, 0.16);
 }
 
 .checkbox-label span {
@@ -668,8 +775,8 @@ summary:hover {
   flex-wrap: wrap;
   gap: 12px;
   grid-column: 1 / -1;
-  padding: 16px 0 0;
-  border-top: 1px solid rgba(198, 208, 203, 0.62);
+  padding: 20px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.44);
 }
 
 .settings-status {
@@ -684,14 +791,14 @@ summary:hover {
   justify-content: flex-end;
   gap: 14px;
   flex-wrap: wrap;
-  margin-top: 22px;
-  padding: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-top: 28px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
   border-radius: 8px;
-  background: rgba(4, 48, 46, 0.56);
-  box-shadow: 0 16px 44px rgba(3, 25, 24, 0.2);
-  -webkit-backdrop-filter: blur(20px) saturate(120%);
-  backdrop-filter: blur(20px) saturate(120%);
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: var(--shadow);
+  -webkit-backdrop-filter: blur(28px) saturate(108%);
+  backdrop-filter: blur(28px) saturate(108%);
 }
 
 .footer-actions .secondary {
@@ -709,11 +816,11 @@ summary:hover {
 
 @media (max-width: 760px) {
   .app-shell {
-    width: min(100% - 20px, 1080px);
-    padding: 8px 0 28px;
+    width: min(100% - 16px, 1080px);
+    padding: 0 0 28px;
   }
 
-  .page-header,
+  .planning-grid,
   .time-grid,
   .input-options,
   .settings-grid,
@@ -724,13 +831,12 @@ summary:hover {
   }
 
   .page-header {
-    top: 8px;
     display: flex;
     flex-wrap: wrap;
     gap: 10px 14px;
     min-height: auto;
-    padding: 18px;
-    border-radius: 8px;
+    padding: 16px;
+    border-radius: 0 0 8px 8px;
   }
 
   .page-header::after {
@@ -756,18 +862,52 @@ summary:hover {
     font-size: clamp(1.55rem, 8vw, 2rem);
   }
 
+  .calculator-grid {
+    gap: 24px;
+    margin-top: 20px;
+  }
+
+  .panel-header {
+    padding: 20px 20px 6px;
+  }
+
+  .form-section {
+    padding: 20px 20px 0;
+  }
+
+  .form-section + .form-section {
+    margin-top: 24px;
+    padding-top: 24px;
+  }
+
+  .result-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
   .result-list div {
-    grid-template-columns: 1fr;
-    gap: 4px;
+    min-height: 116px;
+    gap: 12px;
+    padding: 16px;
   }
 
   .result-sections {
-    padding-left: 12px;
-    padding-right: 12px;
+    gap: 24px;
+    padding: 16px 0 0;
   }
 
-  dd {
-    text-align: left;
+  .result-summary .result-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .result-list .total {
+    min-height: 148px;
+    padding: 22px;
+  }
+
+  .settings-grid {
+    gap: 24px;
+    padding: 4px 20px 20px;
   }
 
   .footer-actions {
@@ -778,25 +918,8 @@ summary:hover {
     width: 100%;
   }
 
-  label,
-  .time-field label {
-    padding-left: 14px;
-    padding-right: 14px;
-  }
-
-  .time-control {
-    margin-left: 14px;
-    margin-right: 14px;
-  }
-
-  .input-options {
-    margin-left: 14px;
-    margin-right: 14px;
-  }
-
   .button-row {
-    padding-left: 14px;
-    padding-right: 14px;
+    padding: 24px 20px 0;
   }
 
   #recalculate {
@@ -907,13 +1030,33 @@ summary:hover {
   }
 
   .panel-header,
+  .result-header,
   summary {
     padding: 2mm 3mm;
     border-radius: 0;
   }
 
+  .result-header {
+    color: var(--text);
+    text-shadow: none;
+  }
+
   .input-panel {
     padding-bottom: 2mm;
+  }
+
+  .form-section {
+    padding: 1.6mm 3mm 0;
+  }
+
+  .form-section + .form-section {
+    margin-top: 1.6mm;
+    padding-top: 1.6mm;
+  }
+
+  .form-section > h3 {
+    margin-bottom: 1mm;
+    font-size: 7pt;
   }
 
   label,
@@ -937,6 +1080,7 @@ summary:hover {
   }
 
   .time-grid,
+  .planning-grid,
   .input-options,
   .settings-grid,
   .settings-section,
@@ -989,6 +1133,20 @@ summary:hover {
     min-height: 4mm;
   }
 
+  .checkbox-label input[type="checkbox"] {
+    width: 4mm;
+    min-width: 4mm;
+    height: 4mm;
+    min-height: 4mm;
+    appearance: auto;
+    border-radius: 0;
+    background: none;
+  }
+
+  .checkbox-label input[type="checkbox"]::before {
+    display: none;
+  }
+
   .settings-actions,
   .button-row,
   .footer-actions,
@@ -1023,7 +1181,9 @@ summary:hover {
 
   .result-section h3 {
     padding: 1mm 1.5mm;
+    color: var(--accent-dark);
     font-size: 7pt;
+    text-shadow: none;
   }
 
   .result-list {
@@ -1035,7 +1195,11 @@ summary:hover {
   .result-list div {
     min-height: 6.4mm;
     padding: 1.2mm 2mm;
+    border: 0;
     border-bottom: 1px solid #edf2f5;
+    border-radius: 0;
+    background: #fff;
+    transform: none;
   }
 
   .result-list .total {
@@ -1082,12 +1246,14 @@ summary:hover {
             <h2>Invoer</h2>
           </div>
 
-          <label>
-            <span>Datum</span>
-            <input type="date" name="date">
-          </label>
+          <section class="form-section planning-section">
+            <h3>Planning</h3>
+            <div class="planning-grid">
+              <label class="date-field">
+                <span>Datum</span>
+                <input type="date" name="date">
+              </label>
 
-          <div class="time-grid">
             <div class="time-field">
               <label for="startTime">Starttijd</label>
               <div class="time-control">
@@ -1107,42 +1273,46 @@ summary:hover {
                 </button>
               </div>
             </div>
-          </div>
+            </div>
+          </section>
 
-          <div class="input-options">
-            <div class="extra-option">
-              <label class="checkbox-label">
-                <input type="checkbox" name="enableDroneTariff">
-                <span>Drone tarief (+€50)</span>
-              </label>
+          <section class="form-section options-section">
+            <h3>Opties</h3>
+            <div class="input-options">
+              <div class="extra-option">
+                <label class="checkbox-label">
+                  <input type="checkbox" name="enableDroneTariff">
+                  <span>Drone tarief (+€50)</span>
+                </label>
+              </div>
+              <div class="extra-option">
+                <label class="checkbox-label">
+                  <input type="checkbox" name="enableRonin4dTariff">
+                  <span>Ronin 4D tarief (+€50)</span>
+                </label>
+              </div>
+              <div class="extra-option">
+                <label class="checkbox-label">
+                  <input type="checkbox" name="enableKilometers">
+                  <span>Kilometers rekenen</span>
+                </label>
+                <label class="extra-field" id="kilometer-input" hidden>
+                  <span>Aantal gereden km</span>
+                  <input type="number" name="kilometers" min="0" step="0.1" value="0">
+                </label>
+              </div>
+              <div class="extra-option">
+                <label class="checkbox-label">
+                  <input type="checkbox" name="enableParkingCosts">
+                  <span>Parkeer/onkosten rekenen</span>
+                </label>
+                <label class="extra-field" id="parking-input" hidden>
+                  <span>Parkeer/onkosten</span>
+                  <input type="number" name="parkingCosts" min="0" step="0.01" value="0">
+                </label>
+              </div>
             </div>
-            <div class="extra-option">
-              <label class="checkbox-label">
-                <input type="checkbox" name="enableRonin4dTariff">
-                <span>Ronin 4D tarief (+€50)</span>
-              </label>
-            </div>
-            <div class="extra-option">
-              <label class="checkbox-label">
-                <input type="checkbox" name="enableKilometers">
-                <span>Kilometers rekenen</span>
-              </label>
-              <label class="extra-field" id="kilometer-input" hidden>
-                <span>Aantal gereden km</span>
-                <input type="number" name="kilometers" min="0" step="0.1" value="0">
-              </label>
-            </div>
-            <div class="extra-option">
-              <label class="checkbox-label">
-                <input type="checkbox" name="enableParkingCosts">
-                <span>Parkeer/onkosten rekenen</span>
-              </label>
-              <label class="extra-field" id="parking-input" hidden>
-                <span>Parkeer/onkosten</span>
-                <input type="number" name="parkingCosts" min="0" step="0.01" value="0">
-              </label>
-            </div>
-          </div>
+          </section>
 
           <p class="notice" id="next-day-notice" hidden>
             Eindtijd wordt geïnterpreteerd als de volgende kalenderdag.
@@ -1234,8 +1404,8 @@ summary:hover {
         </form>
       </details>
 
-        <section class="panel result-panel" aria-live="polite">
-          <div class="panel-header">
+        <section class="result-panel" aria-live="polite">
+          <div class="result-header">
             <h2>Berekening</h2>
           </div>
 
