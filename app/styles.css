@@ -50,6 +50,15 @@ select {
   border-radius: 8px 8px 0 0;
 }
 
+.header-brand {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: right;
+  text-transform: uppercase;
+}
+
 .eyebrow {
   margin: 0 0 4px;
   color: var(--muted);
@@ -572,6 +581,10 @@ summary {
     border-radius: 8px;
   }
 
+  .header-brand {
+    text-align: left;
+  }
+
   .result-list div {
     grid-template-columns: 1fr;
     gap: 4px;
@@ -650,6 +663,10 @@ summary {
     padding: 5mm 6mm 4mm;
     border-radius: 0;
     border-color: var(--line);
+  }
+
+  .header-brand {
+    font-size: 6.5pt;
   }
 
   .eyebrow {
