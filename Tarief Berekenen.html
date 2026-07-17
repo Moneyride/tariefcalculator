@@ -23,7 +23,7 @@
   --accent-dark: #17342a;
   --accent-soft: #e9f1ed;
   --mint: #7fc8ad;
-  --orange: #ff6b18;
+  --orange: #ff6a1a;
   --orange-dark: #db5108;
   --orange-soft: #fff0e7;
   --warning: #7f480e;
@@ -54,15 +54,15 @@ body::before {
   z-index: -2;
   background: url("background.png") center center / cover no-repeat;
   content: "";
-  filter: blur(3px) saturate(78%);
-  transform: scale(1.012);
+  filter: blur(28px) contrast(72%) saturate(88%);
+  transform: scale(1.1);
 }
 
 body::after {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(180deg, rgba(13, 24, 21, 0.28), rgba(13, 24, 21, 0.46));
+  background: linear-gradient(180deg, rgba(20, 30, 27, 0.16), rgba(15, 25, 22, 0.5));
   content: "";
   pointer-events: none;
 }
@@ -78,7 +78,18 @@ select {
   z-index: 0;
   width: min(1200px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 0 0 64px;
+  padding: 0 0 48px;
+}
+
+.main-glass {
+  overflow: visible;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.14);
+  -webkit-backdrop-filter: blur(28px) saturate(108%);
+  backdrop-filter: blur(28px) saturate(108%);
 }
 
 .page-header {
@@ -87,17 +98,17 @@ select {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  min-height: 82px;
-  padding: 18px 26px;
+  min-height: 86px;
+  padding: 20px 30px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.58);
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  border-top: 0;
-  border-radius: 0 0 8px 8px;
-  box-shadow: var(--shadow);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgba(31, 67, 53, 0.1);
+  border-radius: 0;
+  box-shadow: none;
   color: var(--text);
-  -webkit-backdrop-filter: blur(28px) saturate(110%);
-  backdrop-filter: blur(28px) saturate(110%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 .page-header::after {
@@ -122,7 +133,7 @@ select {
 
 .header-brand {
   margin: 0 0 0 auto;
-  color: var(--accent);
+  color: var(--muted);
   font-size: 0.72rem;
   font-weight: 700;
   text-align: right;
@@ -161,8 +172,8 @@ h3 {
 
 .calculator-grid {
   display: grid;
-  gap: 28px;
-  margin-top: 28px;
+  gap: 0;
+  margin-top: 0;
 }
 
 .panel {
@@ -187,25 +198,25 @@ h3 {
 }
 
 .input-panel {
-  padding-bottom: 28px;
+  padding-bottom: 30px;
 }
 
 .form-section {
-  padding: 24px 28px 0;
+  padding: 30px 30px 0;
 }
 
 .form-section + .form-section {
-  margin-top: 28px;
-  padding-top: 28px;
-  border-top: 1px solid rgba(255, 255, 255, 0.42);
+  margin-top: 30px;
+  padding-top: 30px;
+  border-top: 1px solid rgba(31, 67, 53, 0.1);
 }
 
 .form-section > h3 {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   color: var(--accent);
-  font-size: 0.78rem;
-  font-weight: 800;
-  text-transform: uppercase;
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: none;
 }
 
 .planning-grid {
@@ -244,11 +255,11 @@ select {
   width: 100%;
   min-height: 54px;
   padding: 14px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.48);
-  border-radius: 6px;
+  border: 1px solid rgba(31, 67, 53, 0.1);
+  border-radius: 12px;
   color: var(--text);
-  background: rgba(255, 255, 255, 0.5);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.64), 0 1px 2px rgba(31, 41, 55, 0.04);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
@@ -261,17 +272,17 @@ input[readonly] {
 input:focus,
 select:focus {
   outline: 0;
-  border-color: var(--orange);
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow: 0 0 0 4px rgba(255, 106, 26, 0.14);
+  border-color: rgba(255, 106, 26, 0.55);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 0 0 4px rgba(255, 106, 26, 0.1);
 }
 
 .time-control input[data-time-picker] {
   display: block;
   padding-right: 48px;
-  border-left: 1px solid rgba(162, 181, 174, 0.66);
-  border-right: 1px solid rgba(162, 181, 174, 0.66);
-  border-radius: 6px;
+  border-left: 1px solid rgba(31, 67, 53, 0.1);
+  border-right: 1px solid rgba(31, 67, 53, 0.1);
+  border-radius: 12px;
   text-align: left;
   font-variant-numeric: tabular-nums;
   font-weight: 400;
@@ -286,9 +297,9 @@ select:focus {
   min-height: 52px;
   padding: 0;
   border-color: transparent;
-  border-left: 1px solid rgba(162, 181, 174, 0.5);
-  border-radius: 0 5px 5px 0;
-  background: rgba(241, 247, 244, 0.62);
+  border-left: 1px solid rgba(31, 67, 53, 0.1);
+  border-radius: 0 11px 11px 0;
+  background: rgba(255, 255, 255, 0.3);
   color: var(--accent);
   touch-action: manipulation;
 }
@@ -337,7 +348,7 @@ select:focus {
   max-height: 260px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.58);
-  border-radius: 6px;
+  border-radius: 12px;
   background: rgba(248, 250, 248, 0.9);
   box-shadow: 0 18px 42px rgba(3, 55, 52, 0.18);
   -webkit-backdrop-filter: blur(22px) saturate(120%);
@@ -406,7 +417,7 @@ button {
   min-height: 50px;
   padding: 13px 22px;
   border: 1px solid var(--accent);
-  border-radius: 6px;
+  border-radius: 12px;
   background: var(--accent);
   color: white;
   cursor: pointer;
@@ -430,7 +441,7 @@ summary:focus-visible,
   min-width: 190px;
   border-color: var(--orange);
   background: var(--orange);
-  box-shadow: 0 10px 24px rgba(255, 106, 26, 0.22);
+  box-shadow: 0 8px 20px rgba(255, 106, 26, 0.2);
 }
 
 #recalculate:hover {
@@ -455,19 +466,21 @@ button.secondary:hover {
 }
 
 .result-panel {
-  padding-top: 4px;
+  padding: 30px;
+  border-top: 1px solid rgba(31, 67, 53, 0.1);
 }
 
 .result-header {
-  padding: 0 2px;
-  color: #fff;
-  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.28);
+  padding: 0;
+  color: var(--text);
+  text-shadow: none;
 }
 
 .result-sections {
   display: grid;
-  gap: 28px;
-  padding: 20px 0 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 30px;
+  padding: 24px 0 0;
 }
 
 .result-section {
@@ -478,47 +491,49 @@ button.secondary:hover {
 }
 
 .result-section h3 {
-  padding: 0 2px 12px;
+  padding: 0 0 10px;
   border: 0;
   background: transparent;
-  color: rgba(255, 255, 255, 0.86);
-  font-weight: 800;
-  text-transform: uppercase;
-  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.24);
+  color: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: none;
+  text-shadow: none;
 }
 
 .result-list {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  display: block;
   margin: 0;
 }
 
 .result-list div {
   display: flex;
   min-width: 0;
-  min-height: 112px;
-  flex-direction: column;
+  min-height: 46px;
+  flex-direction: row;
   justify-content: space-between;
-  gap: 16px;
-  padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.68);
-  box-shadow: var(--shadow);
-  -webkit-backdrop-filter: blur(24px) saturate(108%);
-  backdrop-filter: blur(24px) saturate(108%);
-  transition: background-color 150ms ease, transform 150ms ease;
+  align-items: center;
+  gap: 20px;
+  padding: 11px 0;
+  border: 0;
+  border-bottom: 1px solid rgba(31, 67, 53, 0.1);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  transition: opacity 150ms ease;
 }
 
 .result-list div:hover {
-  background: rgba(255, 255, 255, 0.78);
-  transform: translateY(-1px);
+  background: transparent;
+  opacity: 0.78;
+  transform: none;
 }
 
 dt {
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.86rem;
   font-weight: 650;
   line-height: 1.4;
 }
@@ -526,37 +541,50 @@ dt {
 dd {
   margin: 0;
   color: var(--text);
-  font-size: 1.35rem;
+  font-size: 0.98rem;
   font-variant-numeric: tabular-nums;
   font-weight: 750;
   line-height: 1.2;
-  text-align: left;
+  text-align: right;
 }
 
 .result-summary {
-  border: 0;
-  box-shadow: none;
+  grid-column: 1 / -1;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 8px;
+  background: rgba(23, 63, 54, 0.92);
+  box-shadow: 0 16px 36px rgba(23, 63, 54, 0.18);
 }
 
 .result-summary h3 {
   background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
 }
 
 .result-summary .result-list {
+  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 28px;
 }
 
 .result-list .total {
   grid-column: 1 / -1;
-  min-height: 164px;
-  padding: 26px;
-  background: rgba(31, 67, 53, 0.9);
+  min-height: 128px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 26px 0 0;
+  border-bottom: 0;
+  background: transparent;
   color: #fff;
-  box-shadow: 0 14px 34px rgba(17, 45, 35, 0.22);
+  box-shadow: none;
 }
 
 .result-list .total:hover {
-  background: rgba(31, 67, 53, 0.96);
+  background: transparent;
 }
 
 .result-list .total dt {
@@ -565,16 +593,23 @@ dd {
 }
 
 .result-list .total dd {
-  color: #fff;
+  color: var(--orange);
   font-size: clamp(2rem, 5vw, 2.8rem);
+  text-align: left;
+}
+
+.result-summary .result-list > div:not(.total) dt,
+.result-summary .result-list > div:not(.total) dd {
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .settings-panel {
   overflow: visible;
+  border-top: 1px solid rgba(31, 67, 53, 0.1);
 }
 
 summary {
-  padding: 22px 28px;
+  padding: 24px 30px;
   background: transparent;
   cursor: pointer;
   font-size: 1.05rem;
@@ -595,7 +630,7 @@ summary:hover {
   display: grid;
   grid-template-columns: repeat(2, minmax(260px, 1fr));
   gap: 28px;
-  padding: 4px 28px 28px;
+  padding: 4px 30px 30px;
 }
 
 .input-options,
@@ -605,6 +640,11 @@ summary:hover {
   grid-column: 1 / -1;
   grid-template-columns: repeat(2, minmax(220px, 1fr));
   gap: 0 8px;
+}
+
+.input-options {
+  grid-template-columns: 1fr;
+  gap: 0;
 }
 
 .settings-section {
@@ -625,9 +665,9 @@ summary:hover {
   margin-left: 0;
   padding: 0 10px 0 0;
   color: var(--accent);
-  font-size: 0.78rem;
-  font-weight: 800;
-  text-transform: uppercase;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: none;
 }
 
 .settings-section-basic,
@@ -658,40 +698,41 @@ summary:hover {
 }
 
 .input-options {
-  gap: 12px;
+  gap: 0;
   margin: 0;
 }
 
 .extra-option {
   display: grid;
   align-content: start;
-  min-height: 64px;
-  border: 1px solid rgba(255, 255, 255, 0.38);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.3);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), 0 4px 14px rgba(31, 41, 55, 0.03);
-  transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease;
+  min-height: 58px;
+  border: 0;
+  border-bottom: 1px solid rgba(31, 67, 53, 0.1);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: background-color 150ms ease;
 }
 
 .extra-option:hover {
-  background: rgba(255, 255, 255, 0.42);
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.2);
+  transform: none;
 }
 
 .extra-option:has(input[type="checkbox"]:checked) {
-  border-color: rgba(31, 67, 53, 0.22);
-  background: rgba(233, 241, 237, 0.68);
+  border-color: rgba(31, 67, 53, 0.1);
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .extra-option .checkbox-label {
-  min-height: 62px;
-  padding: 12px 16px;
+  min-height: 58px;
+  padding: 10px 4px;
 }
 
 .extra-field {
   display: grid;
   gap: 6px;
-  padding: 0 16px 16px;
+  padding: 0 4px 16px 58px;
   color: var(--muted);
   font-size: 0.86rem;
   font-weight: 700;
@@ -749,7 +790,7 @@ summary:hover {
 }
 
 .checkbox-label input[type="checkbox"]:checked {
-  background: var(--accent);
+  background: var(--orange);
 }
 
 .checkbox-label input[type="checkbox"]:checked::before {
@@ -791,14 +832,15 @@ summary:hover {
   justify-content: flex-end;
   gap: 14px;
   flex-wrap: wrap;
-  margin-top: 28px;
-  padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.38);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.5);
-  box-shadow: var(--shadow);
-  -webkit-backdrop-filter: blur(28px) saturate(108%);
-  backdrop-filter: blur(28px) saturate(108%);
+  margin-top: 0;
+  padding: 24px 30px 30px;
+  border: 0;
+  border-top: 1px solid rgba(31, 67, 53, 0.1);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 .footer-actions .secondary {
@@ -863,8 +905,8 @@ summary:hover {
   }
 
   .calculator-grid {
-    gap: 24px;
-    margin-top: 20px;
+    gap: 0;
+    margin-top: 0;
   }
 
   .panel-header {
@@ -881,19 +923,23 @@ summary:hover {
   }
 
   .result-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    display: block;
   }
 
   .result-list div {
-    min-height: 116px;
-    gap: 12px;
-    padding: 16px;
+    min-height: 44px;
+    gap: 16px;
+    padding: 10px 0;
+  }
+
+  .result-panel {
+    padding: 24px 20px;
   }
 
   .result-sections {
+    grid-template-columns: 1fr;
     gap: 24px;
-    padding: 16px 0 0;
+    padding: 20px 0 0;
   }
 
   .result-summary .result-list {
@@ -901,8 +947,8 @@ summary:hover {
   }
 
   .result-list .total {
-    min-height: 148px;
-    padding: 22px;
+    min-height: 122px;
+    padding: 22px 0 0;
   }
 
   .settings-grid {
@@ -912,6 +958,7 @@ summary:hover {
 
   .footer-actions {
     justify-content: stretch;
+    padding: 20px;
   }
 
   .footer-actions button {
@@ -962,6 +1009,14 @@ summary:hover {
     padding: 0;
   }
 
+  .main-glass {
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
   .page-header {
     position: static;
     padding: 5mm 6mm 4mm;
@@ -1009,6 +1064,7 @@ summary:hover {
   .result-panel {
     grid-column: 2;
     grid-row: 1 / span 2;
+    padding: 0;
   }
 
   .panel {
@@ -1179,6 +1235,12 @@ summary:hover {
     border-radius: 0;
   }
 
+  .result-summary {
+    padding: 0;
+    border: 0;
+    background: #fff;
+  }
+
   .result-section h3 {
     padding: 1mm 1.5mm;
     color: var(--accent-dark);
@@ -1208,6 +1270,16 @@ summary:hover {
     font-size: 10pt;
   }
 
+  .result-list .total dd {
+    color: var(--text);
+  }
+
+  .result-summary .result-list > div:not(.total) dt,
+  .result-summary .result-list > div:not(.total) dd,
+  .result-list .total dt {
+    color: var(--text);
+  }
+
   dt {
     font-size: 7pt;
   }
@@ -1232,6 +1304,7 @@ summary:hover {
   </head>
   <body>
     <main class="app-shell">
+      <div class="main-glass">
       <header class="page-header">
         <div class="header-title">
           <img class="header-mark" src="favicon.png" alt="">
@@ -1241,11 +1314,7 @@ summary:hover {
       </header>
 
       <section class="calculator-grid">
-        <form class="panel input-panel" id="calculator-form">
-          <div class="panel-header">
-            <h2>Invoer</h2>
-          </div>
-
+        <form class="input-panel" id="calculator-form">
           <section class="form-section planning-section">
             <h3>Planning</h3>
             <div class="planning-grid">
@@ -1277,7 +1346,7 @@ summary:hover {
           </section>
 
           <section class="form-section options-section">
-            <h3>Opties</h3>
+            <h3>Extra’s</h3>
             <div class="input-options">
               <div class="extra-option">
                 <label class="checkbox-label">
@@ -1327,7 +1396,7 @@ summary:hover {
           <p class="copy-status" id="copy-status" aria-live="polite"></p>
         </form>
 
-        <details class="panel settings-panel" id="settings-panel">
+        <details class="settings-panel" id="settings-panel">
         <summary>Instellingen</summary>
         <form id="settings-form" class="settings-grid">
           <fieldset class="settings-section settings-section-basic">
@@ -1406,12 +1475,12 @@ summary:hover {
 
         <section class="result-panel" aria-live="polite">
           <div class="result-header">
-            <h2>Berekening</h2>
+            <h2>Resultaat</h2>
           </div>
 
           <div class="result-sections">
             <section class="result-section">
-              <h3>Uren</h3>
+              <h3>Werktijd</h3>
               <dl class="result-list">
                 <div><dt>Totaal gewerkte uren</dt><dd data-result="totalHours">0 uur</dd></div>
                 <div><dt>Aantal overuren</dt><dd data-result="overtimeHours">0 uur</dd></div>
@@ -1454,6 +1523,7 @@ summary:hover {
         <button class="secondary" type="button" id="save-pdf">Pdf opslaan</button>
       </div>
       <p class="print-footer">Powered by Reichgelt Media Group</p>
+      </div>
     </main>
     <script>
 (() => {

@@ -7,12 +7,13 @@
     <title>Tarief Berekenen</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
-    <link rel="stylesheet" href="styles.css?v=20260717ai">
-    <script src="calculator.js?v=20260717ai" defer></script>
-    <script src="app.js?v=20260717ai" defer></script>
+    <link rel="stylesheet" href="styles.css?v=20260717aj">
+    <script src="calculator.js?v=20260717aj" defer></script>
+    <script src="app.js?v=20260717aj" defer></script>
   </head>
   <body>
     <main class="app-shell">
+      <div class="main-glass">
       <header class="page-header">
         <div class="header-title">
           <img class="header-mark" src="favicon.png" alt="">
@@ -22,11 +23,7 @@
       </header>
 
       <section class="calculator-grid">
-        <form class="panel input-panel" id="calculator-form">
-          <div class="panel-header">
-            <h2>Invoer</h2>
-          </div>
-
+        <form class="input-panel" id="calculator-form">
           <section class="form-section planning-section">
             <h3>Planning</h3>
             <div class="planning-grid">
@@ -58,7 +55,7 @@
           </section>
 
           <section class="form-section options-section">
-            <h3>Opties</h3>
+            <h3>Extra’s</h3>
             <div class="input-options">
               <div class="extra-option">
                 <label class="checkbox-label">
@@ -108,7 +105,7 @@
           <p class="copy-status" id="copy-status" aria-live="polite"></p>
         </form>
 
-        <details class="panel settings-panel" id="settings-panel">
+        <details class="settings-panel" id="settings-panel">
         <summary>Instellingen</summary>
         <form id="settings-form" class="settings-grid">
           <fieldset class="settings-section settings-section-basic">
@@ -187,12 +184,12 @@
 
         <section class="result-panel" aria-live="polite">
           <div class="result-header">
-            <h2>Berekening</h2>
+            <h2>Resultaat</h2>
           </div>
 
           <div class="result-sections">
             <section class="result-section">
-              <h3>Uren</h3>
+              <h3>Werktijd</h3>
               <dl class="result-list">
                 <div><dt>Totaal gewerkte uren</dt><dd data-result="totalHours">0 uur</dd></div>
                 <div><dt>Aantal overuren</dt><dd data-result="overtimeHours">0 uur</dd></div>
@@ -235,6 +232,7 @@
         <button class="secondary" type="button" id="save-pdf">Pdf opslaan</button>
       </div>
       <p class="print-footer">Powered by Reichgelt Media Group</p>
+      </div>
     </main>
   </body>
 </html>
