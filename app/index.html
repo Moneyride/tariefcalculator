@@ -7,9 +7,9 @@
     <title>Tarief Berekenen</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
-    <link rel="stylesheet" href="styles.css?v=20260718ap">
-    <script src="calculator.js?v=20260718ap" defer></script>
-    <script src="app.js?v=20260718ap" defer></script>
+    <link rel="stylesheet" href="styles.css?v=20260718aq">
+    <script src="calculator.js?v=20260718aq" defer></script>
+    <script src="app.js?v=20260718aq" defer></script>
   </head>
   <body>
     <main class="app-shell">
@@ -24,6 +24,20 @@
 
       <section class="calculator-grid">
         <form class="input-panel" id="calculator-form">
+          <section class="form-section department-section">
+            <h3>Afdeling</h3>
+            <fieldset class="department-switch" aria-label="Afdeling kiezen">
+              <label class="department-choice">
+                <input type="radio" name="department" value="camera" checked>
+                <span>Camera</span>
+              </label>
+              <label class="department-choice">
+                <input type="radio" name="department" value="audio">
+                <span>Audio</span>
+              </label>
+            </fieldset>
+          </section>
+
           <section class="form-section planning-section">
             <h3>Planning</h3>
             <div class="planning-grid">
@@ -60,13 +74,13 @@
               <div class="extra-option">
                 <label class="checkbox-label">
                   <input type="checkbox" name="enableDroneTariff">
-                  <span>Drone tarief (+€50)</span>
+                  <span>Drone tarief</span>
                 </label>
               </div>
-              <div class="extra-option">
+              <div class="extra-option" id="ronin-option">
                 <label class="checkbox-label">
                   <input type="checkbox" name="enableRonin4dTariff">
-                  <span>Ronin 4D tarief (+€50)</span>
+                  <span>Ronin 4D tarief</span>
                 </label>
               </div>
               <div class="extra-option">
@@ -164,6 +178,8 @@
 
           <fieldset class="settings-section settings-section-expenses">
             <legend>Vergoedingen</legend>
+            <label><span>Drone tarief</span><input type="number" name="droneTariffAmount" min="0" step="0.01" required></label>
+            <label><span>Ronin 4D tarief</span><input type="number" name="ronin4dTariffAmount" min="0" step="0.01" required></label>
             <label><span>Km vergoeding</span><input type="number" name="kilometerRate" min="0" step="0.01" required></label>
           </fieldset>
 

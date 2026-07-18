@@ -229,6 +229,63 @@ h3 {
   text-transform: none;
 }
 
+.department-section {
+  padding-top: 26px;
+}
+
+.department-section > h3 {
+  margin-bottom: 12px;
+}
+
+.department-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(320px, 100%);
+  margin: 0;
+  padding: 4px;
+  border: 1px solid rgba(31, 67, 53, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.department-choice {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+
+.department-choice input {
+  position: absolute;
+  width: 1px;
+  min-height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.department-choice span {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 16px;
+  border-radius: 6px;
+  color: var(--muted);
+  font-weight: 750;
+  transition: color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.department-choice input:checked + span {
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 3px 10px rgba(31, 41, 55, 0.07);
+  color: var(--accent-dark);
+}
+
+.department-choice input:focus-visible + span {
+  outline: 3px solid rgba(255, 106, 26, 0.16);
+  outline-offset: 1px;
+}
+
 .planning-grid {
   display: grid;
   grid-template-columns: 1.15fr 1fr 1fr;
@@ -717,6 +774,10 @@ summary:hover {
   gap: 10px;
 }
 
+.input-options[data-department="audio"] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .settings-section {
   display: grid;
   grid-template-columns: repeat(2, minmax(180px, 1fr));
@@ -781,6 +842,10 @@ summary:hover {
   background: rgba(255, 255, 255, 0.14);
   box-shadow: none;
   transition: background-color 150ms ease;
+}
+
+.extra-option[hidden] {
+  display: none;
 }
 
 .extra-option:hover {
@@ -1011,6 +1076,14 @@ summary:hover {
   .settings-section,
   .checkbox-stack,
   .night-settings {
+    grid-template-columns: 1fr;
+  }
+
+  .department-switch {
+    width: 100%;
+  }
+
+  .input-options[data-department="audio"] {
     grid-template-columns: 1fr;
   }
 
@@ -1651,6 +1724,20 @@ summary:hover {
 
       <section class="calculator-grid">
         <form class="input-panel" id="calculator-form">
+          <section class="form-section department-section">
+            <h3>Afdeling</h3>
+            <fieldset class="department-switch" aria-label="Afdeling kiezen">
+              <label class="department-choice">
+                <input type="radio" name="department" value="camera" checked>
+                <span>Camera</span>
+              </label>
+              <label class="department-choice">
+                <input type="radio" name="department" value="audio">
+                <span>Audio</span>
+              </label>
+            </fieldset>
+          </section>
+
           <section class="form-section planning-section">
             <h3>Planning</h3>
             <div class="planning-grid">
@@ -1687,13 +1774,13 @@ summary:hover {
               <div class="extra-option">
                 <label class="checkbox-label">
                   <input type="checkbox" name="enableDroneTariff">
-                  <span>Drone tarief (+€50)</span>
+                  <span>Drone tarief</span>
                 </label>
               </div>
-              <div class="extra-option">
+              <div class="extra-option" id="ronin-option">
                 <label class="checkbox-label">
                   <input type="checkbox" name="enableRonin4dTariff">
-                  <span>Ronin 4D tarief (+€50)</span>
+                  <span>Ronin 4D tarief</span>
                 </label>
               </div>
               <div class="extra-option">
@@ -1791,6 +1878,8 @@ summary:hover {
 
           <fieldset class="settings-section settings-section-expenses">
             <legend>Vergoedingen</legend>
+            <label><span>Drone tarief</span><input type="number" name="droneTariffAmount" min="0" step="0.01" required></label>
+            <label><span>Ronin 4D tarief</span><input type="number" name="ronin4dTariffAmount" min="0" step="0.01" required></label>
             <label><span>Km vergoeding</span><input type="number" name="kilometerRate" min="0" step="0.01" required></label>
           </fieldset>
 
@@ -1915,6 +2004,8 @@ const DEFAULT_SETTINGS = {
   nightStart: "00:00",
   nightEnd: "06:00",
   nightRoundingMinutes: 15,
+  droneTariffAmount: 50,
+  ronin4dTariffAmount: 50,
   kilometerRate: 0.55
 };
 
@@ -1928,8 +2019,6 @@ const OVERTIME_12_PLUS_FACTOR = 2;
 const OVERTIME_14_PLUS_FACTOR = 2.5;
 const STANDARD_OVERTIME_FACTOR = 1;
 const HALF_DAY_FACTOR = 0.75;
-const DRONE_TARIFF_AMOUNT = 50;
-const RONIN_4D_TARIFF_AMOUNT = 50;
 
 function parseTimeToMinutes(time) {
   if (!/^\d{2}:\d{2}$/.test(time)) {
@@ -2112,8 +2201,8 @@ function calculateTariff(input, customSettings = {}) {
   const pureNightAmount = pureNightHours * hourlyRate * settings.pureNightFactor;
   const overlapNightAmount = nightOvertimeHours * hourlyRate * settings.nightOverlapSurchargeFactor;
   const nightAmount = nightTariffEnabled ? pureNightAmount + overlapNightAmount : 0;
-  const droneTariffAmount = input.enableDroneTariff ? DRONE_TARIFF_AMOUNT : 0;
-  const ronin4dTariffAmount = input.enableRonin4dTariff ? RONIN_4D_TARIFF_AMOUNT : 0;
+  const droneTariffAmount = input.enableDroneTariff ? settings.droneTariffAmount : 0;
+  const ronin4dTariffAmount = input.enableRonin4dTariff ? settings.ronin4dTariffAmount : 0;
   const kilometers = input.enableKilometers ? Math.max(0, Number(input.kilometers) || 0) : 0;
   const kilometerAmount = kilometers * settings.kilometerRate;
   const parkingAmount = input.enableParkingCosts ? Math.max(0, Number(input.parkingCosts) || 0) : 0;
@@ -2194,6 +2283,9 @@ const settingsStatus = document.querySelector("#settings-status");
 const details = document.querySelector("#settings-panel");
 const kilometerInput = document.querySelector("#kilometer-input");
 const parkingInput = document.querySelector("#parking-input");
+const inputOptions = document.querySelector(".input-options");
+const roninOption = document.querySelector("#ronin-option");
+const roninResultRow = document.querySelector('[data-result="ronin4dTariffAmount"]').closest("div");
 
 const euroFormatter = new Intl.NumberFormat("nl-NL", {
   style: "currency",
@@ -2244,6 +2336,8 @@ function getSettingsFromForm() {
     nightStart: formData.get("nightStart"),
     nightEnd: formData.get("nightEnd"),
     nightRoundingMinutes: DEFAULT_SETTINGS.nightRoundingMinutes,
+    droneTariffAmount: readNumber(formData, "droneTariffAmount"),
+    ronin4dTariffAmount: readNumber(formData, "ronin4dTariffAmount"),
     kilometerRate: readNumber(formData, "kilometerRate")
   };
 }
@@ -2420,13 +2514,14 @@ function updateCalculation() {
 
   const settings = getSettingsFromForm();
   const formData = new FormData(form);
+  const department = formData.get("department");
 
   const result = calculateTariff(
     {
       startTime: form.elements.namedItem("startTime").value,
       endTime: form.elements.namedItem("endTime").value,
       enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
-      enableRonin4dTariff: readCheckbox(formData, "enableRonin4dTariff"),
+      enableRonin4dTariff: department === "camera" && readCheckbox(formData, "enableRonin4dTariff"),
       enableKilometers: readCheckbox(formData, "enableKilometers"),
       kilometers: readNumber(formData, "kilometers"),
       enableParkingCosts: readCheckbox(formData, "enableParkingCosts"),
@@ -2485,6 +2580,21 @@ function updateKilometerVisibility() {
 function updateParkingVisibility() {
   const parkingEnabled = form.elements.namedItem("enableParkingCosts").checked;
   parkingInput.hidden = !parkingEnabled;
+}
+
+function updateDepartmentVisibility() {
+  const department = form.elements.namedItem("department").value || "camera";
+  const showRonin = department === "camera";
+  const roninCheckbox = form.elements.namedItem("enableRonin4dTariff");
+
+  inputOptions.dataset.department = department;
+  roninOption.hidden = !showRonin;
+  roninResultRow.hidden = !showRonin;
+
+  if (!showRonin) {
+    roninCheckbox.checked = false;
+    setResult("ronin4dTariffAmount", 0, formatEuro);
+  }
 }
 
 function markCalculationStale() {
@@ -2637,6 +2747,7 @@ function setupTimePicker(field) {
 }
 
 populateSettings(getSavedSettings());
+updateDepartmentVisibility();
 updateCalculation();
 updateNightSettingsVisibility();
 updateKilometerVisibility();
@@ -2652,6 +2763,7 @@ document.addEventListener("keydown", (event) => {
 
 form.addEventListener("input", markCalculationStale);
 form.addEventListener("change", () => {
+  updateDepartmentVisibility();
   updateKilometerVisibility();
   updateParkingVisibility();
   markCalculationStale();

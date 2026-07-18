@@ -13,6 +13,8 @@ const DEFAULT_SETTINGS = {
   nightStart: "00:00",
   nightEnd: "06:00",
   nightRoundingMinutes: 15,
+  droneTariffAmount: 50,
+  ronin4dTariffAmount: 50,
   kilometerRate: 0.55
 };
 
@@ -26,8 +28,6 @@ const OVERTIME_12_PLUS_FACTOR = 2;
 const OVERTIME_14_PLUS_FACTOR = 2.5;
 const STANDARD_OVERTIME_FACTOR = 1;
 const HALF_DAY_FACTOR = 0.75;
-const DRONE_TARIFF_AMOUNT = 50;
-const RONIN_4D_TARIFF_AMOUNT = 50;
 
 function parseTimeToMinutes(time) {
   if (!/^\d{2}:\d{2}$/.test(time)) {
@@ -210,8 +210,8 @@ function calculateTariff(input, customSettings = {}) {
   const pureNightAmount = pureNightHours * hourlyRate * settings.pureNightFactor;
   const overlapNightAmount = nightOvertimeHours * hourlyRate * settings.nightOverlapSurchargeFactor;
   const nightAmount = nightTariffEnabled ? pureNightAmount + overlapNightAmount : 0;
-  const droneTariffAmount = input.enableDroneTariff ? DRONE_TARIFF_AMOUNT : 0;
-  const ronin4dTariffAmount = input.enableRonin4dTariff ? RONIN_4D_TARIFF_AMOUNT : 0;
+  const droneTariffAmount = input.enableDroneTariff ? settings.droneTariffAmount : 0;
+  const ronin4dTariffAmount = input.enableRonin4dTariff ? settings.ronin4dTariffAmount : 0;
   const kilometers = input.enableKilometers ? Math.max(0, Number(input.kilometers) || 0) : 0;
   const kilometerAmount = kilometers * settings.kilometerRate;
   const parkingAmount = input.enableParkingCosts ? Math.max(0, Number(input.parkingCosts) || 0) : 0;

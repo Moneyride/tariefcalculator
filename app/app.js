@@ -17,6 +17,9 @@ const settingsStatus = document.querySelector("#settings-status");
 const details = document.querySelector("#settings-panel");
 const kilometerInput = document.querySelector("#kilometer-input");
 const parkingInput = document.querySelector("#parking-input");
+const inputOptions = document.querySelector(".input-options");
+const roninOption = document.querySelector("#ronin-option");
+const roninResultRow = document.querySelector('[data-result="ronin4dTariffAmount"]').closest("div");
 
 const euroFormatter = new Intl.NumberFormat("nl-NL", {
   style: "currency",
@@ -67,6 +70,8 @@ function getSettingsFromForm() {
     nightStart: formData.get("nightStart"),
     nightEnd: formData.get("nightEnd"),
     nightRoundingMinutes: DEFAULT_SETTINGS.nightRoundingMinutes,
+    droneTariffAmount: readNumber(formData, "droneTariffAmount"),
+    ronin4dTariffAmount: readNumber(formData, "ronin4dTariffAmount"),
     kilometerRate: readNumber(formData, "kilometerRate")
   };
 }
@@ -243,13 +248,14 @@ function updateCalculation() {
 
   const settings = getSettingsFromForm();
   const formData = new FormData(form);
+  const department = formData.get("department");
 
   const result = calculateTariff(
     {
       startTime: form.elements.namedItem("startTime").value,
       endTime: form.elements.namedItem("endTime").value,
       enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
-      enableRonin4dTariff: readCheckbox(formData, "enableRonin4dTariff"),
+      enableRonin4dTariff: department === "camera" && readCheckbox(formData, "enableRonin4dTariff"),
       enableKilometers: readCheckbox(formData, "enableKilometers"),
       kilometers: readNumber(formData, "kilometers"),
       enableParkingCosts: readCheckbox(formData, "enableParkingCosts"),
@@ -308,6 +314,21 @@ function updateKilometerVisibility() {
 function updateParkingVisibility() {
   const parkingEnabled = form.elements.namedItem("enableParkingCosts").checked;
   parkingInput.hidden = !parkingEnabled;
+}
+
+function updateDepartmentVisibility() {
+  const department = form.elements.namedItem("department").value || "camera";
+  const showRonin = department === "camera";
+  const roninCheckbox = form.elements.namedItem("enableRonin4dTariff");
+
+  inputOptions.dataset.department = department;
+  roninOption.hidden = !showRonin;
+  roninResultRow.hidden = !showRonin;
+
+  if (!showRonin) {
+    roninCheckbox.checked = false;
+    setResult("ronin4dTariffAmount", 0, formatEuro);
+  }
 }
 
 function markCalculationStale() {
@@ -460,6 +481,7 @@ function setupTimePicker(field) {
 }
 
 populateSettings(getSavedSettings());
+updateDepartmentVisibility();
 updateCalculation();
 updateNightSettingsVisibility();
 updateKilometerVisibility();
@@ -475,6 +497,7 @@ document.addEventListener("keydown", (event) => {
 
 form.addEventListener("input", markCalculationStale);
 form.addEventListener("change", () => {
+  updateDepartmentVisibility();
   updateKilometerVisibility();
   updateParkingVisibility();
   markCalculationStale();
