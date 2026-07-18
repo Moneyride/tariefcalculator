@@ -1,4 +1,4 @@
-Tarief Berekenen
+Overuurtje.nl
 
 Dit is een kleine lokale browsertool om snel een klus-tarief te berekenen.
 Je vult een datum, starttijd, eindtijd en instellingen in. De tool berekent daarna het tarief, overuren, nachttarief, btw en totaalbedrag.
@@ -9,10 +9,10 @@ Er is geen login, database, internetverbinding of installatie nodig.
 Snel gebruiken
 
 1. Open deze map.
-2. Open "Tarief Berekenen.html".
-3. Tarief Berekenen opent in je browser.
+2. Open "Overuurtje.html".
+3. Overuurtje.nl opent in je browser.
 
-Op een telefoon werkt "Tarief Berekenen.html" het beste, omdat alles in één bestand zit.
+Op een telefoon werkt "Overuurtje.html" het beste, omdat alles in één bestand zit.
 Als iCloud of Bestanden alleen een voorbeeld toont, gebruik dan de deelknop en kies "Open in Safari".
 
 Gebruik
