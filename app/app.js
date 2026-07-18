@@ -66,7 +66,7 @@ function getSettingsFromForm() {
     enableOvertimeFrom12: readCheckbox(formData, "enableOvertimeFrom12"),
     enableOvertimeFrom14: readCheckbox(formData, "enableOvertimeFrom14"),
     enableNightTariff: readCheckbox(formData, "enableNightTariff"),
-    pureNightFactor: DEFAULT_SETTINGS.pureNightFactor,
+    pureNightSurchargeFactor: DEFAULT_SETTINGS.pureNightSurchargeFactor,
     nightOverlapSurchargeFactor: DEFAULT_SETTINGS.nightOverlapSurchargeFactor,
     nightStart: formData.get("nightStart"),
     nightEnd: formData.get("nightEnd"),
@@ -181,8 +181,8 @@ function renderPrintBreakdown(result) {
   );
   addPrintCalculationLine(
     lines,
-    "Pure nachturen",
-    `${formatCalculation(result.pureNightHours, result.hourlyRate, 2)} (geen overuren)`,
+    "Pure nachturen (100% toeslag)",
+    `${formatCalculation(result.pureNightHours, result.hourlyRate, 1)} (uur is inclusief dagtarief 200% waard)`,
     result.pureNightAmount
   );
   addPrintCalculationLine(

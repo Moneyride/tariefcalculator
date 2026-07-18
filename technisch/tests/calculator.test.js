@@ -25,7 +25,7 @@ test("08:00 tot 22:00 berekent 4 overuren en €765 exclusief btw", () => {
   assertMoney(result.subtotalExVat, 765);
 });
 
-test("16:00 tot 02:00 berekent 2 pure nachturen zonder overuren", () => {
+test("16:00 tot 02:00 geeft pure nachturen 100% toeslag zodat ze totaal 200% waard zijn", () => {
   const result = calculate("16:00", "02:00");
 
   assert.equal(result.totalHours, 10);
@@ -33,8 +33,8 @@ test("16:00 tot 02:00 berekent 2 pure nachturen zonder overuren", () => {
   assert.equal(result.nightHours, 2);
   assert.equal(result.pureNightHours, 2);
   assert.equal(result.nightOvertimeHours, 0);
-  assertMoney(result.nightAmount, 180);
-  assertMoney(result.subtotalExVat, 630);
+  assertMoney(result.nightAmount, 90);
+  assertMoney(result.subtotalExVat, 540);
 });
 
 test("16:00 tot 03:00 berekent nacht-overuur-overlap met alleen extra nachttoeslag", () => {
@@ -46,10 +46,10 @@ test("16:00 tot 03:00 berekent nacht-overuur-overlap met alleen extra nachttoesl
   assert.equal(result.pureNightHours, 2);
   assert.equal(result.nightOvertimeHours, 1);
   assertMoney(result.overtimeAmount, 67.5);
-  assertMoney(result.pureNightAmount, 180);
+  assertMoney(result.pureNightAmount, 90);
   assertMoney(result.overlapNightAmount, 45);
-  assertMoney(result.nightAmount, 225);
-  assertMoney(result.subtotalExVat, 742.5);
+  assertMoney(result.nightAmount, 135);
+  assertMoney(result.subtotalExVat, 652.5);
 });
 
 test("14:45 tot 00:30 berekent 0,5 pure nachturen", () => {
@@ -59,8 +59,8 @@ test("14:45 tot 00:30 berekent 0,5 pure nachturen", () => {
   assert.equal(result.overtimeHours, 0);
   assert.equal(result.nightHours, 0.5);
   assert.equal(result.pureNightHours, 0.5);
-  assertMoney(result.nightAmount, 45);
-  assertMoney(result.subtotalExVat, 495);
+  assertMoney(result.nightAmount, 22.5);
+  assertMoney(result.subtotalExVat, 472.5);
 });
 
 test("nachturen worden per begonnen kwartier afgerond", () => {
@@ -69,7 +69,7 @@ test("nachturen worden per begonnen kwartier afgerond", () => {
   assert.equal(result.totalHours, 11 / 60);
   assert.equal(result.nightHours, 0.25);
   assert.equal(result.pureNightHours, 0.25);
-  assertMoney(result.nightAmount, 22.5);
+  assertMoney(result.nightAmount, 11.25);
 });
 
 test("nacht-overuur-overlap rondt naar begonnen kwartier en telt niet dubbel volledig", () => {

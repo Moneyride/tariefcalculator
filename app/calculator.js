@@ -8,7 +8,7 @@ const DEFAULT_SETTINGS = {
   enableOvertimeFrom12: true,
   enableOvertimeFrom14: false,
   enableNightTariff: true,
-  pureNightFactor: 2,
+  pureNightSurchargeFactor: 1,
   nightOverlapSurchargeFactor: 1,
   nightStart: "00:00",
   nightEnd: "06:00",
@@ -207,7 +207,7 @@ function calculateTariff(input, customSettings = {}) {
     overtime.overtimeFrom12Amount +
     overtime.overtimeFrom14Amount;
   const nightTariffEnabled = Boolean(settings.enableNightTariff);
-  const pureNightAmount = pureNightHours * hourlyRate * settings.pureNightFactor;
+  const pureNightAmount = pureNightHours * hourlyRate * settings.pureNightSurchargeFactor;
   const overlapNightAmount = nightOvertimeHours * hourlyRate * settings.nightOverlapSurchargeFactor;
   const nightAmount = nightTariffEnabled ? pureNightAmount + overlapNightAmount : 0;
   const droneTariffAmount = input.enableDroneTariff ? settings.droneTariffAmount : 0;
