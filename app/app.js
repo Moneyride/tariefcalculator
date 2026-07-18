@@ -185,12 +185,14 @@ function renderPrintBreakdown(result) {
     `${formatCalculation(result.pureNightHours, result.hourlyRate, 1)} (uur is inclusief dagtarief 200% waard)`,
     result.pureNightAmount
   );
-  addPrintCalculationLine(
-    lines,
-    "Extra nachttoeslag bij overuren",
-    `${formatCalculation(result.nightOvertimeHours, result.hourlyRate, 1)} (overuurvergoeding staat hierboven)`,
-    result.overlapNightAmount
-  );
+  result.nightOvertimeSurchargeBreakdown.forEach((item) => {
+    addPrintCalculationLine(
+      lines,
+      `Nachttoeslag over overuren tegen ${numberFormatter.format(item.surchargeFactor * 100)}%`,
+      `${formatCalculation(item.hours, result.hourlyRate, item.surchargeFactor)} (overuurvergoeding staat hierboven)`,
+      item.amount
+    );
+  });
   addPrintCalculationLine(lines, "Drone tarief", "Vaste toeslag", result.droneTariffAmount);
   addPrintCalculationLine(lines, "Ronin 4D tarief", "Vaste toeslag", result.ronin4dTariffAmount);
   addPrintCalculationLine(

@@ -2199,13 +2199,17 @@ function getOvertimeFactorForRange(startHour, settings) {
   return STANDARD_OVERTIME_FACTOR;
 }
 
-function calculateOvertimeAmount(totalHours, hourlyRate, settings) {
+function getOvertimeRanges(settings) {
   const overtimeStartHour = settings.normalDayHours;
-  const ranges = [
+  return [
     { start: overtimeStartHour, end: OVERTIME_12_PLUS_START },
     { start: Math.max(overtimeStartHour, OVERTIME_12_PLUS_START), end: OVERTIME_14_PLUS_START },
     { start: Math.max(overtimeStartHour, OVERTIME_14_PLUS_START), end: Infinity }
   ];
+}
+
+function calculateOvertimeAmount(totalHours, hourlyRate, settings) {
+  const ranges = getOvertimeRanges(settings);
 
   let standardOvertimeHours = 0;
   let overtime10To12Hours = 0;
@@ -2250,6 +2254,57 @@ function calculateOvertimeAmount(totalHours, hourlyRate, settings) {
   };
 }
 
+function calculateNightOvertimeSurcharge(
+  interval,
+  nightWindows,
+  rawNightOvertimeMinutes,
+  roundedNightOvertimeMinutes,
+  hourlyRate,
+  settings
+) {
+  const segments = getOvertimeRanges(settings)
+    .map((range) => {
+      const start = interval.start + range.start * MINUTES_PER_HOUR;
+      const end = Number.isFinite(range.end)
+        ? Math.min(interval.end, interval.start + range.end * MINUTES_PER_HOUR)
+        : interval.end;
+      const minutes = end > start
+        ? getTotalOverlapWithWindows(start, end, nightWindows)
+        : 0;
+
+      return {
+        minutes,
+        overtimeFactor: getOvertimeFactorForRange(range.start, settings)
+      };
+    })
+    .filter((segment) => segment.minutes > 0);
+
+  const roundingMinutes = Math.max(0, roundedNightOvertimeMinutes - rawNightOvertimeMinutes);
+  if (segments.length > 0 && roundingMinutes > 0) {
+    segments[segments.length - 1].minutes += roundingMinutes;
+  }
+
+  const breakdown = [];
+  segments.forEach((segment) => {
+    const hours = minutesToHours(segment.minutes);
+    const surchargeFactor = segment.overtimeFactor * settings.nightOverlapSurchargeFactor;
+    const amount = hours * hourlyRate * surchargeFactor;
+    const existing = breakdown.find((item) => item.surchargeFactor === surchargeFactor);
+
+    if (existing) {
+      existing.hours += hours;
+      existing.amount += amount;
+    } else {
+      breakdown.push({ hours, surchargeFactor, amount });
+    }
+  });
+
+  return {
+    amount: breakdown.reduce((total, item) => total + item.amount, 0),
+    breakdown
+  };
+}
+
 function calculateTariff(input, customSettings = {}) {
   const settings = { ...DEFAULT_SETTINGS, ...customSettings };
   const interval = getWorkInterval(input.startTime, input.endTime);
@@ -2288,7 +2343,15 @@ function calculateTariff(input, customSettings = {}) {
     overtime.overtimeFrom14Amount;
   const nightTariffEnabled = Boolean(settings.enableNightTariff);
   const pureNightAmount = pureNightHours * hourlyRate * settings.pureNightSurchargeFactor;
-  const overlapNightAmount = nightOvertimeHours * hourlyRate * settings.nightOverlapSurchargeFactor;
+  const nightOvertimeSurcharge = calculateNightOvertimeSurcharge(
+    interval,
+    nightWindows,
+    rawNightOvertimeMinutes,
+    roundedNightOvertimeMinutes,
+    hourlyRate,
+    settings
+  );
+  const overlapNightAmount = nightOvertimeSurcharge.amount;
   const nightAmount = nightTariffEnabled ? pureNightAmount + overlapNightAmount : 0;
   const droneTariffAmount = input.enableDroneTariff ? settings.droneTariffAmount : 0;
   const ronin4dTariffAmount = input.enableRonin4dTariff ? settings.ronin4dTariffAmount : 0;
@@ -2326,6 +2389,7 @@ function calculateTariff(input, customSettings = {}) {
     overtimeAmount,
     pureNightAmount: nightTariffEnabled ? pureNightAmount : 0,
     overlapNightAmount: nightTariffEnabled ? overlapNightAmount : 0,
+    nightOvertimeSurchargeBreakdown: nightTariffEnabled ? nightOvertimeSurcharge.breakdown : [],
     nightAmount,
     droneTariffAmount,
     ronin4dTariffAmount,
@@ -2540,12 +2604,14 @@ function renderPrintBreakdown(result) {
     `${formatCalculation(result.pureNightHours, result.hourlyRate, 1)} (uur is inclusief dagtarief 200% waard)`,
     result.pureNightAmount
   );
-  addPrintCalculationLine(
-    lines,
-    "Extra nachttoeslag bij overuren",
-    `${formatCalculation(result.nightOvertimeHours, result.hourlyRate, 1)} (overuurvergoeding staat hierboven)`,
-    result.overlapNightAmount
-  );
+  result.nightOvertimeSurchargeBreakdown.forEach((item) => {
+    addPrintCalculationLine(
+      lines,
+      `Nachttoeslag over overuren tegen ${numberFormatter.format(item.surchargeFactor * 100)}%`,
+      `${formatCalculation(item.hours, result.hourlyRate, item.surchargeFactor)} (overuurvergoeding staat hierboven)`,
+      item.amount
+    );
+  });
   addPrintCalculationLine(lines, "Drone tarief", "Vaste toeslag", result.droneTariffAmount);
   addPrintCalculationLine(lines, "Ronin 4D tarief", "Vaste toeslag", result.ronin4dTariffAmount);
   addPrintCalculationLine(

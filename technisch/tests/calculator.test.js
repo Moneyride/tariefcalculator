@@ -47,9 +47,9 @@ test("16:00 tot 03:00 berekent nacht-overuur-overlap met alleen extra nachttoesl
   assert.equal(result.nightOvertimeHours, 1);
   assertMoney(result.overtimeAmount, 67.5);
   assertMoney(result.pureNightAmount, 90);
-  assertMoney(result.overlapNightAmount, 45);
-  assertMoney(result.nightAmount, 135);
-  assertMoney(result.subtotalExVat, 652.5);
+  assertMoney(result.overlapNightAmount, 67.5);
+  assertMoney(result.nightAmount, 157.5);
+  assertMoney(result.subtotalExVat, 675);
 });
 
 test("14:45 tot 00:30 berekent 0,5 pure nachturen", () => {
@@ -80,8 +80,23 @@ test("nacht-overuur-overlap rondt naar begonnen kwartier en telt niet dubbel vol
   assert.equal(result.nightOvertimeHours, 0.25);
   assert.equal(result.pureNightHours, 0);
   assertMoney(result.overtimeAmount, 1.13);
-  assertMoney(result.overlapNightAmount, 11.25);
-  assertMoney(result.nightAmount, 11.25);
+  assertMoney(result.overlapNightAmount, 16.88);
+  assertMoney(result.nightAmount, 16.88);
+});
+
+test("nachttoeslag volgt zonder plafond het tarief van iedere overuurstaffel", () => {
+  const result = calculate("12:00", "03:00", { enableOvertimeFrom14: true });
+
+  assert.equal(result.nightOvertimeHours, 3);
+  assert.equal(result.nightOvertimeSurchargeBreakdown.length, 2);
+  assert.equal(result.nightOvertimeSurchargeBreakdown[0].surchargeFactor, 2);
+  assert.equal(result.nightOvertimeSurchargeBreakdown[0].hours, 2);
+  assertMoney(result.nightOvertimeSurchargeBreakdown[0].amount, 180);
+  assert.equal(result.nightOvertimeSurchargeBreakdown[1].surchargeFactor, 2.5);
+  assert.equal(result.nightOvertimeSurchargeBreakdown[1].hours, 1);
+  assertMoney(result.nightOvertimeSurchargeBreakdown[1].amount, 112.5);
+  assertMoney(result.overlapNightAmount, 292.5);
+  assertMoney(result.subtotalExVat, 1170);
 });
 
 test("overuren vanaf 14 uur werktijd kunnen tegen 250% worden gerekend", () => {
