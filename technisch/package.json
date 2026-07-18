@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "node build-standalone.mjs",
     "test": "node --test tests/calculator.test.js",
     "start": "python3 -m http.server 4173 --directory .."
   }

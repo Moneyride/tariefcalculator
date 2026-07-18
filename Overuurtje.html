@@ -4,6 +4,17 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#073f3d">
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = window.gtag || function gtag() { window.dataLayer.push(arguments); };
+      window.gtag("consent", "default", {
+        analytics_storage: "denied",
+        ad_storage: "denied",
+        ad_user_data: "denied",
+        ad_personalization: "denied"
+      });
+      window.gtag("set", "ads_data_redaction", true);
+    </script>
     <title>Overuurtje.nl</title>
     <meta name="application-name" content="Overuurtje.nl">
     <meta name="apple-mobile-web-app-title" content="Overuurtje.nl">
@@ -1142,6 +1153,183 @@ summary:hover {
   line-height: 1;
 }
 
+.site-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 2px 30px 30px;
+}
+
+.share-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 11px 17px;
+  border: 1px solid rgba(31, 67, 53, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--accent-dark);
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 700;
+  transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+
+.share-button svg {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 auto;
+}
+
+.share-button:hover {
+  border-color: rgba(31, 67, 53, 0.38);
+  background: rgba(255, 255, 255, 0.68);
+  transform: translateY(-1px);
+}
+
+.share-button:focus-visible,
+.cookie-settings-link:focus-visible,
+.cookie-button:focus-visible {
+  outline: 3px solid rgba(255, 106, 26, 0.18);
+  outline-offset: 3px;
+}
+
+.cookie-settings-link {
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.78rem;
+  text-decoration: underline;
+  text-decoration-color: rgba(107, 114, 128, 0.38);
+  text-underline-offset: 3px;
+  transition: color 150ms ease, text-decoration-color 150ms ease;
+}
+
+.cookie-settings-link:hover {
+  color: var(--accent-dark);
+  text-decoration-color: currentColor;
+}
+
+.cookie-banner {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  left: 20px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(900px, calc(100% - 40px));
+  margin: 0 auto;
+  gap: 28px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 8px;
+  background: rgba(248, 249, 247, 0.88);
+  box-shadow: 0 16px 42px rgba(8, 31, 25, 0.16);
+  -webkit-backdrop-filter: blur(24px) saturate(112%);
+  backdrop-filter: blur(24px) saturate(112%);
+  animation: cookie-enter 180ms ease-out both;
+}
+
+.cookie-banner[hidden],
+.site-toast[hidden] {
+  display: none;
+}
+
+.cookie-copy {
+  max-width: 580px;
+}
+
+.cookie-copy h2 {
+  color: var(--accent-dark);
+  font-size: 1rem;
+}
+
+.cookie-copy p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.cookie-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+.cookie-button {
+  min-height: 44px;
+  padding: 10px 15px;
+  border: 1px solid var(--orange);
+  border-radius: 8px;
+  background: var(--orange);
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+
+.cookie-button:hover {
+  border-color: var(--orange-dark);
+  background: var(--orange-dark);
+  transform: translateY(-1px);
+}
+
+.cookie-button.secondary {
+  border-color: rgba(31, 67, 53, 0.18);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--accent-dark);
+}
+
+.cookie-button.secondary:hover {
+  border-color: rgba(31, 67, 53, 0.34);
+  background: #fff;
+}
+
+.site-toast {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  z-index: 1100;
+  max-width: min(420px, calc(100% - 32px));
+  padding: 11px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 8px;
+  background: rgba(23, 63, 54, 0.94);
+  box-shadow: 0 10px 28px rgba(8, 31, 25, 0.2);
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 8px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.site-toast.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@keyframes cookie-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .print-footer {
   display: none;
 }
@@ -1300,6 +1488,41 @@ summary:hover {
   }
 
   .support-button {
+    width: 100%;
+  }
+
+  .site-footer {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+    padding: 2px 12px 24px;
+  }
+
+  .share-button {
+    width: 100%;
+  }
+
+  .cookie-settings-link {
+    align-self: center;
+  }
+
+  .cookie-banner {
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
+    align-items: stretch;
+    flex-direction: column;
+    width: auto;
+    gap: 16px;
+    padding: 17px;
+  }
+
+  .cookie-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .cookie-button {
     width: 100%;
   }
 
@@ -1675,7 +1898,10 @@ summary:hover {
 
   .calculator-grid,
   .footer-actions,
-  .support-section {
+  .support-section,
+  .site-footer,
+  .cookie-banner,
+  .site-toast {
     display: none;
   }
 
@@ -2074,11 +2300,25 @@ summary:hover {
           <h2 id="support-title">Vind je deze tool handig?</h2>
           <p>Overuurtje.nl is gratis te gebruiken. Met een vrijwillige bijdrage help je mee aan onderhoud en nieuwe functies voor freelancers in de film- en televisiewereld.</p>
         </div>
-        <a class="support-button" href="https://buymeacoffee.com/reichgeltmediagroup" target="_blank" rel="noopener noreferrer">
+        <a class="support-button" id="buymeacoffee-link" href="https://buymeacoffee.com/reichgeltmediagroup" target="_blank" rel="noopener noreferrer">
           <span class="support-icon" aria-hidden="true">&#9825;</span>
           <span>Steun de ontwikkeling</span>
         </a>
       </section>
+
+      <footer class="site-footer">
+        <button class="share-button" type="button" id="share-site">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <path d="m8.6 10.5 6.8-4"></path>
+            <path d="m8.6 13.5 6.8 4"></path>
+          </svg>
+          <span>Deel Overuurtje met een collega</span>
+        </button>
+        <button class="cookie-settings-link" type="button" id="cookie-settings">Cookie settings</button>
+      </footer>
 
       <section class="print-breakdown" aria-label="Onderbouwing factuur">
         <header class="print-breakdown-header">
@@ -2110,6 +2350,19 @@ summary:hover {
       <p class="print-footer">Powered by Reichgelt Media Group</p>
       </div>
     </main>
+
+    <section class="cookie-banner" id="cookie-banner" aria-labelledby="cookie-title" aria-describedby="cookie-description" hidden>
+      <div class="cookie-copy">
+        <h2 id="cookie-title">Cookies op Overuurtje.nl</h2>
+        <p id="cookie-description">Met jouw toestemming gebruiken we Google Analytics om de tool te verbeteren. We delen geen tarieven, bedragen of andere ingevulde gegevens.</p>
+      </div>
+      <div class="cookie-actions">
+        <button class="cookie-button secondary" type="button" id="cookie-decline">Alleen noodzakelijk</button>
+        <button class="cookie-button" type="button" id="cookie-accept">Analytics toestaan</button>
+      </div>
+    </section>
+
+    <div class="site-toast" id="site-toast" role="status" aria-live="polite" hidden></div>
     <script>
 (() => {
 const DEFAULT_SETTINGS = {
@@ -2450,6 +2703,217 @@ globalThis.TariffCalculator = {
 
     </script>
     <script>
+(function initializeOveruurtjeAnalytics() {
+  "use strict";
+
+  const MEASUREMENT_ID = "G-LF1MHS2NS9";
+  const CONSENT_KEY = "overuurtjeAnalyticsConsentV1";
+  const CONSENT_GRANTED = "granted";
+  const CONSENT_DENIED = "denied";
+
+  // Add future events here first. Only listed parameters can ever reach GA4.
+  // Never add rates, prices, dates, times, free text or other personal input.
+  const EVENT_PARAMETERS = Object.freeze({
+    calculation_completed: [
+      "department",
+      "total_hours",
+      "overtime_hours",
+      "night_hours",
+      "drone",
+      "ronin",
+      "mileage",
+      "parking"
+    ],
+    department_selected: ["department"],
+    drone_enabled: ["department"],
+    ronin4d_enabled: ["department"],
+    mileage_enabled: ["department"],
+    parking_enabled: ["department"],
+    settings_opened: [],
+    buymeacoffee_clicked: ["placement"],
+    share_clicked: ["method", "content_type"]
+  });
+
+  let consentChoice = readConsentChoice();
+  let googleTagPromise = null;
+  let toastTimer = null;
+
+  function readConsentChoice() {
+    try {
+      const savedChoice = localStorage.getItem(CONSENT_KEY);
+      return savedChoice === CONSENT_GRANTED || savedChoice === CONSENT_DENIED
+        ? savedChoice
+        : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function persistConsentChoice(choice) {
+    try {
+      localStorage.setItem(CONSENT_KEY, choice);
+    } catch {
+      // Consent still applies for this page when storage is unavailable.
+    }
+  }
+
+  function updateGoogleConsent(choice) {
+    const analyticsState = choice === CONSENT_GRANTED ? "granted" : "denied";
+
+    window.gtag("consent", "update", {
+      analytics_storage: analyticsState,
+      ad_storage: "denied",
+      ad_user_data: "denied",
+      ad_personalization: "denied"
+    });
+  }
+
+  function shouldLoadGoogleTag() {
+    return !["localhost", "127.0.0.1", "::1"].includes(location.hostname)
+      && location.protocol !== "file:";
+  }
+
+  function loadGoogleTag() {
+    if (googleTagPromise || !shouldLoadGoogleTag()) return googleTagPromise;
+
+    googleTagPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.async = true;
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(MEASUREMENT_ID)}`;
+      script.dataset.overuurtjeAnalytics = "true";
+      script.addEventListener("load", () => resolve(true), { once: true });
+      script.addEventListener("error", () => reject(new Error("Google Analytics kon niet worden geladen.")), { once: true });
+      document.head.append(script);
+    });
+
+    window.gtag("js", new Date());
+    window.gtag("config", MEASUREMENT_ID, {
+      send_page_view: true,
+      allow_google_signals: false,
+      allow_ad_personalization_signals: false
+    });
+
+    return googleTagPromise;
+  }
+
+  function clearAnalyticsCookies() {
+    document.cookie.split(";").forEach((cookie) => {
+      const name = cookie.split("=")[0].trim();
+      if (!/^_ga(?:_|$)/.test(name)) return;
+
+      [location.hostname, `.${location.hostname}`].forEach((domain) => {
+        document.cookie = `${name}=; Max-Age=0; path=/; domain=${domain}; SameSite=Lax`;
+      });
+      document.cookie = `${name}=; Max-Age=0; path=/; SameSite=Lax`;
+    });
+  }
+
+  function filterParameters(eventName, parameters) {
+    const allowedParameters = EVENT_PARAMETERS[eventName];
+    if (!allowedParameters) return null;
+
+    return Object.fromEntries(
+      allowedParameters
+        .filter((name) => Object.hasOwn(parameters, name))
+        .map((name) => [name, parameters[name]])
+        .filter(([, value]) => ["string", "number", "boolean"].includes(typeof value))
+    );
+  }
+
+  function track(eventName, parameters = {}) {
+    if (consentChoice !== CONSENT_GRANTED) return false;
+
+    const safeParameters = filterParameters(eventName, parameters);
+    if (!safeParameters) return false;
+
+    window.gtag("event", eventName, safeParameters);
+    return true;
+  }
+
+  function setBannerVisibility(visible) {
+    const banner = document.querySelector("#cookie-banner");
+    if (!banner) return;
+
+    banner.hidden = !visible;
+    if (visible) {
+      banner.querySelector("button")?.focus({ preventScroll: true });
+    }
+  }
+
+  function showToast(message) {
+    const toast = document.querySelector("#site-toast");
+    if (!toast) return;
+
+    clearTimeout(toastTimer);
+    toast.textContent = message;
+    toast.hidden = false;
+    requestAnimationFrame(() => toast.classList.add("visible"));
+
+    toastTimer = setTimeout(() => {
+      toast.classList.remove("visible");
+      setTimeout(() => {
+        toast.hidden = true;
+      }, 180);
+    }, 2600);
+  }
+
+  function setConsent(choice) {
+    const previousChoice = consentChoice;
+    consentChoice = choice === CONSENT_GRANTED ? CONSENT_GRANTED : CONSENT_DENIED;
+    persistConsentChoice(consentChoice);
+    updateGoogleConsent(consentChoice);
+    setBannerVisibility(false);
+
+    if (consentChoice === CONSENT_GRANTED) {
+      loadGoogleTag()?.catch(() => {
+        showToast("Analytics kon niet worden geladen.");
+      });
+      showToast("Cookievoorkeur opgeslagen.");
+      return;
+    }
+
+    clearAnalyticsCookies();
+    showToast("Alleen noodzakelijke opslag actief.");
+
+    // Reload after revocation so automatic GA4 listeners are removed as well.
+    if (previousChoice === CONSENT_GRANTED && shouldLoadGoogleTag()) {
+      setTimeout(() => location.reload(), 350);
+    }
+  }
+
+  function bindConsentInterface() {
+    const acceptButton = document.querySelector("#cookie-accept");
+    const declineButton = document.querySelector("#cookie-decline");
+    const settingsButton = document.querySelector("#cookie-settings");
+
+    acceptButton?.addEventListener("click", () => setConsent(CONSENT_GRANTED));
+    declineButton?.addEventListener("click", () => setConsent(CONSENT_DENIED));
+    settingsButton?.addEventListener("click", () => setBannerVisibility(true));
+
+    setBannerVisibility(consentChoice === null);
+  }
+
+  window.OveruurtjeAnalytics = Object.freeze({
+    track,
+    showToast,
+    openCookieSettings: () => setBannerVisibility(true),
+    hasConsent: () => consentChoice === CONSENT_GRANTED
+  });
+
+  if (consentChoice === CONSENT_GRANTED) {
+    updateGoogleConsent(CONSENT_GRANTED);
+    loadGoogleTag()?.catch(() => {});
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bindConsentInterface, { once: true });
+  } else {
+    bindConsentInterface();
+  }
+})();
+
+    </script>
+    <script>
 const { DEFAULT_SETTINGS, calculateTariff } = globalThis.TariffCalculator;
 
 const SETTINGS_KEY = "cameraTariefCalculatorSettings";
@@ -2473,6 +2937,12 @@ const inputOptions = document.querySelector(".input-options");
 const roninOption = document.querySelector("#ronin-option");
 const roninSettingsField = document.querySelector("#ronin-settings-field");
 const roninResultRow = document.querySelector('[data-result="ronin4dTariffAmount"]').closest("div");
+const shareButton = document.querySelector("#share-site");
+const buyMeACoffeeLink = document.querySelector("#buymeacoffee-link");
+const analytics = globalThis.OveruurtjeAnalytics;
+
+const SHARE_URL = "https://overuurtje.nl";
+const SHARE_TEXT = "Bereken eenvoudig je cameraman-, geluidsman- en productietarieven met Overuurtje.nl.";
 
 const euroFormatter = new Intl.NumberFormat("nl-NL", {
   style: "currency",
@@ -2698,7 +3168,7 @@ function buildSummary(result) {
   return lines.join("\n");
 }
 
-function updateCalculation() {
+function updateCalculation(trackCompletion = false) {
   if (!form.reportValidity() || !settingsForm.reportValidity()) return;
 
   const settings = getSettingsFromForm();
@@ -2744,6 +3214,19 @@ function updateCalculation() {
   renderPrintBreakdown(result);
   calculationIsStale = false;
   calculationStatus.hidden = true;
+
+  if (trackCompletion) {
+    analytics?.track("calculation_completed", {
+      department,
+      total_hours: Number(result.totalHours.toFixed(2)),
+      overtime_hours: Number(result.overtimeHours.toFixed(2)),
+      night_hours: Number(result.nightHours.toFixed(2)),
+      drone: readCheckbox(formData, "enableDroneTariff"),
+      ronin: department === "camera" && readCheckbox(formData, "enableRonin4dTariff"),
+      mileage: readCheckbox(formData, "enableKilometers"),
+      parking: readCheckbox(formData, "enableParkingCosts")
+    });
+  }
 }
 
 function saveCurrentSettings() {
@@ -2843,6 +3326,77 @@ function copyWithTextarea(text) {
   if (!copied) {
     throw new Error("Kopiëren mislukt.");
   }
+}
+
+function showSiteToast(message) {
+  if (analytics?.showToast) {
+    analytics.showToast(message);
+    return;
+  }
+
+  const toast = document.querySelector("#site-toast");
+  if (!toast) return;
+  toast.textContent = message;
+  toast.hidden = false;
+  toast.classList.add("visible");
+}
+
+async function copyShareUrl() {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(SHARE_URL);
+  } else {
+    copyWithTextarea(SHARE_URL);
+  }
+}
+
+async function shareSite() {
+  const supportsNativeShare = typeof navigator.share === "function";
+  analytics?.track("share_clicked", {
+    method: supportsNativeShare ? "web_share" : "clipboard",
+    content_type: "website"
+  });
+
+  if (supportsNativeShare) {
+    try {
+      await navigator.share({
+        title: "Overuurtje.nl",
+        text: SHARE_TEXT,
+        url: SHARE_URL
+      });
+      showSiteToast("Link gedeeld!");
+      return;
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+    }
+  }
+
+  try {
+    await copyShareUrl();
+    showSiteToast("Link gekopieerd naar klembord!");
+  } catch {
+    showSiteToast("Link kopiëren is niet toegestaan door de browser.");
+  }
+}
+
+function trackOptionChange(target) {
+  if (!(target instanceof HTMLInputElement)) return;
+
+  const department = form.elements.namedItem("department").value || "camera";
+  if (target.name === "department" && target.checked) {
+    analytics?.track("department_selected", { department: target.value });
+    return;
+  }
+
+  if (!target.checked) return;
+
+  const eventByField = {
+    enableDroneTariff: "drone_enabled",
+    enableRonin4dTariff: "ronin4d_enabled",
+    enableKilometers: "mileage_enabled",
+    enableParkingCosts: "parking_enabled"
+  };
+  const eventName = eventByField[target.name];
+  if (eventName) analytics?.track(eventName, { department });
 }
 
 function getTimeParts(value) {
@@ -2953,7 +3507,8 @@ document.addEventListener("keydown", (event) => {
 });
 
 form.addEventListener("input", markCalculationStale);
-form.addEventListener("change", () => {
+form.addEventListener("change", (event) => {
+  trackOptionChange(event.target);
   updateDepartmentVisibility();
   updateKilometerVisibility();
   updateParkingVisibility();
@@ -2964,18 +3519,25 @@ settingsForm.addEventListener("change", () => {
   updateNightSettingsVisibility();
   markCalculationStale();
 });
-recalculateButton.addEventListener("click", updateCalculation);
+recalculateButton.addEventListener("click", () => updateCalculation(true));
 copyButton.addEventListener("click", copySummary);
 saveSettingsButton.addEventListener("click", saveCurrentSettings);
 pdfButton.addEventListener("click", () => window.print());
+shareButton.addEventListener("click", shareSite);
+buyMeACoffeeLink.addEventListener("click", () => {
+  analytics?.track("buymeacoffee_clicked", { placement: "support_section" });
+});
 
 window.addEventListener("beforeprint", () => {
   renderPrintBreakdown(latestResult);
   closeTimePickers();
 });
 
-details.addEventListener("toggle", () => {
+details.addEventListener("toggle", (event) => {
   localStorage.setItem("cameraTariefSettingsOpen", String(details.open));
+  if (details.open && event.isTrusted) {
+    analytics?.track("settings_opened");
+  }
 });
 details.open = localStorage.getItem("cameraTariefSettingsOpen") === "true";
 

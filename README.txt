@@ -25,3 +25,21 @@ Gebruik
 
 Als je na het berekenen nog iets wijzigt, toont de tool een melding.
 Klik dan opnieuw op "Berekenen".
+
+Privacy en Analytics
+
+Overuurtje.nl gebruikt Google Analytics 4 alleen nadat een bezoeker hiervoor toestemming heeft gegeven.
+De keuze wordt lokaal in de browser bewaard en kan onderaan de site via "Cookie settings" worden gewijzigd.
+Ingevulde tarieven, bedragen, datums en kloktijden worden niet naar Google Analytics gestuurd.
+
+Google Analytics wordt niet geladen bij gebruik via file://, localhost of 127.0.0.1.
+Zo blijven lokale tests buiten de rapportages.
+
+Enhanced Measurement controleren
+
+1. Open Google Analytics en ga naar Beheer.
+2. Kies onder Gegevensverzameling en -wijziging voor Gegevensstreams.
+3. Open de webstream van overuurtje.nl.
+4. Zet Verbeterde meting (Enhanced Measurement) aan.
+
+De websitecode hoeft hiervoor niet aangepast te worden.

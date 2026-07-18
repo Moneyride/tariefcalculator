@@ -21,6 +21,12 @@ const inputOptions = document.querySelector(".input-options");
 const roninOption = document.querySelector("#ronin-option");
 const roninSettingsField = document.querySelector("#ronin-settings-field");
 const roninResultRow = document.querySelector('[data-result="ronin4dTariffAmount"]').closest("div");
+const shareButton = document.querySelector("#share-site");
+const buyMeACoffeeLink = document.querySelector("#buymeacoffee-link");
+const analytics = globalThis.OveruurtjeAnalytics;
+
+const SHARE_URL = "https://overuurtje.nl";
+const SHARE_TEXT = "Bereken eenvoudig je cameraman-, geluidsman- en productietarieven met Overuurtje.nl.";
 
 const euroFormatter = new Intl.NumberFormat("nl-NL", {
   style: "currency",
@@ -246,7 +252,7 @@ function buildSummary(result) {
   return lines.join("\n");
 }
 
-function updateCalculation() {
+function updateCalculation(trackCompletion = false) {
   if (!form.reportValidity() || !settingsForm.reportValidity()) return;
 
   const settings = getSettingsFromForm();
@@ -292,6 +298,19 @@ function updateCalculation() {
   renderPrintBreakdown(result);
   calculationIsStale = false;
   calculationStatus.hidden = true;
+
+  if (trackCompletion) {
+    analytics?.track("calculation_completed", {
+      department,
+      total_hours: Number(result.totalHours.toFixed(2)),
+      overtime_hours: Number(result.overtimeHours.toFixed(2)),
+      night_hours: Number(result.nightHours.toFixed(2)),
+      drone: readCheckbox(formData, "enableDroneTariff"),
+      ronin: department === "camera" && readCheckbox(formData, "enableRonin4dTariff"),
+      mileage: readCheckbox(formData, "enableKilometers"),
+      parking: readCheckbox(formData, "enableParkingCosts")
+    });
+  }
 }
 
 function saveCurrentSettings() {
@@ -391,6 +410,77 @@ function copyWithTextarea(text) {
   if (!copied) {
     throw new Error("Kopiëren mislukt.");
   }
+}
+
+function showSiteToast(message) {
+  if (analytics?.showToast) {
+    analytics.showToast(message);
+    return;
+  }
+
+  const toast = document.querySelector("#site-toast");
+  if (!toast) return;
+  toast.textContent = message;
+  toast.hidden = false;
+  toast.classList.add("visible");
+}
+
+async function copyShareUrl() {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(SHARE_URL);
+  } else {
+    copyWithTextarea(SHARE_URL);
+  }
+}
+
+async function shareSite() {
+  const supportsNativeShare = typeof navigator.share === "function";
+  analytics?.track("share_clicked", {
+    method: supportsNativeShare ? "web_share" : "clipboard",
+    content_type: "website"
+  });
+
+  if (supportsNativeShare) {
+    try {
+      await navigator.share({
+        title: "Overuurtje.nl",
+        text: SHARE_TEXT,
+        url: SHARE_URL
+      });
+      showSiteToast("Link gedeeld!");
+      return;
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+    }
+  }
+
+  try {
+    await copyShareUrl();
+    showSiteToast("Link gekopieerd naar klembord!");
+  } catch {
+    showSiteToast("Link kopiëren is niet toegestaan door de browser.");
+  }
+}
+
+function trackOptionChange(target) {
+  if (!(target instanceof HTMLInputElement)) return;
+
+  const department = form.elements.namedItem("department").value || "camera";
+  if (target.name === "department" && target.checked) {
+    analytics?.track("department_selected", { department: target.value });
+    return;
+  }
+
+  if (!target.checked) return;
+
+  const eventByField = {
+    enableDroneTariff: "drone_enabled",
+    enableRonin4dTariff: "ronin4d_enabled",
+    enableKilometers: "mileage_enabled",
+    enableParkingCosts: "parking_enabled"
+  };
+  const eventName = eventByField[target.name];
+  if (eventName) analytics?.track(eventName, { department });
 }
 
 function getTimeParts(value) {
@@ -501,7 +591,8 @@ document.addEventListener("keydown", (event) => {
 });
 
 form.addEventListener("input", markCalculationStale);
-form.addEventListener("change", () => {
+form.addEventListener("change", (event) => {
+  trackOptionChange(event.target);
   updateDepartmentVisibility();
   updateKilometerVisibility();
   updateParkingVisibility();
@@ -512,17 +603,24 @@ settingsForm.addEventListener("change", () => {
   updateNightSettingsVisibility();
   markCalculationStale();
 });
-recalculateButton.addEventListener("click", updateCalculation);
+recalculateButton.addEventListener("click", () => updateCalculation(true));
 copyButton.addEventListener("click", copySummary);
 saveSettingsButton.addEventListener("click", saveCurrentSettings);
 pdfButton.addEventListener("click", () => window.print());
+shareButton.addEventListener("click", shareSite);
+buyMeACoffeeLink.addEventListener("click", () => {
+  analytics?.track("buymeacoffee_clicked", { placement: "support_section" });
+});
 
 window.addEventListener("beforeprint", () => {
   renderPrintBreakdown(latestResult);
   closeTimePickers();
 });
 
-details.addEventListener("toggle", () => {
+details.addEventListener("toggle", (event) => {
   localStorage.setItem("cameraTariefSettingsOpen", String(details.open));
+  if (details.open && event.isTrusted) {
+    analytics?.track("settings_opened");
+  }
 });
 details.open = localStorage.getItem("cameraTariefSettingsOpen") === "true";
