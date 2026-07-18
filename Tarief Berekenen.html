@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#073f3d">
     <title>Tarief Berekenen</title>
     <link rel="icon" type="image/png" href="favicon.png">
-    <link rel="apple-touch-icon" href="favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
     <style>
 :root {
   color-scheme: light;
@@ -291,6 +291,31 @@ h3 {
   grid-template-columns: 1.15fr 1fr 1fr;
   gap: 18px;
   align-items: end;
+}
+
+.planning-grid > *,
+.date-field {
+  min-width: 0;
+}
+
+.date-field input[type="date"] {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
+.date-field input[type="date"]::-webkit-date-and-time-value {
+  min-width: 0;
+  text-align: left;
+}
+
+.date-field input[type="date"]::-webkit-calendar-picker-indicator {
+  flex: 0 0 auto;
+  margin: 0;
 }
 
 label {
@@ -1065,8 +1090,8 @@ summary:hover {
 
 @media (max-width: 760px) {
   .app-shell {
-    width: min(100% - 16px, 1080px);
-    padding: 0 0 28px;
+    width: min(100% - 12px, 1080px);
+    padding: 0 0 24px;
   }
 
   .planning-grid,
@@ -1112,6 +1137,8 @@ summary:hover {
   .header-brand {
     width: 100%;
     margin-left: 52px;
+    font-size: 0.62rem;
+    line-height: 1.35;
     text-align: left;
   }
 
@@ -1120,8 +1147,9 @@ summary:hover {
   }
 
   .calculator-grid {
-    gap: 0;
+    gap: 14px;
     margin-top: 0;
+    padding: 14px 12px 0;
   }
 
   .panel-header {
@@ -1129,12 +1157,23 @@ summary:hover {
   }
 
   .form-section {
-    padding: 20px 20px 0;
+    padding: 20px 18px 0;
   }
 
   .form-section + .form-section {
-    margin-top: 24px;
-    padding-top: 24px;
+    margin-top: 22px;
+    padding-top: 22px;
+  }
+
+  .input-panel {
+    padding-bottom: 22px;
+  }
+
+  input,
+  select {
+    min-width: 0;
+    max-width: 100%;
+    font-size: 16px;
   }
 
   .result-list {
@@ -1148,12 +1187,12 @@ summary:hover {
   }
 
   .result-panel {
-    padding: 24px 20px;
+    padding: 22px 18px;
   }
 
   .result-sections {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 18px;
     padding: 20px 0 0;
   }
 
@@ -1172,13 +1211,17 @@ summary:hover {
   }
 
   .settings-grid {
-    gap: 24px;
-    padding: 4px 20px 20px;
+    gap: 20px;
+    padding: 4px 18px 22px;
+  }
+
+  .settings-panel > summary {
+    padding: 22px 18px;
   }
 
   .footer-actions {
     justify-content: stretch;
-    padding: 20px;
+    padding: 20px 12px;
   }
 
   .footer-actions button {
@@ -1189,8 +1232,8 @@ summary:hover {
     align-items: stretch;
     flex-direction: column;
     gap: 18px;
-    margin: 0 20px 20px;
-    padding: 20px;
+    margin: 0 12px 18px;
+    padding: 18px;
   }
 
   .support-button {
