@@ -296,6 +296,7 @@ function saveCurrentSettings() {
 
   saveSettings(getSettingsFromForm());
   settingsStatus.textContent = "Instellingen opgeslagen.";
+  details.open = false;
   setTimeout(() => {
     settingsStatus.textContent = "";
   }, 2500);
