@@ -945,6 +945,10 @@ summary:hover {
   display: none;
 }
 
+.department-setting[hidden] {
+  display: none;
+}
+
 .extra-field[hidden] {
   display: none;
 }
@@ -1964,7 +1968,7 @@ summary:hover {
           <fieldset class="settings-section settings-section-expenses">
             <legend>Vergoedingen</legend>
             <label><span>Drone tarief</span><input type="number" name="droneTariffAmount" min="0" step="0.01" required></label>
-            <label><span>Ronin 4D tarief</span><input type="number" name="ronin4dTariffAmount" min="0" step="0.01" required></label>
+            <label class="department-setting" id="ronin-settings-field"><span>Ronin 4D tarief</span><input type="number" name="ronin4dTariffAmount" min="0" step="0.01" required></label>
             <label><span>Km vergoeding</span><input type="number" name="kilometerRate" min="0" step="0.01" required></label>
           </fieldset>
 
@@ -2370,6 +2374,7 @@ const kilometerInput = document.querySelector("#kilometer-input");
 const parkingInput = document.querySelector("#parking-input");
 const inputOptions = document.querySelector(".input-options");
 const roninOption = document.querySelector("#ronin-option");
+const roninSettingsField = document.querySelector("#ronin-settings-field");
 const roninResultRow = document.querySelector('[data-result="ronin4dTariffAmount"]').closest("div");
 
 const euroFormatter = new Intl.NumberFormat("nl-NL", {
@@ -2675,6 +2680,7 @@ function updateDepartmentVisibility() {
 
   inputOptions.dataset.department = department;
   roninOption.hidden = !showRonin;
+  roninSettingsField.hidden = !showRonin;
   roninResultRow.hidden = !showRonin;
 
   if (!showRonin) {

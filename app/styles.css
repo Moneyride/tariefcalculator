@@ -935,6 +935,10 @@ summary:hover {
   display: none;
 }
 
+.department-setting[hidden] {
+  display: none;
+}
+
 .extra-field[hidden] {
   display: none;
 }

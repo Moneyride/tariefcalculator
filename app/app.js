@@ -19,6 +19,7 @@ const kilometerInput = document.querySelector("#kilometer-input");
 const parkingInput = document.querySelector("#parking-input");
 const inputOptions = document.querySelector(".input-options");
 const roninOption = document.querySelector("#ronin-option");
+const roninSettingsField = document.querySelector("#ronin-settings-field");
 const roninResultRow = document.querySelector('[data-result="ronin4dTariffAmount"]').closest("div");
 
 const euroFormatter = new Intl.NumberFormat("nl-NL", {
@@ -324,6 +325,7 @@ function updateDepartmentVisibility() {
 
   inputOptions.dataset.department = department;
   roninOption.hidden = !showRonin;
+  roninSettingsField.hidden = !showRonin;
   roninResultRow.hidden = !showRonin;
 
   if (!showRonin) {
