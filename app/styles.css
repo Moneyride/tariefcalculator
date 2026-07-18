@@ -120,7 +120,7 @@ select {
 
 .site-logo {
   display: block;
-  width: min(100%, 520px);
+  width: min(100%, 276px);
   height: auto;
 }
 
@@ -1176,7 +1176,7 @@ summary:hover {
   }
 
   .site-logo {
-    width: min(340px, 88vw);
+    width: min(220px, 76vw);
   }
 
   .header-brand {
@@ -1688,7 +1688,7 @@ summary:hover {
   .print-logo {
     display: block;
     flex: 0 0 auto;
-    width: 38mm;
+    width: 28mm;
     height: auto;
   }
 
