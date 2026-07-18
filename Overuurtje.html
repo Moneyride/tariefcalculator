@@ -106,9 +106,9 @@ select {
 .page-header {
   position: static;
   display: grid;
-  grid-template-columns: 1fr minmax(220px, 290px) 1fr;
+  grid-template-columns: 1fr;
   align-items: center;
-  gap: 24px;
+  gap: 8px;
   min-height: 210px;
   padding: 18px 30px;
   overflow: hidden;
@@ -127,7 +127,7 @@ select {
 }
 
 .header-title {
-  grid-column: 2;
+  grid-column: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -141,13 +141,14 @@ select {
 }
 
 .header-brand {
-  grid-column: 3;
-  justify-self: end;
+  grid-column: 1;
+  justify-self: center;
+  width: 100%;
   margin: 0;
   color: var(--muted);
   font-size: 0.72rem;
   font-weight: 700;
-  text-align: right;
+  text-align: center;
   text-transform: uppercase;
 }
 
@@ -1693,6 +1694,20 @@ summary:hover {
     border-bottom: 1px solid var(--line);
   }
 
+  .print-heading {
+    display: flex;
+    align-items: center;
+    gap: 4mm;
+    min-width: 0;
+  }
+
+  .print-logo {
+    display: block;
+    flex: 0 0 auto;
+    width: 28mm;
+    height: auto;
+  }
+
   .print-kicker {
     margin: 0 0 1.5mm;
     color: var(--muted);
@@ -2067,9 +2082,12 @@ summary:hover {
 
       <section class="print-breakdown" aria-label="Onderbouwing factuur">
         <header class="print-breakdown-header">
-          <div>
-            <p class="print-kicker">Onderbouwing factuur</p>
-            <h2>Berekening van de vergoeding</h2>
+          <div class="print-heading">
+            <img class="print-logo" src="overuurtje-logo.png" alt="Overuurtje.nl">
+            <div>
+              <p class="print-kicker">Onderbouwing factuur</p>
+              <h2>Berekening van de vergoeding</h2>
+            </div>
           </div>
           <dl class="print-job-meta">
             <div><dt>Datum</dt><dd data-print="date">-</dd></div>
