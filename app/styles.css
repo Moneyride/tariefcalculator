@@ -29,6 +29,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html {
   overscroll-behavior-y: none;
 }
@@ -88,7 +92,7 @@ select {
 }
 
 .page-header {
-  position: static;
+  position: relative;
   display: grid;
   grid-template-columns: 1fr;
   align-items: center;
@@ -134,6 +138,88 @@ select {
   font-weight: 700;
   text-align: center;
   text-transform: uppercase;
+}
+
+.account-navigation {
+  position: absolute;
+  top: 24px;
+  right: 30px;
+  z-index: 20;
+}
+
+.account-login,
+.account-avatar {
+  border: 1px solid rgba(31, 67, 53, 0.16);
+  background: rgba(255, 255, 255, 0.52);
+  color: var(--accent-dark);
+  cursor: pointer;
+  font-weight: 700;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+.account-login {
+  min-height: 42px;
+  padding: 9px 16px;
+  border-radius: 12px;
+}
+
+.account-avatar {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+}
+
+.account-login:hover,
+.account-avatar:hover {
+  border-color: rgba(31, 67, 53, 0.34);
+  transform: translateY(-1px);
+}
+
+.account-user-menu {
+  position: relative;
+}
+
+.account-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 180px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.54);
+  border-radius: 14px;
+  background: rgba(250, 251, 249, 0.94);
+  box-shadow: 0 14px 36px rgba(8, 31, 25, 0.14);
+  -webkit-backdrop-filter: blur(22px);
+  backdrop-filter: blur(22px);
+}
+
+.account-dropdown a,
+.account-dropdown button {
+  display: flex;
+  width: 100%;
+  min-height: 40px;
+  align-items: center;
+  padding: 8px 11px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.86rem;
+  text-align: left;
+  text-decoration: none;
+}
+
+.account-dropdown a:hover,
+.account-dropdown button:hover {
+  background: rgba(31, 67, 53, 0.07);
 }
 
 .visually-hidden {
@@ -1303,6 +1389,471 @@ summary:hover {
   }
 }
 
+.saas-dialog {
+  width: min(460px, calc(100% - 28px));
+  padding: 30px;
+  overflow: visible;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 22px;
+  background: rgba(249, 250, 248, 0.94);
+  box-shadow: 0 24px 70px rgba(8, 31, 25, 0.24);
+  color: var(--text);
+  -webkit-backdrop-filter: blur(28px) saturate(110%);
+  backdrop-filter: blur(28px) saturate(110%);
+}
+
+.saas-dialog::backdrop {
+  background: rgba(10, 24, 20, 0.46);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.dialog-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(31, 67, 53, 0.07);
+  color: var(--accent-dark);
+  cursor: pointer;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.dialog-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-right: 34px;
+}
+
+.dialog-heading h2,
+.pro-dialog h2 {
+  color: var(--accent-dark);
+  font-size: 1.45rem;
+}
+
+.dialog-heading p,
+.dialog-footnote {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.dialog-mark {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.auth-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.auth-form label,
+.account-fields label,
+.account-inline-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.auth-form input,
+.account-fields input,
+.account-fields select,
+.account-inline-form input,
+.mock-plan-control select {
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 13px;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text);
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
+}
+
+.auth-form input:focus,
+.account-fields input:focus,
+.account-fields select:focus,
+.account-inline-form input:focus,
+.mock-plan-control select:focus {
+  border-color: rgba(255, 106, 26, 0.55);
+  box-shadow: 0 0 0 4px rgba(255, 106, 26, 0.1);
+}
+
+.saas-primary-button,
+.saas-secondary-button {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 150ms ease, filter 150ms ease, background-color 150ms ease;
+}
+
+.saas-primary-button {
+  border: 1px solid var(--orange);
+  background: var(--orange);
+  box-shadow: 0 8px 20px rgba(255, 106, 26, 0.18);
+  color: #fff;
+}
+
+.saas-secondary-button {
+  border: 1px solid rgba(31, 67, 53, 0.18);
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--accent-dark);
+}
+
+.saas-primary-button:hover,
+.saas-secondary-button:hover {
+  filter: brightness(0.98);
+  transform: translateY(-1px);
+}
+
+.saas-primary-button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.saas-form-status {
+  min-height: 1.25em;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.auth-secondary-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.auth-secondary-actions button,
+.text-action {
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.dialog-eyebrow,
+.account-kicker,
+.account-section-kicker {
+  margin: 0 0 6px;
+  color: var(--orange-dark);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.pro-benefits {
+  display: grid;
+  gap: 10px;
+  margin: 22px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pro-benefits li {
+  position: relative;
+  padding-left: 25px;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.pro-benefits li::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--orange);
+  content: "✓";
+  font-weight: 800;
+}
+
+.pro-dialog .saas-primary-button {
+  width: 100%;
+}
+
+.account-shell {
+  width: min(1080px, calc(100% - 48px));
+}
+
+.account-glass {
+  min-height: calc(100vh - 36px);
+}
+
+.account-page-header {
+  min-height: 170px;
+}
+
+.account-page-topbar {
+  display: grid;
+  grid-template-columns: 180px 1fr 180px;
+  align-items: end;
+  padding: 36px 42px 28px;
+  border-bottom: 1px solid rgba(31, 67, 53, 0.1);
+}
+
+.account-page-topbar > div {
+  grid-column: 2;
+  text-align: center;
+}
+
+.account-page-topbar h1 {
+  color: var(--accent-dark);
+  font-size: 2rem;
+}
+
+.back-link {
+  grid-column: 1;
+  color: var(--accent);
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.account-content,
+.account-empty-state {
+  width: min(820px, calc(100% - 64px));
+  margin: 0 auto;
+}
+
+.account-content {
+  display: grid;
+  gap: 24px;
+  padding: 32px 0 40px;
+}
+
+.account-empty-state {
+  margin-top: 32px;
+  padding: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.42);
+  text-align: center;
+}
+
+.account-empty-state h2 {
+  color: var(--accent-dark);
+}
+
+.account-empty-state p {
+  max-width: 580px;
+  margin: 10px auto 22px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.account-section {
+  padding: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.46);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 30px rgba(8, 31, 25, 0.04);
+}
+
+.account-section-heading,
+.subscription-section {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.account-section-heading h2,
+.subscription-section h2 {
+  color: var(--accent-dark);
+  font-size: 1.22rem;
+}
+
+.plan-pill,
+.sync-state {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(31, 67, 53, 0.08);
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.plan-pill.pro {
+  background: var(--orange-soft);
+  color: var(--orange-dark);
+}
+
+.account-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+  margin: 24px 0;
+}
+
+.account-facts div {
+  min-width: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(31, 67, 53, 0.1);
+}
+
+.account-facts dt {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.account-facts dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.account-inline-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  max-width: 610px;
+}
+
+.account-inline-form .saas-form-status {
+  grid-column: 1 / -1;
+}
+
+.danger-action {
+  margin-top: 10px;
+  color: #9a3d2d;
+}
+
+.account-settings-form {
+  display: grid;
+  gap: 24px;
+}
+
+.account-fields {
+  display: grid;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.two-column-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.prefixed-input {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  min-height: 48px;
+  padding-left: 13px;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--muted);
+}
+
+.prefixed-input input {
+  min-height: 46px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.account-toggle-list {
+  margin-top: 18px;
+}
+
+.account-toggle-row {
+  display: flex;
+  min-height: 50px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(31, 67, 53, 0.09);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.account-toggle-row input {
+  width: 42px;
+  height: 24px;
+  flex: 0 0 auto;
+  accent-color: var(--orange);
+}
+
+.account-save-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.subscription-section > div:first-child {
+  max-width: 500px;
+}
+
+.subscription-section p:not(.account-section-kicker) {
+  margin: 9px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+.subscription-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+.mock-plan-control {
+  display: grid;
+  width: 100%;
+  grid-column: 1 / -1;
+  gap: 7px;
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.account-footer {
+  padding-top: 18px;
+  border-top: 1px solid rgba(31, 67, 53, 0.09);
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
 .print-footer {
   display: none;
 }
@@ -1341,6 +1892,22 @@ summary:hover {
     min-height: auto;
     padding: 24px 16px 20px;
     border-radius: 0 0 8px 8px;
+  }
+
+  .account-navigation {
+    top: 16px;
+    right: 16px;
+  }
+
+  .account-login {
+    min-height: 38px;
+    padding: 7px 12px;
+    font-size: 0.76rem;
+  }
+
+  .account-avatar {
+    width: 38px;
+    height: 38px;
   }
 
   .page-header::after {
@@ -1497,6 +2064,83 @@ summary:hover {
 
   .cookie-button {
     width: 100%;
+  }
+
+  .saas-dialog {
+    width: calc(100% - 20px);
+    padding: 24px 20px;
+    border-radius: 18px;
+  }
+
+  .auth-secondary-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .account-shell {
+    width: calc(100% - 12px);
+  }
+
+  .account-page-header {
+    min-height: 142px;
+  }
+
+  .account-page-topbar {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 18px;
+    padding: 26px 20px 22px;
+  }
+
+  .account-page-topbar > div {
+    text-align: left;
+  }
+
+  .account-page-topbar h1 {
+    font-size: 1.55rem;
+  }
+
+  .account-content,
+  .account-empty-state {
+    width: calc(100% - 24px);
+  }
+
+  .account-content {
+    gap: 14px;
+    padding: 18px 0 26px;
+  }
+
+  .account-section,
+  .account-empty-state {
+    padding: 20px;
+    border-radius: 15px;
+  }
+
+  .account-section-heading,
+  .subscription-section {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .two-column-fields,
+  .account-facts,
+  .account-inline-form {
+    grid-template-columns: 1fr;
+  }
+
+  .account-inline-form .saas-secondary-button,
+  .account-save-row .saas-primary-button,
+  .subscription-actions,
+  .subscription-actions button {
+    width: 100%;
+  }
+
+  .account-save-row,
+  .subscription-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .button-row {

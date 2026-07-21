@@ -24,6 +24,8 @@ const roninResultRow = document.querySelector('[data-result="ronin4dTariffAmount
 const shareButton = document.querySelector("#share-site");
 const buyMeACoffeeLink = document.querySelector("#buymeacoffee-link");
 const analytics = globalThis.OveruurtjeAnalytics;
+const accountSettingsService = globalThis.OveruurtjeSettings;
+const sessionUi = globalThis.OveruurtjeSessionUI;
 
 const SHARE_URL = "https://overuurtje.nl";
 const SHARE_TEXT = "Bereken eenvoudig je cameraman-, geluidsman- en productietarieven met Overuurtje.nl.";
@@ -40,6 +42,9 @@ const numberFormatter = new Intl.NumberFormat("nl-NL", {
 
 let calculationIsStale = false;
 let latestResult = null;
+let currentAccountUser = null;
+let hydratedAccountUserId = null;
+let cloudSyncTimer = null;
 
 function getSavedSettings() {
   try {
@@ -93,6 +98,82 @@ function populateSettings(settings) {
       field.value = value;
     }
   });
+}
+
+function getAccountSettingsSnapshot() {
+  const settings = getSettingsFromForm();
+  const department = form.elements.namedItem("department").value || "camera";
+  return {
+    defaultDepartment: department,
+    defaultHourlyRate: settings.normalDayHours > 0 ? settings.dayRate / settings.normalDayHours : 0,
+    mileageRate: settings.kilometerRate,
+    parkingEnabled: form.elements.namedItem("enableParkingCosts").checked,
+    parkingDefaultAmount: Number(form.elements.namedItem("parkingCosts").value) || 0,
+    droneEnabled: form.elements.namedItem("enableDroneTariff").checked,
+    roninEnabled: department === "camera" && form.elements.namedItem("enableRonin4dTariff").checked
+  };
+}
+
+function applyAccountSettings(accountSettings) {
+  if (!accountSettings) return;
+  const localSettings = getSettingsFromForm();
+  const normalDayHours = localSettings.normalDayHours || DEFAULT_SETTINGS.normalDayHours;
+  populateSettings({
+    ...localSettings,
+    dayRate: accountSettings.defaultHourlyRate * normalDayHours,
+    kilometerRate: accountSettings.mileageRate
+  });
+
+  const departmentField = form.querySelector(`input[name="department"][value="${accountSettings.defaultDepartment}"]`);
+  if (departmentField) departmentField.checked = true;
+  form.elements.namedItem("enableDroneTariff").checked = accountSettings.droneEnabled;
+  form.elements.namedItem("enableRonin4dTariff").checked = accountSettings.defaultDepartment === "camera" && accountSettings.roninEnabled;
+  form.elements.namedItem("enableParkingCosts").checked = accountSettings.parkingEnabled;
+  form.elements.namedItem("parkingCosts").value = accountSettings.parkingDefaultAmount;
+  updateDepartmentVisibility();
+  updateKilometerVisibility();
+  updateParkingVisibility();
+  updateNightSettingsVisibility();
+  updateCalculation();
+}
+
+async function syncAccountSettings({ showStatus = false } = {}) {
+  if (!currentAccountUser) return null;
+  if (showStatus) settingsStatus.textContent = "Opslaan en synchroniseren…";
+
+  try {
+    const saved = await accountSettingsService.save(currentAccountUser.id, getAccountSettingsSnapshot());
+    if (showStatus) settingsStatus.textContent = "Instellingen opgeslagen en gesynchroniseerd.";
+    return saved;
+  } catch (error) {
+    if (showStatus) settingsStatus.textContent = "Lokaal opgeslagen; cloudsync is niet gelukt.";
+    console.warn("Accountinstellingen konden niet worden gesynchroniseerd.", error);
+    return null;
+  }
+}
+
+function scheduleAccountSettingsSync() {
+  if (!currentAccountUser) return;
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(() => syncAccountSettings(), 900);
+}
+
+async function hydrateAccountSettings(context) {
+  currentAccountUser = context.auth.user;
+  if (!currentAccountUser) {
+    hydratedAccountUserId = null;
+    return;
+  }
+  if (hydratedAccountUserId === currentAccountUser.id) return;
+  hydratedAccountUserId = currentAccountUser.id;
+
+  try {
+    const saved = await accountSettingsService.load(currentAccountUser.id);
+    if (saved) applyAccountSettings(saved);
+    else await syncAccountSettings();
+  } catch (error) {
+    console.warn("Accountinstellingen konden niet worden geladen.", error);
+  }
 }
 
 function formatHours(value) {
@@ -313,11 +394,12 @@ function updateCalculation(trackCompletion = false) {
   }
 }
 
-function saveCurrentSettings() {
+async function saveCurrentSettings() {
   if (!settingsForm.reportValidity()) return;
 
   saveSettings(getSettingsFromForm());
-  settingsStatus.textContent = "Instellingen opgeslagen.";
+  settingsStatus.textContent = currentAccountUser ? "Instellingen opgeslagen; synchroniseren…" : "Instellingen lokaal opgeslagen.";
+  if (currentAccountUser) await syncAccountSettings({ showStatus: true });
   details.open = false;
   setTimeout(() => {
     settingsStatus.textContent = "";
@@ -597,11 +679,18 @@ form.addEventListener("change", (event) => {
   updateKilometerVisibility();
   updateParkingVisibility();
   markCalculationStale();
+  if (["department", "enableDroneTariff", "enableRonin4dTariff", "enableParkingCosts"].includes(event.target.name)) {
+    scheduleAccountSettingsSync();
+  }
 });
-settingsForm.addEventListener("input", markCalculationStale);
+settingsForm.addEventListener("input", (event) => {
+  markCalculationStale();
+  if (["dayRate", "normalDayHours", "kilometerRate"].includes(event.target.name)) scheduleAccountSettingsSync();
+});
 settingsForm.addEventListener("change", () => {
   updateNightSettingsVisibility();
   markCalculationStale();
+  scheduleAccountSettingsSync();
 });
 recalculateButton.addEventListener("click", () => updateCalculation(true));
 copyButton.addEventListener("click", copySummary);
@@ -624,3 +713,6 @@ details.addEventListener("toggle", (event) => {
   }
 });
 details.open = localStorage.getItem("cameraTariefSettingsOpen") === "true";
+
+document.addEventListener("overuurtje:user-context", (event) => hydrateAccountSettings(event.detail));
+sessionUi?.ready.then(hydrateAccountSettings);

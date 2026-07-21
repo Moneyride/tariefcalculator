@@ -56,6 +56,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html {
   overscroll-behavior-y: none;
 }
@@ -115,7 +119,7 @@ select {
 }
 
 .page-header {
-  position: static;
+  position: relative;
   display: grid;
   grid-template-columns: 1fr;
   align-items: center;
@@ -161,6 +165,88 @@ select {
   font-weight: 700;
   text-align: center;
   text-transform: uppercase;
+}
+
+.account-navigation {
+  position: absolute;
+  top: 24px;
+  right: 30px;
+  z-index: 20;
+}
+
+.account-login,
+.account-avatar {
+  border: 1px solid rgba(31, 67, 53, 0.16);
+  background: rgba(255, 255, 255, 0.52);
+  color: var(--accent-dark);
+  cursor: pointer;
+  font-weight: 700;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+.account-login {
+  min-height: 42px;
+  padding: 9px 16px;
+  border-radius: 12px;
+}
+
+.account-avatar {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+}
+
+.account-login:hover,
+.account-avatar:hover {
+  border-color: rgba(31, 67, 53, 0.34);
+  transform: translateY(-1px);
+}
+
+.account-user-menu {
+  position: relative;
+}
+
+.account-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 180px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.54);
+  border-radius: 14px;
+  background: rgba(250, 251, 249, 0.94);
+  box-shadow: 0 14px 36px rgba(8, 31, 25, 0.14);
+  -webkit-backdrop-filter: blur(22px);
+  backdrop-filter: blur(22px);
+}
+
+.account-dropdown a,
+.account-dropdown button {
+  display: flex;
+  width: 100%;
+  min-height: 40px;
+  align-items: center;
+  padding: 8px 11px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.86rem;
+  text-align: left;
+  text-decoration: none;
+}
+
+.account-dropdown a:hover,
+.account-dropdown button:hover {
+  background: rgba(31, 67, 53, 0.07);
 }
 
 .visually-hidden {
@@ -1330,6 +1416,471 @@ summary:hover {
   }
 }
 
+.saas-dialog {
+  width: min(460px, calc(100% - 28px));
+  padding: 30px;
+  overflow: visible;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 22px;
+  background: rgba(249, 250, 248, 0.94);
+  box-shadow: 0 24px 70px rgba(8, 31, 25, 0.24);
+  color: var(--text);
+  -webkit-backdrop-filter: blur(28px) saturate(110%);
+  backdrop-filter: blur(28px) saturate(110%);
+}
+
+.saas-dialog::backdrop {
+  background: rgba(10, 24, 20, 0.46);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.dialog-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(31, 67, 53, 0.07);
+  color: var(--accent-dark);
+  cursor: pointer;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.dialog-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-right: 34px;
+}
+
+.dialog-heading h2,
+.pro-dialog h2 {
+  color: var(--accent-dark);
+  font-size: 1.45rem;
+}
+
+.dialog-heading p,
+.dialog-footnote {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.dialog-mark {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.auth-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.auth-form label,
+.account-fields label,
+.account-inline-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.auth-form input,
+.account-fields input,
+.account-fields select,
+.account-inline-form input,
+.mock-plan-control select {
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 13px;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text);
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
+}
+
+.auth-form input:focus,
+.account-fields input:focus,
+.account-fields select:focus,
+.account-inline-form input:focus,
+.mock-plan-control select:focus {
+  border-color: rgba(255, 106, 26, 0.55);
+  box-shadow: 0 0 0 4px rgba(255, 106, 26, 0.1);
+}
+
+.saas-primary-button,
+.saas-secondary-button {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 150ms ease, filter 150ms ease, background-color 150ms ease;
+}
+
+.saas-primary-button {
+  border: 1px solid var(--orange);
+  background: var(--orange);
+  box-shadow: 0 8px 20px rgba(255, 106, 26, 0.18);
+  color: #fff;
+}
+
+.saas-secondary-button {
+  border: 1px solid rgba(31, 67, 53, 0.18);
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--accent-dark);
+}
+
+.saas-primary-button:hover,
+.saas-secondary-button:hover {
+  filter: brightness(0.98);
+  transform: translateY(-1px);
+}
+
+.saas-primary-button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.saas-form-status {
+  min-height: 1.25em;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.auth-secondary-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.auth-secondary-actions button,
+.text-action {
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.dialog-eyebrow,
+.account-kicker,
+.account-section-kicker {
+  margin: 0 0 6px;
+  color: var(--orange-dark);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.pro-benefits {
+  display: grid;
+  gap: 10px;
+  margin: 22px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pro-benefits li {
+  position: relative;
+  padding-left: 25px;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.pro-benefits li::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--orange);
+  content: "✓";
+  font-weight: 800;
+}
+
+.pro-dialog .saas-primary-button {
+  width: 100%;
+}
+
+.account-shell {
+  width: min(1080px, calc(100% - 48px));
+}
+
+.account-glass {
+  min-height: calc(100vh - 36px);
+}
+
+.account-page-header {
+  min-height: 170px;
+}
+
+.account-page-topbar {
+  display: grid;
+  grid-template-columns: 180px 1fr 180px;
+  align-items: end;
+  padding: 36px 42px 28px;
+  border-bottom: 1px solid rgba(31, 67, 53, 0.1);
+}
+
+.account-page-topbar > div {
+  grid-column: 2;
+  text-align: center;
+}
+
+.account-page-topbar h1 {
+  color: var(--accent-dark);
+  font-size: 2rem;
+}
+
+.back-link {
+  grid-column: 1;
+  color: var(--accent);
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.account-content,
+.account-empty-state {
+  width: min(820px, calc(100% - 64px));
+  margin: 0 auto;
+}
+
+.account-content {
+  display: grid;
+  gap: 24px;
+  padding: 32px 0 40px;
+}
+
+.account-empty-state {
+  margin-top: 32px;
+  padding: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.42);
+  text-align: center;
+}
+
+.account-empty-state h2 {
+  color: var(--accent-dark);
+}
+
+.account-empty-state p {
+  max-width: 580px;
+  margin: 10px auto 22px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.account-section {
+  padding: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.46);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 30px rgba(8, 31, 25, 0.04);
+}
+
+.account-section-heading,
+.subscription-section {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.account-section-heading h2,
+.subscription-section h2 {
+  color: var(--accent-dark);
+  font-size: 1.22rem;
+}
+
+.plan-pill,
+.sync-state {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(31, 67, 53, 0.08);
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.plan-pill.pro {
+  background: var(--orange-soft);
+  color: var(--orange-dark);
+}
+
+.account-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+  margin: 24px 0;
+}
+
+.account-facts div {
+  min-width: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(31, 67, 53, 0.1);
+}
+
+.account-facts dt {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.account-facts dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.account-inline-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  max-width: 610px;
+}
+
+.account-inline-form .saas-form-status {
+  grid-column: 1 / -1;
+}
+
+.danger-action {
+  margin-top: 10px;
+  color: #9a3d2d;
+}
+
+.account-settings-form {
+  display: grid;
+  gap: 24px;
+}
+
+.account-fields {
+  display: grid;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.two-column-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.prefixed-input {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  min-height: 48px;
+  padding-left: 13px;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--muted);
+}
+
+.prefixed-input input {
+  min-height: 46px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.account-toggle-list {
+  margin-top: 18px;
+}
+
+.account-toggle-row {
+  display: flex;
+  min-height: 50px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(31, 67, 53, 0.09);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.account-toggle-row input {
+  width: 42px;
+  height: 24px;
+  flex: 0 0 auto;
+  accent-color: var(--orange);
+}
+
+.account-save-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.subscription-section > div:first-child {
+  max-width: 500px;
+}
+
+.subscription-section p:not(.account-section-kicker) {
+  margin: 9px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+.subscription-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+.mock-plan-control {
+  display: grid;
+  width: 100%;
+  grid-column: 1 / -1;
+  gap: 7px;
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.account-footer {
+  padding-top: 18px;
+  border-top: 1px solid rgba(31, 67, 53, 0.09);
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
 .print-footer {
   display: none;
 }
@@ -1368,6 +1919,22 @@ summary:hover {
     min-height: auto;
     padding: 24px 16px 20px;
     border-radius: 0 0 8px 8px;
+  }
+
+  .account-navigation {
+    top: 16px;
+    right: 16px;
+  }
+
+  .account-login {
+    min-height: 38px;
+    padding: 7px 12px;
+    font-size: 0.76rem;
+  }
+
+  .account-avatar {
+    width: 38px;
+    height: 38px;
   }
 
   .page-header::after {
@@ -1524,6 +2091,83 @@ summary:hover {
 
   .cookie-button {
     width: 100%;
+  }
+
+  .saas-dialog {
+    width: calc(100% - 20px);
+    padding: 24px 20px;
+    border-radius: 18px;
+  }
+
+  .auth-secondary-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .account-shell {
+    width: calc(100% - 12px);
+  }
+
+  .account-page-header {
+    min-height: 142px;
+  }
+
+  .account-page-topbar {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 18px;
+    padding: 26px 20px 22px;
+  }
+
+  .account-page-topbar > div {
+    text-align: left;
+  }
+
+  .account-page-topbar h1 {
+    font-size: 1.55rem;
+  }
+
+  .account-content,
+  .account-empty-state {
+    width: calc(100% - 24px);
+  }
+
+  .account-content {
+    gap: 14px;
+    padding: 18px 0 26px;
+  }
+
+  .account-section,
+  .account-empty-state {
+    padding: 20px;
+    border-radius: 15px;
+  }
+
+  .account-section-heading,
+  .subscription-section {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .two-column-fields,
+  .account-facts,
+  .account-inline-form {
+    grid-template-columns: 1fr;
+  }
+
+  .account-inline-form .saas-secondary-button,
+  .account-save-row .saas-primary-button,
+  .subscription-actions,
+  .subscription-actions button {
+    width: 100%;
+  }
+
+  .account-save-row,
+  .subscription-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .button-row {
@@ -2063,6 +2707,19 @@ summary:hover {
           <h1 class="visually-hidden">Overuurtje.nl</h1>
         </div>
         <p class="header-brand">Powered by Reichgelt Media Group</p>
+        <nav class="account-navigation" aria-label="Account">
+          <button class="account-login" id="account-login" type="button">Inloggen</button>
+          <div class="account-user-menu" id="account-user-menu" hidden>
+            <button class="account-avatar" id="account-user-button" type="button" aria-haspopup="menu" aria-expanded="false">
+              <span id="account-user-initial">O</span>
+            </button>
+            <div class="account-dropdown" id="account-dropdown" role="menu" hidden>
+              <a id="account-page-link" href="account.html" role="menuitem">Account</a>
+              <a id="account-settings-link" href="account.html#calculator-settings" role="menuitem">Instellingen</a>
+              <button type="button" role="menuitem" data-auth-logout>Uitloggen</button>
+            </div>
+          </div>
+        </nav>
       </header>
 
       <section class="calculator-grid">
@@ -2362,7 +3019,444 @@ summary:hover {
       </div>
     </section>
 
+    <dialog class="saas-dialog auth-dialog" id="auth-dialog" aria-labelledby="auth-title">
+      <button class="dialog-close" type="button" data-dialog-close aria-label="Sluiten">&times;</button>
+      <div class="dialog-heading">
+        <span class="dialog-mark" aria-hidden="true">O</span>
+        <div>
+          <h2 id="auth-title">Inloggen</h2>
+          <p id="auth-intro">Log in bij je Overuurtje-account.</p>
+        </div>
+      </div>
+      <form class="auth-form" id="auth-form">
+        <label>
+          <span>E-mailadres</span>
+          <input id="auth-email" type="email" autocomplete="email" required>
+        </label>
+        <label id="auth-password-field">
+          <span>Wachtwoord</span>
+          <input id="auth-password" type="password" autocomplete="current-password" minlength="8" required>
+        </label>
+        <button class="saas-primary-button" id="auth-submit" type="submit">Inloggen</button>
+        <p class="saas-form-status" id="auth-status" aria-live="polite"></p>
+      </form>
+      <div class="auth-secondary-actions">
+        <button type="button" id="auth-switch">Nieuw bij Overuurtje? Account maken</button>
+        <button type="button" id="auth-forgot">Wachtwoord vergeten</button>
+      </div>
+    </dialog>
+
+    <dialog class="saas-dialog pro-dialog" id="pro-dialog" aria-labelledby="pro-title">
+      <button class="dialog-close" type="button" data-dialog-close aria-label="Sluiten">&times;</button>
+      <p class="dialog-eyebrow">Overuurtje Pro</p>
+      <h2 id="pro-title">Meer rust in je administratie</h2>
+      <ul class="pro-benefits">
+        <li>Instellingen bewaren</li>
+        <li>Synchroniseren tussen apparaten</li>
+        <li>Projecten en historie</li>
+        <li>Equipmentbibliotheek</li>
+        <li>Nieuwe premiumfuncties</li>
+      </ul>
+      <button class="saas-primary-button" id="pro-checkout" type="button">Upgrade naar Pro</button>
+      <p class="dialog-footnote">Shopify verzorgt straks de veilige betaling en het abonnement.</p>
+    </dialog>
+
     <div class="site-toast" id="site-toast" role="status" aria-live="polite" hidden></div>
+    <script>
+window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
+  supabaseUrl: "",
+  supabaseAnonKey: "",
+  shopifyCheckoutUrl: "",
+  shopifyManageUrl: "",
+  allowMockSubscriptions: false
+});
+
+    </script>
+    <script>
+(function initializeSaasConfig() {
+  "use strict";
+
+  const runtime = globalThis.OVERUURTJE_RUNTIME_CONFIG || {};
+  const localHostnames = new Set(["localhost", "127.0.0.1", "::1"]);
+
+  const config = Object.freeze({
+    supabaseUrl: String(runtime.supabaseUrl || "").replace(/\/$/, ""),
+    supabaseAnonKey: String(runtime.supabaseAnonKey || ""),
+    shopifyCheckoutUrl: String(runtime.shopifyCheckoutUrl || ""),
+    shopifyManageUrl: String(runtime.shopifyManageUrl || ""),
+    allowMockSubscriptions: Boolean(runtime.allowMockSubscriptions)
+      || localHostnames.has(location.hostname)
+      || location.protocol === "file:",
+    accountUrl: new URL("account.html", location.href).href,
+    calculatorUrl: new URL("index.html", location.href).href
+  });
+
+  globalThis.OveruurtjeConfig = config;
+})();
+
+    </script>
+    <script>
+(function initializeSupabaseClient() {
+  "use strict";
+
+  const config = globalThis.OveruurtjeConfig;
+  const SDK_URL = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.7/dist/umd/supabase.js";
+  let clientPromise = null;
+
+  function isConfigured() {
+    return Boolean(config?.supabaseUrl && config?.supabaseAnonKey);
+  }
+
+  function loadSdk() {
+    if (globalThis.supabase?.createClient) return Promise.resolve(globalThis.supabase);
+
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector("script[data-supabase-sdk]");
+      if (existing) {
+        existing.addEventListener("load", () => resolve(globalThis.supabase), { once: true });
+        existing.addEventListener("error", () => reject(new Error("Supabase SDK kon niet worden geladen.")), { once: true });
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = SDK_URL;
+      script.async = true;
+      script.dataset.supabaseSdk = "true";
+      script.addEventListener("load", () => resolve(globalThis.supabase), { once: true });
+      script.addEventListener("error", () => reject(new Error("Supabase SDK kon niet worden geladen.")), { once: true });
+      document.head.append(script);
+    });
+  }
+
+  async function getClient() {
+    if (!isConfigured()) return null;
+    if (clientPromise) return clientPromise;
+
+    clientPromise = loadSdk().then((sdk) => sdk.createClient(
+      config.supabaseUrl,
+      config.supabaseAnonKey,
+      {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+          storageKey: "overuurtje-auth"
+        }
+      }
+    ));
+
+    return clientPromise;
+  }
+
+  globalThis.OveruurtjeSupabase = Object.freeze({
+    getClient,
+    isConfigured
+  });
+})();
+
+    </script>
+    <script>
+(function initializeAuthService() {
+  "use strict";
+
+  const supabaseService = globalThis.OveruurtjeSupabase;
+  const config = globalThis.OveruurtjeConfig;
+  const listeners = new Set();
+  let state = Object.freeze({ available: false, loading: true, user: null, session: null });
+  let initializationPromise = null;
+
+  function publish(nextState) {
+    state = Object.freeze({ ...state, ...nextState, loading: false });
+    listeners.forEach((listener) => listener(state));
+    document.dispatchEvent(new CustomEvent("overuurtje:auth-state", { detail: state }));
+    return state;
+  }
+
+  async function initialize() {
+    if (initializationPromise) return initializationPromise;
+
+    initializationPromise = (async () => {
+      const client = await supabaseService.getClient();
+      if (!client) return publish({ available: false, user: null, session: null });
+
+      const { data, error } = await client.auth.getSession();
+      if (error) throw error;
+
+      client.auth.onAuthStateChange((_event, session) => {
+        publish({ available: true, session, user: session?.user || null });
+      });
+
+      return publish({ available: true, session: data.session, user: data.session?.user || null });
+    })().catch((error) => publish({ available: false, error, user: null, session: null }));
+
+    return initializationPromise;
+  }
+
+  function subscribe(listener) {
+    listeners.add(listener);
+    listener(state);
+    return () => listeners.delete(listener);
+  }
+
+  async function withClient(callback) {
+    const client = await supabaseService.getClient();
+    if (!client) throw new Error("Accounts zijn nog niet geconfigureerd.");
+    return callback(client);
+  }
+
+  function signIn(email, password) {
+    return withClient((client) => client.auth.signInWithPassword({ email, password }));
+  }
+
+  function signUp(email, password) {
+    return withClient((client) => client.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: config.accountUrl }
+    }));
+  }
+
+  function signOut() {
+    return withClient((client) => client.auth.signOut());
+  }
+
+  function requestPasswordReset(email) {
+    const redirectTo = new URL(config.accountUrl);
+    redirectTo.searchParams.set("mode", "reset");
+    return withClient((client) => client.auth.resetPasswordForEmail(email, { redirectTo: redirectTo.href }));
+  }
+
+  function updatePassword(password) {
+    return withClient((client) => client.auth.updateUser({ password }));
+  }
+
+  globalThis.OveruurtjeAuth = Object.freeze({
+    initialize,
+    ready: initialize(),
+    subscribe,
+    getState: () => state,
+    signIn,
+    signUp,
+    signOut,
+    requestPasswordReset,
+    updatePassword
+  });
+})();
+
+    </script>
+    <script>
+(function initializeProfileService() {
+  "use strict";
+
+  const supabaseService = globalThis.OveruurtjeSupabase;
+  const PROFILE_COLUMNS = "id,email,created_at,updated_at,display_name,is_pro,subscription_status,subscription_provider";
+
+  function normalize(row, user) {
+    return {
+      id: row?.id || user?.id || null,
+      email: row?.email || user?.email || "",
+      createdAt: row?.created_at || user?.created_at || null,
+      displayName: row?.display_name || "",
+      isPro: Boolean(row?.is_pro),
+      subscriptionStatus: row?.subscription_status || "free",
+      subscriptionProvider: row?.subscription_provider || "shopify"
+    };
+  }
+
+  async function getForUser(user) {
+    if (!user) return null;
+    const client = await supabaseService.getClient();
+    if (!client) return normalize(null, user);
+
+    const { data, error } = await client
+      .from("profiles")
+      .select(PROFILE_COLUMNS)
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (data) return normalize(data, user);
+
+    const { data: created, error: insertError } = await client
+      .from("profiles")
+      .insert({ id: user.id, email: user.email })
+      .select(PROFILE_COLUMNS)
+      .single();
+
+    if (insertError) throw insertError;
+    return normalize(created, user);
+  }
+
+  globalThis.OveruurtjeProfiles = Object.freeze({ getForUser });
+})();
+
+    </script>
+    <script>
+(function initializeSettingsService() {
+  "use strict";
+
+  const supabaseService = globalThis.OveruurtjeSupabase;
+  const SETTINGS_COLUMNS = "user_id,default_department,default_hourly_rate,mileage_rate,parking_enabled,parking_default_amount,drone_enabled,ronin_enabled,preferences,updated_at";
+  const defaults = Object.freeze({
+    defaultDepartment: "camera",
+    defaultHourlyRate: 45,
+    mileageRate: 0.23,
+    parkingEnabled: false,
+    parkingDefaultAmount: 0,
+    droneEnabled: false,
+    roninEnabled: false,
+    preferences: {}
+  });
+
+  function normalize(row = {}) {
+    return {
+      defaultDepartment: row.default_department === "audio" ? "audio" : "camera",
+      defaultHourlyRate: Number(row.default_hourly_rate ?? defaults.defaultHourlyRate),
+      mileageRate: Number(row.mileage_rate ?? defaults.mileageRate),
+      parkingEnabled: Boolean(row.parking_enabled),
+      parkingDefaultAmount: Number(row.parking_default_amount ?? 0),
+      droneEnabled: Boolean(row.drone_enabled),
+      roninEnabled: Boolean(row.ronin_enabled),
+      preferences: row.preferences && typeof row.preferences === "object" ? row.preferences : {}
+    };
+  }
+
+  function serialize(userId, values) {
+    const settings = { ...defaults, ...values };
+    return {
+      user_id: userId,
+      default_department: settings.defaultDepartment === "audio" ? "audio" : "camera",
+      default_hourly_rate: Number(settings.defaultHourlyRate) || 0,
+      mileage_rate: Number(settings.mileageRate) || 0,
+      parking_enabled: Boolean(settings.parkingEnabled),
+      parking_default_amount: Number(settings.parkingDefaultAmount) || 0,
+      drone_enabled: Boolean(settings.droneEnabled),
+      ronin_enabled: Boolean(settings.roninEnabled),
+      preferences: settings.preferences || {},
+      updated_at: new Date().toISOString()
+    };
+  }
+
+  async function load(userId) {
+    if (!userId) return null;
+    const client = await supabaseService.getClient();
+    if (!client) return null;
+
+    const { data, error } = await client
+      .from("settings")
+      .select(SETTINGS_COLUMNS)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data ? normalize(data) : null;
+  }
+
+  async function save(userId, values) {
+    if (!userId) return null;
+    const client = await supabaseService.getClient();
+    if (!client) return null;
+
+    const { data, error } = await client
+      .from("settings")
+      .upsert(serialize(userId, values), { onConflict: "user_id" })
+      .select(SETTINGS_COLUMNS)
+      .single();
+
+    if (error) throw error;
+    return normalize(data);
+  }
+
+  globalThis.OveruurtjeSettings = Object.freeze({ defaults, normalize, serialize, load, save });
+})();
+
+    </script>
+    <script>
+(function initializeSubscriptionService() {
+  "use strict";
+
+  const config = globalThis.OveruurtjeConfig;
+  const MOCK_KEY = "overuurtjeMockSubscription";
+
+  function getMockPlan() {
+    if (!config.allowMockSubscriptions) return null;
+    try {
+      return localStorage.getItem(MOCK_KEY) === "pro" ? "pro" : "free";
+    } catch {
+      return "free";
+    }
+  }
+
+  function setMockPlan(plan) {
+    if (!config.allowMockSubscriptions) return false;
+    localStorage.setItem(MOCK_KEY, plan === "pro" ? "pro" : "free");
+    document.dispatchEvent(new CustomEvent("overuurtje:subscription-changed"));
+    return true;
+  }
+
+  function resolve(profile) {
+    const mockPlan = getMockPlan();
+    const isPro = mockPlan ? mockPlan === "pro" : Boolean(profile?.isPro);
+    return {
+      isPro,
+      plan: isPro ? "pro" : "free",
+      status: mockPlan ? `mock_${mockPlan}` : (profile?.subscriptionStatus || "free"),
+      provider: profile?.subscriptionProvider || "shopify",
+      isMock: Boolean(mockPlan)
+    };
+  }
+
+  function openExternal(url) {
+    if (!url) return false;
+    window.open(url, "_blank", "noopener,noreferrer");
+    return true;
+  }
+
+  globalThis.OveruurtjeSubscriptions = Object.freeze({
+    resolve,
+    setMockPlan,
+    canMock: () => config.allowMockSubscriptions,
+    openCheckout: () => openExternal(config.shopifyCheckoutUrl),
+    openManagement: () => openExternal(config.shopifyManageUrl)
+  });
+})();
+
+    </script>
+    <script>
+(function initializeFeatureGate() {
+  "use strict";
+
+  const features = Object.freeze({
+    projects: { requiresPro: true },
+    history: { requiresPro: true },
+    equipment_library: { requiresPro: true },
+    device_sync: { requiresPro: true }
+  });
+
+  function canUse(featureName, user) {
+    const feature = features[featureName];
+    if (!feature) return false;
+    return !feature.requiresPro || Boolean(user?.isPro);
+  }
+
+  function requireFeature(featureName, user, onAllowed) {
+    if (canUse(featureName, user)) {
+      onAllowed?.();
+      return true;
+    }
+
+    document.dispatchEvent(new CustomEvent("overuurtje:pro-required", {
+      detail: { feature: featureName }
+    }));
+    return false;
+  }
+
+  // Add future premium capabilities to the registry above, then call
+  // OveruurtjeFeatureGate.require(featureName, currentUser, callback).
+  globalThis.OveruurtjeFeatureGate = Object.freeze({ features, canUse, require: requireFeature });
+})();
+
+    </script>
     <script>
 (() => {
 const DEFAULT_SETTINGS = {
@@ -2914,6 +4008,241 @@ globalThis.TariffCalculator = {
 
     </script>
     <script>
+(function initializeSessionUi() {
+  "use strict";
+
+  const auth = globalThis.OveruurtjeAuth;
+  const profiles = globalThis.OveruurtjeProfiles;
+  const subscriptions = globalThis.OveruurtjeSubscriptions;
+  const config = globalThis.OveruurtjeConfig;
+  let currentContext = Object.freeze({ auth: auth.getState(), profile: null, subscription: subscriptions.resolve(null), isPro: false });
+  let contextPromiseResolve;
+  const ready = new Promise((resolve) => { contextPromiseResolve = resolve; });
+  let hasResolvedReady = false;
+
+  const loginButton = document.querySelector("#account-login");
+  const userMenu = document.querySelector("#account-user-menu");
+  const userMenuButton = document.querySelector("#account-user-button");
+  const userDropdown = document.querySelector("#account-dropdown");
+  const userInitial = document.querySelector("#account-user-initial");
+  const accountLink = document.querySelector("#account-page-link");
+  const settingsLink = document.querySelector("#account-settings-link");
+  const logoutButtons = document.querySelectorAll("[data-auth-logout]");
+  const authDialog = document.querySelector("#auth-dialog");
+  const authForm = document.querySelector("#auth-form");
+  const authTitle = document.querySelector("#auth-title");
+  const authIntro = document.querySelector("#auth-intro");
+  const authEmail = document.querySelector("#auth-email");
+  const authPassword = document.querySelector("#auth-password");
+  const authPasswordField = document.querySelector("#auth-password-field");
+  const authSubmit = document.querySelector("#auth-submit");
+  const authSwitch = document.querySelector("#auth-switch");
+  const authForgot = document.querySelector("#auth-forgot");
+  const authStatus = document.querySelector("#auth-status");
+  const proDialog = document.querySelector("#pro-dialog");
+  const upgradeButtons = document.querySelectorAll("[data-subscription-upgrade]");
+  const manageButtons = document.querySelectorAll("[data-subscription-manage]");
+  let authMode = "login";
+
+  function showToast(message) {
+    if (globalThis.OveruurtjeAnalytics?.showToast) {
+      globalThis.OveruurtjeAnalytics.showToast(message);
+      return;
+    }
+    const toast = document.querySelector("#site-toast");
+    if (!toast) return;
+    toast.textContent = message;
+    toast.hidden = false;
+    toast.classList.add("visible");
+  }
+
+  function openDialog(dialog) {
+    if (!dialog) return;
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+  }
+
+  function closeDialog(dialog) {
+    if (!dialog) return;
+    if (typeof dialog.close === "function") dialog.close();
+    else dialog.removeAttribute("open");
+  }
+
+  function setAuthMode(mode) {
+    authMode = ["login", "register", "forgot"].includes(mode) ? mode : "login";
+    const isForgot = authMode === "forgot";
+    const isRegister = authMode === "register";
+
+    authTitle.textContent = isForgot ? "Wachtwoord herstellen" : (isRegister ? "Account maken" : "Inloggen");
+    authIntro.textContent = isForgot
+      ? "We sturen een veilige herstellink naar je e-mailadres."
+      : (isRegister ? "Maak een account om Overuurtje straks op al je apparaten te gebruiken." : "Log in bij je Overuurtje-account.");
+    authPasswordField.hidden = isForgot;
+    authPassword.required = !isForgot;
+    authPassword.autocomplete = isRegister ? "new-password" : "current-password";
+    authSubmit.textContent = isForgot ? "Stuur herstellink" : (isRegister ? "Account maken" : "Inloggen");
+    authSwitch.textContent = isRegister ? "Ik heb al een account" : "Nieuw bij Overuurtje? Account maken";
+    authSwitch.hidden = isForgot;
+    authForgot.hidden = isForgot || isRegister;
+    authStatus.textContent = "";
+  }
+
+  function openAuth(mode = "login") {
+    if (!auth.getState().available && !globalThis.OveruurtjeSupabase.isConfigured()) {
+      showToast("Accounts worden actief zodra Supabase is gekoppeld.");
+      return;
+    }
+    setAuthMode(mode);
+    openDialog(authDialog);
+    authEmail.focus();
+  }
+
+  function renderHeader(context) {
+    if (!loginButton || !userMenu) return;
+    const user = context.auth.user;
+    loginButton.hidden = Boolean(user);
+    userMenu.hidden = !user;
+    if (!user) return;
+
+    const label = context.profile?.displayName || user.email || "Account";
+    userInitial.textContent = label.trim().charAt(0).toUpperCase() || "O";
+    userMenuButton.setAttribute("aria-label", `Account van ${label}`);
+    accountLink.href = config.accountUrl;
+    settingsLink.href = `${config.accountUrl}#calculator-settings`;
+  }
+
+  async function buildContext(authState) {
+    let profile = null;
+    if (authState.user) {
+      try {
+        profile = await profiles.getForUser(authState.user);
+      } catch (error) {
+        console.warn("Profiel kon niet worden geladen.", error);
+      }
+    }
+
+    const subscription = subscriptions.resolve(profile);
+    currentContext = Object.freeze({
+      auth: authState,
+      profile,
+      subscription,
+      isPro: subscription.isPro
+    });
+    renderHeader(currentContext);
+    document.dispatchEvent(new CustomEvent("overuurtje:user-context", { detail: currentContext }));
+
+    if (!hasResolvedReady && !authState.loading) {
+      hasResolvedReady = true;
+      contextPromiseResolve(currentContext);
+    }
+    return currentContext;
+  }
+
+  async function submitAuth(event) {
+    event.preventDefault();
+    if (!authForm.reportValidity()) return;
+    authSubmit.disabled = true;
+    authStatus.textContent = "Even geduld…";
+
+    try {
+      const email = authEmail.value.trim();
+      let response;
+      if (authMode === "forgot") {
+        response = await auth.requestPasswordReset(email);
+        if (response.error) throw response.error;
+        authStatus.textContent = "De herstellink is verstuurd.";
+        return;
+      }
+
+      response = authMode === "register"
+        ? await auth.signUp(email, authPassword.value)
+        : await auth.signIn(email, authPassword.value);
+      if (response.error) throw response.error;
+
+      if (authMode === "register" && !response.data.session) {
+        authStatus.textContent = "Controleer je e-mail om je account te bevestigen.";
+        return;
+      }
+
+      closeDialog(authDialog);
+      authForm.reset();
+      showToast(authMode === "register" ? "Account aangemaakt." : "Je bent ingelogd.");
+    } catch (error) {
+      authStatus.textContent = error.message || "Inloggen is niet gelukt.";
+    } finally {
+      authSubmit.disabled = false;
+    }
+  }
+
+  function openUpgrade() {
+    openDialog(proDialog);
+  }
+
+  function startUpgrade() {
+    if (!subscriptions.openCheckout()) {
+      showToast("De Shopify-checkout wordt binnenkort gekoppeld.");
+    }
+  }
+
+  function manageSubscription() {
+    if (!subscriptions.openManagement()) {
+      showToast("Abonnementenbeheer wordt binnenkort gekoppeld.");
+    }
+  }
+
+  loginButton?.addEventListener("click", () => openAuth("login"));
+  authForm?.addEventListener("submit", submitAuth);
+  authSwitch?.addEventListener("click", () => setAuthMode(authMode === "register" ? "login" : "register"));
+  authForgot?.addEventListener("click", () => setAuthMode("forgot"));
+  document.querySelectorAll("[data-dialog-close]").forEach((button) => {
+    button.addEventListener("click", () => closeDialog(button.closest("dialog")));
+  });
+  authDialog?.addEventListener("click", (event) => {
+    if (event.target === authDialog) closeDialog(authDialog);
+  });
+  proDialog?.addEventListener("click", (event) => {
+    if (event.target === proDialog) closeDialog(proDialog);
+  });
+
+  userMenuButton?.addEventListener("click", () => {
+    const isOpen = !userDropdown.hidden;
+    userDropdown.hidden = isOpen;
+    userMenuButton.setAttribute("aria-expanded", String(!isOpen));
+  });
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest("#account-user-menu") && userDropdown) {
+      userDropdown.hidden = true;
+      userMenuButton?.setAttribute("aria-expanded", "false");
+    }
+  });
+
+  logoutButtons.forEach((button) => button.addEventListener("click", async () => {
+    const { error } = await auth.signOut();
+    if (error) showToast(error.message);
+    else showToast("Je bent uitgelogd.");
+  }));
+  upgradeButtons.forEach((button) => button.addEventListener("click", () => {
+    if (button.dataset.subscriptionUpgrade === "direct") startUpgrade();
+    else openUpgrade();
+  }));
+  manageButtons.forEach((button) => button.addEventListener("click", manageSubscription));
+  document.querySelector("#pro-checkout")?.addEventListener("click", startUpgrade);
+  document.addEventListener("overuurtje:pro-required", openUpgrade);
+  document.addEventListener("overuurtje:subscription-changed", () => buildContext(auth.getState()));
+  auth.subscribe(buildContext);
+
+  globalThis.OveruurtjeSessionUI = Object.freeze({
+    ready,
+    openAuth,
+    openUpgrade,
+    getContext: () => currentContext,
+    refresh: () => buildContext(auth.getState()),
+    showToast
+  });
+})();
+
+    </script>
+    <script>
 const { DEFAULT_SETTINGS, calculateTariff } = globalThis.TariffCalculator;
 
 const SETTINGS_KEY = "cameraTariefCalculatorSettings";
@@ -2940,6 +4269,8 @@ const roninResultRow = document.querySelector('[data-result="ronin4dTariffAmount
 const shareButton = document.querySelector("#share-site");
 const buyMeACoffeeLink = document.querySelector("#buymeacoffee-link");
 const analytics = globalThis.OveruurtjeAnalytics;
+const accountSettingsService = globalThis.OveruurtjeSettings;
+const sessionUi = globalThis.OveruurtjeSessionUI;
 
 const SHARE_URL = "https://overuurtje.nl";
 const SHARE_TEXT = "Bereken eenvoudig je cameraman-, geluidsman- en productietarieven met Overuurtje.nl.";
@@ -2956,6 +4287,9 @@ const numberFormatter = new Intl.NumberFormat("nl-NL", {
 
 let calculationIsStale = false;
 let latestResult = null;
+let currentAccountUser = null;
+let hydratedAccountUserId = null;
+let cloudSyncTimer = null;
 
 function getSavedSettings() {
   try {
@@ -3009,6 +4343,82 @@ function populateSettings(settings) {
       field.value = value;
     }
   });
+}
+
+function getAccountSettingsSnapshot() {
+  const settings = getSettingsFromForm();
+  const department = form.elements.namedItem("department").value || "camera";
+  return {
+    defaultDepartment: department,
+    defaultHourlyRate: settings.normalDayHours > 0 ? settings.dayRate / settings.normalDayHours : 0,
+    mileageRate: settings.kilometerRate,
+    parkingEnabled: form.elements.namedItem("enableParkingCosts").checked,
+    parkingDefaultAmount: Number(form.elements.namedItem("parkingCosts").value) || 0,
+    droneEnabled: form.elements.namedItem("enableDroneTariff").checked,
+    roninEnabled: department === "camera" && form.elements.namedItem("enableRonin4dTariff").checked
+  };
+}
+
+function applyAccountSettings(accountSettings) {
+  if (!accountSettings) return;
+  const localSettings = getSettingsFromForm();
+  const normalDayHours = localSettings.normalDayHours || DEFAULT_SETTINGS.normalDayHours;
+  populateSettings({
+    ...localSettings,
+    dayRate: accountSettings.defaultHourlyRate * normalDayHours,
+    kilometerRate: accountSettings.mileageRate
+  });
+
+  const departmentField = form.querySelector(`input[name="department"][value="${accountSettings.defaultDepartment}"]`);
+  if (departmentField) departmentField.checked = true;
+  form.elements.namedItem("enableDroneTariff").checked = accountSettings.droneEnabled;
+  form.elements.namedItem("enableRonin4dTariff").checked = accountSettings.defaultDepartment === "camera" && accountSettings.roninEnabled;
+  form.elements.namedItem("enableParkingCosts").checked = accountSettings.parkingEnabled;
+  form.elements.namedItem("parkingCosts").value = accountSettings.parkingDefaultAmount;
+  updateDepartmentVisibility();
+  updateKilometerVisibility();
+  updateParkingVisibility();
+  updateNightSettingsVisibility();
+  updateCalculation();
+}
+
+async function syncAccountSettings({ showStatus = false } = {}) {
+  if (!currentAccountUser) return null;
+  if (showStatus) settingsStatus.textContent = "Opslaan en synchroniseren…";
+
+  try {
+    const saved = await accountSettingsService.save(currentAccountUser.id, getAccountSettingsSnapshot());
+    if (showStatus) settingsStatus.textContent = "Instellingen opgeslagen en gesynchroniseerd.";
+    return saved;
+  } catch (error) {
+    if (showStatus) settingsStatus.textContent = "Lokaal opgeslagen; cloudsync is niet gelukt.";
+    console.warn("Accountinstellingen konden niet worden gesynchroniseerd.", error);
+    return null;
+  }
+}
+
+function scheduleAccountSettingsSync() {
+  if (!currentAccountUser) return;
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(() => syncAccountSettings(), 900);
+}
+
+async function hydrateAccountSettings(context) {
+  currentAccountUser = context.auth.user;
+  if (!currentAccountUser) {
+    hydratedAccountUserId = null;
+    return;
+  }
+  if (hydratedAccountUserId === currentAccountUser.id) return;
+  hydratedAccountUserId = currentAccountUser.id;
+
+  try {
+    const saved = await accountSettingsService.load(currentAccountUser.id);
+    if (saved) applyAccountSettings(saved);
+    else await syncAccountSettings();
+  } catch (error) {
+    console.warn("Accountinstellingen konden niet worden geladen.", error);
+  }
 }
 
 function formatHours(value) {
@@ -3229,11 +4639,12 @@ function updateCalculation(trackCompletion = false) {
   }
 }
 
-function saveCurrentSettings() {
+async function saveCurrentSettings() {
   if (!settingsForm.reportValidity()) return;
 
   saveSettings(getSettingsFromForm());
-  settingsStatus.textContent = "Instellingen opgeslagen.";
+  settingsStatus.textContent = currentAccountUser ? "Instellingen opgeslagen; synchroniseren…" : "Instellingen lokaal opgeslagen.";
+  if (currentAccountUser) await syncAccountSettings({ showStatus: true });
   details.open = false;
   setTimeout(() => {
     settingsStatus.textContent = "";
@@ -3513,11 +4924,18 @@ form.addEventListener("change", (event) => {
   updateKilometerVisibility();
   updateParkingVisibility();
   markCalculationStale();
+  if (["department", "enableDroneTariff", "enableRonin4dTariff", "enableParkingCosts"].includes(event.target.name)) {
+    scheduleAccountSettingsSync();
+  }
 });
-settingsForm.addEventListener("input", markCalculationStale);
+settingsForm.addEventListener("input", (event) => {
+  markCalculationStale();
+  if (["dayRate", "normalDayHours", "kilometerRate"].includes(event.target.name)) scheduleAccountSettingsSync();
+});
 settingsForm.addEventListener("change", () => {
   updateNightSettingsVisibility();
   markCalculationStale();
+  scheduleAccountSettingsSync();
 });
 recalculateButton.addEventListener("click", () => updateCalculation(true));
 copyButton.addEventListener("click", copySummary);
@@ -3540,6 +4958,9 @@ details.addEventListener("toggle", (event) => {
   }
 });
 details.open = localStorage.getItem("cameraTariefSettingsOpen") === "true";
+
+document.addEventListener("overuurtje:user-context", (event) => hydrateAccountSettings(event.detail));
+sessionUi?.ready.then(hydrateAccountSettings);
 
     </script>
   </body>

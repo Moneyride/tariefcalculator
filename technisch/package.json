@@ -4,8 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node build-standalone.mjs",
-    "test": "node --test tests/calculator.test.js",
+    "build": "node build-standalone.mjs && node build-netlify.mjs",
+    "build:standalone": "node build-standalone.mjs",
+    "build:netlify": "node build-netlify.mjs",
+    "test": "node --test tests/*.test.js",
     "start": "python3 -m http.server 4173 --directory .."
   }
 }
