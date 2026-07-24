@@ -10,6 +10,7 @@ import {
   orderContainsProduct,
   resolveCustomerEntitlement
 } from "../../netlify/functions/lib/subscription-utils.mjs";
+import { fetchCustomerTags } from "../../netlify/functions/lib/shopify-admin.mjs";
 import { findProfileForCustomer } from "../../netlify/functions/shopify-webhook.mjs";
 
 const testsDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -86,6 +87,47 @@ test("een nieuwe Shopify-klant wordt na een ontbrekende klant-ID op e-mail gekop
     "email:test@overuurtje.nl"
   ]);
   assert.equal(profile.id, "profile-1");
+});
+
+test("ontbrekende webhooktags worden via de Shopify Admin API opgehaald", async () => {
+  const previousEnvironment = {
+    SHOPIFY_STORE_DOMAIN: process.env.SHOPIFY_STORE_DOMAIN,
+    SHOPIFY_CLIENT_ID: process.env.SHOPIFY_CLIENT_ID,
+    SHOPIFY_API_SECRET: process.env.SHOPIFY_API_SECRET
+  };
+  process.env.SHOPIFY_STORE_DOMAIN = "test-shop.myshopify.com";
+  process.env.SHOPIFY_CLIENT_ID = "client-id";
+  process.env.SHOPIFY_API_SECRET = "client-secret";
+
+  const requests = [];
+  const fetchImpl = async (url, options) => {
+    requests.push({ url, options });
+    if (url.endsWith("/admin/oauth/access_token")) {
+      return Response.json({ access_token: "admin-token", expires_in: 3600 });
+    }
+    return Response.json({
+      data: {
+        customer: {
+          tags: ["overuurtje-pro-active"]
+        }
+      }
+    });
+  };
+
+  try {
+    const tags = await fetchCustomerTags("12345", fetchImpl);
+    assert.deepEqual(tags, ["overuurtje-pro-active"]);
+    assert.equal(requests.length, 2);
+    assert.equal(
+      JSON.parse(requests[1].options.body).variables.id,
+      "gid://shopify/Customer/12345"
+    );
+  } finally {
+    for (const [key, value] of Object.entries(previousEnvironment)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
 });
 
 test("Shopify-sync blijft server-only en controleert HMAC en duplicaten", async () => {

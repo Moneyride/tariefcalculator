@@ -15,6 +15,7 @@ import {
   updateProfile,
   updateWebhookEvent
 } from "./lib/supabase-admin.mjs";
+import { fetchCustomerTags } from "./lib/shopify-admin.mjs";
 
 function response(status, body) {
   return Response.json(body, { status });
@@ -90,8 +91,11 @@ async function processCustomerUpdate(customer) {
 
   if (!profile) return { ignored: true, reason: "unknown_customer" };
 
+  const tags = Object.prototype.hasOwnProperty.call(customer || {}, "tags")
+    ? customer.tags
+    : await fetchCustomerTags(customerId);
   const entitlement = resolveCustomerEntitlement({
-    tags: customer?.tags,
+    tags,
     currentPeriodEnd: profile.subscription_current_period_end
   });
   if (!entitlement.recognized) return { ignored: true, reason: "no_overuurtje_tag" };
@@ -158,7 +162,7 @@ export default async function handler(request) {
         ? {
             hasCustomerId: Boolean(payload?.id),
             hasEmail: Boolean(extractOrderEmail(payload)),
-            hasTags: Boolean(payload?.tags)
+            hasTags: Object.prototype.hasOwnProperty.call(payload || {}, "tags")
           }
         : undefined
     });

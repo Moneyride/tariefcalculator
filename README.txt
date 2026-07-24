@@ -115,10 +115,11 @@ Voer eerst supabase/migrations/202607240001_shopify_webhooks.sql uit. Voeg daarn
 
 SUPABASE_SECRET_KEY
 SHOPIFY_API_SECRET
+SHOPIFY_CLIENT_ID
 SHOPIFY_STORE_DOMAIN
 SHOPIFY_PRO_PRODUCT_ID
 
-De Shopify-app stuurt orders/paid en customers/update naar de webhook. Shopify Flow beheert voor Basic de klanttags overuurtje-pro-active, overuurtje-pro-cancelled en overuurtje-pro-past-due. Gebruik bij Shopify hetzelfde e-mailadres als bij het Overuurtje-account.
+De Shopify-app stuurt orders/paid en customers/update naar de webhook. Shopify Flow beheert voor Basic de klanttags overuurtje-pro-active, overuurtje-pro-cancelled en overuurtje-pro-past-due. De webhook haalt deze tags server-side op met de Shopify Client ID en het bestaande API-secret, omdat Shopify ze niet in de customers/update-payload meestuurt. Gebruik bij Shopify hetzelfde e-mailadres als bij het Overuurtje-account.
 
 De Supabase secret key is uitsluitend voor Netlify Functions. Plaats deze nooit in runtime-config.js, browsercode of GitHub.
 
