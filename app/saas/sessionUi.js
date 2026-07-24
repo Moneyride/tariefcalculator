@@ -16,7 +16,8 @@
   const userDropdown = document.querySelector("#account-dropdown");
   const userInitial = document.querySelector("#account-user-initial");
   const accountLink = document.querySelector("#account-page-link");
-  const settingsLink = document.querySelector("#account-settings-link");
+  const workdaysLink = document.querySelector("#workdays-page-link");
+  const projectsLink = document.querySelector("#projects-page-link");
   const logoutButtons = document.querySelectorAll("[data-auth-logout]");
   const authDialog = document.querySelector("#auth-dialog");
   const authForm = document.querySelector("#auth-form");
@@ -30,9 +31,15 @@
   const authForgot = document.querySelector("#auth-forgot");
   const authStatus = document.querySelector("#auth-status");
   const proDialog = document.querySelector("#pro-dialog");
+  const proEyebrow = document.querySelector("#pro-eyebrow");
+  const proTitle = document.querySelector("#pro-title");
+  const proIntro = document.querySelector("#pro-intro");
+  const proCheckout = document.querySelector("#pro-checkout");
+  const proContinue = document.querySelector("#pro-continue-free");
   const upgradeButtons = document.querySelectorAll("[data-subscription-upgrade]");
   const manageButtons = document.querySelectorAll("[data-subscription-manage]");
   let authMode = "login";
+  let showProChoiceAfterAuth = false;
 
   function showToast(message) {
     if (globalThis.OveruurtjeAnalytics?.showToast) {
@@ -63,25 +70,32 @@
     const isForgot = authMode === "forgot";
     const isRegister = authMode === "register";
 
-    authTitle.textContent = isForgot ? "Wachtwoord herstellen" : (isRegister ? "Account maken" : "Inloggen");
+    authTitle.textContent = isForgot
+      ? "Wachtwoord herstellen"
+      : (isRegister && showProChoiceAfterAuth ? "Account maken voor Pro" : (isRegister ? "Account maken" : "Inloggen"));
     authIntro.textContent = isForgot
       ? "We sturen een veilige herstellink naar je e-mailadres."
-      : (isRegister ? "Maak een account om Overuurtje straks op al je apparaten te gebruiken." : "Log in bij je Overuurtje-account.");
+      : (isRegister && showProChoiceAfterAuth
+        ? "Voor Pro heb je eerst een gratis account nodig. Na het aanmelden kies je direct Pro of ga je verder met Free."
+        : (isRegister ? "Maak een account om Overuurtje straks op al je apparaten te gebruiken." : "Log in bij je Overuurtje-account."));
     authPasswordField.hidden = isForgot;
     authPassword.required = !isForgot;
     authPassword.autocomplete = isRegister ? "new-password" : "current-password";
-    authSubmit.textContent = isForgot ? "Stuur herstellink" : (isRegister ? "Account maken" : "Inloggen");
+    authSubmit.textContent = isForgot
+      ? "Stuur herstellink"
+      : (isRegister && showProChoiceAfterAuth ? "Account maken en doorgaan" : (isRegister ? "Account maken" : "Inloggen"));
     authSwitch.textContent = isRegister ? "Ik heb al een account" : "Nieuw bij Overuurtje? Account maken";
     authSwitch.hidden = isForgot;
     authForgot.hidden = isForgot || isRegister;
     authStatus.textContent = "";
   }
 
-  function openAuth(mode = "login") {
+  function openAuth(mode = "login", { continueToPro = false } = {}) {
     if (!auth.getState().available && !globalThis.OveruurtjeSupabase.isConfigured()) {
       showToast("Accounts worden actief zodra Supabase is gekoppeld.");
       return;
     }
+    showProChoiceAfterAuth = continueToPro;
     setAuthMode(mode);
     openDialog(authDialog);
     authEmail.focus();
@@ -91,6 +105,9 @@
     if (!loginButton || !userMenu) return;
     const user = context.auth.user;
     loginButton.hidden = Boolean(user);
+    document.querySelectorAll(".account-navigation [data-subscription-upgrade]").forEach((button) => {
+      button.hidden = Boolean(user);
+    });
     userMenu.hidden = !user;
     if (!user) return;
 
@@ -98,7 +115,8 @@
     userInitial.textContent = label.trim().charAt(0).toUpperCase() || "O";
     userMenuButton.setAttribute("aria-label", `Account van ${label}`);
     accountLink.href = config.accountUrl;
-    settingsLink.href = `${config.accountUrl}#calculator-settings`;
+    if (workdaysLink) workdaysLink.href = config.workdaysUrl;
+    if (projectsLink) projectsLink.href = config.projectsUrl;
   }
 
   async function buildContext(authState) {
@@ -150,13 +168,20 @@
       if (response.error) throw response.error;
 
       if (authMode === "register" && !response.data.session) {
-        authStatus.textContent = "Controleer je e-mail om je account te bevestigen.";
+        sessionStorage.setItem("overuurtjePostSignupChoice", "true");
+        authStatus.textContent = "Controleer je e-mail om je account te bevestigen. Log daarna in om Pro te kiezen of verder te gaan met Free.";
         return;
       }
 
+      const completedRegistration = authMode === "register";
       closeDialog(authDialog);
       authForm.reset();
-      showToast(authMode === "register" ? "Account aangemaakt." : "Je bent ingelogd.");
+      showToast(completedRegistration ? "Account aangemaakt." : "Je bent ingelogd.");
+      if (completedRegistration || showProChoiceAfterAuth || sessionStorage.getItem("overuurtjePostSignupChoice") === "true") {
+        sessionStorage.removeItem("overuurtjePostSignupChoice");
+        showProChoiceAfterAuth = false;
+        openUpgrade({ accountReady: true });
+      }
     } catch (error) {
       authStatus.textContent = error.message || "Inloggen is niet gelukt.";
     } finally {
@@ -164,14 +189,31 @@
     }
   }
 
-  function openUpgrade() {
+  function openUpgrade({ accountReady = Boolean(auth.getState().user) } = {}) {
+    proEyebrow.textContent = accountReady ? "Je account is klaar" : "Overuurtje Pro";
+    proTitle.textContent = accountReady ? "Kies hoe je verdergaat" : "Meer rust in je administratie";
+    proIntro.textContent = accountReady
+      ? "Upgrade nu naar Pro of ga verder met het gratis account. Je kunt later altijd nog upgraden."
+      : "Voor Pro heb je een account nodig. Na het aanmelden ga je direct verder met de upgrade.";
+    proCheckout.textContent = accountReady ? "Upgrade naar Pro" : "Account maken en doorgaan";
+    proContinue.hidden = !accountReady;
     openDialog(proDialog);
   }
 
   function startUpgrade() {
+    if (!auth.getState().user) {
+      closeDialog(proDialog);
+      openAuth("register", { continueToPro: true });
+      return;
+    }
     if (!subscriptions.openCheckout()) {
       showToast("De Shopify-checkout wordt binnenkort gekoppeld.");
     }
+  }
+
+  function beginUpgrade() {
+    if (auth.getState().user) startUpgrade();
+    else openAuth("register", { continueToPro: true });
   }
 
   function manageSubscription() {
@@ -212,11 +254,13 @@
     else showToast("Je bent uitgelogd.");
   }));
   upgradeButtons.forEach((button) => button.addEventListener("click", () => {
-    if (button.dataset.subscriptionUpgrade === "direct") startUpgrade();
+    if (button.dataset.subscriptionUpgrade === "signup") beginUpgrade();
+    else if (button.dataset.subscriptionUpgrade === "direct") startUpgrade();
     else openUpgrade();
   }));
   manageButtons.forEach((button) => button.addEventListener("click", manageSubscription));
-  document.querySelector("#pro-checkout")?.addEventListener("click", startUpgrade);
+  proCheckout?.addEventListener("click", startUpgrade);
+  proContinue?.addEventListener("click", () => closeDialog(proDialog));
   document.addEventListener("overuurtje:pro-required", openUpgrade);
   document.addEventListener("overuurtje:subscription-changed", () => buildContext(auth.getState()));
   auth.subscribe(buildContext);

@@ -94,7 +94,6 @@ test("alle afgesproken GA4-events worden ondersteund", () => {
     "mileage_enabled",
     "parking_enabled",
     "settings_opened",
-    "buymeacoffee_clicked",
     "share_clicked"
   ];
 

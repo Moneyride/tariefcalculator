@@ -2,28 +2,57 @@
   "use strict";
 
   const supabaseService = globalThis.OveruurtjeSupabase;
-  const SETTINGS_COLUMNS = "user_id,default_department,default_hourly_rate,mileage_rate,parking_enabled,parking_default_amount,drone_enabled,ronin_enabled,preferences,updated_at";
+  const SETTINGS_COLUMNS = "user_id,default_department,default_day_rate,mileage_rate,parking_default_amount,drone_enabled,ronin_enabled,drone_tariff_amount,ronin_tariff_amount,preferences,updated_at";
   const defaults = Object.freeze({
     defaultDepartment: "camera",
+    defaultDayRate: 450,
+    defaultRateMode: "day",
     defaultHourlyRate: 45,
+    defaultBreakMinutes: 0,
+    enableBreak: false,
+    normalDayHours: 10,
+    enableHalfDayUnder6Hours: false,
+    enableOvertime10To12: true,
+    enableOvertimeFrom12: true,
+    enableOvertimeFrom14: false,
+    enableNightTariff: true,
+    nightStart: "00:00",
+    nightEnd: "06:00",
     mileageRate: 0.23,
-    parkingEnabled: false,
     parkingDefaultAmount: 0,
-    droneEnabled: false,
-    roninEnabled: false,
+    droneVisible: false,
+    roninVisible: false,
+    droneTariffAmount: 50,
+    roninTariffAmount: 50,
     preferences: {}
   });
 
   function normalize(row = {}) {
+    const preferences = row.preferences && typeof row.preferences === "object" ? row.preferences : {};
+    const booleanPreference = (name, fallback) => typeof preferences[name] === "boolean" ? preferences[name] : fallback;
+    const timePreference = (name, fallback) => /^\d{2}:\d{2}$/.test(preferences[name] || "") ? preferences[name] : fallback;
     return {
       defaultDepartment: row.default_department === "audio" ? "audio" : "camera",
-      defaultHourlyRate: Number(row.default_hourly_rate ?? defaults.defaultHourlyRate),
+      defaultDayRate: Number(row.default_day_rate ?? defaults.defaultDayRate),
+      defaultRateMode: preferences.defaultRateMode === "hour" ? "hour" : "day",
+      defaultHourlyRate: Number(preferences.defaultHourlyRate ?? defaults.defaultHourlyRate),
+      defaultBreakMinutes: Math.max(0, Number(preferences.defaultBreakMinutes ?? defaults.defaultBreakMinutes)),
+      enableBreak: booleanPreference("enableBreak", defaults.enableBreak),
+      normalDayHours: Number(preferences.normalDayHours) === 12 ? 12 : 10,
+      enableHalfDayUnder6Hours: booleanPreference("enableHalfDayUnder6Hours", defaults.enableHalfDayUnder6Hours),
+      enableOvertime10To12: booleanPreference("enableOvertime10To12", defaults.enableOvertime10To12),
+      enableOvertimeFrom12: booleanPreference("enableOvertimeFrom12", defaults.enableOvertimeFrom12),
+      enableOvertimeFrom14: booleanPreference("enableOvertimeFrom14", defaults.enableOvertimeFrom14),
+      enableNightTariff: booleanPreference("enableNightTariff", defaults.enableNightTariff),
+      nightStart: timePreference("nightStart", defaults.nightStart),
+      nightEnd: timePreference("nightEnd", defaults.nightEnd),
       mileageRate: Number(row.mileage_rate ?? defaults.mileageRate),
-      parkingEnabled: Boolean(row.parking_enabled),
       parkingDefaultAmount: Number(row.parking_default_amount ?? 0),
-      droneEnabled: Boolean(row.drone_enabled),
-      roninEnabled: Boolean(row.ronin_enabled),
-      preferences: row.preferences && typeof row.preferences === "object" ? row.preferences : {}
+      droneVisible: Boolean(row.drone_enabled),
+      roninVisible: Boolean(row.ronin_enabled),
+      droneTariffAmount: Number(row.drone_tariff_amount ?? defaults.droneTariffAmount),
+      roninTariffAmount: Number(row.ronin_tariff_amount ?? defaults.roninTariffAmount),
+      preferences
     };
   }
 
@@ -32,13 +61,28 @@
     return {
       user_id: userId,
       default_department: settings.defaultDepartment === "audio" ? "audio" : "camera",
-      default_hourly_rate: Number(settings.defaultHourlyRate) || 0,
+      default_day_rate: Number(settings.defaultDayRate) || 0,
       mileage_rate: Number(settings.mileageRate) || 0,
-      parking_enabled: Boolean(settings.parkingEnabled),
       parking_default_amount: Number(settings.parkingDefaultAmount) || 0,
-      drone_enabled: Boolean(settings.droneEnabled),
-      ronin_enabled: Boolean(settings.roninEnabled),
-      preferences: settings.preferences || {},
+      drone_enabled: Boolean(settings.droneVisible),
+      ronin_enabled: Boolean(settings.roninVisible),
+      drone_tariff_amount: Math.max(0, Number(settings.droneTariffAmount) || 0),
+      ronin_tariff_amount: Math.max(0, Number(settings.roninTariffAmount) || 0),
+      preferences: {
+        ...(settings.preferences || {}),
+        defaultRateMode: settings.defaultRateMode === "hour" ? "hour" : "day",
+        defaultHourlyRate: Math.max(0, Number(settings.defaultHourlyRate) || 0),
+        defaultBreakMinutes: Math.max(0, Number(settings.defaultBreakMinutes) || 0),
+        enableBreak: Boolean(settings.enableBreak),
+        normalDayHours: Number(settings.normalDayHours) === 12 ? 12 : 10,
+        enableHalfDayUnder6Hours: Boolean(settings.enableHalfDayUnder6Hours),
+        enableOvertime10To12: Boolean(settings.enableOvertime10To12),
+        enableOvertimeFrom12: Boolean(settings.enableOvertimeFrom12),
+        enableOvertimeFrom14: Boolean(settings.enableOvertimeFrom14),
+        enableNightTariff: Boolean(settings.enableNightTariff),
+        nightStart: /^\d{2}:\d{2}$/.test(settings.nightStart || "") ? settings.nightStart : defaults.nightStart,
+        nightEnd: /^\d{2}:\d{2}$/.test(settings.nightEnd || "") ? settings.nightEnd : defaults.nightEnd
+      },
       updated_at: new Date().toISOString()
     };
   }

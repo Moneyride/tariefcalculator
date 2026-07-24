@@ -16,27 +16,45 @@
       window.gtag("set", "ads_data_redaction", true);
     </script>
     <title>Overuurtje.nl</title>
+    <meta name="description" content="Bereken eenvoudig werkuren, overuren, nachttoeslagen en productietarieven met Overuurtje.nl.">
     <meta name="application-name" content="Overuurtje.nl">
     <meta name="apple-mobile-web-app-title" content="Overuurtje.nl">
+    <link rel="canonical" href="https://overuurtje.nl/">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="nl_NL">
+    <meta property="og:site_name" content="Overuurtje.nl">
+    <meta property="og:title" content="Overuurtje.nl">
+    <meta property="og:description" content="Bereken eenvoudig je cameraman-, geluidsman- en productietarieven met Overuurtje.nl.">
+    <meta property="og:url" content="https://overuurtje.nl/">
+    <meta property="og:image" content="https://overuurtje.nl/overuurtje-logo.png?v=20260718e">
+    <meta property="og:image:width" content="900">
+    <meta property="og:image:height" content="732">
+    <meta property="og:image:alt" content="Overuurtje.nl - Reken. Check. Klaar.">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Overuurtje.nl">
+    <meta name="twitter:description" content="Bereken eenvoudig je cameraman-, geluidsman- en productietarieven met Overuurtje.nl.">
+    <meta name="twitter:image" content="https://overuurtje.nl/overuurtje-logo.png?v=20260718e">
     <link rel="icon" href="favicon.ico?v=20260718c" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=20260718c">
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png?v=20260718c">
     <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260718c">
     <link rel="manifest" href="site.webmanifest?v=20260718c">
-    <link rel="stylesheet" href="styles.css?v=20260721a">
-    <script src="runtime-config.js?v=20260721a" defer></script>
-    <script src="saas/config.js?v=20260721a" defer></script>
-    <script src="saas/supabaseClient.js?v=20260721a" defer></script>
-    <script src="saas/authService.js?v=20260721a" defer></script>
-    <script src="saas/profileService.js?v=20260721a" defer></script>
-    <script src="saas/settingsService.js?v=20260721a" defer></script>
-    <script src="saas/subscriptionService.js?v=20260721a" defer></script>
-    <script src="saas/featureGate.js?v=20260721a" defer></script>
-    <script src="calculator.js?v=20260721a" defer></script>
-    <script src="analytics.js?v=20260721a" defer></script>
-    <script src="saas/sessionUi.js?v=20260721a" defer></script>
-    <script src="app.js?v=20260721a" defer></script>
+    <link rel="stylesheet" href="styles.css?v=20260724a">
+    <script src="runtime-config.js?v=20260722a" defer></script>
+    <script src="saas/config.js?v=20260724a" defer></script>
+    <script src="saas/supabaseClient.js?v=20260722a" defer></script>
+    <script src="saas/authService.js?v=20260722a" defer></script>
+    <script src="saas/profileService.js?v=20260722o" defer></script>
+    <script src="saas/settingsService.js?v=20260723a" defer></script>
+    <script src="saas/equipmentService.js?v=20260722a" defer></script>
+    <script src="saas/workdayService.js?v=20260724a" defer></script>
+    <script src="saas/subscriptionService.js?v=20260722d" defer></script>
+    <script src="saas/featureGate.js?v=20260722a" defer></script>
+    <script src="calculator.js?v=20260722a" defer></script>
+    <script src="analytics.js?v=20260722q" defer></script>
+    <script src="saas/sessionUi.js?v=20260724a" defer></script>
+    <script src="app.js?v=20260724a" defer></script>
   </head>
   <body>
     <main class="app-shell">
@@ -49,13 +67,15 @@
         <p class="header-brand">Powered by Reichgelt Media Group</p>
         <nav class="account-navigation" aria-label="Account">
           <button class="account-login" id="account-login" type="button">Inloggen</button>
+          <button class="account-upgrade" type="button" data-subscription-upgrade="signup">Upgrade naar Pro</button>
           <div class="account-user-menu" id="account-user-menu" hidden>
             <button class="account-avatar" id="account-user-button" type="button" aria-haspopup="menu" aria-expanded="false">
               <span id="account-user-initial">O</span>
             </button>
             <div class="account-dropdown" id="account-dropdown" role="menu" hidden>
-              <a id="account-page-link" href="account.html" role="menuitem">Account</a>
-              <a id="account-settings-link" href="account.html#calculator-settings" role="menuitem">Instellingen</a>
+                <a id="account-page-link" href="account.html" role="menuitem">Account</a>
+                <a id="workdays-page-link" href="workdays.html" role="menuitem">Werkdagen</a>
+                <a id="projects-page-link" href="projects.html" role="menuitem">Projecten</a>
               <button type="button" role="menuitem" data-auth-logout>Uitloggen</button>
             </div>
           </div>
@@ -79,7 +99,12 @@
           </section>
 
           <section class="form-section planning-section">
-            <h3>Planning</h3>
+            <div class="section-heading-row">
+              <h3>Planning</h3>
+              <a class="project-create-link is-pro-locked" id="project-create-link" href="projects.html?new=1" aria-label="Project aanmaken is beschikbaar met Pro">
+                <span aria-hidden="true">+</span> Project aanmaken <small class="project-pro-badge">Pro</small>
+              </a>
+            </div>
             <div class="planning-grid">
               <label class="date-field">
                 <span>Datum</span>
@@ -99,33 +124,37 @@
             </div>
 
             <div class="time-field">
-              <label for="endTime">Eindtijd</label>
+              <div class="time-field-heading">
+                <label for="endTime">Eindtijd</label>
+                <button class="time-later-button" id="clear-end-time" type="button">Later invullen</button>
+              </div>
               <div class="time-control">
-                <input id="endTime" type="text" name="endTime" value="18:00" data-time-picker readonly required>
+                <input id="endTime" type="text" name="endTime" value="18:00" placeholder="Nog niet ingevuld" data-time-picker readonly>
                 <button class="time-picker-trigger" type="button" aria-label="Eindtijd kiezen" title="Tijd kiezen">
                   <span class="clock-icon" aria-hidden="true"></span>
                 </button>
               </div>
             </div>
+
+            <label class="planning-break-field" id="planning-break-field" hidden>
+              <span>Pauze</span>
+              <select name="breakMinutes">
+                <option value="0">Geen</option>
+                <option value="15">15 minuten</option>
+                <option value="30">30 minuten</option>
+                <option value="45">45 minuten</option>
+                <option value="60">1 uur</option>
+                <option value="90">1,5 uur</option>
+                <option value="120">2 uur</option>
+              </select>
+            </label>
             </div>
           </section>
 
           <section class="form-section options-section">
             <h3>Extra’s</h3>
             <div class="input-options">
-              <div class="extra-option">
-                <label class="checkbox-label">
-                  <input type="checkbox" name="enableDroneTariff">
-                  <span>Drone tarief</span>
-                </label>
-              </div>
-              <div class="extra-option" id="ronin-option">
-                <label class="checkbox-label">
-                  <input type="checkbox" name="enableRonin4dTariff">
-                  <span>Ronin 4D tarief</span>
-                </label>
-              </div>
-              <div class="extra-option">
+              <div class="extra-option kilometer-option">
                 <label class="checkbox-label">
                   <input type="checkbox" name="enableKilometers">
                   <span>Kilometers rekenen</span>
@@ -135,7 +164,7 @@
                   <input type="number" name="kilometers" min="0" step="0.1" value="0">
                 </label>
               </div>
-              <div class="extra-option">
+              <div class="extra-option parking-option">
                 <label class="checkbox-label">
                   <input type="checkbox" name="enableParkingCosts">
                   <span>Parkeer/onkosten rekenen</span>
@@ -145,6 +174,21 @@
                   <input type="number" name="parkingCosts" min="0" step="0.01" value="0">
                 </label>
               </div>
+              <div class="extra-option is-pro-locked" id="drone-option" role="button" tabindex="0" aria-label="Drone tarief is beschikbaar met Pro">
+                <label class="checkbox-label">
+                  <input type="checkbox" name="enableDroneTariff" disabled>
+                  <span>Drone tarief</span>
+                  <small class="pro-option-badge">Pro</small>
+                </label>
+              </div>
+              <div class="extra-option is-pro-locked" id="ronin-option" role="button" tabindex="0" aria-label="Ronin 4D tarief is beschikbaar met Pro">
+                <label class="checkbox-label">
+                  <input type="checkbox" name="enableRonin4dTariff" disabled>
+                  <span>Ronin 4D tarief</span>
+                  <small class="pro-option-badge">Pro</small>
+                </label>
+              </div>
+              <div class="custom-equipment-options" id="custom-equipment-options"></div>
             </div>
           </section>
 
@@ -158,13 +202,19 @@
         <form id="settings-form" class="settings-grid">
           <fieldset class="settings-section settings-section-basic">
             <legend>Basis</legend>
-            <label><span>Dagtarief</span><input type="number" name="dayRate" min="0" step="0.01" required></label>
+            <label><span>Tariefsoort</span><select name="rateMode"><option value="day">Dagtarief</option><option value="hour">Uurtarief</option></select></label>
+            <label data-local-rate="day"><span>Dagtarief</span><input type="number" name="dayRate" min="0" step="0.01" required></label>
+            <label data-local-rate="hour" hidden><span>Uurtarief</span><input type="number" name="hourlyRate" min="0" step="0.01" value="45" required></label>
             <label>
               <span>Werkdag tijden</span>
               <select name="normalDayHours" required>
                 <option value="10">Gebaseerd op 10 uur</option>
                 <option value="12">Gebaseerd op 12 uur</option>
               </select>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="enableBreak">
+              <span>Pauze tonen bij planning</span>
             </label>
             <label class="checkbox-label half-day-setting">
               <input type="checkbox" name="enableHalfDayUnder6Hours">
@@ -220,8 +270,6 @@
 
           <fieldset class="settings-section settings-section-expenses">
             <legend>Vergoedingen</legend>
-            <label><span>Drone tarief</span><input type="number" name="droneTariffAmount" min="0" step="0.01" required></label>
-            <label class="department-setting" id="ronin-settings-field"><span>Ronin 4D tarief</span><input type="number" name="ronin4dTariffAmount" min="0" step="0.01" required></label>
             <label><span>Km vergoeding</span><input type="number" name="kilometerRate" min="0" step="0.01" required></label>
           </fieldset>
 
@@ -232,12 +280,26 @@
         </form>
       </details>
 
+        <aside class="account-settings-entry" id="account-settings-entry" hidden>
+          <div>
+            <strong>Rekeninstellingen</strong>
+            <span>Beheer je standaardtarieven en werkregels via je account.</span>
+          </div>
+          <a href="account.html#calculator-settings" aria-label="Rekeninstellingen openen">
+            <span class="settings-icon" aria-hidden="true">&#9881;</span>
+            Instellingen
+          </a>
+        </aside>
+
         <section class="calculate-action" aria-label="Berekening uitvoeren">
           <p class="notice stale-notice" id="calculation-status" hidden>
             Wijzigingen nog niet berekend.
           </p>
           <div class="button-row">
             <button type="button" id="recalculate">Berekenen</button>
+            <button class="workday-save-button is-pro-locked" type="button" id="save-workday" disabled>
+              <span>Opslaan</span> <small>Pro</small>
+            </button>
           </div>
         </section>
 
@@ -269,6 +331,7 @@
                 <div><dt>Nachtbedrag</dt><dd data-result="nightAmount">€ 0,00</dd></div>
                 <div><dt>Drone tarief</dt><dd data-result="droneTariffAmount">€ 0,00</dd></div>
                 <div><dt>Ronin 4D tarief</dt><dd data-result="ronin4dTariffAmount">€ 0,00</dd></div>
+                <div class="custom-equipment-results" id="custom-equipment-results"></div>
                 <div><dt>Kilometervergoeding</dt><dd data-result="kilometerAmount">€ 0,00</dd></div>
                 <div><dt>Parkeer/onkosten</dt><dd data-result="parkingAmount">€ 0,00</dd></div>
               </dl>
@@ -288,20 +351,9 @@
 
       <div class="footer-actions">
         <button type="button" id="copy-summary">Kopiëren voor factuur</button>
-        <button class="secondary" type="button" id="save-pdf">Pdf opslaan</button>
+        <button class="secondary pro-action-button" type="button" id="save-pdf">Pdf opslaan <span>Pro</span></button>
         <p class="copy-status" id="copy-status" aria-live="polite"></p>
       </div>
-
-      <section class="support-section" aria-labelledby="support-title">
-        <div class="support-copy">
-          <h2 id="support-title">Vind je deze tool handig?</h2>
-          <p>Overuurtje.nl is gratis te gebruiken. Met een vrijwillige bijdrage help je mee aan onderhoud en nieuwe functies voor freelancers in de film- en televisiewereld.</p>
-        </div>
-        <a class="support-button" id="buymeacoffee-link" href="https://buymeacoffee.com/reichgeltmediagroup" target="_blank" rel="noopener noreferrer">
-          <span class="support-icon" aria-hidden="true">&#9825;</span>
-          <span>Steun de ontwikkeling</span>
-        </a>
-      </section>
 
       <footer class="site-footer">
         <button class="share-button" type="button" id="share-site">
@@ -329,6 +381,7 @@
           <dl class="print-job-meta">
             <div><dt>Datum</dt><dd data-print="date">-</dd></div>
             <div><dt>Tijden</dt><dd data-print="times">-</dd></div>
+            <div data-print-row="break" hidden><dt>Pauze</dt><dd data-print="breakMinutes">-</dd></div>
             <div><dt>Totaal gewerkt</dt><dd data-print="totalHours">-</dd></div>
           </dl>
         </header>
@@ -388,17 +441,42 @@
 
     <dialog class="saas-dialog pro-dialog" id="pro-dialog" aria-labelledby="pro-title">
       <button class="dialog-close" type="button" data-dialog-close aria-label="Sluiten">&times;</button>
-      <p class="dialog-eyebrow">Overuurtje Pro</p>
+      <p class="dialog-eyebrow" id="pro-eyebrow">Overuurtje Pro</p>
       <h2 id="pro-title">Meer rust in je administratie</h2>
+      <p class="pro-dialog-intro" id="pro-intro">Voor Pro heb je een account nodig. Zo blijven je abonnement en instellingen veilig aan jou gekoppeld.</p>
       <ul class="pro-benefits">
-        <li>Instellingen bewaren</li>
-        <li>Synchroniseren tussen apparaten</li>
-        <li>Projecten en historie</li>
-        <li>Equipmentbibliotheek</li>
-        <li>Nieuwe premiumfuncties</li>
+        <li><strong>Werkdagen</strong> - bewaar je begintijd en rond je werkdag later af</li>
+        <li>Projecten met meerdere dagen of periodes</li>
+        <li>Persoonlijke instellingen opslaan</li>
+        <li>Synchronisatie tussen apparaten</li>
+        <li>Eigen apparatuur en toeslagen</li>
+        <li>PDF-export en toekomstige Pro-functies</li>
       </ul>
       <button class="saas-primary-button" id="pro-checkout" type="button">Upgrade naar Pro</button>
+      <button class="saas-secondary-button pro-continue-button" id="pro-continue-free" type="button">Verder met Free</button>
       <p class="dialog-footnote">Shopify verzorgt straks de veilige betaling en het abonnement.</p>
+    </dialog>
+
+    <dialog class="saas-dialog workday-dialog" id="duplicate-workday-dialog" aria-labelledby="duplicate-workday-title">
+      <button class="dialog-close" type="button" data-workday-dialog-close aria-label="Sluiten">&times;</button>
+      <p class="dialog-eyebrow">Werkdag opslaan</p>
+      <h2 id="duplicate-workday-title">Voor deze datum bestaat al een opgeslagen werkdag.</h2>
+      <p>Wil je de bestaande werkdag openen of een tweede werkdag voor dezelfde datum maken?</p>
+      <div class="dialog-action-stack">
+        <button class="saas-primary-button" id="open-existing-workday" type="button">Doorgaan met bewerken</button>
+        <button class="saas-secondary-button" id="create-duplicate-workday" type="button">Nieuwe werkdag op deze datum</button>
+      </div>
+    </dialog>
+
+    <dialog class="saas-dialog workday-dialog" id="today-workday-dialog" aria-labelledby="today-workday-title">
+      <button class="dialog-close" type="button" data-workday-dialog-close aria-label="Sluiten">&times;</button>
+      <p class="dialog-eyebrow">Vandaag</p>
+      <h2 id="today-workday-title">Je hebt vandaag al een werkdag opgeslagen.</h2>
+      <p>Wil je verdergaan met het bewerken van deze werkdag?</p>
+      <div class="dialog-action-stack">
+        <button class="saas-primary-button" id="continue-today-workday" type="button">Verder met deze werkdag</button>
+        <button class="saas-secondary-button" id="new-today-calculation" type="button">Nieuwe berekening</button>
+      </div>
     </dialog>
 
     <div class="site-toast" id="site-toast" role="status" aria-live="polite" hidden></div>

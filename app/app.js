@@ -15,16 +15,29 @@ const saveSettingsButton = document.querySelector("#save-settings");
 const copyStatus = document.querySelector("#copy-status");
 const settingsStatus = document.querySelector("#settings-status");
 const details = document.querySelector("#settings-panel");
+const accountSettingsEntry = document.querySelector("#account-settings-entry");
+const planningGrid = document.querySelector(".planning-grid");
+const planningBreakField = document.querySelector("#planning-break-field");
 const kilometerInput = document.querySelector("#kilometer-input");
 const parkingInput = document.querySelector("#parking-input");
 const inputOptions = document.querySelector(".input-options");
+const departmentSwitch = document.querySelector(".department-switch");
+const projectCreateLink = document.querySelector("#project-create-link");
+const workdaySaveButton = document.querySelector("#save-workday");
+const clearEndTimeButton = document.querySelector("#clear-end-time");
+const duplicateWorkdayDialog = document.querySelector("#duplicate-workday-dialog");
+const todayWorkdayDialog = document.querySelector("#today-workday-dialog");
+const droneOption = document.querySelector("#drone-option");
 const roninOption = document.querySelector("#ronin-option");
-const roninSettingsField = document.querySelector("#ronin-settings-field");
+const customEquipmentOptions = document.querySelector("#custom-equipment-options");
+const customEquipmentResults = document.querySelector("#custom-equipment-results");
+const droneResultRow = document.querySelector('[data-result="droneTariffAmount"]').closest("div");
 const roninResultRow = document.querySelector('[data-result="ronin4dTariffAmount"]').closest("div");
 const shareButton = document.querySelector("#share-site");
-const buyMeACoffeeLink = document.querySelector("#buymeacoffee-link");
 const analytics = globalThis.OveruurtjeAnalytics;
 const accountSettingsService = globalThis.OveruurtjeSettings;
+const equipmentService = globalThis.OveruurtjeEquipment;
+const workdayService = globalThis.OveruurtjeWorkdays;
 const sessionUi = globalThis.OveruurtjeSessionUI;
 
 const SHARE_URL = "https://overuurtje.nl";
@@ -43,14 +56,45 @@ const numberFormatter = new Intl.NumberFormat("nl-NL", {
 let calculationIsStale = false;
 let latestResult = null;
 let currentAccountUser = null;
+let currentUserContext = null;
+let currentAccountSettings = null;
+let accountEquipmentVisibility = null;
+let equipmentTariffs = {
+  drone: DEFAULT_SETTINGS.droneTariffAmount,
+  ronin: DEFAULT_SETTINGS.ronin4dTariffAmount
+};
+let customEquipment = [];
 let hydratedAccountUserId = null;
 let cloudSyncTimer = null;
+let currentWorkdayId = null;
+let pendingDuplicateWorkday = null;
+let todayWorkday = null;
+let workdayContextInitializedFor = null;
+
+function localDateValue(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function openNativeDialog(dialog) {
+  if (!dialog) return;
+  if (typeof dialog.showModal === "function") dialog.showModal();
+  else dialog.setAttribute("open", "");
+}
+
+function closeNativeDialog(dialog) {
+  if (!dialog) return;
+  if (typeof dialog.close === "function") dialog.close();
+  else dialog.removeAttribute("open");
+}
 
 function getSavedSettings() {
   try {
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}") };
+    return { rateMode: "day", hourlyRate: DEFAULT_SETTINGS.dayRate / DEFAULT_SETTINGS.normalDayHours, enableBreak: false, breakMinutes: 0, ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}") };
   } catch {
-    return { ...DEFAULT_SETTINGS };
+    return { rateMode: "day", hourlyRate: DEFAULT_SETTINGS.dayRate / DEFAULT_SETTINGS.normalDayHours, enableBreak: false, breakMinutes: 0, ...DEFAULT_SETTINGS };
   }
 }
 
@@ -68,8 +112,14 @@ function readCheckbox(formData, name) {
 
 function getSettingsFromForm() {
   const formData = new FormData(settingsForm);
+  const calculatorData = new FormData(form);
+  const enableBreak = readCheckbox(formData, "enableBreak");
   return {
     dayRate: readNumber(formData, "dayRate"),
+    rateMode: formData.get("rateMode") === "hour" ? "hour" : "day",
+    hourlyRate: readNumber(formData, "hourlyRate"),
+    enableBreak,
+    breakMinutes: enableBreak ? readNumber(calculatorData, "breakMinutes") : 0,
     normalDayHours: readNumber(formData, "normalDayHours"),
     vatPercent: DEFAULT_SETTINGS.vatPercent,
     enableHalfDayUnder6Hours: readCheckbox(formData, "enableHalfDayUnder6Hours"),
@@ -82,8 +132,8 @@ function getSettingsFromForm() {
     nightStart: formData.get("nightStart"),
     nightEnd: formData.get("nightEnd"),
     nightRoundingMinutes: DEFAULT_SETTINGS.nightRoundingMinutes,
-    droneTariffAmount: readNumber(formData, "droneTariffAmount"),
-    ronin4dTariffAmount: readNumber(formData, "ronin4dTariffAmount"),
+    droneTariffAmount: equipmentTariffs.drone,
+    ronin4dTariffAmount: equipmentTariffs.ronin,
     kilometerRate: readNumber(formData, "kilometerRate")
   };
 }
@@ -98,6 +148,10 @@ function populateSettings(settings) {
       field.value = value;
     }
   });
+  const breakField = form.elements.namedItem("breakMinutes");
+  if (breakField && Number.isFinite(Number(settings.breakMinutes))) {
+    breakField.value = String(settings.breakMinutes);
+  }
 }
 
 function getAccountSettingsSnapshot() {
@@ -105,36 +159,306 @@ function getAccountSettingsSnapshot() {
   const department = form.elements.namedItem("department").value || "camera";
   return {
     defaultDepartment: department,
-    defaultHourlyRate: settings.normalDayHours > 0 ? settings.dayRate / settings.normalDayHours : 0,
+    defaultDayRate: settings.dayRate,
+    defaultRateMode: settings.rateMode,
+    defaultHourlyRate: settings.hourlyRate,
+    defaultBreakMinutes: 0,
+    enableBreak: settings.enableBreak,
+    normalDayHours: settings.normalDayHours,
+    enableHalfDayUnder6Hours: settings.enableHalfDayUnder6Hours,
+    enableOvertime10To12: settings.enableOvertime10To12,
+    enableOvertimeFrom12: settings.enableOvertimeFrom12,
+    enableOvertimeFrom14: settings.enableOvertimeFrom14,
+    enableNightTariff: settings.enableNightTariff,
+    nightStart: settings.nightStart,
+    nightEnd: settings.nightEnd,
     mileageRate: settings.kilometerRate,
-    parkingEnabled: form.elements.namedItem("enableParkingCosts").checked,
-    parkingDefaultAmount: Number(form.elements.namedItem("parkingCosts").value) || 0,
-    droneEnabled: form.elements.namedItem("enableDroneTariff").checked,
-    roninEnabled: department === "camera" && form.elements.namedItem("enableRonin4dTariff").checked
+    parkingDefaultAmount: currentAccountSettings?.parkingDefaultAmount || 0,
+    droneVisible: currentAccountSettings?.droneVisible ?? false,
+    roninVisible: currentAccountSettings?.roninVisible ?? false,
+    droneTariffAmount: currentAccountSettings?.droneTariffAmount ?? equipmentTariffs.drone,
+    roninTariffAmount: currentAccountSettings?.roninTariffAmount ?? equipmentTariffs.ronin,
+    preferences: currentAccountSettings?.preferences || {}
   };
 }
 
-function applyAccountSettings(accountSettings) {
+function applyAccountSettings(accountSettings, isPro) {
   if (!accountSettings) return;
+  currentAccountSettings = accountSettings;
+  accountEquipmentVisibility = isPro
+    ? { drone: accountSettings.droneVisible, ronin: accountSettings.roninVisible }
+    : null;
+  equipmentTariffs = {
+    drone: accountSettings.droneTariffAmount,
+    ronin: accountSettings.roninTariffAmount
+  };
   const localSettings = getSettingsFromForm();
-  const normalDayHours = localSettings.normalDayHours || DEFAULT_SETTINGS.normalDayHours;
   populateSettings({
     ...localSettings,
-    dayRate: accountSettings.defaultHourlyRate * normalDayHours,
+    dayRate: accountSettings.defaultDayRate,
+    rateMode: accountSettings.defaultRateMode,
+    hourlyRate: accountSettings.defaultHourlyRate,
+    enableBreak: accountSettings.enableBreak,
+    breakMinutes: 0,
+    normalDayHours: accountSettings.normalDayHours,
+    enableHalfDayUnder6Hours: accountSettings.enableHalfDayUnder6Hours,
+    enableOvertime10To12: accountSettings.enableOvertime10To12,
+    enableOvertimeFrom12: accountSettings.enableOvertimeFrom12,
+    enableOvertimeFrom14: accountSettings.enableOvertimeFrom14,
+    enableNightTariff: accountSettings.enableNightTariff,
+    nightStart: accountSettings.nightStart,
+    nightEnd: accountSettings.nightEnd,
     kilometerRate: accountSettings.mileageRate
   });
 
   const departmentField = form.querySelector(`input[name="department"][value="${accountSettings.defaultDepartment}"]`);
   if (departmentField) departmentField.checked = true;
-  form.elements.namedItem("enableDroneTariff").checked = accountSettings.droneEnabled;
-  form.elements.namedItem("enableRonin4dTariff").checked = accountSettings.defaultDepartment === "camera" && accountSettings.roninEnabled;
-  form.elements.namedItem("enableParkingCosts").checked = accountSettings.parkingEnabled;
-  form.elements.namedItem("parkingCosts").value = accountSettings.parkingDefaultAmount;
+  departmentSwitch.classList.add("is-account-locked");
+  departmentSwitch.setAttribute("aria-disabled", "true");
+  updateProjectCreateAccess(isPro);
+  departmentSwitch.querySelectorAll(".department-choice").forEach((choice) => {
+    const input = choice.querySelector("input");
+    choice.hidden = !input.checked;
+    input.disabled = !input.checked;
+  });
+  if (isPro) {
+    form.elements.namedItem("enableDroneTariff").checked = false;
+    form.elements.namedItem("enableRonin4dTariff").checked = false;
+  }
+  form.elements.namedItem("parkingCosts").value = "0";
   updateDepartmentVisibility();
   updateKilometerVisibility();
   updateParkingVisibility();
   updateNightSettingsVisibility();
+  updateRateSettingsVisibility();
+  updatePauseVisibility();
   updateCalculation();
+}
+
+function renderCustomEquipment(items) {
+  customEquipment = items.filter((item) => item.isVisible);
+  customEquipmentOptions.replaceChildren(...customEquipment.map((item) => {
+    const option = document.createElement("div");
+    option.className = "extra-option custom-equipment-option";
+    option.innerHTML = `
+      <label class="checkbox-label">
+        <input type="checkbox" data-custom-equipment-id="${item.id}">
+        <span></span>
+      </label>
+    `;
+    option.querySelector("span").textContent = item.name;
+    return option;
+  }));
+}
+
+function buildWorkdaySnapshot() {
+  const formData = new FormData(form);
+  const settings = getSettingsFromForm();
+  const endTime = form.elements.namedItem("endTime").value;
+  return {
+    schemaVersion: 1,
+    date: form.elements.namedItem("date").value,
+    department: formData.get("department") || "camera",
+    startTime: form.elements.namedItem("startTime").value,
+    endTime,
+    breakMinutes: settings.breakMinutes,
+    settings,
+    extras: {
+      enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
+      enableRonin4dTariff: readCheckbox(formData, "enableRonin4dTariff"),
+      enableKilometers: readCheckbox(formData, "enableKilometers"),
+      kilometers: readNumber(formData, "kilometers"),
+      enableParkingCosts: readCheckbox(formData, "enableParkingCosts"),
+      parkingCosts: readNumber(formData, "parkingCosts"),
+      customEquipment: getSelectedCustomEquipment()
+    },
+    result: endTime && latestResult && !calculationIsStale ? {
+      totalHours: latestResult.totalHours,
+      overtimeHours: latestResult.overtimeHours,
+      nightHours: latestResult.nightHours,
+      subtotalExVat: latestResult.subtotalExVat
+    } : null
+  };
+}
+
+function clearCalculationDisplay() {
+  [
+    "totalHours", "overtimeHours", "overtime10To12Hours", "overtimeFrom12Hours",
+    "overtimeFrom14Hours", "nightHours", "nightOvertimeHours", "pureNightHours"
+  ].forEach((name) => setResult(name, 0));
+  [
+    "baseAmount", "overtimeAmount", "nightAmount", "droneTariffAmount",
+    "ronin4dTariffAmount", "kilometerAmount", "parkingAmount", "subtotalExVat",
+    "vatAmount", "totalIncVat"
+  ].forEach((name) => setResult(name, 0, formatEuro));
+  renderCustomEquipmentResults([]);
+  form.dataset.summary = "";
+  latestResult = null;
+  calculationIsStale = false;
+  calculationStatus.hidden = true;
+  nextDayNotice.hidden = true;
+}
+
+function applyWorkdaySnapshot(workday) {
+  const snapshot = workday?.calculationData || {};
+  if (!snapshot.date) return;
+
+  currentWorkdayId = workday.id;
+  form.elements.namedItem("date").value = snapshot.date;
+  form.elements.namedItem("startTime").value = snapshot.startTime || "08:00";
+  form.elements.namedItem("endTime").value = snapshot.endTime || "";
+  if (snapshot.settings) populateSettings({ ...getSettingsFromForm(), ...snapshot.settings });
+  const department = form.querySelector(`input[name="department"][value="${snapshot.department || "camera"}"]`);
+  if (department && !department.disabled) department.checked = true;
+  form.elements.namedItem("breakMinutes").value = String(snapshot.breakMinutes || 0);
+
+  const extras = snapshot.extras || {};
+  [
+    "enableDroneTariff", "enableRonin4dTariff", "enableKilometers", "enableParkingCosts"
+  ].forEach((name) => {
+    const field = form.elements.namedItem(name);
+    if (field && !field.disabled) field.checked = Boolean(extras[name]);
+  });
+  form.elements.namedItem("kilometers").value = String(extras.kilometers || 0);
+  form.elements.namedItem("parkingCosts").value = String(extras.parkingCosts || 0);
+  (extras.customEquipment || []).forEach((item) => {
+    const field = customEquipmentOptions.querySelector(`[data-custom-equipment-id="${item.id}"]`);
+    if (field) field.checked = Boolean(item.enabled);
+  });
+
+  updateDepartmentVisibility();
+  updateKilometerVisibility();
+  updateParkingVisibility();
+  updateNightSettingsVisibility();
+  updateRateSettingsVisibility();
+  updatePauseVisibility();
+  updateWorkdaySaveAccess();
+  workdaySaveButton.querySelector("span").textContent = "Bijwerken";
+  const url = new URL(location.href);
+  url.searchParams.set("workday", workday.id);
+  history.replaceState({}, "", url);
+  if (snapshot.endTime) updateCalculation();
+  else clearCalculationDisplay();
+  sessionUi?.showToast("Werkdag geopend.");
+}
+
+async function persistWorkday(snapshot, id = null) {
+  const saved = await workdayService.save(currentAccountUser.id, {
+    id,
+    workDate: snapshot.date,
+    calculationData: snapshot
+  }, { mock: currentUserContext?.subscription?.isMock });
+  currentWorkdayId = saved.id;
+  workdaySaveButton.querySelector("span").textContent = "Bijwerken";
+  const url = new URL(location.href);
+  url.searchParams.set("workday", saved.id);
+  history.replaceState({}, "", url);
+  sessionUi?.showToast("Werkdag opgeslagen.");
+  return saved;
+}
+
+async function saveWorkday({ allowDuplicate = false } = {}) {
+  const date = form.elements.namedItem("date").value;
+  if (!date) return;
+  if (!currentUserContext?.isPro) {
+    sessionUi?.openUpgrade();
+    return;
+  }
+
+  workdaySaveButton.disabled = true;
+  try {
+    const snapshot = buildWorkdaySnapshot();
+    if (currentWorkdayId) {
+      await persistWorkday(snapshot, currentWorkdayId);
+      return;
+    }
+    if (!allowDuplicate) {
+      const existing = await workdayService.listByDate(
+        currentAccountUser.id,
+        date,
+        { mock: currentUserContext.subscription.isMock }
+      );
+      if (existing.length) {
+        pendingDuplicateWorkday = { snapshot, existing: existing[0] };
+        openNativeDialog(duplicateWorkdayDialog);
+        return;
+      }
+    }
+    await persistWorkday(snapshot);
+  } catch (error) {
+    console.warn("Werkdag opslaan is mislukt.", error);
+    sessionUi?.showToast(error.message || "Werkdag opslaan is niet gelukt.");
+  } finally {
+    updateWorkdaySaveAccess();
+  }
+}
+
+function updateWorkdaySaveAccess() {
+  if (!workdaySaveButton) return;
+  const hasDate = Boolean(form.elements.namedItem("date").value);
+  const isPro = Boolean(currentUserContext?.isPro);
+  workdaySaveButton.disabled = !hasDate;
+  workdaySaveButton.classList.toggle("is-pro-locked", !isPro);
+  workdaySaveButton.querySelector("small").hidden = isPro;
+  workdaySaveButton.title = hasDate
+    ? (isPro ? "Werkdag opslaan" : "Werkdagen zijn beschikbaar met Pro")
+    : "Vul eerst een datum in";
+}
+
+async function initializeWorkdayContext() {
+  if (!currentAccountUser || !currentUserContext?.isPro || workdayContextInitializedFor === currentAccountUser.id) {
+    return;
+  }
+  workdayContextInitializedFor = currentAccountUser.id;
+  const requestedId = new URLSearchParams(location.search).get("workday");
+  try {
+    if (requestedId) {
+      const requested = await workdayService.get(
+        currentAccountUser.id,
+        requestedId,
+        { mock: currentUserContext.subscription.isMock }
+      );
+      if (requested) applyWorkdaySnapshot(requested);
+      else sessionUi?.showToast("Deze werkdag kon niet worden gevonden.");
+      return;
+    }
+
+    const promptKey = `overuurtjeTodayWorkdayPrompt:${localDateValue()}`;
+    if (sessionStorage.getItem(promptKey)) return;
+    sessionStorage.setItem(promptKey, "shown");
+    const existing = await workdayService.listByDate(
+      currentAccountUser.id,
+      localDateValue(),
+      { mock: currentUserContext.subscription.isMock }
+    );
+    if (existing.length) {
+      todayWorkday = existing[0];
+      openNativeDialog(todayWorkdayDialog);
+    }
+  } catch (error) {
+    console.warn("Opgeslagen werkdagen konden niet worden gecontroleerd.", error);
+  }
+}
+
+function getSelectedCustomEquipment() {
+  return customEquipment.map((item) => ({
+    id: item.id,
+    name: item.name,
+    amount: item.amount,
+    enabled: Boolean(customEquipmentOptions.querySelector(`[data-custom-equipment-id="${item.id}"]`)?.checked)
+  }));
+}
+
+function renderCustomEquipmentResults(items) {
+  customEquipmentResults.replaceChildren(...items.map((item) => {
+    const row = document.createElement("div");
+    const label = document.createElement("dt");
+    const value = document.createElement("dd");
+    label.textContent = item.name;
+    value.textContent = formatEuro(item.amount);
+    row.append(label, value);
+    return row;
+  }));
 }
 
 async function syncAccountSettings({ showStatus = false } = {}) {
@@ -143,6 +467,7 @@ async function syncAccountSettings({ showStatus = false } = {}) {
 
   try {
     const saved = await accountSettingsService.save(currentAccountUser.id, getAccountSettingsSnapshot());
+    currentAccountSettings = saved;
     if (showStatus) settingsStatus.textContent = "Instellingen opgeslagen en gesynchroniseerd.";
     return saved;
   } catch (error) {
@@ -158,22 +483,75 @@ function scheduleAccountSettingsSync() {
   cloudSyncTimer = setTimeout(() => syncAccountSettings(), 900);
 }
 
+function updateSettingsScope() {
+  const hasAccount = Boolean(currentAccountUser);
+  details.hidden = hasAccount;
+  accountSettingsEntry.hidden = !hasAccount;
+  if (hasAccount) details.open = false;
+  updateRateSettingsVisibility();
+}
+
+function updateProjectCreateAccess(isPro) {
+  if (!projectCreateLink) return;
+  projectCreateLink.hidden = false;
+  projectCreateLink.classList.toggle("is-pro-locked", !isPro);
+  projectCreateLink.setAttribute("aria-label", isPro ? "Project aanmaken" : "Project aanmaken is beschikbaar met Pro");
+  const badge = projectCreateLink.querySelector(".project-pro-badge");
+  if (badge) badge.hidden = isPro;
+}
+
 async function hydrateAccountSettings(context) {
+  currentUserContext = context;
   currentAccountUser = context.auth.user;
+  updateSettingsScope();
+  updateProjectCreateAccess(context.isPro);
   if (!currentAccountUser) {
     hydratedAccountUserId = null;
+    currentAccountSettings = null;
+    accountEquipmentVisibility = null;
+    updateProjectCreateAccess(false);
+    equipmentTariffs = {
+      drone: DEFAULT_SETTINGS.droneTariffAmount,
+      ronin: DEFAULT_SETTINGS.ronin4dTariffAmount
+    };
+    renderCustomEquipment([]);
+    currentWorkdayId = null;
+    workdayContextInitializedFor = null;
+    populateSettings(getSavedSettings());
+    departmentSwitch.classList.remove("is-account-locked");
+    departmentSwitch.removeAttribute("aria-disabled");
+    departmentSwitch.querySelectorAll(".department-choice").forEach((choice) => {
+      choice.hidden = false;
+      choice.querySelector("input").disabled = false;
+    });
+    updateDepartmentVisibility();
+    updatePauseVisibility();
+    updateWorkdaySaveAccess();
     return;
   }
   if (hydratedAccountUserId === currentAccountUser.id) return;
   hydratedAccountUserId = currentAccountUser.id;
 
   try {
-    const saved = await accountSettingsService.load(currentAccountUser.id);
-    if (saved) applyAccountSettings(saved);
-    else await syncAccountSettings();
+    const [saved, equipment] = await Promise.all([
+      accountSettingsService.load(currentAccountUser.id),
+      context.isPro ? equipmentService.list(currentAccountUser.id) : Promise.resolve([])
+    ]);
+    if (saved) {
+      applyAccountSettings(saved, context.isPro);
+    } else {
+      applyAccountSettings(await syncAccountSettings() || accountSettingsService.defaults, context.isPro);
+    }
+    renderCustomEquipment(context.isPro ? equipment : []);
+    updateCalculation();
+    await initializeWorkdayContext();
   } catch (error) {
     console.warn("Accountinstellingen konden niet worden geladen.", error);
+    applyAccountSettings(accountSettingsService.defaults, context.isPro);
+    renderCustomEquipment([]);
+    await initializeWorkdayContext();
   }
+  updateWorkdaySaveAccess();
 }
 
 function formatHours(value) {
@@ -228,18 +606,19 @@ function renderPrintBreakdown(result) {
 
   setPrintValue("date", date || "Niet ingevuld");
   setPrintValue("times", `${startTime} tot ${endTime}${result.endsNextDay ? " (volgende dag)" : ""}`);
+  setPrintValue("breakMinutes", result.breakMinutes ? `${result.breakMinutes} minuten` : "-");
+  document.querySelector('[data-print-row="break"]').hidden = !result.breakMinutes;
   setPrintValue("totalHours", formatHours(result.totalHours));
   setPrintValue("subtotalExVat", euroFormatter.format(result.subtotalExVat));
   setPrintValue("vatAmount", euroFormatter.format(result.vatAmount));
   setPrintValue("totalIncVat", euroFormatter.format(result.totalIncVat));
 
   lines.replaceChildren();
-  addPrintCalculationLine(
-    lines,
-    usesHalfDayRate ? "Halve dagvergoeding" : "Minimale dagvergoeding",
-    usesHalfDayRate
-      ? `75% van ${euroFormatter.format(result.settings.dayRate)}`
-      : `Dagtarief voor maximaal ${numberFormatter.format(result.settings.normalDayHours)} uur`,
+  addPrintCalculationLine(lines,
+    result.rateMode === "hour" ? "Gewerkte uren" : (usesHalfDayRate ? "Halve dagvergoeding" : "Minimale dagvergoeding"),
+    result.rateMode === "hour"
+      ? `${numberFormatter.format(Math.min(result.totalHours, result.settings.normalDayHours))} uur × ${euroFormatter.format(result.hourlyRate)}`
+      : (usesHalfDayRate ? `75% van ${euroFormatter.format(result.settings.dayRate)}` : `Dagtarief voor maximaal ${numberFormatter.format(result.settings.normalDayHours)} uur`),
     result.baseAmount
   );
   addPrintCalculationLine(
@@ -282,6 +661,9 @@ function renderPrintBreakdown(result) {
   });
   addPrintCalculationLine(lines, "Drone tarief", "Vaste toeslag", result.droneTariffAmount);
   addPrintCalculationLine(lines, "Ronin 4D tarief", "Vaste toeslag", result.ronin4dTariffAmount);
+  result.customEquipmentItems.forEach((item) => {
+    addPrintCalculationLine(lines, item.name, "Vaste apparatuurtoeslag", item.amount);
+  });
   addPrintCalculationLine(
     lines,
     "Kilometervergoeding",
@@ -320,6 +702,10 @@ function buildSummary(result) {
     lines.push(`Ronin 4D tarief: ${euroFormatter.format(result.ronin4dTariffAmount)}`);
   }
 
+  result.customEquipmentItems.forEach((item) => {
+    lines.push(`${item.name}: ${euroFormatter.format(item.amount)}`);
+  });
+
   if (result.kilometerAmount > 0) {
     lines.push(`Kilometers: ${numberFormatter.format(result.kilometers)} km × ${euroFormatter.format(result.settings.kilometerRate)} = ${euroFormatter.format(result.kilometerAmount)}`);
   }
@@ -335,6 +721,11 @@ function buildSummary(result) {
 
 function updateCalculation(trackCompletion = false) {
   if (!form.reportValidity() || !settingsForm.reportValidity()) return;
+  if (!form.elements.namedItem("endTime").value) {
+    clearCalculationDisplay();
+    if (trackCompletion) sessionUi?.showToast("Vul eerst de eindtijd in om te berekenen.");
+    return;
+  }
 
   const settings = getSettingsFromForm();
   const formData = new FormData(form);
@@ -344,8 +735,12 @@ function updateCalculation(trackCompletion = false) {
     {
       startTime: form.elements.namedItem("startTime").value,
       endTime: form.elements.namedItem("endTime").value,
+      breakMinutes: settings.breakMinutes,
+      rateMode: settings.rateMode,
+      hourlyRate: settings.hourlyRate,
       enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
       enableRonin4dTariff: department === "camera" && readCheckbox(formData, "enableRonin4dTariff"),
+      customEquipment: getSelectedCustomEquipment(),
       enableKilometers: readCheckbox(formData, "enableKilometers"),
       kilometers: readNumber(formData, "kilometers"),
       enableParkingCosts: readCheckbox(formData, "enableParkingCosts"),
@@ -367,6 +762,7 @@ function updateCalculation(trackCompletion = false) {
   setResult("nightAmount", result.nightAmount, formatEuro);
   setResult("droneTariffAmount", result.droneTariffAmount, formatEuro);
   setResult("ronin4dTariffAmount", result.ronin4dTariffAmount, formatEuro);
+  renderCustomEquipmentResults(result.customEquipmentItems);
   setResult("kilometerAmount", result.kilometerAmount, formatEuro);
   setResult("parkingAmount", result.parkingAmount, formatEuro);
   setResult("subtotalExVat", result.subtotalExVat, formatEuro);
@@ -394,21 +790,46 @@ function updateCalculation(trackCompletion = false) {
   }
 }
 
-async function saveCurrentSettings() {
-  if (!settingsForm.reportValidity()) return;
+function saveCurrentSettings() {
+  if (!settingsForm.reportValidity()) {
+    sessionUi?.showToast("Controleer de gemarkeerde instellingen.");
+    return;
+  }
 
   saveSettings(getSettingsFromForm());
-  settingsStatus.textContent = currentAccountUser ? "Instellingen opgeslagen; synchroniseren…" : "Instellingen lokaal opgeslagen.";
-  if (currentAccountUser) await syncAccountSettings({ showStatus: true });
   details.open = false;
-  setTimeout(() => {
-    settingsStatus.textContent = "";
-  }, 2500);
+  settingsStatus.textContent = "";
+
+  if (!currentAccountUser) {
+    sessionUi?.showToast("Instellingen lokaal opgeslagen.");
+    return;
+  }
+
+  clearTimeout(cloudSyncTimer);
+  void syncAccountSettings().then((saved) => {
+    sessionUi?.showToast(saved
+      ? "Instellingen opgeslagen en gesynchroniseerd."
+      : "Lokaal opgeslagen; cloudsync is niet gelukt.");
+  });
 }
 
 function updateNightSettingsVisibility() {
   const nightEnabled = settingsForm.elements.namedItem("enableNightTariff").checked;
   document.querySelector("#night-time-settings").hidden = !nightEnabled;
+}
+
+function updateRateSettingsVisibility() {
+  const rateMode = settingsForm.elements.namedItem("rateMode").value;
+  const hasAccount = Boolean(currentAccountUser);
+  settingsForm.querySelector('[data-local-rate="day"]').hidden = hasAccount || rateMode === "hour";
+  settingsForm.querySelector('[data-local-rate="hour"]').hidden = hasAccount || rateMode !== "hour";
+}
+
+function updatePauseVisibility() {
+  const enabled = settingsForm.elements.namedItem("enableBreak").checked;
+  planningBreakField.hidden = !enabled;
+  planningGrid.classList.toggle("has-break", enabled);
+  if (!enabled) form.elements.namedItem("breakMinutes").value = "0";
 }
 
 function updateKilometerVisibility() {
@@ -423,13 +844,40 @@ function updateParkingVisibility() {
 
 function updateDepartmentVisibility() {
   const department = form.elements.namedItem("department").value || "camera";
-  const showRonin = department === "camera";
+  const isPro = Boolean(currentUserContext?.isPro);
+  const showDrone = isPro ? Boolean(accountEquipmentVisibility?.drone) : true;
+  const showRonin = department === "camera" && (isPro ? Boolean(accountEquipmentVisibility?.ronin) : true);
+  const droneCheckbox = form.elements.namedItem("enableDroneTariff");
   const roninCheckbox = form.elements.namedItem("enableRonin4dTariff");
 
   inputOptions.dataset.department = department;
+  droneOption.hidden = !showDrone;
+  droneResultRow.hidden = !showDrone;
   roninOption.hidden = !showRonin;
-  roninSettingsField.hidden = !showRonin;
   roninResultRow.hidden = !showRonin;
+  [droneOption, roninOption].forEach((option) => option.classList.toggle("is-pro-locked", !isPro));
+  [droneOption, roninOption].forEach((option) => {
+    if (!isPro) {
+      option.setAttribute("role", "button");
+      option.setAttribute("tabindex", "0");
+      option.setAttribute("aria-label", `${option.querySelector(".checkbox-label span").textContent} is beschikbaar met Pro`);
+    } else {
+      option.removeAttribute("role");
+      option.removeAttribute("tabindex");
+      option.removeAttribute("aria-label");
+    }
+  });
+  [droneCheckbox, roninCheckbox].forEach((checkbox) => { checkbox.disabled = !isPro; });
+  document.querySelectorAll(".pro-option-badge").forEach((badge) => { badge.hidden = isPro; });
+  if (!isPro) {
+    droneCheckbox.checked = false;
+    roninCheckbox.checked = false;
+  }
+
+  if (!showDrone) {
+    droneCheckbox.checked = false;
+    setResult("droneTariffAmount", 0, formatEuro);
+  }
 
   if (!showRonin) {
     roninCheckbox.checked = false;
@@ -658,9 +1106,14 @@ function setupTimePicker(field) {
 }
 
 populateSettings(getSavedSettings());
+if (!form.elements.namedItem("date").value) {
+  form.elements.namedItem("date").value = localDateValue();
+}
 updateDepartmentVisibility();
 updateCalculation();
 updateNightSettingsVisibility();
+updateRateSettingsVisibility();
+updatePauseVisibility();
 updateKilometerVisibility();
 updateParkingVisibility();
 
@@ -673,33 +1126,90 @@ document.addEventListener("keydown", (event) => {
 });
 
 form.addEventListener("input", markCalculationStale);
+form.addEventListener("click", (event) => {
+  if (currentUserContext?.isPro) return;
+  if (event.target.closest("#drone-option, #ronin-option")) {
+    event.preventDefault();
+    sessionUi?.openUpgrade();
+  }
+});
+form.addEventListener("keydown", (event) => {
+  if (currentUserContext?.isPro || !["Enter", " "].includes(event.key)) return;
+  if (event.target.closest("#drone-option, #ronin-option")) {
+    event.preventDefault();
+    sessionUi?.openUpgrade();
+  }
+});
+projectCreateLink?.addEventListener("click", (event) => {
+  if (currentUserContext?.isPro) return;
+  event.preventDefault();
+  sessionUi?.openUpgrade();
+});
 form.addEventListener("change", (event) => {
   trackOptionChange(event.target);
   updateDepartmentVisibility();
   updateKilometerVisibility();
   updateParkingVisibility();
   markCalculationStale();
-  if (["department", "enableDroneTariff", "enableRonin4dTariff", "enableParkingCosts"].includes(event.target.name)) {
+  if (["department", "enableDroneTariff", "enableRonin4dTariff"].includes(event.target.name)) {
     scheduleAccountSettingsSync();
   }
+  if (event.target.name === "date") updateWorkdaySaveAccess();
 });
 settingsForm.addEventListener("input", (event) => {
   markCalculationStale();
-  if (["dayRate", "normalDayHours", "kilometerRate"].includes(event.target.name)) scheduleAccountSettingsSync();
+  if (["dayRate", "hourlyRate", "normalDayHours", "kilometerRate"].includes(event.target.name)) scheduleAccountSettingsSync();
 });
 settingsForm.addEventListener("change", () => {
   updateNightSettingsVisibility();
+  updateRateSettingsVisibility();
+  updatePauseVisibility();
   markCalculationStale();
   scheduleAccountSettingsSync();
 });
 recalculateButton.addEventListener("click", () => updateCalculation(true));
+workdaySaveButton?.addEventListener("click", () => saveWorkday());
+clearEndTimeButton?.addEventListener("click", () => {
+  form.elements.namedItem("endTime").value = "";
+  clearCalculationDisplay();
+  markCalculationStale();
+});
+document.querySelector("#open-existing-workday")?.addEventListener("click", () => {
+  if (pendingDuplicateWorkday?.existing) applyWorkdaySnapshot(pendingDuplicateWorkday.existing);
+  pendingDuplicateWorkday = null;
+  closeNativeDialog(duplicateWorkdayDialog);
+});
+document.querySelector("#create-duplicate-workday")?.addEventListener("click", async () => {
+  const snapshot = pendingDuplicateWorkday?.snapshot;
+  pendingDuplicateWorkday = null;
+  closeNativeDialog(duplicateWorkdayDialog);
+  if (!snapshot) return;
+  try {
+    await persistWorkday(snapshot);
+  } catch (error) {
+    sessionUi?.showToast(error.message || "Werkdag opslaan is niet gelukt.");
+  } finally {
+    updateWorkdaySaveAccess();
+  }
+});
+document.querySelector("#continue-today-workday")?.addEventListener("click", () => {
+  if (todayWorkday) applyWorkdaySnapshot(todayWorkday);
+  todayWorkday = null;
+  closeNativeDialog(todayWorkdayDialog);
+});
+document.querySelector("#new-today-calculation")?.addEventListener("click", () => {
+  todayWorkday = null;
+  closeNativeDialog(todayWorkdayDialog);
+});
+document.querySelectorAll("[data-workday-dialog-close]").forEach((button) => {
+  button.addEventListener("click", () => closeNativeDialog(button.closest("dialog")));
+});
 copyButton.addEventListener("click", copySummary);
 saveSettingsButton.addEventListener("click", saveCurrentSettings);
-pdfButton.addEventListener("click", () => window.print());
-shareButton.addEventListener("click", shareSite);
-buyMeACoffeeLink.addEventListener("click", () => {
-  analytics?.track("buymeacoffee_clicked", { placement: "support_section" });
+pdfButton.addEventListener("click", () => {
+  globalThis.OveruurtjeFeatureGate.require("pdf_export", currentUserContext, () => window.print());
 });
+shareButton.addEventListener("click", shareSite);
 
 window.addEventListener("beforeprint", () => {
   renderPrintBreakdown(latestResult);
@@ -713,6 +1223,7 @@ details.addEventListener("toggle", (event) => {
   }
 });
 details.open = localStorage.getItem("cameraTariefSettingsOpen") === "true";
+updateWorkdaySaveAccess();
 
 document.addEventListener("overuurtje:user-context", (event) => hydrateAccountSettings(event.detail));
 sessionUi?.ready.then(hydrateAccountSettings);

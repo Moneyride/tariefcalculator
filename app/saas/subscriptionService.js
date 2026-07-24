@@ -42,6 +42,7 @@
     resolve,
     setMockPlan,
     canMock: () => config.allowMockSubscriptions,
+    canManage: () => Boolean(config.shopifyManageUrl),
     openCheckout: () => openExternal(config.shopifyCheckoutUrl),
     openManagement: () => openExternal(config.shopifyManageUrl)
   });

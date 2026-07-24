@@ -255,3 +255,38 @@ test("parkeer en onkosten tellen als ingevuld bedrag mee in totaal exclusief btw
   assertMoney(result.extraTariffAmount, 18.75);
   assertMoney(result.subtotalExVat, 468.75);
 });
+
+test("eigen apparatuur telt als vaste toeslag mee en niet als overuur", () => {
+  const result = calculateTariff(
+    {
+      startTime: "08:00",
+      endTime: "19:00",
+      customEquipment: [
+        { id: "light", name: "Lichtset", amount: 75, enabled: true },
+        { id: "monitor", name: "Monitor", amount: 25, enabled: false }
+      ]
+    },
+    DEFAULT_SETTINGS
+  );
+
+  assertMoney(result.customEquipmentAmount, 75);
+  assert.equal(result.customEquipmentItems.length, 1);
+  assertMoney(result.subtotalExVat, 592.5);
+});
+
+test("projectpauze wordt afgetrokken voordat overuren beginnen", () => {
+  const result = calculateTariff({ startTime: "08:00", endTime: "19:00", breakMinutes: 60 }, DEFAULT_SETTINGS);
+  assert.equal(result.totalHours, 10);
+  assert.equal(result.overtimeHours, 0);
+  assertMoney(result.subtotalExVat, 450);
+});
+
+test("uurtarief rekent gewerkte normale uren en overuren vanuit hetzelfde basistarief", () => {
+  const result = calculateTariff(
+    { startTime: "08:00", endTime: "19:00", rateMode: "hour", hourlyRate: 60 },
+    { ...DEFAULT_SETTINGS, enableNightTariff: false }
+  );
+  assertMoney(result.baseAmount, 600);
+  assertMoney(result.overtimeAmount, 90);
+  assertMoney(result.subtotalExVat, 690);
+});

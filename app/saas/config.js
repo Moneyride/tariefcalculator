@@ -13,6 +13,8 @@
       || localHostnames.has(location.hostname)
       || location.protocol === "file:",
     accountUrl: new URL("account.html", location.href).href,
+    workdaysUrl: new URL("workdays.html", location.href).href,
+    projectsUrl: new URL("projects.html", location.href).href,
     calculatorUrl: new URL("index.html", location.href).href
   });
 

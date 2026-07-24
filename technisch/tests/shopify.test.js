@@ -1,0 +1,88 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import test from "node:test";
+import { fileURLToPath } from "node:url";
+import {
+  billingIntervalFromLine,
+  calculatePaidThrough,
+  normalizeShopDomain,
+  orderContainsProduct,
+  resolveCustomerEntitlement
+} from "../../netlify/functions/lib/subscription-utils.mjs";
+
+const testsDirectory = path.dirname(fileURLToPath(import.meta.url));
+const rootDirectory = path.resolve(testsDirectory, "../..");
+
+test("Shopify-winkel en Pro-product worden strikt herkend", () => {
+  assert.equal(normalizeShopDomain("https://TheGearHarbor.com/products/test"), "thegearharbor.com");
+  assert.equal(orderContainsProduct({ line_items: [{ product_id: 123 }] }, "123"), true);
+  assert.equal(orderContainsProduct({ line_items: [{ product_id: 456 }] }, "123"), false);
+});
+
+test("maand- en jaarabonnementen leveren een betaalde einddatum op", () => {
+  assert.equal(
+    billingIntervalFromLine({ selling_plan_allocation: { selling_plan: { name: "Deliver every year" } } }),
+    "year"
+  );
+  assert.equal(
+    calculatePaidThrough({ paidAt: "2026-01-31T12:00:00.000Z", interval: "month" }),
+    "2026-02-28T12:00:00.000Z"
+  );
+  assert.equal(
+    calculatePaidThrough({ paidAt: "2026-02-01T12:00:00.000Z", interval: "year" }),
+    "2027-02-01T12:00:00.000Z"
+  );
+});
+
+test("Shopify Flow-tags sturen de Pro-status zonder betaalde tijd weg te gooien", () => {
+  const active = resolveCustomerEntitlement({
+    tags: "nieuwsbrief, overuurtje-pro-active",
+    currentPeriodEnd: "2026-08-24T12:00:00.000Z",
+    now: new Date("2026-07-24T12:00:00.000Z")
+  });
+  assert.equal(active.isPro, true);
+  assert.equal(active.status, "active");
+
+  const cancelled = resolveCustomerEntitlement({
+    tags: "overuurtje-pro-cancelled",
+    currentPeriodEnd: "2026-08-24T12:00:00.000Z",
+    now: new Date("2026-07-24T12:00:00.000Z")
+  });
+  assert.equal(cancelled.isPro, true);
+  assert.equal(cancelled.cancelAtPeriodEnd, true);
+
+  const expired = resolveCustomerEntitlement({
+    tags: "overuurtje-pro-cancelled",
+    currentPeriodEnd: "2026-07-23T12:00:00.000Z",
+    now: new Date("2026-07-24T12:00:00.000Z")
+  });
+  assert.equal(expired.isPro, false);
+  assert.equal(expired.status, "free");
+});
+
+test("Shopify-sync blijft server-only en controleert HMAC en duplicaten", async () => {
+  const migration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202607240001_shopify_webhooks.sql"),
+    "utf8"
+  );
+  const webhook = await readFile(
+    path.join(rootDirectory, "netlify/functions/shopify-webhook.mjs"),
+    "utf8"
+  );
+  const expiry = await readFile(
+    path.join(rootDirectory, "netlify/functions/expire-subscriptions.mjs"),
+    "utf8"
+  );
+
+  assert.match(migration, /create table if not exists public\.shopify_webhook_events/i);
+  assert.match(migration, /enable row level security/i);
+  assert.match(migration, /revoke all .* anon, authenticated/i);
+  assert.match(webhook, /x-shopify-hmac-sha256/i);
+  assert.match(webhook, /timingSafeEqual/);
+  assert.match(webhook, /x-shopify-webhook-id/i);
+  assert.match(webhook, /topic === "orders\/paid"/);
+  assert.match(webhook, /topic === "customers\/update"/);
+  assert.match(expiry, /schedule: "15 3 \* \* \*"/);
+});
+

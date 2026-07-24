@@ -2,7 +2,8 @@
   "use strict";
 
   const supabaseService = globalThis.OveruurtjeSupabase;
-  const PROFILE_COLUMNS = "id,email,created_at,updated_at,display_name,is_pro,subscription_status,subscription_provider";
+  const LEGACY_PROFILE_COLUMNS = "id,email,created_at,updated_at,display_name,is_pro,subscription_status,subscription_provider";
+  const PROFILE_COLUMNS = `${LEGACY_PROFILE_COLUMNS},subscription_current_period_end,subscription_cancel_at_period_end`;
 
   function normalize(row, user) {
     return {
@@ -12,8 +13,26 @@
       displayName: row?.display_name || "",
       isPro: Boolean(row?.is_pro),
       subscriptionStatus: row?.subscription_status || "free",
-      subscriptionProvider: row?.subscription_provider || "shopify"
+      subscriptionProvider: row?.subscription_provider || "shopify",
+      subscriptionCurrentPeriodEnd: row?.subscription_current_period_end || null,
+      subscriptionCancelAtPeriodEnd: Boolean(row?.subscription_cancel_at_period_end)
     };
+  }
+
+  function isMissingSubscriptionColumns(error) {
+    const message = `${error?.message || ""} ${error?.details || ""}`;
+    return error?.code === "42703"
+      || error?.code === "PGRST204"
+      || message.includes("subscription_current_period_end")
+      || message.includes("subscription_cancel_at_period_end");
+  }
+
+  async function selectProfile(client, userId, columns) {
+    return client
+      .from("profiles")
+      .select(columns)
+      .eq("id", userId)
+      .maybeSingle();
   }
 
   async function getForUser(user) {
@@ -21,11 +40,12 @@
     const client = await supabaseService.getClient();
     if (!client) return normalize(null, user);
 
-    const { data, error } = await client
-      .from("profiles")
-      .select(PROFILE_COLUMNS)
-      .eq("id", user.id)
-      .maybeSingle();
+    let { data, error } = await selectProfile(client, user.id, PROFILE_COLUMNS);
+
+    // Keep login working until the new migration has been applied.
+    if (error && isMissingSubscriptionColumns(error)) {
+      ({ data, error } = await selectProfile(client, user.id, LEGACY_PROFILE_COLUMNS));
+    }
 
     if (error) throw error;
     if (data) return normalize(data, user);

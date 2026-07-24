@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#073f3d">
+    <title>Projecten | Overuurtje.nl</title>
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="stylesheet" href="styles.css?v=20260724a">
+    <script>window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};window.gtag("consent","default",{analytics_storage:"denied",ad_storage:"denied",ad_user_data:"denied",ad_personalization:"denied"});</script>
+    <script src="runtime-config.js?v=20260722a" defer></script>
+    <script src="saas/config.js?v=20260724a" defer></script>
+    <script src="saas/supabaseClient.js?v=20260722a" defer></script>
+    <script src="saas/authService.js?v=20260722a" defer></script>
+    <script src="saas/profileService.js?v=20260722o" defer></script>
+    <script src="saas/settingsService.js?v=20260723a" defer></script>
+    <script src="saas/equipmentService.js?v=20260722a" defer></script>
+    <script src="saas/projectService.js?v=20260722b" defer></script>
+    <script src="saas/subscriptionService.js?v=20260722b" defer></script>
+    <script src="saas/featureGate.js?v=20260722a" defer></script>
+    <script src="calculator.js?v=20260722b" defer></script>
+    <script src="analytics.js?v=20260722q" defer></script>
+    <script src="saas/sessionUi.js?v=20260724a" defer></script>
+    <script src="projects.js?v=20260723b" defer></script>
+  </head>
+  <body>
+    <main class="app-shell account-shell project-shell">
+      <div class="main-glass account-glass">
+        <header class="page-header account-page-header">
+          <a class="header-title" href="index.html"><img class="site-logo" src="overuurtje-logo.png" alt="Overuurtje.nl - Reken. Check. Klaar."></a>
+          <p class="header-brand">Powered by Reichgelt Media Group</p>
+          <nav class="account-navigation" aria-label="Account">
+            <button class="account-login" id="account-login" type="button">Inloggen</button>
+            <button class="account-upgrade" type="button" data-subscription-upgrade="signup">Upgrade naar Pro</button>
+            <div class="account-user-menu" id="account-user-menu" hidden>
+              <button class="account-avatar" id="account-user-button" type="button" aria-haspopup="menu" aria-expanded="false"><span id="account-user-initial">O</span></button>
+              <div class="account-dropdown" id="account-dropdown" role="menu" hidden>
+                <a id="account-page-link" href="account.html" role="menuitem">Account</a>
+                <a id="workdays-page-link" href="workdays.html" role="menuitem">Werkdagen</a>
+                <a id="projects-page-link" href="projects.html" role="menuitem">Projecten</a>
+                <button type="button" role="menuitem" data-auth-logout>Uitloggen</button>
+              </div>
+            </div>
+          </nav>
+        </header>
+
+        <div class="account-page-topbar project-topbar">
+          <a class="back-link" href="account.html">&#8592; Account</a>
+          <div><p class="account-kicker">Overuurtje Pro</p><h1>Projecten</h1></div>
+          <button class="saas-primary-button" id="new-project" type="button">Nieuw project</button>
+        </div>
+
+        <section class="account-empty-state" id="projects-locked" hidden>
+          <h2>Projecten horen bij Overuurtje Pro</h2>
+          <p>Bundel meerdere werkdagen, pas dagen afzonderlijk aan en exporteer één helder projectoverzicht.</p>
+          <button class="saas-primary-button" type="button" data-subscription-upgrade>Upgrade naar Pro</button>
+        </section>
+        <section class="account-empty-state" id="projects-unavailable" hidden><h2>Projecten konden niet worden geladen</h2><p id="projects-error">Controleer je verbinding en probeer het opnieuw.</p></section>
+
+        <section id="project-list-view" hidden>
+          <div class="project-list-heading"><div><h2>Jouw projecten</h2><p>Meest recent gewijzigd staat bovenaan.</p></div></div>
+          <div class="project-list" id="project-list"></div>
+          <div class="account-empty-state compact-empty" id="project-list-empty" hidden><h2>Nog geen projecten</h2><p>Maak je eerste project aan en kies daarna alleen de dagen waarop je werkelijk werkt.</p></div>
+        </section>
+
+        <section id="project-form-view" hidden>
+          <form class="project-form account-section" id="project-form">
+            <div class="account-section-heading"><div><p class="account-section-kicker">Project</p><h2 id="project-form-title">Nieuw project</h2></div></div>
+            <div class="account-fields two-column-fields">
+              <label><span>Projectnaam *</span><input name="name" type="text" maxlength="120" required></label>
+              <label><span>Opdrachtgever (optioneel)</span><input name="clientName" type="text" maxlength="120"></label>
+              <label class="wide-field"><span>Notities</span><textarea name="notes" rows="3" maxlength="4000" placeholder="Vul hier bijzonderheden in"></textarea></label>
+            </div>
+            <input name="startDate" type="hidden">
+            <input name="endDate" type="hidden">
+            <section class="project-calendar" aria-labelledby="project-calendar-title">
+              <div class="calendar-intro">
+                <div><h3 id="project-calendar-title">Periode en werkdagen</h3><p id="calendar-help">Kies eerst de eerste en laatste dag van het project.</p></div>
+                <button class="calendar-reset" id="calendar-reset" type="button" hidden>Periode opnieuw kiezen</button>
+              </div>
+              <div class="calendar-toolbar">
+                <button class="calendar-nav-button" id="calendar-previous" type="button" aria-label="Vorige maand" title="Vorige maand">&#8592;</button>
+                <strong id="calendar-month"></strong>
+                <button class="calendar-nav-button" id="calendar-next" type="button" aria-label="Volgende maand" title="Volgende maand">&#8594;</button>
+              </div>
+              <div class="calendar-weekdays" aria-hidden="true"><span>ma</span><span>di</span><span>wo</span><span>do</span><span>vr</span><span>za</span><span>zo</span></div>
+              <div class="calendar-grid" id="calendar-grid"></div>
+              <div class="calendar-footer">
+                <p id="calendar-selection-summary">Nog geen periode geselecteerd.</p>
+                <div class="calendar-quick-actions" id="calendar-quick-actions" hidden>
+                  <button type="button" id="calendar-weekdays-only">Selecteer ma-vr</button>
+                  <button type="button" id="calendar-clear-days">Geen werkdagen</button>
+                </div>
+              </div>
+              <div class="calendar-legend"><span><i class="period-key"></i> Projectperiode</span><span><i class="workday-key"></i> Werkdag</span></div>
+            </section>
+            <div class="project-form-actions"><button class="saas-primary-button" type="submit">Verder naar project</button><button class="saas-secondary-button" id="cancel-project" type="button">Annuleren</button><p class="saas-form-status" id="project-form-status"></p></div>
+          </form>
+        </section>
+
+        <section id="project-overview-view" hidden>
+          <div class="project-overview-head account-section"><div><p class="account-section-kicker">Projectoverzicht</p><h2 id="overview-name"></h2><p id="overview-meta"></p></div><div class="project-head-actions"><button class="saas-secondary-button" id="edit-project" type="button">Project wijzigen</button><button class="text-action danger-action" id="delete-project" type="button">Verwijderen</button></div></div>
+          <div class="project-metrics" id="project-metrics"></div>
+          <section class="account-section project-days-section">
+            <div class="account-section-heading project-days-heading"><div><p class="account-section-kicker">Werkdagen</p><h2>Projectdagen</h2></div><button class="saas-secondary-button" id="add-next-workday" type="button">Volgende werkdag toevoegen</button></div>
+            <div class="project-day-carousel">
+              <div class="carousel-controls"><span id="carousel-position"></span></div>
+              <div class="carousel-track-row">
+                <button class="carousel-arrow carousel-arrow-previous" type="button" id="carousel-previous" aria-label="Vorige projectdagen" title="Vorige projectdagen">&#8592;</button>
+                <div class="project-day-list" id="project-day-list"></div>
+                <button class="carousel-arrow carousel-arrow-next" type="button" id="carousel-next" aria-label="Volgende projectdagen" title="Volgende projectdagen">&#8594;</button>
+              </div>
+            </div>
+          </section>
+          <div class="project-overview-actions"><button class="saas-primary-button" id="project-pdf" type="button">Project-PDF opslaan</button><button class="saas-secondary-button" id="back-to-projects" type="button">Alle projecten</button></div>
+        </section>
+
+        <section id="day-editor-view" hidden>
+          <form class="project-day-editor account-section" id="day-form">
+            <div class="account-section-heading"><div><p class="account-section-kicker">Projectdag</p><h2 id="day-editor-title"></h2></div><strong class="day-live-total" id="day-live-total">€ 0,00</strong></div>
+            <div class="day-editor-grid" aria-label="Daginstellingen">
+              <div class="day-editor-primary-fields">
+                <label><span>Starttijd</span><select name="startTime"></select></label>
+                <label><span>Eindtijd</span><select name="endTime"></select></label>
+              </div>
+              <div class="day-editor-secondary-fields">
+                <label><span>Tariefsoort</span><select name="rateMode"><option value="day">Dagtarief</option><option value="hour">Uurtarief</option></select></label>
+                <label><span>Tarief</span><span class="prefixed-input"><span>€</span><input name="rateAmount" type="number" min="0" step="0.01" required></span></label>
+                <label><span>Werkdag</span><select name="normalDayHours"><option value="10">Gebaseerd op 10 uur</option><option value="12">Gebaseerd op 12 uur</option></select></label>
+                <label><span>Pauze</span><select name="breakMinutes"><option value="0">Geen</option><option value="15">15 minuten</option><option value="30">30 minuten</option><option value="45">45 minuten</option><option value="60">1 uur</option><option value="90">1,5 uur</option><option value="120">2 uur</option></select></label>
+              </div>
+            </div>
+            <div class="day-options-grid">
+              <section class="day-option-group" aria-labelledby="work-rules-title">
+                <h3 id="work-rules-title">Werkregels</h3>
+                <div class="day-option-list">
+                  <label><input type="checkbox" name="enableHalfDayUnder6Hours"><span>Halve dag t/m 6 uur (75%)</span></label>
+                  <label><input type="checkbox" name="enableOvertime10To12"><span>Overuren 10-12 uur (150%)</span></label>
+                  <label><input type="checkbox" name="enableOvertimeFrom12"><span>Overuren vanaf 12 uur (200%)</span></label>
+                  <label><input type="checkbox" name="enableOvertimeFrom14"><span>Overuren vanaf 14 uur (250%)</span></label>
+                  <label><input type="checkbox" name="enableNightTariff"><span>Nacht tarief</span></label>
+                  <div class="conditional-field project-night-period" data-for="enableNightTariff">
+                    <label><span>Nachtperiode start</span><select name="nightStart"></select></label>
+                    <label><span>Nachtperiode einde</span><select name="nightEnd"></select></label>
+                  </div>
+                </div>
+              </section>
+              <section class="day-option-group" aria-labelledby="day-extras-title">
+                <h3 id="day-extras-title">Extra’s</h3>
+                <div class="day-option-list">
+                  <label class="day-option-with-value"><input type="checkbox" name="enableKilometers"><span>Kilometers</span><span class="conditional-field inline-day-value" data-for="enableKilometers"><input type="number" name="kilometers" min="0" step="1" aria-label="Aantal kilometers"><span>km</span></span></label>
+                  <label class="day-option-with-value"><input type="checkbox" name="enableParkingCosts"><span>Parkeer/onkosten</span><span class="conditional-field inline-day-value prefixed-day-value" data-for="enableParkingCosts"><span>€</span><input type="number" name="parkingCosts" min="0" step="0.01" aria-label="Bedrag parkeer en onkosten"></span></label>
+                  <div id="project-equipment-options"></div>
+                </div>
+              </section>
+            </div>
+            <div class="day-result-strip" id="day-result-strip"></div>
+            <section class="day-copy-panel" aria-labelledby="day-copy-title">
+              <div class="day-copy-heading">
+                <h3 id="day-copy-title">Instellingen overnemen</h3>
+                <p>Kopieer deze volledige dagberekening naar andere projectdagen.</p>
+              </div>
+              <div class="copy-day-targets" id="copy-day-targets"></div>
+              <div class="copy-controls"><button class="saas-secondary-button" id="copy-selected-days" type="button">Kopieer naar geselecteerde dagen</button><button class="saas-secondary-button" id="copy-all-days" type="button">Kopieer naar alle projectdagen</button></div>
+            </section>
+            <div class="project-form-actions day-editor-actions">
+              <button class="saas-primary-button" type="submit">Dag opslaan</button>
+              <button class="invoice-copy-button" id="copy-day-invoice" type="button">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                <span>Kopiëren voor factuur</span>
+              </button>
+              <button class="saas-secondary-button" id="cancel-day" type="button">Terug naar overzicht</button>
+              <p class="saas-form-status" id="day-form-status" aria-live="polite"></p>
+            </div>
+          </form>
+        </section>
+
+        <footer class="site-footer account-footer"><span>Overuurtje.nl</span><button class="cookie-settings-link" type="button" id="cookie-settings">Cookie settings</button></footer>
+      </div>
+    </main>
+
+    <div class="project-print-root" id="project-print-root" aria-hidden="true"></div>
+    <section class="cookie-banner" id="cookie-banner" hidden><div class="cookie-copy"><h2>Cookies op Overuurtje.nl</h2><p>Met toestemming gebruiken we Analytics om de tool te verbeteren.</p></div><div class="cookie-actions"><button class="cookie-button secondary" id="cookie-decline">Alleen noodzakelijk</button><button class="cookie-button" id="cookie-accept">Analytics toestaan</button></div></section>
+    <dialog class="saas-dialog auth-dialog" id="auth-dialog"><button class="dialog-close" type="button" data-dialog-close>&times;</button><div class="dialog-heading"><span class="dialog-mark">O</span><div><h2 id="auth-title">Inloggen</h2><p id="auth-intro"></p></div></div><form class="auth-form" id="auth-form"><label><span>E-mailadres</span><input id="auth-email" type="email" required></label><label id="auth-password-field"><span>Wachtwoord</span><input id="auth-password" type="password" minlength="8" required></label><button class="saas-primary-button" id="auth-submit">Inloggen</button><p id="auth-status"></p></form><div class="auth-secondary-actions"><button type="button" id="auth-switch">Account maken</button><button type="button" id="auth-forgot">Wachtwoord vergeten</button></div></dialog>
+    <dialog class="saas-dialog pro-dialog" id="pro-dialog"><button class="dialog-close" type="button" data-dialog-close>&times;</button><p class="dialog-eyebrow" id="pro-eyebrow">Overuurtje Pro</p><h2 id="pro-title">Projecten voor meerdere werkdagen</h2><p id="pro-intro">Maak een account en upgrade naar Pro om projecten op te slaan.</p><ul class="pro-benefits"><li>Meerdere afzonderlijke werkdagen</li><li>Projecttotalen en uitgebreide PDF</li><li>Veilig opgeslagen in je account</li></ul><button class="saas-primary-button" id="pro-checkout">Upgrade naar Pro</button><button class="saas-secondary-button" id="pro-continue-free">Verder met Free</button></dialog>
+    <div class="site-toast" id="site-toast" role="status" aria-live="polite" hidden></div>
+  </body>
+</html>

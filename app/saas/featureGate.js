@@ -2,9 +2,11 @@
   "use strict";
 
   const features = Object.freeze({
+    workdays: { requiresPro: true },
     projects: { requiresPro: true },
-    history: { requiresPro: true },
+    custom_equipment: { requiresPro: true },
     equipment_library: { requiresPro: true },
+    pdf_export: { requiresPro: true },
     device_sync: { requiresPro: true }
   });
 

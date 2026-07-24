@@ -5,6 +5,10 @@
 [build.environment]
   NODE_VERSION = "22"
 
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 [[headers]]
   for = "/*"
   [headers.values]
@@ -15,4 +19,14 @@
 [[redirects]]
   from = "/account"
   to = "/account.html"
+  status = 200
+
+[[redirects]]
+  from = "/workdays"
+  to = "/workdays.html"
+  status = 200
+
+[[redirects]]
+  from = "/projects"
+  to = "/projects.html"
   status = 200

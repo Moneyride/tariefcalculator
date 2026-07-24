@@ -52,6 +52,7 @@ De calculator en de SaaS-laag zijn bewust van elkaar gescheiden:
 - app/app.js verbindt de calculator met de pagina en lokale instellingen.
 - app/saas/ bevat Supabase, authenticatie, profielen, cloudinstellingen, abonnementen en feature gates.
 - app/account.html is de aparte Account & Instellingen-pagina.
+- app/workdays.html toont opgeslagen losse Pro-werkdagen.
 - supabase/migrations/ bevat het databaseschema en Row Level Security.
 - technisch/build-netlify.mjs maakt de deploymap en injecteert publieke configuratie.
 
@@ -83,7 +84,29 @@ Optioneel kunnen alvast deze publieke URL's in Netlify worden ingesteld:
 SHOPIFY_CHECKOUT_URL
 SHOPIFY_MANAGE_URL
 
-Zolang deze leeg zijn tonen de knoppen een nette tijdelijke melding. De toekomstige Shopify-webhook moet server-side profiles.is_pro en de subscription-velden bijwerken. Browsergebruikers kunnen deze velden door de databasebeveiliging niet zelf aanpassen.
+Zolang deze leeg zijn tonen de knoppen een nette tijdelijke melding.
+
+Shopify Basic synchronisatie
+
+De server-side webhook is bereikbaar op:
+
+https://overuurtje.nl/api/shopify/webhook
+
+Voer eerst supabase/migrations/202607240001_shopify_webhooks.sql uit. Voeg daarna in Netlify de volgende server-side variabelen toe:
+
+SUPABASE_SECRET_KEY
+SHOPIFY_API_SECRET
+SHOPIFY_STORE_DOMAIN
+SHOPIFY_PRO_PRODUCT_ID
+
+De Shopify-app stuurt orders/paid en customers/update naar de webhook. Shopify Flow beheert voor Basic de klanttags overuurtje-pro-active, overuurtje-pro-cancelled en overuurtje-pro-past-due. Gebruik bij Shopify hetzelfde e-mailadres als bij het Overuurtje-account.
+
+De Supabase secret key is uitsluitend voor Netlify Functions. Plaats deze nooit in runtime-config.js, browsercode of GitHub.
+
+Werkdagen activeren
+
+Voer supabase/migrations/202607240002_workdays.sql uit in de Supabase SQL Editor.
+De tabel bewaart per gebruiker volledige, versieerbare calculatorsnapshots. Een eindtijd mag ontbreken en meerdere werkdagen mogen dezelfde datum hebben. RLS geeft uitsluitend de eigenaar met een actief Pro-account toegang.
 
 Testmodus abonnementen
 
@@ -97,6 +120,4 @@ OveruurtjeFeatureGate.require("feature_name", currentUser, callback)
 
 Een Free-gebruiker krijgt dan automatisch de bestaande Pro-upgradedialoog. Abonnementslogica hoeft daardoor niet door UI-code te worden verspreid.
 
-Toekomstige database-tabellen
-
-Projecten, equipment en historie krijgen later ieder een eigen tabel met user_id als verwijzing naar profiles.id. Gebruik daarbij hetzelfde owner-only RLS-patroon als bij de settings-tabel.
+Nieuwe database-tabellen horen een user_id naar profiles.id en owner-only RLS te gebruiken. Pro-data controleert daarnaast public.current_user_is_pro().

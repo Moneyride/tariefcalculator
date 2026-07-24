@@ -25,7 +25,6 @@
     mileage_enabled: ["department"],
     parking_enabled: ["department"],
     settings_opened: [],
-    buymeacoffee_clicked: ["placement"],
     share_clicked: ["method", "content_type"]
   });
 

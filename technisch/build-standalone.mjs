@@ -13,6 +13,8 @@ const scriptFiles = [
   "saas/authService.js",
   "saas/profileService.js",
   "saas/settingsService.js",
+  "saas/equipmentService.js",
+  "saas/workdayService.js",
   "saas/subscriptionService.js",
   "saas/featureGate.js",
   "calculator.js",
