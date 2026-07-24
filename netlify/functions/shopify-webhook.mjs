@@ -150,6 +150,18 @@ export default async function handler(request) {
       processed_at: new Date().toISOString(),
       last_error: null
     });
+    console.info("Shopify-webhook verwerkt.", {
+      webhookId,
+      topic,
+      result,
+      payloadFields: topic === "customers/update"
+        ? {
+            hasCustomerId: Boolean(payload?.id),
+            hasEmail: Boolean(extractOrderEmail(payload)),
+            hasTags: Boolean(payload?.tags)
+          }
+        : undefined
+    });
     return response(200, result);
   } catch (error) {
     await updateWebhookEvent(webhookId, {
