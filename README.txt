@@ -15,6 +15,25 @@ Snel gebruiken
 Op een telefoon werkt "Overuurtje.html" het beste, omdat alles in één bestand zit.
 Als iCloud of Bestanden alleen een voorbeeld toont, gebruik dan de deelknop en kies "Open in Safari".
 
+Installeren als app
+
+De online versie op https://overuurtje.nl kan als app worden geïnstalleerd.
+
+Op iPhone of iPad:
+
+1. Open overuurtje.nl in Safari of Chrome.
+2. Kies onderaan de pagina "Installeer Overuurtje".
+3. Tik op de deelknop van de browser.
+4. Kies "Zet op beginscherm".
+
+Op Android of een computer:
+
+1. Open overuurtje.nl in Chrome of Edge.
+2. Kies "Installeer Overuurtje" onderaan de pagina.
+3. Bevestig de installatie.
+
+De geïnstalleerde app opent zonder browserbalk. De calculator en eerder geladen pagina's blijven ook zonder internetverbinding beschikbaar. Voor inloggen, synchroniseren, Werkdagen en Projecten blijft een internetverbinding nodig.
+
 Gebruik
 
 1. Vul eventueel een datum in.

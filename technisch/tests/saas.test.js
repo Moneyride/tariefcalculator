@@ -131,6 +131,9 @@ test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", asy
   assert.ok(calculatorHtml.indexOf("saas/authService.js") < calculatorHtml.indexOf("app.js"));
   assert.ok(calculatorHtml.indexOf("saas/equipmentService.js") < calculatorHtml.indexOf("app.js"));
   assert.match(calculatorHtml, /id="account-login"/);
+  assert.match(calculatorHtml, /data-workday-save-label/);
+  assert.match(calculatorHtml, /Werkdag van vandaag opslaan|Bewaar je begintijd/);
+  assert.match(calculatorHtml, /data-pro-badge/);
   assert.match(calculatorHtml, /name="rateMode"/);
   assert.match(calculatorHtml, /name="breakMinutes"/);
   assert.match(calculatorHtml, /name="enableBreak"/);
@@ -151,6 +154,8 @@ test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", asy
   assert.match(accountHtml, /name="nightStart"/);
   assert.match(accountHtml, /data-subscription-upgrade/);
   assert.match(calculatorScript, /planningBreakField\.hidden = !enabled/);
+  assert.match(calculatorScript, /pdfProBadge\.hidden = context\.isPro/);
+  assert.match(calculatorScript, /Werkdag van vandaag opslaan/);
   const saveSettingsStart = calculatorScript.indexOf("function saveCurrentSettings()");
   const closeSettings = calculatorScript.indexOf("details.open = false", saveSettingsStart);
   const backgroundSync = calculatorScript.indexOf("void syncAccountSettings()", saveSettingsStart);

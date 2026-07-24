@@ -2,7 +2,7 @@
 <html lang="nl">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#073f3d">
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -18,6 +18,9 @@
     <title>Overuurtje.nl</title>
     <meta name="description" content="Bereken eenvoudig werkuren, overuren, nachttoeslagen en productietarieven met Overuurtje.nl.">
     <meta name="application-name" content="Overuurtje.nl">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Overuurtje.nl">
     <link rel="canonical" href="https://overuurtje.nl/">
     <meta property="og:type" content="website">
@@ -39,7 +42,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png?v=20260718c">
     <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260718c">
-    <link rel="manifest" href="site.webmanifest?v=20260718c">
+    <link rel="manifest" href="site.webmanifest?v=20260724a">
     <style>
 :root {
   color-scheme: light;
@@ -325,6 +328,7 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   overflow-x: hidden;
   overscroll-behavior-y: none;
   background: #192522;
@@ -1626,7 +1630,14 @@ summary:hover {
   padding: 2px 30px 30px;
 }
 
-.share-button {
+.footer-utility-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.share-button,
+.install-app-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1643,19 +1654,22 @@ summary:hover {
   transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease;
 }
 
-.share-button svg {
+.share-button svg,
+.install-app-button svg {
   width: 19px;
   height: 19px;
   flex: 0 0 auto;
 }
 
-.share-button:hover {
+.share-button:hover,
+.install-app-button:hover {
   border-color: rgba(31, 67, 53, 0.38);
   background: rgba(255, 255, 255, 0.68);
   transform: translateY(-1px);
 }
 
 .share-button:focus-visible,
+.install-app-button:focus-visible,
 .cookie-settings-link:focus-visible,
 .cookie-button:focus-visible {
   outline: 3px solid rgba(255, 106, 26, 0.18);
@@ -1675,9 +1689,20 @@ summary:hover {
   transition: color 150ms ease, text-decoration-color 150ms ease;
 }
 
+.install-app-button {
+  min-height: 40px;
+  padding: 8px 13px;
+  border-color: rgba(31, 67, 53, 0.16);
+  background: rgba(255, 255, 255, 0.36);
+  font-size: 0.78rem;
+}
+
 .cookie-settings-link:hover {
+  background: transparent;
+  box-shadow: none;
   color: var(--accent-dark);
   text-decoration-color: currentColor;
+  transform: none;
 }
 
 .cookie-banner {
@@ -1806,6 +1831,20 @@ summary:hover {
   color: var(--text);
   -webkit-backdrop-filter: blur(28px) saturate(110%);
   backdrop-filter: blur(28px) saturate(110%);
+}
+
+.pwa-install-dialog {
+  max-width: 470px;
+}
+
+.pwa-install-dialog > p:not(.dialog-eyebrow) {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.pwa-install-dialog .saas-primary-button {
+  width: 100%;
+  margin-top: 8px;
 }
 
 .saas-dialog::backdrop {
@@ -2927,6 +2966,16 @@ summary:hover {
     width: 100%;
   }
 
+  .footer-utility-actions {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .install-app-button {
+    width: 100%;
+  }
+
   .cookie-settings-link {
     align-self: center;
   }
@@ -3075,6 +3124,10 @@ summary:hover {
 }
 
 .workday-save-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   min-height: 48px;
   padding: 12px 20px;
   border: 1px solid rgba(31, 67, 53, 0.14);
@@ -3089,11 +3142,28 @@ summary:hover {
 }
 
 .workday-save-button.is-pro-locked {
-  opacity: 0.68;
+  opacity: 0.8;
+}
+
+.workday-save-copy {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.workday-save-copy strong {
+  font-size: 0.88rem;
+  line-height: 1.2;
+}
+
+.workday-save-copy [data-workday-save-hint] {
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 650;
+  line-height: 1.25;
 }
 
 .workday-save-button small {
-  margin-left: 5px;
   padding: 3px 6px;
   border-radius: 999px;
   background: rgba(255, 106, 26, 0.12);
@@ -4104,7 +4174,11 @@ summary:hover {
           <div class="button-row">
             <button type="button" id="recalculate">Berekenen</button>
             <button class="workday-save-button is-pro-locked" type="button" id="save-workday" disabled>
-              <span>Opslaan</span> <small>Pro</small>
+              <span class="workday-save-copy">
+                <strong data-workday-save-label>Werkdag opslaan</strong>
+                <span data-workday-save-hint>Bewaar je begintijd; vul later je eindtijd in</span>
+              </span>
+              <small data-workday-save-badge>Pro</small>
             </button>
           </div>
         </section>
@@ -4157,7 +4231,7 @@ summary:hover {
 
       <div class="footer-actions">
         <button type="button" id="copy-summary">Kopiëren voor factuur</button>
-        <button class="secondary pro-action-button" type="button" id="save-pdf">Pdf opslaan <span>Pro</span></button>
+        <button class="secondary pro-action-button" type="button" id="save-pdf">Pdf opslaan <span data-pro-badge>Pro</span></button>
         <p class="copy-status" id="copy-status" aria-live="polite"></p>
       </div>
 
@@ -4172,7 +4246,17 @@ summary:hover {
           </svg>
           <span>Deel Overuurtje met een collega</span>
         </button>
-        <button class="cookie-settings-link" type="button" id="cookie-settings">Cookie settings</button>
+        <div class="footer-utility-actions">
+          <button class="install-app-button" type="button" id="install-app" hidden>
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3v12"></path>
+              <path d="m7 10 5 5 5-5"></path>
+              <path d="M5 21h14"></path>
+            </svg>
+            <span>Installeer Overuurtje</span>
+          </button>
+          <button class="cookie-settings-link" type="button" id="cookie-settings">Cookie settings</button>
+        </div>
       </footer>
 
       <section class="print-breakdown" aria-label="Onderbouwing factuur">
@@ -4283,6 +4367,15 @@ summary:hover {
         <button class="saas-primary-button" id="continue-today-workday" type="button">Verder met deze werkdag</button>
         <button class="saas-secondary-button" id="new-today-calculation" type="button">Nieuwe berekening</button>
       </div>
+    </dialog>
+
+    <dialog class="saas-dialog pwa-install-dialog" id="pwa-install-dialog" aria-labelledby="pwa-install-title">
+      <button class="dialog-close" type="button" data-pwa-dialog-close aria-label="Sluiten">&times;</button>
+      <p class="dialog-eyebrow">Overuurtje als app</p>
+      <h2 id="pwa-install-title">Zet Overuurtje op je beginscherm</h2>
+      <p data-pwa-install-instructions>Open het menu van je browser en kies ‘App installeren’ of ‘Toevoegen aan startscherm’.</p>
+      <p class="dialog-footnote">Daarna opent Overuurtje zonder browserbalk en blijft de calculator ook zonder verbinding beschikbaar.</p>
+      <button class="saas-primary-button" type="button" data-pwa-dialog-close>Begrepen</button>
     </dialog>
 
     <div class="site-toast" id="site-toast" role="status" aria-live="polite" hidden></div>
@@ -5829,6 +5922,9 @@ const inputOptions = document.querySelector(".input-options");
 const departmentSwitch = document.querySelector(".department-switch");
 const projectCreateLink = document.querySelector("#project-create-link");
 const workdaySaveButton = document.querySelector("#save-workday");
+const workdaySaveLabel = workdaySaveButton?.querySelector("[data-workday-save-label]");
+const workdaySaveHint = workdaySaveButton?.querySelector("[data-workday-save-hint]");
+const workdaySaveBadge = workdaySaveButton?.querySelector("[data-workday-save-badge]");
 const clearEndTimeButton = document.querySelector("#clear-end-time");
 const duplicateWorkdayDialog = document.querySelector("#duplicate-workday-dialog");
 const todayWorkdayDialog = document.querySelector("#today-workday-dialog");
@@ -6138,7 +6234,6 @@ function applyWorkdaySnapshot(workday) {
   updateRateSettingsVisibility();
   updatePauseVisibility();
   updateWorkdaySaveAccess();
-  workdaySaveButton.querySelector("span").textContent = "Bijwerken";
   const url = new URL(location.href);
   url.searchParams.set("workday", workday.id);
   history.replaceState({}, "", url);
@@ -6154,7 +6249,7 @@ async function persistWorkday(snapshot, id = null) {
     calculationData: snapshot
   }, { mock: currentUserContext?.subscription?.isMock });
   currentWorkdayId = saved.id;
-  workdaySaveButton.querySelector("span").textContent = "Bijwerken";
+  updateWorkdaySaveAccess();
   const url = new URL(location.href);
   url.searchParams.set("workday", saved.id);
   history.replaceState({}, "", url);
@@ -6202,9 +6297,16 @@ function updateWorkdaySaveAccess() {
   if (!workdaySaveButton) return;
   const hasDate = Boolean(form.elements.namedItem("date").value);
   const isPro = Boolean(currentUserContext?.isPro);
+  const isToday = form.elements.namedItem("date").value === localDateValue();
   workdaySaveButton.disabled = !hasDate;
   workdaySaveButton.classList.toggle("is-pro-locked", !isPro);
-  workdaySaveButton.querySelector("small").hidden = isPro;
+  if (workdaySaveLabel) {
+    workdaySaveLabel.textContent = currentWorkdayId
+      ? "Werkdag bijwerken"
+      : (!isPro && isToday ? "Werkdag van vandaag opslaan" : "Werkdag opslaan");
+  }
+  if (workdaySaveHint) workdaySaveHint.hidden = isPro;
+  if (workdaySaveBadge) workdaySaveBadge.hidden = isPro;
   workdaySaveButton.title = hasDate
     ? (isPro ? "Werkdag opslaan" : "Werkdagen zijn beschikbaar met Pro")
     : "Vul eerst een datum in";
@@ -6308,6 +6410,8 @@ function updateProjectCreateAccess(isPro) {
 async function hydrateAccountSettings(context) {
   currentUserContext = context;
   currentAccountUser = context.auth.user;
+  const pdfProBadge = pdfButton?.querySelector("[data-pro-badge]");
+  if (pdfProBadge) pdfProBadge.hidden = context.isPro;
   updateSettingsScope();
   updateProjectCreateAccess(context.isPro);
   if (!currentAccountUser) {
@@ -7032,6 +7136,98 @@ updateWorkdaySaveAccess();
 
 document.addEventListener("overuurtje:user-context", (event) => hydrateAccountSettings(event.detail));
 sessionUi?.ready.then(hydrateAccountSettings);
+
+    </script>
+    <script>
+(function initializePwa() {
+  "use strict";
+
+  const installButton = document.querySelector("#install-app");
+  const installDialog = document.querySelector("#pwa-install-dialog");
+  const installDialogCloseButtons = installDialog?.querySelectorAll("[data-pwa-dialog-close]") || [];
+  const installInstructions = installDialog?.querySelector("[data-pwa-install-instructions]");
+  const standalone = window.matchMedia("(display-mode: standalone)").matches
+    || window.navigator.standalone === true;
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  let deferredInstallPrompt = null;
+
+  function showToast(message) {
+    if (globalThis.OveruurtjeAnalytics?.showToast) {
+      globalThis.OveruurtjeAnalytics.showToast(message);
+      return;
+    }
+
+    const toast = document.querySelector("#site-toast");
+    if (!toast) return;
+    toast.textContent = message;
+    toast.hidden = false;
+    requestAnimationFrame(() => toast.classList.add("visible"));
+    window.setTimeout(() => {
+      toast.classList.remove("visible");
+      window.setTimeout(() => { toast.hidden = true; }, 200);
+    }, 2400);
+  }
+
+  function setInstallButtonVisible(visible) {
+    if (installButton) installButton.hidden = !visible || standalone;
+  }
+
+  function openInstallInstructions() {
+    if (!installDialog) return;
+    if (installInstructions) {
+      installInstructions.textContent = isIos
+        ? "Tik in je browser op Delen en kies daarna ‘Zet op beginscherm’."
+        : "Open het menu van je browser en kies ‘App installeren’ of ‘Toevoegen aan startscherm’.";
+    }
+    installDialog.showModal();
+  }
+
+  async function installApp() {
+    if (!deferredInstallPrompt) {
+      openInstallInstructions();
+      return;
+    }
+
+    deferredInstallPrompt.prompt();
+    const choice = await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    setInstallButtonVisible(false);
+    if (choice.outcome === "accepted") showToast("Overuurtje wordt geïnstalleerd.");
+  }
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    setInstallButtonVisible(true);
+  });
+
+  window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null;
+    setInstallButtonVisible(false);
+    showToast("Overuurtje is als app geïnstalleerd.");
+  });
+
+  installButton?.addEventListener("click", installApp);
+  installDialogCloseButtons.forEach((button) => {
+    button.addEventListener("click", () => installDialog.close());
+  });
+  installDialog?.addEventListener("click", (event) => {
+    if (event.target === installDialog) installDialog.close();
+  });
+
+  if (isIos && !standalone) setInstallButtonVisible(true);
+  document.documentElement.classList.toggle("is-pwa", standalone);
+
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register(new URL("service-worker.js", document.baseURI), {
+        scope: "./"
+      }).catch(() => {
+        // De calculator blijft zonder service worker volledig bruikbaar.
+      });
+    });
+  }
+})();
 
     </script>
   </body>

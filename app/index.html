@@ -2,7 +2,7 @@
 <html lang="nl">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#073f3d">
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -18,6 +18,9 @@
     <title>Overuurtje.nl</title>
     <meta name="description" content="Bereken eenvoudig werkuren, overuren, nachttoeslagen en productietarieven met Overuurtje.nl.">
     <meta name="application-name" content="Overuurtje.nl">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Overuurtje.nl">
     <link rel="canonical" href="https://overuurtje.nl/">
     <meta property="og:type" content="website">
@@ -39,8 +42,8 @@
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png?v=20260718c">
     <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260718c">
-    <link rel="manifest" href="site.webmanifest?v=20260718c">
-    <link rel="stylesheet" href="styles.css?v=20260724a">
+    <link rel="manifest" href="site.webmanifest?v=20260724a">
+    <link rel="stylesheet" href="styles.css?v=20260724c">
     <script src="runtime-config.js?v=20260722a" defer></script>
     <script src="saas/config.js?v=20260724a" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
@@ -54,7 +57,8 @@
     <script src="calculator.js?v=20260722a" defer></script>
     <script src="analytics.js?v=20260722q" defer></script>
     <script src="saas/sessionUi.js?v=20260724a" defer></script>
-    <script src="app.js?v=20260724a" defer></script>
+    <script src="app.js?v=20260724b" defer></script>
+    <script src="pwa.js?v=20260724a" defer></script>
   </head>
   <body>
     <main class="app-shell">
@@ -298,7 +302,11 @@
           <div class="button-row">
             <button type="button" id="recalculate">Berekenen</button>
             <button class="workday-save-button is-pro-locked" type="button" id="save-workday" disabled>
-              <span>Opslaan</span> <small>Pro</small>
+              <span class="workday-save-copy">
+                <strong data-workday-save-label>Werkdag opslaan</strong>
+                <span data-workday-save-hint>Bewaar je begintijd; vul later je eindtijd in</span>
+              </span>
+              <small data-workday-save-badge>Pro</small>
             </button>
           </div>
         </section>
@@ -351,7 +359,7 @@
 
       <div class="footer-actions">
         <button type="button" id="copy-summary">Kopiëren voor factuur</button>
-        <button class="secondary pro-action-button" type="button" id="save-pdf">Pdf opslaan <span>Pro</span></button>
+        <button class="secondary pro-action-button" type="button" id="save-pdf">Pdf opslaan <span data-pro-badge>Pro</span></button>
         <p class="copy-status" id="copy-status" aria-live="polite"></p>
       </div>
 
@@ -366,7 +374,17 @@
           </svg>
           <span>Deel Overuurtje met een collega</span>
         </button>
-        <button class="cookie-settings-link" type="button" id="cookie-settings">Cookie settings</button>
+        <div class="footer-utility-actions">
+          <button class="install-app-button" type="button" id="install-app" hidden>
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3v12"></path>
+              <path d="m7 10 5 5 5-5"></path>
+              <path d="M5 21h14"></path>
+            </svg>
+            <span>Installeer Overuurtje</span>
+          </button>
+          <button class="cookie-settings-link" type="button" id="cookie-settings">Cookie settings</button>
+        </div>
       </footer>
 
       <section class="print-breakdown" aria-label="Onderbouwing factuur">
@@ -477,6 +495,15 @@
         <button class="saas-primary-button" id="continue-today-workday" type="button">Verder met deze werkdag</button>
         <button class="saas-secondary-button" id="new-today-calculation" type="button">Nieuwe berekening</button>
       </div>
+    </dialog>
+
+    <dialog class="saas-dialog pwa-install-dialog" id="pwa-install-dialog" aria-labelledby="pwa-install-title">
+      <button class="dialog-close" type="button" data-pwa-dialog-close aria-label="Sluiten">&times;</button>
+      <p class="dialog-eyebrow">Overuurtje als app</p>
+      <h2 id="pwa-install-title">Zet Overuurtje op je beginscherm</h2>
+      <p data-pwa-install-instructions>Open het menu van je browser en kies ‘App installeren’ of ‘Toevoegen aan startscherm’.</p>
+      <p class="dialog-footnote">Daarna opent Overuurtje zonder browserbalk en blijft de calculator ook zonder verbinding beschikbaar.</p>
+      <button class="saas-primary-button" type="button" data-pwa-dialog-close>Begrepen</button>
     </dialog>
 
     <div class="site-toast" id="site-toast" role="status" aria-live="polite" hidden></div>

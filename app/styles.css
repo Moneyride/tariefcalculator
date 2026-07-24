@@ -282,6 +282,7 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   overflow-x: hidden;
   overscroll-behavior-y: none;
   background: #192522;
@@ -1583,7 +1584,14 @@ summary:hover {
   padding: 2px 30px 30px;
 }
 
-.share-button {
+.footer-utility-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.share-button,
+.install-app-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1600,19 +1608,22 @@ summary:hover {
   transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease;
 }
 
-.share-button svg {
+.share-button svg,
+.install-app-button svg {
   width: 19px;
   height: 19px;
   flex: 0 0 auto;
 }
 
-.share-button:hover {
+.share-button:hover,
+.install-app-button:hover {
   border-color: rgba(31, 67, 53, 0.38);
   background: rgba(255, 255, 255, 0.68);
   transform: translateY(-1px);
 }
 
 .share-button:focus-visible,
+.install-app-button:focus-visible,
 .cookie-settings-link:focus-visible,
 .cookie-button:focus-visible {
   outline: 3px solid rgba(255, 106, 26, 0.18);
@@ -1632,9 +1643,20 @@ summary:hover {
   transition: color 150ms ease, text-decoration-color 150ms ease;
 }
 
+.install-app-button {
+  min-height: 40px;
+  padding: 8px 13px;
+  border-color: rgba(31, 67, 53, 0.16);
+  background: rgba(255, 255, 255, 0.36);
+  font-size: 0.78rem;
+}
+
 .cookie-settings-link:hover {
+  background: transparent;
+  box-shadow: none;
   color: var(--accent-dark);
   text-decoration-color: currentColor;
+  transform: none;
 }
 
 .cookie-banner {
@@ -1763,6 +1785,20 @@ summary:hover {
   color: var(--text);
   -webkit-backdrop-filter: blur(28px) saturate(110%);
   backdrop-filter: blur(28px) saturate(110%);
+}
+
+.pwa-install-dialog {
+  max-width: 470px;
+}
+
+.pwa-install-dialog > p:not(.dialog-eyebrow) {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.pwa-install-dialog .saas-primary-button {
+  width: 100%;
+  margin-top: 8px;
 }
 
 .saas-dialog::backdrop {
@@ -2884,6 +2920,16 @@ summary:hover {
     width: 100%;
   }
 
+  .footer-utility-actions {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .install-app-button {
+    width: 100%;
+  }
+
   .cookie-settings-link {
     align-self: center;
   }
@@ -3032,6 +3078,10 @@ summary:hover {
 }
 
 .workday-save-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   min-height: 48px;
   padding: 12px 20px;
   border: 1px solid rgba(31, 67, 53, 0.14);
@@ -3046,11 +3096,28 @@ summary:hover {
 }
 
 .workday-save-button.is-pro-locked {
-  opacity: 0.68;
+  opacity: 0.8;
+}
+
+.workday-save-copy {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.workday-save-copy strong {
+  font-size: 0.88rem;
+  line-height: 1.2;
+}
+
+.workday-save-copy [data-workday-save-hint] {
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 650;
+  line-height: 1.25;
 }
 
 .workday-save-button small {
-  margin-left: 5px;
   padding: 3px 6px;
   border-radius: 999px;
   background: rgba(255, 106, 26, 0.12);

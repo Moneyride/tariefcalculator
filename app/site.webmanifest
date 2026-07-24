@@ -1,23 +1,69 @@
 {
+  "id": "./",
   "name": "Overuurtje.nl",
   "short_name": "Overuurtje",
-  "description": "Bereken werkuren, toeslagen en factuurbedragen.",
-  "start_url": "./index.html",
+  "description": "Bereken en bewaar werkuren, toeslagen en factuurbedragen.",
+  "lang": "nl-NL",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
   "background_color": "#fff8ea",
   "theme_color": "#073f3d",
-  "icons": [
+  "categories": [
+    "business",
+    "finance",
+    "productivity"
+  ],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "shortcuts": [
     {
-      "src": "icon-192.png?v=20260718c",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "name": "Nieuwe berekening",
+      "short_name": "Berekenen",
+      "url": "./"
     },
     {
-      "src": "icon-512.png?v=20260718c",
+      "name": "Werkdagen",
+      "short_name": "Werkdagen",
+      "url": "./workdays.html"
+    },
+    {
+      "name": "Projecten",
+      "short_name": "Projecten",
+      "url": "./projects.html"
+    }
+  ],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

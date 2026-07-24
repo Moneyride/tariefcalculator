@@ -68,12 +68,25 @@ async function processPaidOrder(order) {
   return { updated: true, profileId: profile.id };
 }
 
+export async function findProfileForCustomer(
+  { customerId, email },
+  {
+    findByCustomerId = findProfileByCustomerId,
+    findByEmail = findProfileByEmail
+  } = {}
+) {
+  const profileByCustomerId = customerId
+    ? await findByCustomerId(customerId)
+    : null;
+
+  if (profileByCustomerId) return profileByCustomerId;
+  return email ? findByEmail(email) : null;
+}
+
 async function processCustomerUpdate(customer) {
   const customerId = String(customer?.id || "");
   const email = extractOrderEmail(customer);
-  const profile = customerId
-    ? await findProfileByCustomerId(customerId)
-    : await findProfileByEmail(email);
+  const profile = await findProfileForCustomer({ customerId, email });
 
   if (!profile) return { ignored: true, reason: "unknown_customer" };
 
@@ -151,4 +164,3 @@ export default async function handler(request) {
 export const config = {
   path: "/api/shopify/webhook"
 };
-

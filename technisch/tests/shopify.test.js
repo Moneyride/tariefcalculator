@@ -10,6 +10,7 @@ import {
   orderContainsProduct,
   resolveCustomerEntitlement
 } from "../../netlify/functions/lib/subscription-utils.mjs";
+import { findProfileForCustomer } from "../../netlify/functions/shopify-webhook.mjs";
 
 const testsDirectory = path.dirname(fileURLToPath(import.meta.url));
 const rootDirectory = path.resolve(testsDirectory, "../..");
@@ -61,6 +62,32 @@ test("Shopify Flow-tags sturen de Pro-status zonder betaalde tijd weg te gooien"
   assert.equal(expired.status, "free");
 });
 
+test("een nieuwe Shopify-klant wordt na een ontbrekende klant-ID op e-mail gekoppeld", async () => {
+  const calls = [];
+  const profile = await findProfileForCustomer(
+    {
+      customerId: "12345",
+      email: "test@overuurtje.nl"
+    },
+    {
+      findByCustomerId: async (customerId) => {
+        calls.push(`customer:${customerId}`);
+        return null;
+      },
+      findByEmail: async (email) => {
+        calls.push(`email:${email}`);
+        return { id: "profile-1" };
+      }
+    }
+  );
+
+  assert.deepEqual(calls, [
+    "customer:12345",
+    "email:test@overuurtje.nl"
+  ]);
+  assert.equal(profile.id, "profile-1");
+});
+
 test("Shopify-sync blijft server-only en controleert HMAC en duplicaten", async () => {
   const migration = await readFile(
     path.join(rootDirectory, "supabase/migrations/202607240001_shopify_webhooks.sql"),
@@ -83,6 +110,12 @@ test("Shopify-sync blijft server-only en controleert HMAC en duplicaten", async 
   assert.match(webhook, /x-shopify-webhook-id/i);
   assert.match(webhook, /topic === "orders\/paid"/);
   assert.match(webhook, /topic === "customers\/update"/);
+  assert.match(webhook, /findProfileForCustomer/);
   assert.match(expiry, /schedule: "15 3 \* \* \*"/);
+  assert.match(expiry, /listExpiredSubscriptions/);
+  const supabaseAdmin = await readFile(
+    path.join(rootDirectory, "netlify/functions/lib/supabase-admin.mjs"),
+    "utf8"
+  );
+  assert.match(supabaseAdmin, /subscription_status:\s*"in\.\(cancelled,past_due\)"/);
 });
-

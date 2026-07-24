@@ -24,6 +24,9 @@ const inputOptions = document.querySelector(".input-options");
 const departmentSwitch = document.querySelector(".department-switch");
 const projectCreateLink = document.querySelector("#project-create-link");
 const workdaySaveButton = document.querySelector("#save-workday");
+const workdaySaveLabel = workdaySaveButton?.querySelector("[data-workday-save-label]");
+const workdaySaveHint = workdaySaveButton?.querySelector("[data-workday-save-hint]");
+const workdaySaveBadge = workdaySaveButton?.querySelector("[data-workday-save-badge]");
 const clearEndTimeButton = document.querySelector("#clear-end-time");
 const duplicateWorkdayDialog = document.querySelector("#duplicate-workday-dialog");
 const todayWorkdayDialog = document.querySelector("#today-workday-dialog");
@@ -333,7 +336,6 @@ function applyWorkdaySnapshot(workday) {
   updateRateSettingsVisibility();
   updatePauseVisibility();
   updateWorkdaySaveAccess();
-  workdaySaveButton.querySelector("span").textContent = "Bijwerken";
   const url = new URL(location.href);
   url.searchParams.set("workday", workday.id);
   history.replaceState({}, "", url);
@@ -349,7 +351,7 @@ async function persistWorkday(snapshot, id = null) {
     calculationData: snapshot
   }, { mock: currentUserContext?.subscription?.isMock });
   currentWorkdayId = saved.id;
-  workdaySaveButton.querySelector("span").textContent = "Bijwerken";
+  updateWorkdaySaveAccess();
   const url = new URL(location.href);
   url.searchParams.set("workday", saved.id);
   history.replaceState({}, "", url);
@@ -397,9 +399,16 @@ function updateWorkdaySaveAccess() {
   if (!workdaySaveButton) return;
   const hasDate = Boolean(form.elements.namedItem("date").value);
   const isPro = Boolean(currentUserContext?.isPro);
+  const isToday = form.elements.namedItem("date").value === localDateValue();
   workdaySaveButton.disabled = !hasDate;
   workdaySaveButton.classList.toggle("is-pro-locked", !isPro);
-  workdaySaveButton.querySelector("small").hidden = isPro;
+  if (workdaySaveLabel) {
+    workdaySaveLabel.textContent = currentWorkdayId
+      ? "Werkdag bijwerken"
+      : (!isPro && isToday ? "Werkdag van vandaag opslaan" : "Werkdag opslaan");
+  }
+  if (workdaySaveHint) workdaySaveHint.hidden = isPro;
+  if (workdaySaveBadge) workdaySaveBadge.hidden = isPro;
   workdaySaveButton.title = hasDate
     ? (isPro ? "Werkdag opslaan" : "Werkdagen zijn beschikbaar met Pro")
     : "Vul eerst een datum in";
@@ -503,6 +512,8 @@ function updateProjectCreateAccess(isPro) {
 async function hydrateAccountSettings(context) {
   currentUserContext = context;
   currentAccountUser = context.auth.user;
+  const pdfProBadge = pdfButton?.querySelector("[data-pro-badge]");
+  if (pdfProBadge) pdfProBadge.hidden = context.isPro;
   updateSettingsScope();
   updateProjectCreateAccess(context.isPro);
   if (!currentAccountUser) {

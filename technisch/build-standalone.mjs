@@ -20,7 +20,8 @@ const scriptFiles = [
   "calculator.js",
   "analytics.js",
   "saas/sessionUi.js",
-  "app.js"
+  "app.js",
+  "pwa.js"
 ];
 
 const [template, styles, ...scripts] = await Promise.all([

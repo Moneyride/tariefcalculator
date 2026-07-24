@@ -85,8 +85,7 @@ export async function listExpiredSubscriptions(nowIso) {
   return request(queryPath("profiles", {
     select: "id",
     is_pro: "eq.true",
-    subscription_cancel_at_period_end: "eq.true",
+    subscription_status: "in.(cancelled,past_due)",
     subscription_current_period_end: `lte.${nowIso}`
   }));
 }
-
