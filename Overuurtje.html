@@ -1044,6 +1044,13 @@ select {
   background: var(--orange-dark);
 }
 
+button.account-login:hover {
+  border-color: rgba(31, 67, 53, 0.28);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 7px 18px rgba(31, 67, 53, 0.07);
+  color: var(--accent-dark);
+}
+
 .account-user-menu {
   position: relative;
 }
@@ -6998,6 +7005,47 @@ globalThis.TariffCalculator = {
     toast.classList.add("visible");
   }
 
+  function authErrorText(error, mode = "login") {
+    const messageCandidates = [
+      typeof error === "string" ? error : "",
+      error?.message,
+      error?.error_description,
+      error?.msg
+    ];
+    const rawMessage = messageCandidates
+      .find((value) => typeof value === "string" && value.trim() && !["{}", "[object Object]"].includes(value.trim()))
+      ?.trim() || "";
+    const code = String(error?.code || "").trim();
+    const fingerprint = `${code} ${rawMessage}`.toLowerCase();
+
+    if (fingerprint.includes("over_email_send_rate_limit") || fingerprint.includes("email rate limit")) {
+      return "Er zijn te veel e-mails aangevraagd. Wacht een paar minuten en probeer het opnieuw.";
+    }
+    if (fingerprint.includes("signup_disabled")) {
+      return "Nieuwe accounts zijn tijdelijk uitgeschakeld.";
+    }
+    if (fingerprint.includes("user_already_exists") || fingerprint.includes("already registered")) {
+      return "Er bestaat al een account met dit e-mailadres. Kies 'Ik heb al een account'.";
+    }
+    if (fingerprint.includes("email_address_invalid") || fingerprint.includes("invalid email")) {
+      return "Vul een geldig e-mailadres in.";
+    }
+    if (fingerprint.includes("weak_password") || fingerprint.includes("password should be")) {
+      return "Kies een sterker wachtwoord van minimaal 8 tekens.";
+    }
+    if (
+      fingerprint.includes("error sending confirmation email")
+      || fingerprint.includes("email_send_failed")
+      || fingerprint.includes("failed to send")
+    ) {
+      return "De bevestigingsmail kon niet worden verstuurd. Probeer het later opnieuw.";
+    }
+    if (rawMessage) return rawMessage;
+    if (mode === "register") return "Account aanmaken is niet gelukt. Probeer het later opnieuw.";
+    if (mode === "forgot") return "De herstellink kon niet worden verstuurd. Probeer het later opnieuw.";
+    return "Inloggen is niet gelukt. Controleer je gegevens en probeer het opnieuw.";
+  }
+
   function openDialog(dialog) {
     if (!dialog) return;
     if (typeof dialog.showModal === "function") dialog.showModal();
@@ -7271,7 +7319,12 @@ globalThis.TariffCalculator = {
         openUpgrade({ accountReady: true });
       }
     } catch (error) {
-      authStatus.textContent = error.message || "Inloggen is niet gelukt.";
+      console.error("Supabase Auth-verzoek mislukt.", {
+        code: error?.code || "",
+        status: error?.status || "",
+        message: error?.message || ""
+      });
+      authStatus.textContent = authErrorText(error, authMode);
     } finally {
       authSubmit.disabled = false;
     }

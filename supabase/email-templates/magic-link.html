@@ -1,26 +1,63 @@
-<!--
-  Supabase-template: Magic link
-  Aanbevolen onderwerp: Log in bij Overuurtje.nl
-  Gebruikte variabelen: {{ .ConfirmationURL }}
-  Flow: directe Supabase magic-link; deze methode is voorbereid maar wordt momenteel niet door de app aangeroepen.
--->
 <!doctype html>
-<html lang="nl">
-  <body style="margin:0;padding:0;background:#f5f7f6;color:#1f2937;">
-    <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Gebruik deze persoonlijke link om veilig in te loggen.</div>
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#f5f7f6;">
-      <tr><td align="center" style="padding:32px 16px;"><table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:600px;background:#ffffff;border:1px solid #e8eaed;border-radius:20px;">
-        <tr><td style="padding:36px 40px 20px;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;"><div style="font-size:28px;line-height:34px;font-weight:800;color:#1f4335;">Over<span style="color:#ff6a1a;">uurtje</span>.nl</div><div style="margin-top:6px;font-size:13px;line-height:20px;color:#6b7280;">reken, check, klaar.</div></td></tr>
-        <tr><td style="padding:12px 40px 36px;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
-          <h1 style="margin:0 0 16px;font-size:24px;line-height:32px;">Log in bij Overuurtje.nl</h1>
-          <p style="margin:0 0 24px;font-size:16px;line-height:25px;">Met onderstaande persoonlijke link kun je veilig inloggen. Gebruik de link alleen zelf en deel hem niet met anderen.</p>
-          <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td bgcolor="#ff6a1a" style="border-radius:12px;"><a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 22px;font-size:16px;line-height:20px;font-weight:700;color:#ffffff;text-decoration:none;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">Inloggen</a></td></tr></table>
-          <p style="margin:26px 0 8px;font-size:13px;line-height:20px;color:#6b7280;">Werkt de knop niet? Kopieer dan deze link naar je browser:</p>
-          <p style="margin:0;font-size:13px;line-height:20px;word-break:break-all;"><a href="{{ .ConfirmationURL }}" style="color:#1f4335;text-decoration:underline;word-break:break-all;">{{ .ConfirmationURL }}</a></p>
-          <p style="margin:24px 0 0;font-size:14px;line-height:22px;color:#6b7280;">Heb je niet gevraagd om in te loggen? Dan kun je deze e-mail negeren.</p>
-        </td></tr>
-        <tr><td style="padding:22px 40px;border-top:1px solid #e8eaed;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:19px;color:#6b7280;">Overuurtje.nl is een dienst van The GearHarbor.</td></tr>
-      </table></td></tr>
+<html lang="nl" style="color-scheme:light only;supported-color-schemes:light only;">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light only">
+    <meta name="supported-color-schemes" content="light only">
+    <style>
+      :root { color-scheme: light only; supported-color-schemes: light only; }
+      @media only screen and (max-width:600px) {
+        .email-shell { padding:18px 10px !important; }
+        .email-header { padding:22px 24px !important; }
+        .email-content { padding:30px 24px 32px !important; }
+        .email-footer { padding:18px 24px !important; }
+      }
+      @media (prefers-color-scheme:dark) {
+        .email-bg, .email-body { background:#edf0ec !important; }
+        .email-card { background:#fffaf2 !important; border-color:#d7ded9 !important; }
+        .email-header, .email-footer { background:#f7efe3 !important; }
+        .email-content, .email-content h1, .email-content p { color:#173f36 !important; }
+        .email-muted { color:#68736f !important; }
+        .email-link-panel { background:#f2f5f1 !important; border-color:#dce3de !important; }
+        .email-button { color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; }
+      }
+    </style>
+  </head>
+  <body class="email-body" style="margin:0;padding:0;background:#edf0ec;color:#173f36;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Gebruik deze veilige link om in te loggen bij Overuurtje.nl.</div>
+    <table class="email-bg" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#edf0ec;">
+      <tr>
+        <td class="email-shell" align="center" style="padding:32px 16px;">
+          <table class="email-card" role="presentation" width="560" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:560px;background:#fffaf2;border:1px solid #d7ded9;border-radius:24px;overflow:hidden;box-shadow:0 18px 48px rgba(23,63,54,.10);">
+            <tr>
+              <td class="email-header" align="center" style="padding:24px 36px;background:#f7efe3;border-bottom:1px solid #e3d9cb;">
+                <img src="https://overuurtje.nl/overuurtje-logo.png" width="150" alt="Overuurtje.nl" style="display:block;width:150px;max-width:100%;height:auto;margin:0 auto;border:0;">
+              </td>
+            </tr>
+            <tr>
+              <td class="email-content" style="padding:36px 40px 38px;color:#173f36;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+                <p style="margin:0 0 8px;color:#e8510b;font-size:12px;line-height:18px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;">Veilig inloggen</p>
+                <h1 style="margin:0 0 16px;color:#173f36;font-size:28px;line-height:35px;font-weight:750;">Log in bij Overuurtje.nl</h1>
+                <p style="margin:0 0 26px;color:#173f36;font-size:16px;line-height:25px;">Gebruik onderstaande knop om veilig in te loggen. Deze link is alleen voor jou bedoeld.</p>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr><td align="center" bgcolor="#ff6a1a" style="border-radius:13px;">
+                    <a class="email-button" href="{{ .ConfirmationURL }}" style="display:block;padding:15px 22px;color:#ffffff!important;-webkit-text-fill-color:#ffffff;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:16px;line-height:20px;font-weight:750;text-align:center;text-decoration:none;">Inloggen</a>
+                  </td></tr>
+                </table>
+                <table class="email-link-panel" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;margin-top:24px;background:#f2f5f1;border:1px solid #dce3de;border-radius:12px;">
+                  <tr><td style="padding:14px 16px;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+                    <p class="email-muted" style="margin:0 0 6px;color:#68736f;font-size:12px;line-height:18px;">Werkt de knop niet? Open deze link:</p>
+                    <p style="margin:0;font-size:11px;line-height:17px;word-break:break-all;"><a href="{{ .ConfirmationURL }}" style="color:#1f4335;text-decoration:underline;word-break:break-all;">{{ .ConfirmationURL }}</a></p>
+                  </td></tr>
+                </table>
+                <p class="email-muted" style="margin:22px 0 0;color:#68736f;font-size:13px;line-height:21px;">Heb je geen inloglink aangevraagd? Dan kun je deze e-mail negeren.</p>
+              </td>
+            </tr>
+            <tr><td class="email-footer" align="center" style="padding:18px 36px;background:#f7efe3;border-top:1px solid #e3d9cb;color:#68736f;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:19px;">Overuurtje.nl is een dienst van The GearHarbor.</td></tr>
+          </table>
+        </td>
+      </tr>
     </table>
   </body>
 </html>

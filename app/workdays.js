@@ -191,6 +191,15 @@
     };
   }
 
+  async function openSharedTimesInCalculator(item) {
+    sessionStorage.setItem(
+      "overuurtjeSharedTimesImport",
+      JSON.stringify(takeoverSnapshot(item))
+    );
+    await shareService.accept(item.id);
+    location.href = "index.html?sharedTimes=1";
+  }
+
   async function findExistingEntry(item) {
     const opts = { mock: currentContext.subscription.isMock };
     const [workdays, projectDays] = await Promise.all([
@@ -205,9 +214,7 @@
   async function createFromShared() {
     const item = activeReceivedShare;
     if (!currentContext.isPro) {
-      sessionStorage.setItem("overuurtjeSharedTimesImport", JSON.stringify(takeoverSnapshot(item)));
-      await shareService.accept(item.id);
-      location.href = "index.html?sharedTimes=1";
+      await openSharedTimesInCalculator(item);
       return;
     }
     const saved = await workdayService.save(currentContext.auth.user.id, {
@@ -319,6 +326,12 @@
     status.textContent = "Uitnodiging accepteren…";
     try {
       const shareId = await shareService.claimInvite(token);
+      const inviteCanBeImported = activeInvite
+        && (activeInvite.shareMode === "direct" || Boolean(activeInvite.endTime));
+      if (!currentContext.isPro && inviteCanBeImported) {
+        await openSharedTimesInCalculator({ ...activeInvite, id: shareId });
+        return;
+      }
       const received = await shareService.listReceived();
       renderReceived(received);
       const shared = received.find((item) => item.id === shareId);

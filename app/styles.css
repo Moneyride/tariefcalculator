@@ -998,6 +998,13 @@ select {
   background: var(--orange-dark);
 }
 
+button.account-login:hover {
+  border-color: rgba(31, 67, 53, 0.28);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 7px 18px rgba(31, 67, 53, 0.07);
+  color: var(--accent-dark);
+}
+
 .account-user-menu {
   position: relative;
 }

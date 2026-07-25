@@ -139,7 +139,7 @@ Gebruik alleen de lokale regels tijdens ontwikkeling. Houd de productie-Site URL
 1. Open in Supabase: **Authentication > Email Templates**.
 2. Open **Confirm signup**.
 3. Vul het onderwerp uit de tabel hierboven in.
-4. Open `confirm-signup.html`, kopieer de volledige inhoud en plak die in het berichtveld.
+4. Klik in het berichtveld, gebruik `Cmd+A` om de volledige oude template te selecteren en plak daarna de volledige inhoud van `confirm-signup.html`. Plak de nieuwe template niet onder of binnen de bestaande HTML; dat veroorzaakt dubbele titels, knoppen en footers.
 5. Sla op.
 6. Herhaal dit voor:
    - Invite user;
@@ -211,7 +211,7 @@ Test bij voorkeur eerst met aparte testaccounts en niet met het enige beheeracco
 
 ## Onderhoud
 
-De comment bovenaan ieder HTML-bestand vermeldt de Supabase-templatenaam, onderwerpregel, gebruikte variabelen en verwachte flow. Controleer bij toekomstige authwijzigingen altijd eerst of:
+De templatenaam, onderwerpregel, gebruikte variabelen en verwachte flow staan in de tabellen in deze README. Deze metadata staat bewust niet als HTML-comment in de plakklare templates, omdat Supabase zulke comments gedeeltelijk zichtbaar kan maken in de uiteindelijke e-mail. Controleer bij toekomstige authwijzigingen altijd eerst of:
 
 1. de gebruikte Supabase-methode is veranderd;
 2. een nieuwe redirect- of callbackroute is toegevoegd;

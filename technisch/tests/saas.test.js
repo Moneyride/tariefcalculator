@@ -181,6 +181,15 @@ test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", asy
   assert.doesNotMatch(calculatorScript, /lockedEquipmentSettings/);
 });
 
+test("authfouten tonen nooit een leeg object aan de gebruiker", async () => {
+  const sessionUi = await readFile(path.join(rootDirectory, "app/saas/sessionUi.js"), "utf8");
+
+  assert.match(sessionUi, /function authErrorText/);
+  assert.ok(sessionUi.includes('!["{}", "[object Object]"].includes'));
+  assert.match(sessionUi, /De bevestigingsmail kon niet worden verstuurd/);
+  assert.ok(sessionUi.includes("authStatus.textContent = authErrorText(error, authMode)"));
+});
+
 test("werkfuncties bewaren afdeling en een eigen dagtarief", async () => {
   const context = await runService("app/saas/functionService.js", {
     OveruurtjeSupabase: { getClient: async () => null }
@@ -465,10 +474,66 @@ test("Deelservice maakt een uitnodiging zonder gebruikerszoekopdracht of financi
   assert.equal(JSON.stringify(calls[0]).includes("amount"), false);
 });
 
+test("Gratis ontvangers nemen gedeelde tijden over in de reguliere calculator", async () => {
+  const workdaysScript = await readFile(path.join(rootDirectory, "app/workdays.js"), "utf8");
+
+  assert.match(
+    workdaysScript,
+    /if \(!currentContext\.isPro && inviteCanBeImported\)\s*\{\s*await openSharedTimesInCalculator/
+  );
+  assert.match(
+    workdaysScript,
+    /sessionStorage\.setItem\(\s*"overuurtjeSharedTimesImport"/
+  );
+  assert.match(workdaysScript, /location\.href = "index\.html\?sharedTimes=1"/);
+  assert.doesNotMatch(
+    workdaysScript,
+    /if \(!currentContext\.isPro && inviteCanBeImported\)[\s\S]{0,300}workdayService\.save/
+  );
+});
+
 test("Projectdagen behouden hun id zodat deelrelaties niet verdwijnen bij opslaan", async () => {
   const service = await readFile(path.join(rootDirectory, "app/saas/projectService.js"), "utf8");
   const projectScript = await readFile(path.join(rootDirectory, "app/projects.js"), "utf8");
   assert.match(service, /\.upsert\(payload, \{ onConflict: "id" \}\)/);
   assert.doesNotMatch(service, /from\("project_days"\)\.delete\(\)\.eq\("project_id", projectId\).*if \(days\.length\)/s);
   assert.match(projectScript, /id: existing\.get\(workDate\)\?\.id \|\| null/);
+});
+
+test("Auth-mails zijn plakklare templates zonder zichtbare metadata of dubbele bevestiging", async () => {
+  const templateNames = [
+    "change-email.html",
+    "confirm-signup.html",
+    "email-changed.html",
+    "identity-linked.html",
+    "identity-removed.html",
+    "invite-user.html",
+    "magic-link.html",
+    "mfa-added.html",
+    "mfa-removed.html",
+    "password-changed.html",
+    "phone-changed.html",
+    "reauthentication.html",
+    "reset-password.html"
+  ];
+
+  for (const templateName of templateNames) {
+    const template = await readFile(
+      path.join(rootDirectory, "supabase/email-templates", templateName),
+      "utf8"
+    );
+    assert.equal(template.trimStart().startsWith("<!--"), false, `${templateName} bevat zichtbare metadata`);
+    assert.equal(template.includes("Flow:"), false, `${templateName} bevat zichtbare flowtekst`);
+  }
+
+  const confirmationTemplate = await readFile(
+    path.join(rootDirectory, "supabase/email-templates/confirm-signup.html"),
+    "utf8"
+  );
+  assert.equal((confirmationTemplate.match(/>Bevestig je account</g) || []).length, 1);
+  assert.equal((confirmationTemplate.match(/>Account bevestigen</g) || []).length, 1);
+  assert.equal(
+    (confirmationTemplate.match(/Overuurtje\.nl is een dienst van The GearHarbor\./g) || []).length,
+    1
+  );
 });
