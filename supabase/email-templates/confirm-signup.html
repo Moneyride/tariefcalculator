@@ -1,0 +1,34 @@
+<!--
+  Supabase-template: Confirm signup
+  Aanbevolen onderwerp: Bevestig je account bij Overuurtje.nl
+  Gebruikte variabelen: {{ .ConfirmationURL }}
+  Flow: directe Supabase-bevestigingslink; keert terug naar de toegestane emailRedirectTo en wordt daar door detectSessionInUrl verwerkt.
+-->
+<!doctype html>
+<html lang="nl">
+  <body style="margin:0;padding:0;background:#f5f7f6;color:#1f2937;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Bevestig je e-mailadres om Overuurtje.nl te gebruiken.</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#f5f7f6;">
+      <tr><td align="center" style="padding:32px 16px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:600px;background:#ffffff;border:1px solid #e8eaed;border-radius:20px;">
+          <tr><td style="padding:36px 40px 20px;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+            <div style="font-size:28px;line-height:34px;font-weight:800;color:#1f4335;">Over<span style="color:#ff6a1a;">uurtje</span>.nl</div>
+            <div style="margin-top:6px;font-size:13px;line-height:20px;color:#6b7280;">reken, check, klaar.</div>
+          </td></tr>
+          <tr><td style="padding:12px 40px 36px;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+            <h1 style="margin:0 0 16px;font-size:24px;line-height:32px;color:#1f2937;">Bevestig je account</h1>
+            <p style="margin:0 0 16px;font-size:16px;line-height:25px;">Bedankt voor het aanmaken van een account bij Overuurtje.nl.</p>
+            <p style="margin:0 0 24px;font-size:16px;line-height:25px;">Bevestig je e-mailadres. Daarna kun je inloggen en Overuurtje gebruiken.</p>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td bgcolor="#ff6a1a" style="border-radius:12px;">
+              <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 22px;font-size:16px;line-height:20px;font-weight:700;color:#ffffff;text-decoration:none;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">Account bevestigen</a>
+            </td></tr></table>
+            <p style="margin:26px 0 8px;font-size:13px;line-height:20px;color:#6b7280;">Werkt de knop niet? Kopieer dan deze link naar je browser:</p>
+            <p style="margin:0;font-size:13px;line-height:20px;word-break:break-all;"><a href="{{ .ConfirmationURL }}" style="color:#1f4335;text-decoration:underline;word-break:break-all;">{{ .ConfirmationURL }}</a></p>
+            <p style="margin:24px 0 0;font-size:14px;line-height:22px;color:#6b7280;">Heb je geen account aangemaakt? Dan kun je deze e-mail negeren.</p>
+          </td></tr>
+          <tr><td style="padding:22px 40px;border-top:1px solid #e8eaed;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:19px;color:#6b7280;">Overuurtje.nl is een dienst van The GearHarbor.</td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>

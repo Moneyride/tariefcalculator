@@ -4,6 +4,7 @@
   const auth = globalThis.OveruurtjeAuth;
   const profiles = globalThis.OveruurtjeProfiles;
   const subscriptions = globalThis.OveruurtjeSubscriptions;
+  const shares = globalThis.OveruurtjeShares;
   const config = globalThis.OveruurtjeConfig;
   let currentContext = Object.freeze({ auth: auth.getState(), profile: null, subscription: subscriptions.resolve(null), isPro: false });
   let contextPromiseResolve;
@@ -40,6 +41,10 @@
   const manageButtons = document.querySelectorAll("[data-subscription-manage]");
   let authMode = "login";
   let showProChoiceAfterAuth = false;
+  let authPurpose = "";
+  let pendingSignupEmail = "";
+  let notificationTimer = null;
+  let notificationUi = null;
 
   function showToast(message) {
     if (globalThis.OveruurtjeAnalytics?.showToast) {
@@ -65,19 +70,159 @@
     else dialog.removeAttribute("open");
   }
 
+  function notificationText(item) {
+    if (item.type === "workday_times_updated") return `${item.actorName} heeft de werktijden aangepast.`;
+    if (item.type === "workday_share_removed") return "Een gedeelde werkdag is niet langer beschikbaar.";
+    return `${item.actorName} heeft een werkdag met je gedeeld.`;
+  }
+
+  function ensureNotificationUi() {
+    if (notificationUi || !userMenu?.parentElement || !shares) return notificationUi;
+    const wrapper = document.createElement("div");
+    wrapper.className = "notification-menu";
+    wrapper.hidden = true;
+    wrapper.innerHTML = `
+      <button class="notification-button" type="button" aria-label="Notificaties" aria-expanded="false">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+          <path d="M10 21h4"></path>
+        </svg>
+        <span class="notification-badge" hidden>0</span>
+      </button>
+      <div class="notification-panel" hidden>
+        <div class="notification-panel-heading"><strong>Notificaties</strong><button type="button">Alles gelezen</button></div>
+        <div class="notification-list"></div>
+      </div>
+    `;
+    userMenu.parentElement.insertBefore(wrapper, userMenu);
+    const button = wrapper.querySelector(".notification-button");
+    const panel = wrapper.querySelector(".notification-panel");
+    button.addEventListener("click", async () => {
+      const opening = panel.hidden;
+      panel.hidden = !opening;
+      button.setAttribute("aria-expanded", String(opening));
+      if (opening) {
+        await refreshNotifications();
+        await shares.markNotificationsRead().catch(() => {});
+        wrapper.querySelector(".notification-badge").hidden = true;
+      }
+    });
+    wrapper.querySelector(".notification-panel-heading button").addEventListener("click", async () => {
+      await shares.markNotificationsRead();
+      await refreshNotifications();
+    });
+    notificationUi = wrapper;
+    return wrapper;
+  }
+
+  async function refreshNotifications() {
+    if (!auth.getState().user || !shares) return;
+    const wrapper = ensureNotificationUi();
+    if (!wrapper) return;
+    try {
+      const items = await shares.listNotifications();
+      const badge = wrapper.querySelector(".notification-badge");
+      const unread = items.filter((item) => !item.readAt).length;
+      badge.textContent = unread > 9 ? "9+" : String(unread);
+      badge.hidden = unread === 0;
+      const list = wrapper.querySelector(".notification-list");
+      if (!items.length) {
+        const empty = document.createElement("p");
+        empty.className = "notification-empty";
+        empty.textContent = "Nog geen notificaties.";
+        list.replaceChildren(empty);
+        return;
+      }
+      list.replaceChildren(...items.map((item) => {
+        const link = document.createElement(item.shareId ? "a" : "div");
+        link.className = `notification-item${item.readAt ? "" : " is-unread"}`;
+        if (item.shareId) link.href = `${config.workdaysUrl}?shared=${encodeURIComponent(item.shareId)}`;
+        const copy = document.createElement("span");
+        copy.textContent = notificationText(item);
+        const time = document.createElement("small");
+        time.textContent = new Intl.DateTimeFormat("nl-NL", {
+          day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
+        }).format(new Date(item.createdAt));
+        link.append(copy, time);
+        return link;
+      }));
+    } catch (error) {
+      console.warn("Notificaties konden niet worden geladen.", error);
+    }
+  }
+
+  function updateNotificationAccess(user) {
+    const wrapper = ensureNotificationUi();
+    if (wrapper) wrapper.hidden = !user;
+    clearInterval(notificationTimer);
+    notificationTimer = null;
+    if (!user || !shares) return;
+    refreshNotifications();
+    notificationTimer = setInterval(refreshNotifications, 60000);
+  }
+
+  function ensureSignupConfirmationDialog() {
+    let dialog = document.querySelector("#signup-confirmation-dialog");
+    if (dialog) return dialog;
+
+    dialog = document.createElement("dialog");
+    dialog.className = "saas-dialog signup-confirmation-dialog";
+    dialog.id = "signup-confirmation-dialog";
+    dialog.setAttribute("aria-labelledby", "signup-confirmation-title");
+    dialog.innerHTML = `
+      <button class="dialog-close" type="button" data-signup-confirmation-close aria-label="Sluiten">&times;</button>
+      <div class="signup-confirmation-icon" aria-hidden="true">&#9993;</div>
+      <p class="dialog-eyebrow">Account aangemaakt</p>
+      <h2 id="signup-confirmation-title">Controleer je inbox</h2>
+      <p class="signup-confirmation-copy">
+        We hebben een bevestigingsmail gestuurd naar
+        <strong id="signup-confirmation-email"></strong>.
+        Bevestig eerst je e-mailadres en log daarna in.
+      </p>
+      <button class="saas-primary-button" id="signup-confirmation-login" type="button">Naar inloggen</button>
+    `;
+    document.body.append(dialog);
+
+    dialog.querySelector("[data-signup-confirmation-close]")?.addEventListener("click", () => closeDialog(dialog));
+    dialog.querySelector("#signup-confirmation-login")?.addEventListener("click", () => {
+      closeDialog(dialog);
+      openAuth("login");
+      authEmail.value = pendingSignupEmail;
+      authPassword.focus();
+    });
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) closeDialog(dialog);
+    });
+    return dialog;
+  }
+
+  function openSignupConfirmation(email) {
+    pendingSignupEmail = email;
+    const dialog = ensureSignupConfirmationDialog();
+    dialog.querySelector("#signup-confirmation-email").textContent = email;
+    closeDialog(authDialog);
+    openDialog(dialog);
+    dialog.querySelector("#signup-confirmation-login")?.focus();
+  }
+
   function setAuthMode(mode) {
     authMode = ["login", "register", "forgot"].includes(mode) ? mode : "login";
     const isForgot = authMode === "forgot";
     const isRegister = authMode === "register";
 
+    const isShareInvite = authPurpose === "share";
     authTitle.textContent = isForgot
       ? "Wachtwoord herstellen"
-      : (isRegister && showProChoiceAfterAuth ? "Account maken voor Pro" : (isRegister ? "Account maken" : "Inloggen"));
+      : (isShareInvite
+        ? (isRegister ? "Account maken om tijden te ontvangen" : "Inloggen om tijden te ontvangen")
+        : (isRegister && showProChoiceAfterAuth ? "Account maken voor Pro" : (isRegister ? "Account maken" : "Inloggen")));
     authIntro.textContent = isForgot
       ? "We sturen een veilige herstellink naar je e-mailadres."
-      : (isRegister && showProChoiceAfterAuth
+      : (isShareInvite
+        ? "Log in of maak gratis een account. Daarna kun je de gedeelde tijden bekijken en overnemen."
+        : (isRegister && showProChoiceAfterAuth
         ? "Voor Pro heb je eerst een gratis account nodig. Na het aanmelden kies je direct Pro of ga je verder met Free."
-        : (isRegister ? "Maak een account om Overuurtje straks op al je apparaten te gebruiken." : "Log in bij je Overuurtje-account."));
+        : (isRegister ? "Maak een account om Overuurtje straks op al je apparaten te gebruiken." : "Log in bij je Overuurtje-account.")));
     authPasswordField.hidden = isForgot;
     authPassword.required = !isForgot;
     authPassword.autocomplete = isRegister ? "new-password" : "current-password";
@@ -90,12 +235,13 @@
     authStatus.textContent = "";
   }
 
-  function openAuth(mode = "login", { continueToPro = false } = {}) {
+  function openAuth(mode = "login", { continueToPro = false, purpose = "" } = {}) {
     if (!auth.getState().available && !globalThis.OveruurtjeSupabase.isConfigured()) {
       showToast("Accounts worden actief zodra Supabase is gekoppeld.");
       return;
     }
     showProChoiceAfterAuth = continueToPro;
+    authPurpose = purpose;
     setAuthMode(mode);
     openDialog(authDialog);
     authEmail.focus();
@@ -109,6 +255,7 @@
       button.hidden = Boolean(user);
     });
     userMenu.hidden = !user;
+    updateNotificationAccess(user);
     if (!user) return;
 
     const label = context.profile?.displayName || user.email || "Account";
@@ -167,9 +314,10 @@
         : await auth.signIn(email, authPassword.value);
       if (response.error) throw response.error;
 
-      if (authMode === "register" && !response.data.session) {
-        sessionStorage.setItem("overuurtjePostSignupChoice", "true");
-        authStatus.textContent = "Controleer je e-mail om je account te bevestigen. Log daarna in om Pro te kiezen of verder te gaan met Free.";
+      if (authMode === "register" && !response.data?.session) {
+        if (showProChoiceAfterAuth) sessionStorage.setItem("overuurtjePostSignupChoice", "true");
+        authForm.reset();
+        openSignupConfirmation(email);
         return;
       }
 
@@ -177,7 +325,7 @@
       closeDialog(authDialog);
       authForm.reset();
       showToast(completedRegistration ? "Account aangemaakt." : "Je bent ingelogd.");
-      if (completedRegistration || showProChoiceAfterAuth || sessionStorage.getItem("overuurtjePostSignupChoice") === "true") {
+      if (showProChoiceAfterAuth || sessionStorage.getItem("overuurtjePostSignupChoice") === "true") {
         sessionStorage.removeItem("overuurtjePostSignupChoice");
         showProChoiceAfterAuth = false;
         openUpgrade({ accountReady: true });
@@ -246,7 +394,13 @@
       userDropdown.hidden = true;
       userMenuButton?.setAttribute("aria-expanded", "false");
     }
+    if (notificationUi && !event.target.closest(".notification-menu")) {
+      notificationUi.querySelector(".notification-panel").hidden = true;
+      notificationUi.querySelector(".notification-button").setAttribute("aria-expanded", "false");
+    }
   });
+  window.addEventListener("focus", refreshNotifications);
+  document.addEventListener("overuurtje:shares-changed", refreshNotifications);
 
   logoutButtons.forEach((button) => button.addEventListener("click", async () => {
     const { error } = await auth.signOut();

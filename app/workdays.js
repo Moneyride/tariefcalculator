@@ -3,6 +3,9 @@
 
   const sessionUi = globalThis.OveruurtjeSessionUI;
   const workdayService = globalThis.OveruurtjeWorkdays;
+  const projectService = globalThis.OveruurtjeProjects;
+  const shareService = globalThis.OveruurtjeShares;
+  const shareUi = globalThis.OveruurtjeShareUI;
   const calculateTariff = globalThis.TariffCalculator.calculateTariff;
   const loggedOut = document.querySelector("#workdays-logged-out");
   const upgrade = document.querySelector("#workdays-upgrade");
@@ -10,11 +13,21 @@
   const empty = document.querySelector("#workdays-empty");
   const groups = document.querySelector("#workdays-groups");
   const deleteDialog = document.querySelector("#delete-workday-dialog");
+  const receivedSection = document.querySelector("#received-workdays");
+  const receivedList = document.querySelector("#received-workdays-list");
+  const receivedCount = document.querySelector("#received-workdays-count");
+  const sharedDetailDialog = document.querySelector("#shared-workday-detail-dialog");
+  const sharedExistingDialog = document.querySelector("#shared-existing-workday-dialog");
+  const sharedInviteDialog = document.querySelector("#shared-invite-dialog");
   const euro = new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" });
   const dateFormat = new Intl.DateTimeFormat("nl-NL", { weekday: "short", day: "numeric", month: "long", year: "numeric" });
   const monthFormat = new Intl.DateTimeFormat("nl-NL", { month: "long", year: "numeric" });
   let currentContext = null;
   let pendingDeleteId = null;
+  let receivedShares = [];
+  let activeReceivedShare = null;
+  let existingTakeoverEntry = null;
+  let activeInvite = null;
 
   function parseDate(value) {
     const [year, month, day] = value.split("-").map(Number);
@@ -96,6 +109,7 @@
             <span class="workday-status"></span>
             <span class="workday-arrow" aria-hidden="true">→</span>
           </a>
+          <button class="workday-share-button" type="button">Deel met collega's</button>
           <button class="workday-delete-button" type="button" aria-label="Werkdag verwijderen" title="Werkdag verwijderen">&times;</button>
         `;
         article.querySelector(".workday-date").textContent = dateFormat.format(parseDate(workday.workDate));
@@ -106,6 +120,9 @@
         const status = article.querySelector(".workday-status");
         status.textContent = snapshot.endTime ? "Afgerond" : "Concept";
         status.classList.toggle("is-complete", Boolean(snapshot.endTime));
+        article.querySelector(".workday-share-button").addEventListener("click", () => {
+          shareUi.open({ sourceType: "workday", sourceId: workday.id });
+        });
         article.querySelector(".workday-delete-button").addEventListener("click", () => {
           pendingDeleteId = workday.id;
           openDialog(deleteDialog);
@@ -117,24 +134,261 @@
     }));
   }
 
+  function renderReceived(items) {
+    receivedShares = items;
+    receivedSection.hidden = items.length === 0;
+    receivedCount.textContent = String(items.length);
+    receivedList.replaceChildren(...items.map((item) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "received-workday-item";
+      button.innerHTML = `
+        <span class="share-avatar"></span>
+        <span class="received-workday-copy">
+          <strong></strong>
+          <span class="received-workday-project"></span>
+          <small></small>
+        </span>
+        <span class="received-workday-status"></span>
+        <span aria-hidden="true">→</span>
+      `;
+      button.querySelector(".share-avatar").textContent = item.ownerName.charAt(0).toUpperCase();
+      button.querySelector("strong").textContent = `${item.ownerName} · ${dateFormat.format(parseDate(item.workDate))}`;
+      const project = button.querySelector(".received-workday-project");
+      project.textContent = item.projectName;
+      project.hidden = !item.projectName;
+      button.querySelector("small").textContent = `${item.startTime || "-"} – ${item.endTime || "eindtijd open"}`;
+      const status = button.querySelector(".received-workday-status");
+      status.textContent = item.acceptedAt ? "Overgenomen" : "Nieuw";
+      status.classList.toggle("is-complete", Boolean(item.acceptedAt));
+      button.addEventListener("click", () => openReceived(item));
+      return button;
+    }));
+  }
+
+  function openReceived(item) {
+    activeReceivedShare = item;
+    document.querySelector("#shared-workday-title").textContent = `${item.ownerName} heeft een werkdag gedeeld`;
+    const project = sharedDetailDialog.querySelector("[data-shared-project]");
+    project.textContent = item.projectName ? `Project: ${item.projectName}` : "";
+    project.hidden = !item.projectName;
+    sharedDetailDialog.querySelector("[data-shared-date]").textContent = dateFormat.format(parseDate(item.workDate));
+    sharedDetailDialog.querySelector("[data-shared-times]").textContent = `${item.startTime || "-"} – ${item.endTime || "eindtijd nog niet ingevuld"}`;
+    const message = sharedDetailDialog.querySelector("[data-shared-message]");
+    message.textContent = item.optionalMessage;
+    message.hidden = !item.optionalMessage;
+    openDialog(sharedDetailDialog);
+  }
+
+  function takeoverSnapshot(item) {
+    return {
+      schemaVersion: 1,
+      date: item.workDate,
+      startTime: item.startTime,
+      endTime: item.endTime,
+      result: null,
+      importedFromShare: item.id
+    };
+  }
+
+  async function findExistingEntry(item) {
+    const opts = { mock: currentContext.subscription.isMock };
+    const [workdays, projectDays] = await Promise.all([
+      workdayService.listByDate(currentContext.auth.user.id, item.workDate, opts),
+      projectService.listDaysByDate(currentContext.auth.user.id, item.workDate, opts)
+    ]);
+    if (projectDays.length) return { kind: "project", ...projectDays[0] };
+    if (workdays.length) return { kind: "workday", workday: workdays[0] };
+    return null;
+  }
+
+  async function createFromShared() {
+    const item = activeReceivedShare;
+    if (!currentContext.isPro) {
+      sessionStorage.setItem("overuurtjeSharedTimesImport", JSON.stringify(takeoverSnapshot(item)));
+      await shareService.accept(item.id);
+      location.href = "index.html?sharedTimes=1";
+      return;
+    }
+    const saved = await workdayService.save(currentContext.auth.user.id, {
+      workDate: item.workDate,
+      calculationData: takeoverSnapshot(item)
+    }, { mock: currentContext.subscription.isMock });
+    await shareService.accept(item.id);
+    location.href = `index.html?workday=${encodeURIComponent(saved.id)}`;
+  }
+
+  async function updateFromShared(entry) {
+    const item = activeReceivedShare;
+    if (entry.kind === "project") {
+      const full = await projectService.get(currentContext.auth.user.id, entry.project.id, {
+        mock: currentContext.subscription.isMock
+      });
+      full.days = full.days.map((day) => day.id === entry.day.id
+        ? {
+          ...day,
+          calculationData: {
+            ...day.calculationData,
+            startTime: item.startTime,
+            endTime: item.endTime
+          }
+        }
+        : day);
+      await projectService.replaceDays(currentContext.auth.user.id, entry.project.id, full.days, {
+        mock: currentContext.subscription.isMock
+      });
+      await shareService.accept(item.id);
+      location.href = `projects.html?project=${encodeURIComponent(entry.project.id)}&day=${encodeURIComponent(entry.day.id)}`;
+      return;
+    }
+    const snapshot = {
+      ...entry.workday.calculationData,
+      date: item.workDate,
+      startTime: item.startTime,
+      endTime: item.endTime,
+      result: null,
+      importedFromShare: item.id
+    };
+    await workdayService.save(currentContext.auth.user.id, {
+      id: entry.workday.id,
+      workDate: item.workDate,
+      calculationData: snapshot
+    }, { mock: currentContext.subscription.isMock });
+    await shareService.accept(item.id);
+    location.href = `index.html?workday=${encodeURIComponent(entry.workday.id)}`;
+  }
+
+  async function beginTakeover() {
+    try {
+      if (!currentContext?.isPro) {
+        await createFromShared();
+        return;
+      }
+      existingTakeoverEntry = await findExistingEntry(activeReceivedShare);
+      if (existingTakeoverEntry) {
+        closeDialog(sharedDetailDialog);
+        openDialog(sharedExistingDialog);
+      } else {
+        await createFromShared();
+      }
+    } catch (error) {
+      sessionUi.showToast(error.message || "Werktijden overnemen is niet gelukt.");
+    }
+  }
+
+  function renderInvite(invite, context) {
+    activeInvite = invite;
+    document.querySelector("#shared-invite-title").textContent = `${invite.ownerName} wil graag tijden met je delen`;
+    const project = sharedInviteDialog.querySelector("[data-invite-project]");
+    project.textContent = invite.projectName ? `Project: ${invite.projectName}` : "";
+    project.hidden = !invite.projectName;
+    sharedInviteDialog.querySelector("[data-invite-date]").textContent = dateFormat.format(parseDate(invite.workDate));
+    sharedInviteDialog.querySelector("[data-invite-times]").textContent = `${invite.startTime || "-"} – ${invite.endTime || "eindtijd nog niet ingevuld"}`;
+    const message = sharedInviteDialog.querySelector("[data-invite-message]");
+    message.textContent = invite.optionalMessage;
+    message.hidden = !invite.optionalMessage;
+    const loggedOutActions = sharedInviteDialog.querySelector("[data-invite-logged-out]");
+    const acceptButton = sharedInviteDialog.querySelector("[data-invite-accept]");
+    loggedOutActions.hidden = Boolean(context.auth.user);
+    acceptButton.hidden = !context.auth.user;
+    sharedInviteDialog.querySelector("[data-invite-status]").textContent = invite.available
+      ? ""
+      : "Deze uitnodiging is niet meer beschikbaar.";
+    acceptButton.disabled = !invite.available;
+    openDialog(sharedInviteDialog);
+  }
+
+  async function loadInvite(context) {
+    const token = new URLSearchParams(location.search).get("invite");
+    if (!token || context.subscription.isMock) return;
+    try {
+      const invite = await shareService.previewInvite(token);
+      if (!invite) throw new Error("Deze uitnodiging is niet gevonden.");
+      renderInvite(invite, context);
+    } catch (error) {
+      sessionUi.showToast(error.message || "De uitnodiging kon niet worden geopend.");
+    }
+  }
+
+  async function acceptInvite() {
+    const token = new URLSearchParams(location.search).get("invite");
+    if (!token || !currentContext?.auth.user) return;
+    const status = sharedInviteDialog.querySelector("[data-invite-status]");
+    const button = sharedInviteDialog.querySelector("[data-invite-accept]");
+    button.disabled = true;
+    status.textContent = "Uitnodiging accepteren…";
+    try {
+      const shareId = await shareService.claimInvite(token);
+      const received = await shareService.listReceived();
+      renderReceived(received);
+      const shared = received.find((item) => item.id === shareId);
+      const url = new URL(location.href);
+      url.searchParams.delete("invite");
+      if (shared) url.searchParams.set("shared", shareId);
+      history.replaceState({}, "", url);
+      closeDialog(sharedInviteDialog);
+      if (shared) openReceived(shared);
+      else sessionUi.showToast("Uitnodiging geaccepteerd. Je krijgt een melding zodra de eindtijd bekend is.");
+    } catch (error) {
+      status.textContent = error.message || "Accepteren is niet gelukt.";
+      button.disabled = false;
+    }
+  }
+
   async function load(context) {
     currentContext = context;
     const user = context.auth.user;
     loggedOut.hidden = Boolean(user);
     upgrade.hidden = !user || context.isPro;
     content.hidden = !user || !context.isPro;
-    if (!user || !context.isPro) return;
+    if (!user) {
+      renderReceived([]);
+      await loadInvite(context);
+      return;
+    }
     try {
-      const items = await workdayService.list(user.id, { mock: context.subscription.isMock });
-      render(items);
+      const [items, received] = await Promise.all([
+        context.isPro
+          ? workdayService.list(user.id, { mock: context.subscription.isMock })
+          : Promise.resolve([]),
+        context.subscription.isMock ? Promise.resolve([]) : shareService.listReceived()
+      ]);
+      if (context.isPro) render(items);
+      renderReceived(received);
+      await loadInvite(context);
+      const requestedShare = new URLSearchParams(location.search).get("shared");
+      if (requestedShare) {
+        const item = received.find((share) => share.id === requestedShare);
+        if (item) openReceived(item);
+      }
     } catch (error) {
       sessionUi.showToast(error.message || "Werkdagen konden niet worden geladen.");
     }
   }
 
   document.querySelector("#workdays-login").addEventListener("click", () => sessionUi.openAuth("login"));
+  sharedInviteDialog.querySelector("[data-invite-login]").addEventListener("click", () => {
+    closeDialog(sharedInviteDialog);
+    sessionUi.openAuth("login", { purpose: "share" });
+  });
+  sharedInviteDialog.querySelector("[data-invite-register]").addEventListener("click", () => {
+    closeDialog(sharedInviteDialog);
+    sessionUi.openAuth("register", { purpose: "share" });
+  });
+  sharedInviteDialog.querySelector("[data-invite-accept]").addEventListener("click", acceptInvite);
+  sharedInviteDialog.querySelector("[data-shared-invite-close]").addEventListener("click", () => closeDialog(sharedInviteDialog));
   document.querySelector("#cancel-workday-delete").addEventListener("click", () => closeDialog(deleteDialog));
   document.querySelector("#keep-workday").addEventListener("click", () => closeDialog(deleteDialog));
+  document.querySelector("#take-over-shared-times").addEventListener("click", beginTakeover);
+  document.querySelector("#update-from-shared-times").addEventListener("click", () => {
+    if (existingTakeoverEntry) updateFromShared(existingTakeoverEntry);
+  });
+  document.querySelector("#new-from-shared-times").addEventListener("click", createFromShared);
+  document.querySelectorAll("[data-shared-detail-close]").forEach((button) => button.addEventListener("click", () => closeDialog(sharedDetailDialog)));
+  document.querySelectorAll("[data-shared-existing-close]").forEach((button) => button.addEventListener("click", () => closeDialog(sharedExistingDialog)));
+  document.addEventListener("overuurtje:shares-changed", () => {
+    if (currentContext) load(currentContext);
+  });
   document.querySelector("#confirm-workday-delete").addEventListener("click", async () => {
     if (!pendingDeleteId || !currentContext?.auth.user) return;
     try {

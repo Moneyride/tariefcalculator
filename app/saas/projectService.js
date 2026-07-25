@@ -50,6 +50,44 @@
     return projectRow ? { project: normalizeProject(projectRow), days: (dayRows || []).map(normalizeDay) } : null;
   }
 
+  async function listDaysByDate(userId, workDate, options = {}) {
+    if (isMock(options)) {
+      const store = readMock()[userId] || { projects: {}, days: {} };
+      return Object.values(store.days || {})
+        .filter((day) => day.workDate === workDate)
+        .map((day) => ({ day, project: store.projects?.[day.projectId] }))
+        .filter((entry) => entry.project)
+        .sort((a, b) => b.project.updatedAt.localeCompare(a.project.updatedAt));
+    }
+
+    const db = await client();
+    const { data: dayRows, error: dayError } = await db.from("project_days")
+      .select(DAY_COLUMNS)
+      .eq("user_id", userId)
+      .eq("work_date", workDate)
+      .order("updated_at", { ascending: false });
+    if (dayError) throw dayError;
+    if (!dayRows?.length) return [];
+
+    const projectIds = [...new Set(dayRows.map((day) => day.project_id))];
+    const { data: projectRows, error: projectError } = await db.from("projects")
+      .select(PROJECT_COLUMNS)
+      .eq("user_id", userId)
+      .in("id", projectIds);
+    if (projectError) throw projectError;
+
+    const projectsById = new Map((projectRows || []).map((project) => [
+      project.id,
+      normalizeProject(project)
+    ]));
+    return dayRows
+      .map((day) => ({
+        day: normalizeDay(day),
+        project: projectsById.get(day.project_id)
+      }))
+      .filter((entry) => entry.project);
+  }
+
   async function saveProject(userId, values, options = {}) {
     const now = new Date().toISOString();
     if (isMock(options)) {
@@ -75,10 +113,30 @@
       all[userId] = store; writeMock(all); return get(userId, projectId, options);
     }
     const db = await client();
-    const { error: deleteError } = await db.from("project_days").delete().eq("project_id", projectId).eq("user_id", userId);
-    if (deleteError) throw deleteError;
+    const { data: existingRows, error: existingError } = await db.from("project_days")
+      .select("id")
+      .eq("project_id", projectId)
+      .eq("user_id", userId);
+    if (existingError) throw existingError;
+    const incomingIds = new Set(days.map((day) => day.id).filter(Boolean));
+    const removedIds = (existingRows || []).map((row) => row.id).filter((id) => !incomingIds.has(id));
+    if (removedIds.length) {
+      const { error: deleteError } = await db.from("project_days")
+        .delete()
+        .eq("project_id", projectId)
+        .eq("user_id", userId)
+        .in("id", removedIds);
+      if (deleteError) throw deleteError;
+    }
     if (days.length) {
-      const { error } = await db.from("project_days").insert(days.map((day) => ({ ...(day.id ? { id: day.id } : {}), project_id: projectId, user_id: userId, work_date: day.workDate, calculation_data: day.calculationData || {} })));
+      const payload = days.map((day) => ({
+        ...(day.id ? { id: day.id } : {}),
+        project_id: projectId,
+        user_id: userId,
+        work_date: day.workDate,
+        calculation_data: day.calculationData || {}
+      }));
+      const { error } = await db.from("project_days").upsert(payload, { onConflict: "id" });
       if (error) throw error;
     }
     await db.from("projects").update({ updated_at: new Date().toISOString() }).eq("id", projectId).eq("user_id", userId);
@@ -96,5 +154,14 @@
     if (error) throw error;
   }
 
-  globalThis.OveruurtjeProjects = Object.freeze({ normalizeProject, normalizeDay, list, get, saveProject, replaceDays, remove });
+  globalThis.OveruurtjeProjects = Object.freeze({
+    normalizeProject,
+    normalizeDay,
+    list,
+    get,
+    listDaysByDate,
+    saveProject,
+    replaceDays,
+    remove
+  });
 })();

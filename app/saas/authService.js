@@ -51,10 +51,14 @@
   }
 
   function signUp(email, password) {
+    const currentUrl = new URL(location.href);
+    const emailRedirectTo = currentUrl.searchParams.has("invite")
+      ? currentUrl.href
+      : config.accountUrl;
     return withClient((client) => client.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: config.accountUrl }
+      options: { emailRedirectTo }
     }));
   }
 

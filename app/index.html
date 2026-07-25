@@ -43,21 +43,27 @@
     <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260718c">
     <link rel="manifest" href="site.webmanifest?v=20260724a">
-    <link rel="stylesheet" href="styles.css?v=20260724c">
+    <link rel="stylesheet" href="styles.css?v=20260725c">
     <script src="runtime-config.js?v=20260722a" defer></script>
     <script src="saas/config.js?v=20260724a" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
     <script src="saas/authService.js?v=20260722a" defer></script>
     <script src="saas/profileService.js?v=20260722o" defer></script>
     <script src="saas/settingsService.js?v=20260723a" defer></script>
+    <script src="saas/functionService.js?v=20260725a" defer></script>
     <script src="saas/equipmentService.js?v=20260722a" defer></script>
+    <script src="saas/projectService.js?v=20260725a" defer></script>
     <script src="saas/workdayService.js?v=20260724a" defer></script>
+    <script src="saas/shareService.js?v=20260725a" defer></script>
     <script src="saas/subscriptionService.js?v=20260722d" defer></script>
     <script src="saas/featureGate.js?v=20260722a" defer></script>
     <script src="calculator.js?v=20260722a" defer></script>
     <script src="analytics.js?v=20260722q" defer></script>
-    <script src="saas/sessionUi.js?v=20260724a" defer></script>
-    <script src="app.js?v=20260724b" defer></script>
+    <script src="saas/sessionUi.js?v=20260725c" defer></script>
+    <script src="saas/shareUi.js?v=20260725a" defer></script>
+    <script src="selectUi.js?v=20260725a" defer></script>
+    <script src="timePicker.js?v=20260725a" defer></script>
+    <script src="app.js?v=20260725c" defer></script>
     <script src="pwa.js?v=20260724a" defer></script>
   </head>
   <body>
@@ -89,8 +95,9 @@
       <section class="calculator-grid">
         <form class="input-panel" id="calculator-form">
           <section class="form-section department-section">
-            <h3>Afdeling</h3>
-            <fieldset class="department-switch" aria-label="Afdeling kiezen">
+            <h3>Functie</h3>
+            <p class="active-function-name" id="active-function-name" hidden></p>
+            <fieldset class="department-switch" aria-label="Functie kiezen">
               <label class="department-choice">
                 <input type="radio" name="department" value="camera" checked>
                 <span>Camera</span>
@@ -308,6 +315,10 @@
               </span>
               <small data-workday-save-badge>Pro</small>
             </button>
+            <button class="saas-secondary-button share-current-workday-button" type="button" id="share-current-workday" hidden>
+              <span aria-hidden="true">&#8599;</span>
+              Deel met collega's
+            </button>
           </div>
         </section>
 
@@ -464,7 +475,9 @@
       <p class="pro-dialog-intro" id="pro-intro">Voor Pro heb je een account nodig. Zo blijven je abonnement en instellingen veilig aan jou gekoppeld.</p>
       <ul class="pro-benefits">
         <li><strong>Werkdagen</strong> - bewaar je begintijd en rond je werkdag later af</li>
+        <li>Deel werktijden veilig met collega's binnen Overuurtje</li>
         <li>Projecten met meerdere dagen of periodes</li>
+        <li>Functies met een eigen afdeling en dagtarief</li>
         <li>Persoonlijke instellingen opslaan</li>
         <li>Synchronisatie tussen apparaten</li>
         <li>Eigen apparatuur en toeslagen</li>
@@ -479,7 +492,7 @@
       <button class="dialog-close" type="button" data-workday-dialog-close aria-label="Sluiten">&times;</button>
       <p class="dialog-eyebrow">Werkdag opslaan</p>
       <h2 id="duplicate-workday-title">Voor deze datum bestaat al een opgeslagen werkdag.</h2>
-      <p>Wil je de bestaande werkdag openen of een tweede werkdag voor dezelfde datum maken?</p>
+      <p id="duplicate-workday-copy">Wil je de bestaande werkdag openen of een tweede werkdag voor dezelfde datum maken?</p>
       <div class="dialog-action-stack">
         <button class="saas-primary-button" id="open-existing-workday" type="button">Doorgaan met bewerken</button>
         <button class="saas-secondary-button" id="create-duplicate-workday" type="button">Nieuwe werkdag op deze datum</button>
@@ -490,7 +503,7 @@
       <button class="dialog-close" type="button" data-workday-dialog-close aria-label="Sluiten">&times;</button>
       <p class="dialog-eyebrow">Vandaag</p>
       <h2 id="today-workday-title">Je hebt vandaag al een werkdag opgeslagen.</h2>
-      <p>Wil je verdergaan met het bewerken van deze werkdag?</p>
+      <p id="today-workday-copy">Wil je verdergaan met het bewerken van deze werkdag?</p>
       <div class="dialog-action-stack">
         <button class="saas-primary-button" id="continue-today-workday" type="button">Verder met deze werkdag</button>
         <button class="saas-secondary-button" id="new-today-calculation" type="button">Nieuwe berekening</button>

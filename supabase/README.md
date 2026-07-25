@@ -8,9 +8,11 @@
 6. Run `migrations/202607220003_subscription_period.sql` to store the paid-through date and scheduled cancellation state supplied by Shopify.
 7. Run `migrations/202607240001_shopify_webhooks.sql` before enabling the Shopify webhooks.
 8. Run `migrations/202607240002_workdays.sql` to add Pro-only standalone workday snapshots.
-9. In Authentication > URL configuration, set the production Site URL to `https://overuurtje.nl`.
-10. Add `https://overuurtje.nl/account.html` to the allowed redirect URLs.
-11. Add the project URL and publishable/anon key to Netlify as `SUPABASE_URL` and `SUPABASE_ANON_KEY`.
+9. Run `migrations/202607250001_work_functions.sql` to add Pro functions with their own department and day rate.
+10. Run `migrations/202607250002_workday_sharing.sql` to add redacted workday sharing and in-app notifications.
+11. In Authentication > URL configuration, set the production Site URL to `https://overuurtje.nl`.
+12. Add `https://overuurtje.nl/account.html` to the allowed redirect URLs.
+13. Add the project URL and publishable/anon key to Netlify as `SUPABASE_URL` and `SUPABASE_ANON_KEY`.
 
 The browser key is public by design. Never put the Supabase service-role key in Netlify build variables or frontend code.
 

@@ -4,6 +4,7 @@
   const sessionUi = globalThis.OveruurtjeSessionUI;
   const auth = globalThis.OveruurtjeAuth;
   const settingsService = globalThis.OveruurtjeSettings;
+  const functionService = globalThis.OveruurtjeFunctions;
   const equipmentService = globalThis.OveruurtjeEquipment;
   const projectService = globalThis.OveruurtjeProjects;
   const workdayService = globalThis.OveruurtjeWorkdays;
@@ -29,6 +30,13 @@
   const mockControl = document.querySelector("#mock-plan-control");
   const mockPlan = document.querySelector("#mock-plan");
   const roninRow = document.querySelector("#account-ronin-row");
+  const compactFunctionSetting = document.querySelector("#compact-function-setting");
+  const functionSelect = document.querySelector("#account-function-select");
+  const removeFunctionButton = document.querySelector("#remove-function-button");
+  const defaultDayRateLabel = document.querySelector("#default-day-rate-label");
+  const addFunctionButton = document.querySelector("#add-function-button");
+  const addFunctionForm = document.querySelector("#add-function-form");
+  const newFunctionName = document.querySelector("#new-function-name");
   const equipmentSection = document.querySelector("#account-equipment-section");
   const proPreviewSection = document.querySelector(".pro-preview-section");
   const proFeaturesTitle = document.querySelector("#pro-features-title");
@@ -43,6 +51,7 @@
   const newEquipmentAmount = document.querySelector("#new-equipment-amount");
   let currentContext = null;
   let loadedSettings = settingsService.defaults;
+  let workFunctions = [];
   let customEquipment = [];
 
   function setVisible(element, visible) {
@@ -73,14 +82,16 @@
     updateDepartmentFields();
     updateRateFields();
     updateNightFields();
+    globalThis.OveruurtjeSelectUI?.enhanceAll(settingsForm);
   }
 
   function readSettings() {
     const data = new FormData(settingsForm);
     const canEditEquipment = Boolean(currentContext?.subscription.isPro);
     const checked = (name) => data.get(name) === "on";
+    const selectedFunction = selectedWorkFunction();
     return {
-      defaultDepartment: data.get("defaultDepartment") === "audio" ? "audio" : "camera",
+      defaultDepartment: selectedFunction?.department || (data.get("defaultDepartment") === "audio" ? "audio" : "camera"),
       defaultDayRate: Number(data.get("defaultDayRate")) || 0,
       defaultRateMode: data.get("defaultRateMode") === "hour" ? "hour" : "day",
       defaultHourlyRate: Number(data.get("defaultHourlyRate")) || 0,
@@ -102,6 +113,59 @@
       roninTariffAmount: canEditEquipment ? Number(data.get("roninTariffAmount")) || 0 : loadedSettings.roninTariffAmount,
       preferences: loadedSettings.preferences || {}
     };
+  }
+
+  function renderFunctions(items) {
+    const seenNames = new Set();
+    workFunctions = items.filter((item) => {
+      const key = String(item.name || "").trim().toLocaleLowerCase("nl");
+      if (!key || seenNames.has(key)) return false;
+      seenNames.add(key);
+      return true;
+    });
+    const selected = workFunctions.find((item) => item.isDefault) || workFunctions[0] || null;
+    functionSelect.replaceChildren(...workFunctions.map((item) => {
+      const option = document.createElement("option");
+      option.value = item.id;
+      option.textContent = item.name;
+      return option;
+    }));
+    if (selected) {
+      functionSelect.value = selected.id;
+      settingsForm.elements.namedItem("defaultDayRate").value = String(selected.dayRate);
+    }
+    removeFunctionButton.disabled = !selected || functionService.isStandard(selected);
+    defaultDayRateLabel.textContent = selected ? `Dagtarief voor ${selected.name}` : "Standaard dagtarief";
+    updateDepartmentFields();
+    globalThis.OveruurtjeSelectUI?.enhanceAll(settingsForm);
+  }
+
+  function selectedWorkFunction() {
+    return workFunctions.find((item) => item.id === functionSelect.value)
+      || workFunctions.find((item) => item.isDefault)
+      || workFunctions[0]
+      || null;
+  }
+
+  function standardFunctionChoices(settings = {}) {
+    const defaultDepartment = settings.defaultDepartment === "audio" ? "audio" : "camera";
+    return functionService.standardFunctions.map((item) => ({
+      ...item,
+      id: `standard-${item.department}`,
+      dayRate: item.department === defaultDepartment && Number.isFinite(Number(settings.defaultDayRate))
+        ? Number(settings.defaultDayRate)
+        : item.dayRate,
+      isDefault: item.department === defaultDepartment
+    }));
+  }
+
+  async function ensureStandardFunctions(userId, savedSettings, items) {
+    try {
+      return await functionService.ensureStandards(userId, items, savedSettings);
+    } catch (error) {
+      const existingFunctions = await functionService.list(userId);
+      return existingFunctions.length ? existingFunctions : standardFunctionChoices(savedSettings);
+    }
   }
 
   function renderEquipment(items) {
@@ -145,7 +209,10 @@
   }
 
   function updateDepartmentFields() {
-    const isCamera = settingsForm.elements.namedItem("defaultDepartment").value === "camera";
+    const selectedFunction = selectedWorkFunction();
+    const isCamera = currentContext?.subscription.isPro && selectedFunction
+      ? selectedFunction.department === "camera"
+      : settingsForm.elements.namedItem("defaultDepartment").value === "camera";
     roninRow.hidden = !isCamera;
     if (!isCamera) settingsForm.elements.namedItem("roninVisible").checked = false;
   }
@@ -158,15 +225,6 @@
 
   function updateNightFields() {
     document.querySelector("#account-night-period").hidden = !settingsForm.elements.namedItem("enableNightTariff").checked;
-  }
-
-  function fillQuarterHourSelect(select) {
-    select.innerHTML = Array.from({ length: 96 }, (_, index) => {
-      const hour = String(Math.floor(index / 4)).padStart(2, "0");
-      const minute = String((index % 4) * 15).padStart(2, "0");
-      const time = `${hour}:${minute}`;
-      return `<option value="${time}">${time}</option>`;
-    }).join("");
   }
 
   function renderSubscription(subscription, profile) {
@@ -194,6 +252,7 @@
     mockControl.hidden = !subscriptions.canMock();
     if (subscriptions.canMock()) mockPlan.value = isPro ? "pro" : "free";
     equipmentSection.classList.toggle("is-locked", !isPro);
+    compactFunctionSetting.hidden = !isPro;
     proPreviewSection.hidden = isPro;
     proPreviewSection.classList.remove("is-locked");
     proFeaturesTitle.textContent = "Ontdek Overuurtje Pro";
@@ -201,6 +260,7 @@
     accountWorkdaysSection.classList.toggle("is-locked", !isPro);
     equipmentSection.querySelectorAll("input").forEach((input) => { input.disabled = !isPro; });
     equipmentSection.querySelectorAll("button").forEach((button) => { button.disabled = !isPro; });
+    settingsForm.querySelectorAll("[data-function-fallback]").forEach((field) => { field.hidden = isPro; });
     equipmentSection.querySelector("[data-pro-state]").textContent = isPro ? "Pro actief" : "Pro";
   }
 
@@ -217,17 +277,26 @@
     renderSubscription(context.subscription, context.profile);
 
     try {
-      const [savedResult, equipmentResult, projectsResult, workdaysResult] = await Promise.allSettled([
+      const [savedResult, functionsResult, equipmentResult, projectsResult, workdaysResult] = await Promise.allSettled([
         settingsService.load(authState.user.id),
+        context.subscription.isPro ? functionService.list(authState.user.id) : Promise.resolve([]),
         equipmentService.list(authState.user.id),
         context.subscription.isPro ? projectService.list(authState.user.id, { mock: context.subscription.isMock }) : Promise.resolve([]),
         context.subscription.isPro ? workdayService.list(authState.user.id, { mock: context.subscription.isMock }) : Promise.resolve([])
       ]);
       const saved = savedResult.status === "fulfilled" ? savedResult.value : null;
+      const savedSettings = { ...settingsService.defaults, ...(saved || {}) };
+      let functions = functionsResult.status === "fulfilled" ? functionsResult.value : [];
+      if (context.subscription.isPro && functionsResult.status === "fulfilled") {
+        functions = await ensureStandardFunctions(authState.user.id, savedSettings, functions);
+      } else {
+        functions = standardFunctionChoices(savedSettings);
+      }
       const equipment = equipmentResult.status === "fulfilled" ? equipmentResult.value : [];
       const savedProjects = projectsResult.status === "fulfilled" ? projectsResult.value : [];
       const savedWorkdays = workdaysResult.status === "fulfilled" ? workdaysResult.value : [];
       populateSettings(saved);
+      renderFunctions(functions);
       renderEquipment(equipment);
       accountProjectList.replaceChildren(...savedProjects.slice(0, 4).map((project) => {
         const link = document.createElement("a");
@@ -262,13 +331,14 @@
         link.append(copy, arrow);
         return link;
       }));
-      if ([savedResult, equipmentResult, projectsResult, workdaysResult].some((result) => result.status === "rejected")) {
+      if ([savedResult, functionsResult, equipmentResult, projectsResult, workdaysResult].some((result) => result.status === "rejected")) {
         settingsStatus.textContent = "Een deel van de cloudgegevens is nog niet beschikbaar. Controleer of alle Supabase-migrations zijn uitgevoerd.";
       }
     } catch (error) {
       console.warn("Accountinstellingen of apparatuur konden niet worden geladen.", error);
       settingsStatus.textContent = "Instellingen konden nog niet volledig worden geladen.";
       populateSettings(null);
+      renderFunctions([]);
       renderEquipment([]);
     }
 
@@ -277,8 +347,6 @@
     }
   }
 
-  fillQuarterHourSelect(settingsForm.elements.namedItem("nightStart"));
-  fillQuarterHourSelect(settingsForm.elements.namedItem("nightEnd"));
   document.querySelector("#account-login-cta")?.addEventListener("click", () => sessionUi.openAuth("login"));
   settingsForm.addEventListener("change", () => { updateDepartmentFields(); updateRateFields(); updateNightFields(); });
   settingsForm.addEventListener("submit", async (event) => {
@@ -290,12 +358,91 @@
       const updates = currentContext.subscription.isPro
         ? readEquipmentRows().map((item) => equipmentService.update(userId, item.id, item))
         : [];
+      if (currentContext.subscription.isPro) {
+        let selected = selectedWorkFunction();
+        if (selected) {
+          if (String(selected.id).startsWith("standard-")) {
+            const persisted = await functionService.ensureStandards(userId, [], readSettings());
+            selected = persisted.find((item) => item.name === selected.name) || persisted[0];
+          }
+          await functionService.update(userId, selected.id, {
+            ...selected,
+            dayRate: Number(settingsForm.elements.namedItem("defaultDayRate").value) || 0,
+            isDefault: false
+          });
+          await functionService.setDefault(userId, selected.id);
+        }
+      }
       const [savedSettings] = await Promise.all([settingsService.save(userId, readSettings()), ...updates]);
       loadedSettings = savedSettings || loadedSettings;
+      if (currentContext.subscription.isPro) renderFunctions(await functionService.list(userId));
       if (updates.length) renderEquipment(await equipmentService.list(userId));
       settingsStatus.textContent = "Instellingen opgeslagen en gesynchroniseerd.";
     } catch (error) {
       settingsStatus.textContent = error.message || "Opslaan is niet gelukt.";
+    }
+  });
+
+  addFunctionButton.addEventListener("click", () => {
+    if (!currentContext?.subscription.isPro) return;
+    addFunctionForm.hidden = false;
+    newFunctionName.focus();
+  });
+  document.querySelector("#cancel-function-add").addEventListener("click", () => {
+    addFunctionForm.hidden = true;
+    newFunctionName.value = "";
+  });
+  document.querySelector("#confirm-function-add").addEventListener("click", async () => {
+    const name = newFunctionName.value.trim();
+    if (!currentContext?.subscription.isPro || !name) {
+      newFunctionName.focus();
+      return;
+    }
+    settingsStatus.textContent = "Functie toevoegen…";
+    try {
+      const createdFunction = await functionService.create(currentContext.auth.user.id, {
+        name,
+        department: selectedWorkFunction()?.department || loadedSettings.defaultDepartment,
+        dayRate: Number(settingsForm.elements.namedItem("defaultDayRate").value) || 0,
+        isDefault: false,
+        sortOrder: workFunctions.length
+      });
+      renderFunctions([...workFunctions, createdFunction]);
+      functionSelect.value = createdFunction.id;
+      defaultDayRateLabel.textContent = `Dagtarief voor ${createdFunction.name}`;
+      addFunctionForm.hidden = true;
+      newFunctionName.value = "";
+      settingsStatus.textContent = "Functie toegevoegd. Vul het dagtarief in en sla de instellingen op.";
+    } catch (error) {
+      settingsStatus.textContent = error.message || "Toevoegen is niet gelukt.";
+    }
+  });
+
+  functionSelect.addEventListener("change", () => {
+    const selected = selectedWorkFunction();
+    if (!selected) return;
+    settingsForm.elements.namedItem("defaultDayRate").value = String(selected.dayRate);
+    defaultDayRateLabel.textContent = `Dagtarief voor ${selected.name}`;
+    removeFunctionButton.disabled = functionService.isStandard(selected);
+    updateDepartmentFields();
+  });
+
+  removeFunctionButton.addEventListener("click", async () => {
+    const selected = selectedWorkFunction();
+    if (!currentContext?.subscription.isPro || !selected || functionService.isStandard(selected)) return;
+    if (!confirm(`Functie “${selected.name}” verwijderen?`)) return;
+    settingsStatus.textContent = "Functie verwijderen…";
+    try {
+      await functionService.remove(currentContext.auth.user.id, selected.id);
+      let remaining = await functionService.list(currentContext.auth.user.id);
+      if (!remaining.some((item) => item.isDefault) && remaining.length) {
+        await functionService.setDefault(currentContext.auth.user.id, remaining[0].id);
+        remaining = await functionService.list(currentContext.auth.user.id);
+      }
+      renderFunctions(remaining);
+      settingsStatus.textContent = "Functie verwijderd.";
+    } catch (error) {
+      settingsStatus.textContent = error.message || "Verwijderen is niet gelukt.";
     }
   });
 

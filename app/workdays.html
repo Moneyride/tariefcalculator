@@ -15,7 +15,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260718c">
     <link rel="manifest" href="site.webmanifest?v=20260724a">
-    <link rel="stylesheet" href="styles.css?v=20260724c">
+    <link rel="stylesheet" href="styles.css?v=20260725c">
     <script src="runtime-config.js?v=20260722a" defer></script>
     <script src="saas/config.js?v=20260724a" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
@@ -23,11 +23,14 @@
     <script src="saas/profileService.js?v=20260722o" defer></script>
     <script src="saas/subscriptionService.js?v=20260722d" defer></script>
     <script src="saas/featureGate.js?v=20260724a" defer></script>
+    <script src="saas/projectService.js?v=20260725a" defer></script>
     <script src="saas/workdayService.js?v=20260724a" defer></script>
+    <script src="saas/shareService.js?v=20260725a" defer></script>
     <script src="calculator.js?v=20260722a" defer></script>
     <script src="analytics.js?v=20260722q" defer></script>
-    <script src="saas/sessionUi.js?v=20260724a" defer></script>
-    <script src="workdays.js?v=20260724a" defer></script>
+    <script src="saas/sessionUi.js?v=20260725c" defer></script>
+    <script src="saas/shareUi.js?v=20260725a" defer></script>
+    <script src="workdays.js?v=20260725a" defer></script>
     <script src="pwa.js?v=20260724a" defer></script>
   </head>
   <body>
@@ -90,6 +93,16 @@
             <a class="saas-primary-button" href="index.html">Eerste werkdag opslaan</a>
           </section>
         </section>
+        <section class="received-workdays" id="received-workdays" hidden>
+          <div class="received-workdays-heading">
+            <div>
+              <p class="account-section-kicker">Samenwerken</p>
+              <h2>Met mij gedeeld</h2>
+            </div>
+            <span id="received-workdays-count">0</span>
+          </div>
+          <div class="received-workdays-list" id="received-workdays-list"></div>
+        </section>
 
         <footer class="site-footer account-footer">
           <span>Overuurtje.nl</span>
@@ -120,7 +133,7 @@
       <p class="dialog-eyebrow" id="pro-eyebrow">Overuurtje Pro</p>
       <h2 id="pro-title">Werkdagen tijdens je draaidag</h2>
       <p class="pro-dialog-intro" id="pro-intro">Bewaar je begintijd, open de werkdag later opnieuw en vul alleen nog de eindtijd in.</p>
-      <ul class="pro-benefits"><li>Werkdagen</li><li>Projecten</li><li>Cloudsync en PDF-export</li></ul>
+      <ul class="pro-benefits"><li>Werkdagen</li><li>Werktijden delen met collega's</li><li>Projecten</li><li>Cloudsync en PDF-export</li></ul>
       <button class="saas-primary-button" id="pro-checkout" type="button">Upgrade naar Pro</button>
       <button class="saas-secondary-button pro-continue-button" id="pro-continue-free" type="button">Verder met Free</button>
     </dialog>
@@ -131,6 +144,47 @@
       <h2 id="delete-workday-title">Weet je het zeker?</h2>
       <p>Deze opgeslagen werkdag kan daarna niet worden teruggehaald.</p>
       <div class="dialog-action-stack"><button class="saas-primary-button danger-button" id="confirm-workday-delete" type="button">Verwijderen</button><button class="saas-secondary-button" id="keep-workday" type="button">Behouden</button></div>
+    </dialog>
+    <dialog class="saas-dialog shared-workday-detail-dialog" id="shared-workday-detail-dialog" aria-labelledby="shared-workday-title">
+      <button class="dialog-close" type="button" data-shared-detail-close aria-label="Sluiten">&times;</button>
+      <p class="dialog-eyebrow">Gedeelde werkdag</p>
+      <h2 id="shared-workday-title">Werkdag van een collega</h2>
+      <p class="shared-project-name" data-shared-project hidden></p>
+      <div class="shared-time-summary">
+        <strong data-shared-date></strong>
+        <span data-shared-times></span>
+      </div>
+      <blockquote data-shared-message hidden></blockquote>
+      <p class="share-privacy-note">Alleen deze werktijden worden getoond. De administratie van je collega blijft privé.</p>
+      <button class="saas-primary-button" id="take-over-shared-times" type="button">Neem werktijden over</button>
+    </dialog>
+    <dialog class="saas-dialog confirm-dialog" id="shared-existing-workday-dialog" aria-labelledby="shared-existing-title">
+      <button class="dialog-close" type="button" data-shared-existing-close aria-label="Sluiten">&times;</button>
+      <p class="dialog-eyebrow">Werktijden overnemen</p>
+      <h2 id="shared-existing-title">Voor deze datum bestaat al een werkdag.</h2>
+      <div class="dialog-action-stack">
+        <button class="saas-primary-button" id="update-from-shared-times" type="button">Werkdag bijwerken met gedeelde tijden</button>
+        <button class="saas-secondary-button" id="new-from-shared-times" type="button">Nieuwe werkdag aanmaken</button>
+        <button class="saas-text-button" data-shared-existing-close type="button">Annuleren</button>
+      </div>
+    </dialog>
+    <dialog class="saas-dialog shared-invite-dialog" id="shared-invite-dialog" aria-labelledby="shared-invite-title">
+      <button class="dialog-close" type="button" data-shared-invite-close aria-label="Sluiten">&times;</button>
+      <p class="dialog-eyebrow">Uitnodiging</p>
+      <h2 id="shared-invite-title">Een collega wil tijden met je delen</h2>
+      <p class="shared-project-name" data-invite-project hidden></p>
+      <div class="shared-time-summary">
+        <strong data-invite-date></strong>
+        <span data-invite-times></span>
+      </div>
+      <blockquote data-invite-message hidden></blockquote>
+      <p class="share-privacy-note">Je ontvangt alleen datum, begin- en eindtijd. Tarieven en andere administratie blijven privé.</p>
+      <p class="saas-form-status" data-invite-status aria-live="polite"></p>
+      <div class="dialog-action-stack" data-invite-logged-out hidden>
+        <button class="saas-primary-button" type="button" data-invite-login>Inloggen</button>
+        <button class="saas-secondary-button" type="button" data-invite-register>Gratis account maken</button>
+      </div>
+      <button class="saas-primary-button" type="button" data-invite-accept hidden>Uitnodiging accepteren</button>
     </dialog>
     <div class="site-toast" id="site-toast" role="status" aria-live="polite" hidden></div>
   </body>

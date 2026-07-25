@@ -25,21 +25,25 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260718c">
     <link rel="manifest" href="site.webmanifest?v=20260724a">
-    <link rel="stylesheet" href="styles.css?v=20260724c">
+    <link rel="stylesheet" href="styles.css?v=20260725c">
     <script src="runtime-config.js?v=20260722a" defer></script>
     <script src="saas/config.js?v=20260724a" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
     <script src="saas/authService.js?v=20260722a" defer></script>
     <script src="saas/profileService.js?v=20260722o" defer></script>
     <script src="saas/settingsService.js?v=20260723a" defer></script>
+    <script src="saas/functionService.js?v=20260725a" defer></script>
     <script src="saas/equipmentService.js?v=20260722a" defer></script>
-    <script src="saas/projectService.js?v=20260722d" defer></script>
+    <script src="saas/projectService.js?v=20260725a" defer></script>
     <script src="saas/workdayService.js?v=20260724a" defer></script>
+    <script src="saas/shareService.js?v=20260725a" defer></script>
     <script src="saas/subscriptionService.js?v=20260722d" defer></script>
     <script src="saas/featureGate.js?v=20260722a" defer></script>
     <script src="analytics.js?v=20260722q" defer></script>
-    <script src="saas/sessionUi.js?v=20260724a" defer></script>
-    <script src="account.js?v=20260724a" defer></script>
+    <script src="saas/sessionUi.js?v=20260725c" defer></script>
+    <script src="selectUi.js?v=20260725a" defer></script>
+    <script src="timePicker.js?v=20260725a" defer></script>
+    <script src="account.js?v=20260725a" defer></script>
     <script src="pwa.js?v=20260724a" defer></script>
   </head>
   <body>
@@ -133,13 +137,27 @@
               <div class="account-settings-group">
                 <h3>Tarief en planning</h3>
                 <div class="account-fields two-column-fields">
-                  <label>
-                    <span>Standaardafdeling</span>
+                  <label data-function-fallback>
+                    <span>Functie</span>
                     <select name="defaultDepartment">
                       <option value="camera">Camera</option>
                       <option value="audio">Audio</option>
                     </select>
                   </label>
+                  <div class="compact-function-setting" id="compact-function-setting" hidden>
+                    <label>
+                      <span>Functie</span>
+                      <select id="account-function-select"></select>
+                    </label>
+                    <div class="compact-function-actions">
+                      <button class="add-equipment-button" id="add-function-button" type="button"><span aria-hidden="true">+</span> Nieuwe functie</button>
+                      <button class="text-action danger-action" id="remove-function-button" type="button">Verwijderen</button>
+                    </div>
+                    <div class="compact-add-function" id="add-function-form" hidden>
+                      <label><span>Naam nieuwe functie</span><input type="text" id="new-function-name" maxlength="80" placeholder="Bijvoorbeeld Drone Operator"></label>
+                      <div><button class="saas-secondary-button" id="confirm-function-add" type="button">Toevoegen</button><button class="text-action" id="cancel-function-add" type="button">Annuleren</button></div>
+                    </div>
+                  </div>
                   <label>
                     <span>Tariefsoort</span>
                     <select name="defaultRateMode">
@@ -148,7 +166,7 @@
                     </select>
                   </label>
                   <label>
-                    <span>Standaard dagtarief</span>
+                    <span id="default-day-rate-label">Standaard dagtarief</span>
                     <span class="prefixed-input"><span>€</span><input type="number" name="defaultDayRate" min="0" step="0.01" required></span>
                   </label>
                   <label data-account-rate="hour" hidden>
@@ -198,8 +216,20 @@
                   </label>
                 </div>
                 <div class="account-night-period two-column-fields" id="account-night-period">
-                  <label><span>Nachtperiode start</span><select name="nightStart"></select></label>
-                  <label><span>Nachtperiode einde</span><select name="nightEnd"></select></label>
+                  <div class="time-field">
+                    <label for="account-night-start">Nachtperiode start</label>
+                    <div class="time-control">
+                      <input id="account-night-start" type="text" name="nightStart" value="00:00" data-time-picker readonly required>
+                      <button class="time-picker-trigger" type="button" aria-label="Kies starttijd nachtperiode"><span class="clock-icon" aria-hidden="true"></span></button>
+                    </div>
+                  </div>
+                  <div class="time-field">
+                    <label for="account-night-end">Nachtperiode einde</label>
+                    <div class="time-control">
+                      <input id="account-night-end" type="text" name="nightEnd" value="06:00" data-time-picker readonly required>
+                      <button class="time-picker-trigger" type="button" aria-label="Kies eindtijd nachtperiode"><span class="clock-icon" aria-hidden="true"></span></button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
@@ -274,6 +304,16 @@
               <article class="pro-feature-row">
                 <span class="pro-feature-icon" aria-hidden="true">W</span>
                 <div><h3>Werkdagen</h3><p>Sla je begintijd en instellingen tijdens de draaidag op en vul later alleen nog je eindtijd in.</p></div>
+                <span class="feature-status available-status">Beschikbaar</span>
+              </article>
+              <article class="pro-feature-row">
+                <span class="pro-feature-icon" aria-hidden="true">&#8599;</span>
+                <div><h3>Deel met collega's</h3><p>Deel alleen datum en werktijden binnen Overuurtje; tarieven en administratie blijven privé.</p></div>
+                <span class="feature-status available-status">Beschikbaar</span>
+              </article>
+              <article class="pro-feature-row">
+                <span class="pro-feature-icon" aria-hidden="true">F</span>
+                <div><h3>Eigen functies</h3><p>Geef iedere functie, zoals Camera, Audio of Drone Operator, een eigen dagtarief.</p></div>
                 <span class="feature-status available-status">Beschikbaar</span>
               </article>
               <article class="pro-feature-row">
@@ -356,7 +396,7 @@
       <h2 id="pro-title">Meer rust in je administratie</h2>
       <p class="pro-dialog-intro" id="pro-intro">Voor Pro heb je een account nodig. Zo blijven je abonnement en instellingen veilig aan jou gekoppeld.</p>
       <ul class="pro-benefits">
-        <li>Werkdagen tijdens je draaidag opslaan</li><li>Projecten met meerdere dagen of periodes</li><li>Persoonlijke instellingen en synchronisatie</li><li>Eigen apparatuur en toeslagen</li><li>PDF-export en toekomstige Pro-functies</li>
+        <li>Werkdagen tijdens je draaidag opslaan</li><li>Werktijden delen met collega's</li><li>Projecten met meerdere dagen of periodes</li><li>Functies met een eigen afdeling en dagtarief</li><li>Persoonlijke instellingen en synchronisatie</li><li>Eigen apparatuur en toeslagen</li><li>PDF-export en toekomstige Pro-functies</li>
       </ul>
       <button class="saas-primary-button" id="pro-checkout" type="button">Upgrade naar Pro</button>
       <button class="saas-secondary-button pro-continue-button" id="pro-continue-free" type="button">Verder met Free</button>

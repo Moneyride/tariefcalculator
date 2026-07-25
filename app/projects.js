@@ -4,8 +4,10 @@
   const sessionUi = globalThis.OveruurtjeSessionUI;
   const projects = globalThis.OveruurtjeProjects;
   const settingsService = globalThis.OveruurtjeSettings;
+  const functionService = globalThis.OveruurtjeFunctions;
   const equipmentService = globalThis.OveruurtjeEquipment;
   const featureGate = globalThis.OveruurtjeFeatureGate;
+  const shareUi = globalThis.OveruurtjeShareUI;
   const calculator = globalThis.TariffCalculator;
   const euro = new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" });
   const number = new Intl.NumberFormat("nl-NL", { maximumFractionDigits: 2 });
@@ -17,6 +19,7 @@
   const dayForm = document.querySelector("#day-form");
   let context = null;
   let accountSettings = settingsService.defaults;
+  let workFunctions = [];
   let equipment = [];
   let projectList = [];
   let current = null;
@@ -37,10 +40,15 @@
   const setDirty = (value) => { dirty = value; };
 
   function defaultDayData() {
+    const defaultFunction = workFunctions.find((item) => item.isDefault) || workFunctions[0] || null;
     const rateMode = accountSettings.defaultRateMode === "hour" ? "hour" : "day";
     return {
-      startTime: "08:00", endTime: "18:00", breakMinutes: 0, rateMode,
-      rateAmount: rateMode === "hour" ? accountSettings.defaultHourlyRate : accountSettings.defaultDayRate,
+      startTime: "08:00", endTime: "18:00", breakMinutes: 0,
+      workFunctionId: defaultFunction?.id || "",
+      workFunctionName: defaultFunction?.name || "",
+      department: defaultFunction?.department || accountSettings.defaultDepartment,
+      rateMode: defaultFunction ? "day" : rateMode,
+      rateAmount: defaultFunction?.dayRate ?? (rateMode === "hour" ? accountSettings.defaultHourlyRate : accountSettings.defaultDayRate),
       normalDayHours: accountSettings.normalDayHours,
       enableHalfDayUnder6Hours: accountSettings.enableHalfDayUnder6Hours,
       enableOvertime10To12: accountSettings.enableOvertime10To12,
@@ -100,15 +108,17 @@
   async function loadList() {
     projectList = await projects.list(context.auth.user.id, options());
     renderProjectList();
-    if (new URLSearchParams(location.search).get("new") === "1") {
+    const parameters = new URLSearchParams(location.search);
+    if (parameters.get("new") === "1") {
       history.replaceState(null, "", location.pathname);
       openProjectForm();
       return;
     }
-    const requested = new URLSearchParams(location.search).get("project");
+    const requested = parameters.get("project");
+    const requestedDay = parameters.get("day");
     if (requested && projectList.some((project) => project.id === requested)) {
       history.replaceState(null, "", location.pathname);
-      await openProject(requested);
+      await openProject(requested, requestedDay);
     }
   }
 
@@ -207,7 +217,11 @@
     const existing = new Map((current?.days || []).map((day) => [day.workDate, day]));
     try {
       const saved = await projects.saveProject(context.auth.user.id, values, options());
-      current = await projects.replaceDays(context.auth.user.id, saved.id, selected.map((workDate) => ({ workDate, calculationData: existing.get(workDate)?.calculationData || defaultDayData() })), options());
+      current = await projects.replaceDays(context.auth.user.id, saved.id, selected.map((workDate) => ({
+        id: existing.get(workDate)?.id || null,
+        workDate,
+        calculationData: existing.get(workDate)?.calculationData || defaultDayData()
+      })), options());
       setDirty(false); await loadList(); await openProject(saved.id);
     } catch (error) { document.querySelector("#project-form-status").textContent = error.message || "Opslaan is niet gelukt."; }
   }
@@ -264,19 +278,20 @@
     carousel.scrollBy({ left: direction * carousel.clientWidth, behavior: "smooth" });
   }
 
-  async function openProject(id) {
-    try { current = await projects.get(context.auth.user.id, id, options()); if (!current) throw new Error("Project niet gevonden."); renderOverview(); }
+  async function openProject(id, dayId = "") {
+    try {
+      current = await projects.get(context.auth.user.id, id, options());
+      if (!current) throw new Error("Project niet gevonden.");
+      if (dayId && current.days.some((day) => day.id === dayId)) openDay(dayId);
+      else renderOverview();
+    }
     catch (error) { document.querySelector("#projects-error").textContent = error.message; document.querySelector("#projects-unavailable").hidden = false; }
-  }
-
-  function fillTimeSelect(select) {
-    select.innerHTML = Array.from({ length: 96 }, (_, index) => { const hour = String(Math.floor(index / 4)).padStart(2, "0"); const minute = String((index % 4) * 15).padStart(2, "0"); return `<option value="${hour}:${minute}">${hour}:${minute}</option>`; }).join("");
   }
 
   function renderEquipmentOptions(data) {
     const rows = [];
     if (accountSettings.droneVisible) rows.push(["enableDroneTariff", "Drone tarief"]);
-    if (accountSettings.defaultDepartment === "camera" && accountSettings.roninVisible) rows.push(["enableRonin4dTariff", "Ronin 4D tarief"]);
+    if ((data.department || accountSettings.defaultDepartment) === "camera" && accountSettings.roninVisible) rows.push(["enableRonin4dTariff", "Ronin 4D tarief"]);
     equipment.filter((item) => item.isVisible).forEach((item) => rows.push([`equipment-${item.id}`, item.name, item]));
     document.querySelector("#project-equipment-options").innerHTML = rows.map(([name, label, item]) => `<label><input type="checkbox" name="${name}" ${item ? `data-equipment-id="${item.id}" data-equipment-name="${escapeHtml(item.name)}" data-equipment-amount="${item.amount}"` : ""}><span>${escapeHtml(label)}</span></label>`).join("");
     rows.forEach(([name, , item]) => { const input = dayForm.elements.namedItem(name); input.checked = item ? Boolean((data.customEquipment || []).find((entry) => entry.id === item.id)?.enabled) : Boolean(data[name]); });
@@ -284,8 +299,17 @@
 
   function readDayForm() {
     const data = new FormData(dayForm); const checked = (name) => data.get(name) === "on";
+    const existingDay = current?.days.find((item) => item.id === currentDayId);
+    const existingData = existingDay?.calculationData || {};
+    const workFunction = workFunctions.find((item) => item.id === existingData.workFunctionId)
+      || workFunctions.find((item) => item.isDefault)
+      || workFunctions[0];
     return {
-      startTime: data.get("startTime"), endTime: data.get("endTime"), breakMinutes: Number(data.get("breakMinutes")), rateMode: data.get("rateMode"), rateAmount: Number(data.get("rateAmount")), normalDayHours: Number(data.get("normalDayHours")),
+      startTime: data.get("startTime"), endTime: data.get("endTime"), breakMinutes: Number(data.get("breakMinutes")),
+      workFunctionId: workFunction?.id || existingData.workFunctionId || "",
+      workFunctionName: workFunction?.name || existingData.workFunctionName || "",
+      department: workFunction?.department || existingData.department || accountSettings.defaultDepartment,
+      rateMode: data.get("rateMode"), rateAmount: Number(data.get("rateAmount")), normalDayHours: Number(data.get("normalDayHours")),
       enableHalfDayUnder6Hours: checked("enableHalfDayUnder6Hours"), enableOvertime10To12: checked("enableOvertime10To12"), enableOvertimeFrom12: checked("enableOvertimeFrom12"), enableOvertimeFrom14: checked("enableOvertimeFrom14"), enableNightTariff: checked("enableNightTariff"), nightStart: data.get("nightStart"), nightEnd: data.get("nightEnd"),
       enableKilometers: checked("enableKilometers"), kilometers: Number(data.get("kilometers")) || 0, kilometerRate: accountSettings.mileageRate,
       enableParkingCosts: checked("enableParkingCosts"), parkingCosts: Number(data.get("parkingCosts")) || 0,
@@ -367,6 +391,7 @@
     ["enableHalfDayUnder6Hours", "enableOvertime10To12", "enableOvertimeFrom12", "enableOvertimeFrom14", "enableNightTariff", "enableKilometers", "enableParkingCosts"].forEach((name) => { dayForm.elements.namedItem(name).checked = Boolean(data[name]); });
     renderEquipmentOptions(data);
     document.querySelector("#copy-day-targets").innerHTML = current.days.filter((item) => item.id !== id).map((item) => `<label><input type="checkbox" value="${item.id}"><span>${formatDate(item.workDate)}</span></label>`).join("");
+    globalThis.OveruurtjeSelectUI?.enhanceAll(dayForm);
     document.querySelector("#day-form-status").textContent = ""; setDirty(false); updateDayConditionalFields(); updateDayPreview(); show("day-editor-view");
   }
 
@@ -418,7 +443,7 @@
         printLine("Kilometers", `${number.format(r.kilometers)} km × ${euro.format(r.settings.kilometerRate)}`, r.kilometerAmount),
         printLine("Parkeer/onkosten", "Ingevoerd bedrag", r.parkingAmount)
       ].join("");
-      return `<section class="project-print-page"><header><img src="overuurtje-logo.png" alt=""><div><p>Projectdag · ${escapeHtml(p.name)}</p><h1>${formatDate(day.workDate)}</h1></div></header><dl class="project-print-meta"><div><dt>Tijden</dt><dd>${data.startTime} - ${data.endTime}${r.endsNextDay ? " (+1 dag)" : ""}</dd></div>${data.breakMinutes ? `<div><dt>Pauze</dt><dd>${data.breakMinutes} minuten</dd></div>` : ""}<div><dt>Gewerkt</dt><dd>${number.format(r.totalHours)} uur</dd></div></dl><div class="project-print-lines">${lines}</div><div class="project-print-invoice"><span>Totaal excl. btw</span><strong>${euro.format(r.subtotalExVat)}</strong><span>Btw 21%</span><strong>${euro.format(r.vatAmount)}</strong><span>Inclusief btw</span><strong>${euro.format(r.totalIncVat)}</strong></div><footer>Powered by Reichgelt Media Group</footer></section>`;
+      return `<section class="project-print-page"><header><img src="overuurtje-logo.png" alt=""><div><p>Projectdag · ${escapeHtml(p.name)}</p><h1>${formatDate(day.workDate)}</h1></div></header><dl class="project-print-meta">${data.workFunctionName ? `<div><dt>Functie</dt><dd>${escapeHtml(data.workFunctionName)}</dd></div>` : ""}<div><dt>Tijden</dt><dd>${data.startTime} - ${data.endTime}${r.endsNextDay ? " (+1 dag)" : ""}</dd></div>${data.breakMinutes ? `<div><dt>Pauze</dt><dd>${data.breakMinutes} minuten</dd></div>` : ""}<div><dt>Gewerkt</dt><dd>${number.format(r.totalHours)} uur</dd></div></dl><div class="project-print-lines">${lines}</div><div class="project-print-invoice"><span>Totaal excl. btw</span><strong>${euro.format(r.subtotalExVat)}</strong><span>Btw 21%</span><strong>${euro.format(r.vatAmount)}</strong><span>Inclusief btw</span><strong>${euro.format(r.totalIncVat)}</strong></div><footer>Powered by Reichgelt Media Group</footer></section>`;
     }).join("");
     document.querySelector("#project-print-root").innerHTML = summary + pages;
   }
@@ -433,17 +458,18 @@
     document.querySelector("#new-project").hidden = !pro;
     if (!pro) { views.forEach((id) => { document.querySelector(`#${id}`).hidden = true; }); return; }
     try {
-      const [settingsResult, equipmentResult] = await Promise.allSettled([
+      const [settingsResult, functionsResult, equipmentResult] = await Promise.allSettled([
         settingsService.load(context.auth.user.id),
+        functionService.list(context.auth.user.id),
         equipmentService.list(context.auth.user.id)
       ]);
       accountSettings = { ...settingsService.defaults, ...(settingsResult.status === "fulfilled" ? (settingsResult.value || {}) : {}) };
+      workFunctions = functionsResult.status === "fulfilled" ? functionsResult.value : [];
       equipment = equipmentResult.status === "fulfilled" ? equipmentResult.value : [];
       await loadList();
     } catch (error) { document.querySelector("#projects-unavailable").hidden = false; document.querySelector("#projects-error").textContent = error.message; }
   }
 
-  fillTimeSelect(dayForm.elements.startTime); fillTimeSelect(dayForm.elements.endTime); fillTimeSelect(dayForm.elements.nightStart); fillTimeSelect(dayForm.elements.nightEnd);
   document.querySelector("#new-project").addEventListener("click", () => openProjectForm());
   form.addEventListener("submit", saveProject); form.addEventListener("input", () => setDirty(true));
   document.querySelector("#calendar-grid").addEventListener("click", (event) => {
@@ -481,11 +507,15 @@
   document.querySelector("#carousel-next").addEventListener("click", () => moveCarousel(1));
   document.querySelector("#project-day-list").addEventListener("scroll", updateCarouselControls, { passive: true });
   addEventListener("resize", updateCarouselControls);
-  dayForm.addEventListener("submit", saveDay); dayForm.addEventListener("input", () => { setDirty(true); updateDayConditionalFields(); updateDayPreview(); });
+  dayForm.addEventListener("submit", saveDay);
+  dayForm.addEventListener("input", () => { setDirty(true); updateDayConditionalFields(); updateDayPreview(); });
   document.querySelector("#cancel-day").addEventListener("click", () => { if (!dirty || confirm("Niet-opgeslagen wijzigingen verlaten?")) { setDirty(false); renderOverview(); } });
   document.querySelector("#copy-all-days").addEventListener("click", () => copyDay(current.days.filter((day) => day.id !== currentDayId).map((day) => day.id)));
   document.querySelector("#copy-selected-days").addEventListener("click", () => copyDay(Array.from(document.querySelectorAll("#copy-day-targets input:checked"), (input) => input.value)));
   document.querySelector("#copy-day-invoice").addEventListener("click", copyDayForInvoice);
+  document.querySelector("#share-project-day").addEventListener("click", () => {
+    if (currentDayId) shareUi?.open({ sourceType: "project_day", sourceId: currentDayId });
+  });
   document.querySelector("#project-pdf").addEventListener("click", () => { buildProjectPrint(); window.print(); });
   addEventListener("beforeunload", (event) => { if (dirty) { event.preventDefault(); event.returnValue = ""; } });
   document.addEventListener("overuurtje:user-context", (event) => initialize(event.detail));

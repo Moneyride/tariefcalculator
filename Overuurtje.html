@@ -191,6 +191,7 @@
   .day-editor-primary-fields, .day-editor-secondary-fields { display: grid; min-width: 0; gap: 16px; }
   .day-editor-primary-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-bottom: 18px; border-bottom: 1px solid rgba(31,67,53,.1); }
   .day-editor-secondary-fields { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .day-function-field { width: min(360px, 100%); grid-column: 1 / -1; }
   .day-editor-grid label { display: grid; min-width: 0; gap: 7px; color: var(--muted); font-size: .78rem; font-weight: 700; }
   .day-editor-grid select, .day-editor-grid .prefixed-input { width: 100%; }
   .day-live-total { color: var(--accent); font-size: 1.8rem; }
@@ -283,30 +284,581 @@
 @media print {
   body:has(.project-print-root:not(:empty)) > *:not(.project-print-root) { display: none !important; }
   .project-print-root:not(:empty) { display: block !important; }
-  .project-print-page { position: relative; box-sizing: border-box; min-height: 277mm; padding: 11mm 12mm 14mm; break-after: page; color: #1f2937; background: #fff; }
+  .project-print-page { position: relative; box-sizing: border-box; min-height: 274mm; padding: 9mm 10mm 12mm; break-after: page; color: #1f2937; background: #fff; }
   .project-print-page:last-child { break-after: auto; }
-  .project-print-page header { display: flex; align-items: center; gap: 8mm; padding-bottom: 6mm; border-bottom: 1px solid #dfe7e3; }
-  .project-print-page header img { width: 32mm; height: auto; }
+  .project-print-page header { display: flex; align-items: center; gap: 7mm; padding-bottom: 4mm; border-bottom: 1px solid #dfe7e3; }
+  .project-print-page header img { width: 28mm; height: auto; }
   .project-print-page header p, .project-print-page header h1 { margin: 0; }
   .project-print-page header p { color: #6b7280; font-size: 8pt; }
   .project-print-page header h1 { margin-top: 1mm; color: #173f36; font-size: 20pt; }
-  .project-print-meta { margin: 7mm 0; }
-  .project-print-meta > div { display: grid; grid-template-columns: 38mm 1fr; gap: 5mm; padding: 2mm 0; border-bottom: 1px solid #edf1ef; }
+  .project-print-meta { margin: 5mm 0; }
+  .project-print-meta > div { display: grid; grid-template-columns: 38mm 1fr; gap: 5mm; padding: 1.5mm 0; border-bottom: 1px solid #edf1ef; }
   .project-print-meta dt, .project-print-meta dd { margin: 0; font-size: 9pt; }
   .project-print-meta dt { color: #6b7280; }
+  .project-print-meta dd { overflow-wrap: anywhere; }
   .project-print-totals { display: grid; grid-template-columns: repeat(2, 1fr); gap: 3mm; }
-  .project-print-totals > div { display: grid; gap: 2mm; padding: 5mm; border: 1px solid #e0e8e4; }
+  .project-print-totals > div { display: grid; gap: 1.5mm; padding: 4mm; border: 1px solid #e0e8e4; }
   .project-print-totals span { color: #6b7280; font-size: 8pt; }
   .project-print-totals strong { color: #173f36; font-size: 14pt; }
   .project-print-totals .grand { grid-column: 1 / -1; background: #edf5f1; }
   .project-print-totals .grand strong { font-size: 20pt; }
-  .project-print-lines > div { display: grid; grid-template-columns: 1fr auto; gap: 8mm; padding: 3mm 2mm; border-bottom: 1px solid #edf1ef; }
+  .project-print-lines > div { display: grid; grid-template-columns: 1fr auto; gap: 8mm; padding: 2.2mm 2mm; border-bottom: 1px solid #edf1ef; break-inside: avoid; }
   .project-print-lines > div > div { display: grid; gap: 1mm; }
   .project-print-lines strong { font-size: 9pt; }
   .project-print-lines span { color: #6b7280; font-size: 8pt; }
-  .project-print-invoice { display: grid; grid-template-columns: 1fr auto; gap: 3mm 8mm; width: 88mm; margin: 8mm 0 0 auto; padding: 5mm; background: #edf5f1; }
+  .project-print-invoice { display: grid; grid-template-columns: 1fr auto; gap: 2.4mm 8mm; width: 88mm; margin: 5mm 0 0 auto; padding: 4mm; background: #edf5f1; break-inside: avoid; }
   .project-print-invoice strong { text-align: right; }
-  .project-print-page footer { position: absolute; right: 12mm; bottom: 7mm; color: #6b7280; font-size: 6pt; }
+  .project-print-page footer { position: absolute; right: 10mm; bottom: 6mm; color: #6b7280; font-size: 6pt; }
+}
+
+/* Shared workdays and reusable notifications */
+.notification-menu {
+  position: relative;
+}
+
+.notification-button {
+  position: relative;
+  display: grid;
+  width: 42px;
+  min-height: 42px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(31, 67, 53, 0.16);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.52);
+  color: var(--accent-dark);
+  box-shadow: none;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+.notification-button:hover {
+  border-color: rgba(31, 67, 53, 0.28);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--accent-dark);
+}
+
+.notification-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -3px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  background: var(--orange);
+  color: #fff;
+  font-size: 0.62rem;
+  line-height: 14px;
+  text-align: center;
+}
+
+.notification-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 80;
+  width: min(360px, calc(100vw - 28px));
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 17px;
+  background: rgba(248, 246, 242, 0.94);
+  box-shadow: 0 18px 46px rgba(14, 41, 34, 0.18);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+}
+
+.notification-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 17px;
+  border-bottom: 1px solid rgba(31, 67, 53, 0.09);
+}
+
+.notification-panel-heading button {
+  min-height: 0;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  box-shadow: none;
+  font-size: 0.72rem;
+}
+
+.notification-panel-heading button:hover {
+  background: transparent;
+  color: var(--accent-dark);
+  transform: none;
+}
+
+.notification-list {
+  max-height: 390px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  display: grid;
+  gap: 4px;
+  padding: 14px 17px;
+  border-bottom: 1px solid rgba(31, 67, 53, 0.07);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.notification-item.is-unread {
+  background: rgba(255, 106, 26, 0.07);
+}
+
+.notification-item:hover {
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.notification-item small,
+.notification-empty {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.notification-empty {
+  margin: 0;
+  padding: 24px 17px;
+}
+
+.share-current-workday-button {
+  min-height: 58px;
+  gap: 12px;
+}
+
+.share-workday-dialog {
+  width: min(620px, calc(100% - 28px));
+}
+
+.share-privacy-note {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.share-search-field,
+.share-workday-dialog > label {
+  display: grid;
+  gap: 8px;
+}
+
+.share-search-results {
+  display: grid;
+  max-height: 220px;
+  overflow-y: auto;
+  border-radius: 13px;
+}
+
+.share-search-result {
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  gap: 11px;
+  align-items: center;
+  min-height: 0;
+  padding: 11px;
+  border: 0;
+  border-bottom: 1px solid rgba(31, 67, 53, 0.08);
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.45);
+  color: var(--text);
+  box-shadow: none;
+  text-align: left;
+}
+
+.share-search-result:hover {
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text);
+  transform: none;
+}
+
+.share-search-result > span:nth-child(2) {
+  display: grid;
+  gap: 2px;
+}
+
+.share-search-result small,
+.shared-with-row small {
+  color: var(--muted);
+}
+
+.share-avatar {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(31, 67, 53, 0.11);
+  color: var(--accent-dark);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.share-selected-users {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.share-user-chip {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 42px;
+  padding: 4px 9px 4px 4px;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--text);
+  box-shadow: none;
+}
+
+.share-user-chip:hover {
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--text);
+}
+
+.share-user-chip .share-avatar {
+  width: 32px;
+  height: 32px;
+  flex-basis: 32px;
+}
+
+.share-mode-options {
+  display: grid;
+  gap: 0;
+  padding: 0;
+  border: 1px solid rgba(31, 67, 53, 0.1);
+  border-radius: 14px;
+}
+
+.share-mode-options legend {
+  padding: 0 6px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.share-mode-options label {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding: 13px;
+  cursor: pointer;
+}
+
+.share-mode-options label + label {
+  border-top: 1px solid rgba(31, 67, 53, 0.08);
+}
+
+.share-mode-options input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.share-mode-switch {
+  position: relative;
+  display: block;
+  width: 46px;
+  height: 28px;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 999px;
+  background: rgba(107, 114, 128, 0.2);
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.share-mode-switch::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+  content: "";
+  transition: transform 150ms ease;
+}
+
+.share-mode-toggle input:checked + .share-mode-switch {
+  border-color: var(--orange);
+  background: var(--orange);
+}
+
+.share-mode-toggle input:checked + .share-mode-switch::after {
+  transform: translateX(18px);
+}
+
+.share-mode-toggle input:focus-visible + .share-mode-switch {
+  box-shadow: 0 0 0 4px rgba(255, 106, 26, 0.12);
+}
+
+.share-mode-options label > span:last-child {
+  display: grid;
+  gap: 3px;
+}
+
+.share-mode-options small {
+  color: var(--muted);
+}
+
+.share-account-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.share-invite-button {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}
+
+.share-invite-button svg {
+  width: 19px;
+  height: 19px;
+}
+
+.shared-invite-dialog {
+  width: min(540px, calc(100% - 28px));
+}
+
+.shared-with-section {
+  padding-top: 18px;
+  border-top: 1px solid rgba(31, 67, 53, 0.09);
+}
+
+.shared-with-section h3 {
+  margin: 0 0 10px;
+  color: var(--accent-dark);
+  font-size: 0.9rem;
+}
+
+.shared-with-row {
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  gap: 11px;
+  align-items: center;
+  padding: 9px 0;
+}
+
+.shared-with-row > span:nth-child(2) {
+  display: grid;
+}
+
+.shared-with-row button {
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #8e3a2b;
+  box-shadow: none;
+}
+
+.shared-with-row button:hover {
+  background: rgba(142, 58, 43, 0.07);
+  color: #8e3a2b;
+}
+
+.workday-list-item {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.workday-share-button {
+  min-height: auto;
+  padding: 0 15px;
+  border: 0;
+  border-left: 1px solid rgba(31, 67, 53, 0.08);
+  border-radius: 0;
+  background: transparent;
+  color: var(--accent-dark);
+  box-shadow: none;
+  font-size: 0.75rem;
+}
+
+.workday-share-button:hover {
+  background: rgba(31, 67, 53, 0.05);
+  color: var(--accent-dark);
+  transform: none;
+}
+
+.received-workdays {
+  display: grid;
+  gap: 14px;
+  margin-top: 8px;
+  padding-top: 28px;
+  border-top: 1px solid rgba(31, 67, 53, 0.1);
+}
+
+.received-workdays-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+}
+
+.received-workdays-heading h2 {
+  margin: 2px 0 0;
+  color: var(--accent-dark);
+}
+
+.received-workdays-heading > span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 106, 26, 0.1);
+  color: var(--orange-dark);
+  font-weight: 800;
+}
+
+.received-workdays-list {
+  display: grid;
+  gap: 9px;
+}
+
+.received-workday-item {
+  display: grid;
+  grid-template-columns: 42px 1fr auto 20px;
+  gap: 13px;
+  align-items: center;
+  min-height: 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.34);
+  color: var(--text);
+  box-shadow: none;
+  text-align: left;
+}
+
+.received-workday-item:hover {
+  border-color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--text);
+}
+
+.received-workday-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.received-workday-copy small,
+.received-workday-project {
+  color: var(--muted);
+}
+
+.received-workday-status {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(255, 106, 26, 0.1);
+  color: var(--orange-dark);
+  font-size: 0.68rem;
+}
+
+.received-workday-status.is-complete {
+  background: rgba(31, 67, 53, 0.1);
+  color: var(--accent-dark);
+}
+
+.shared-time-summary {
+  display: grid;
+  gap: 5px;
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid rgba(31, 67, 53, 0.09);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.shared-time-summary strong {
+  color: var(--accent-dark);
+}
+
+.shared-workday-detail-dialog blockquote {
+  margin: 0;
+  padding: 13px 15px;
+  border-left: 3px solid var(--orange);
+  background: rgba(255, 106, 26, 0.06);
+  color: var(--text);
+  font-style: normal;
+}
+
+.shared-project-name {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.saas-text-button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  box-shadow: none;
+}
+
+.saas-text-button:hover {
+  background: transparent;
+  color: var(--accent-dark);
+}
+
+@media (max-width: 760px) {
+  .notification-panel {
+    position: fixed;
+    top: 80px;
+    right: 14px;
+  }
+
+  .workday-list-item {
+    grid-template-columns: minmax(0, 1fr) 44px;
+  }
+
+  .workday-share-button {
+    grid-column: 1 / -1;
+    min-height: 42px;
+    border-top: 1px solid rgba(31, 67, 53, 0.08);
+    border-left: 0;
+  }
+
+  .workday-delete-button {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .received-workday-item {
+    grid-template-columns: 38px 1fr 18px;
+  }
+
+  .received-workday-status {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+@media print {
+  .notification-menu,
+  .share-current-workday-button,
+  .workday-share-button,
+  .received-workdays {
+    display: none !important;
+  }
 }
 
 * {
@@ -637,6 +1189,75 @@ h3 {
   margin-bottom: 12px;
 }
 
+.calculator-function-field {
+  display: grid;
+  width: min(440px, 100%);
+  gap: 7px;
+  margin-bottom: 12px;
+}
+
+.calculator-function-field[hidden] {
+  display: none;
+}
+
+.calculator-function-field > span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.calculator-function-field select {
+  min-height: 48px;
+  font-weight: 750;
+}
+
+.calculator-function-field small {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.active-function-name {
+  margin: 0;
+  padding: 15px 17px;
+  border: 1px solid rgba(31, 67, 53, 0.1);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--accent-dark);
+  font-weight: 750;
+}
+
+.compact-function-setting {
+  display: grid;
+  gap: 10px;
+}
+
+.compact-function-actions {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.compact-function-actions .add-equipment-button {
+  width: auto;
+}
+
+.compact-add-function {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(31, 67, 53, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.compact-add-function > div {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
 .department-switch {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -831,6 +1452,128 @@ select:focus {
   box-shadow: 0 0 0 4px rgba(255, 106, 26, 0.1);
 }
 
+.styled-select {
+  position: relative;
+  width: 100%;
+}
+
+.styled-select-native {
+  position: absolute !important;
+  width: 1px !important;
+  min-height: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.styled-select-trigger {
+  display: flex;
+  width: 100%;
+  min-height: 54px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(31, 67, 53, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
+  color: var(--text);
+  font: inherit;
+  font-weight: 650;
+  text-align: left;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+.styled-select-trigger:hover {
+  border-color: rgba(31, 67, 53, 0.2);
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--text);
+}
+
+.styled-select-trigger:focus-visible,
+.styled-select.is-open .styled-select-trigger {
+  outline: 0;
+  border-color: rgba(255, 106, 26, 0.55);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 0 0 4px rgba(255, 106, 26, 0.1);
+}
+
+.styled-select-trigger i {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 150ms ease;
+}
+
+.styled-select.is-open .styled-select-trigger i {
+  transform: translateY(2px) rotate(225deg);
+}
+
+.styled-select-menu {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 8px);
+  left: 0;
+  display: grid;
+  width: 100%;
+  max-height: 280px;
+  gap: 4px;
+  padding: 7px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  border-radius: 16px;
+  background: rgba(247, 248, 246, 0.88);
+  box-shadow: 0 16px 38px rgba(18, 43, 35, 0.16);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+}
+
+.styled-select-menu[hidden] {
+  display: none;
+}
+
+.styled-select-option {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+}
+
+.styled-select-option:hover,
+.styled-select-option:focus-visible {
+  outline: 0;
+  background: rgba(23, 63, 54, 0.09);
+  color: var(--accent-dark);
+  transform: none;
+}
+
+.styled-select-option[aria-selected="true"] {
+  background: rgba(255, 106, 26, 0.11);
+  color: var(--orange-dark);
+}
+
+.styled-select.is-disabled {
+  opacity: 0.56;
+}
+
+.styled-select.is-disabled .styled-select-trigger {
+  cursor: not-allowed;
+}
+
 [data-local-rate][hidden],
 [data-account-rate][hidden],
 .conditional-field[hidden] {
@@ -901,14 +1644,14 @@ select:focus {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  z-index: 10;
+  z-index: 90;
   display: grid;
   grid-template-columns: 1fr 1fr;
   width: min(230px, calc(100vw - 48px));
   max-height: 260px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.58);
-  border-radius: 12px;
+  border-radius: 16px;
   background: rgba(248, 250, 248, 0.9);
   box-shadow: 0 18px 42px rgba(3, 55, 52, 0.18);
   -webkit-backdrop-filter: blur(22px) saturate(120%);
@@ -936,7 +1679,7 @@ select:focus {
   min-height: 38px;
   padding: 6px 10px;
   border: 0;
-  border-radius: 4px;
+  border-radius: 10px;
   background: transparent;
   color: var(--text);
   font-variant-numeric: tabular-nums;
@@ -1911,6 +2654,47 @@ summary:hover {
   margin-top: 24px;
 }
 
+.signup-confirmation-dialog {
+  max-width: 470px;
+  text-align: center;
+}
+
+.signup-confirmation-icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 18px;
+  place-items: center;
+  border: 1px solid rgba(255, 106, 26, 0.2);
+  border-radius: 18px;
+  background: rgba(255, 106, 26, 0.1);
+  color: var(--orange-dark);
+  font-size: 1.55rem;
+}
+
+.signup-confirmation-dialog h2 {
+  margin: 0;
+  color: var(--accent-dark);
+  font-size: 1.55rem;
+}
+
+.signup-confirmation-copy {
+  margin: 12px 0 22px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.signup-confirmation-copy strong {
+  display: block;
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+}
+
+.signup-confirmation-dialog .saas-primary-button {
+  width: 100%;
+}
+
 .auth-form label,
 .account-fields label,
 .account-inline-form label {
@@ -2354,6 +3138,65 @@ summary:hover {
 #custom-equipment-account-list {
   display: grid;
   gap: 16px;
+}
+
+.account-function-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.account-function-row {
+  display: grid;
+  grid-template-columns: 96px minmax(180px, 1fr) 150px 180px 34px;
+  align-items: end;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(31, 67, 53, 0.09);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.account-function-row > label {
+  display: grid;
+  gap: 6px;
+}
+
+.account-function-row > label > span:first-child {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 650;
+}
+
+.account-function-row .function-default-field {
+  align-self: center;
+  justify-items: center;
+  cursor: pointer;
+}
+
+.function-default-field input {
+  width: 20px;
+  min-height: 20px;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  border: 2px solid rgba(31, 67, 53, 0.26);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.function-default-field input:checked {
+  border: 6px solid var(--orange);
+  background: #fff;
+}
+
+.function-default-field input:focus-visible {
+  outline: 3px solid rgba(255, 106, 26, 0.15);
+  outline-offset: 2px;
+}
+
+.add-function-form {
+  grid-template-columns: minmax(0, 1fr) 180px 180px;
 }
 
 .account-equipment-row {
@@ -3084,12 +3927,20 @@ summary:hover {
 
   .account-equipment-row,
   .custom-account-equipment,
-  .add-equipment-form {
+  .add-equipment-form,
+  .account-function-row {
     grid-template-columns: 1fr;
   }
 
-  .custom-account-equipment .remove-equipment-button {
+  .custom-account-equipment .remove-equipment-button,
+  .account-function-row .remove-equipment-button {
     justify-self: end;
+  }
+
+  .account-function-row .function-default-field {
+    grid-template-columns: auto 1fr;
+    justify-items: start;
+    align-items: center;
   }
 
   .pro-feature-row .feature-status {
@@ -3785,16 +4636,16 @@ summary:hover {
 
   .print-breakdown {
     display: block;
-    padding: 7mm 6mm 12mm;
+    padding: 5mm 5mm 8mm;
     color: var(--text);
   }
 
   .print-breakdown-header {
     display: grid;
     grid-template-columns: 0.85fr 1.15fr;
-    gap: 8mm;
+    gap: 7mm;
     align-items: end;
-    padding-bottom: 5mm;
+    padding-bottom: 4mm;
     border-bottom: 1px solid var(--line);
   }
 
@@ -3808,7 +4659,7 @@ summary:hover {
   .print-logo {
     display: block;
     flex: 0 0 auto;
-    width: 28mm;
+    width: 25mm;
     height: auto;
   }
 
@@ -3847,7 +4698,7 @@ summary:hover {
   }
 
   .print-breakdown-body {
-    margin-top: 7mm;
+    margin-top: 5mm;
   }
 
   .print-breakdown-body h3 {
@@ -3865,8 +4716,8 @@ summary:hover {
     grid-template-columns: 1fr auto;
     gap: 8mm;
     align-items: center;
-    min-height: 11mm;
-    padding: 2.3mm 3mm;
+    min-height: 9.2mm;
+    padding: 1.7mm 2.5mm;
     border-bottom: 1px solid #e5ecef;
     break-inside: avoid;
   }
@@ -3894,7 +4745,7 @@ summary:hover {
 
   .print-totals {
     width: 88mm;
-    margin: 7mm 0 0 auto;
+    margin: 5mm 0 0 auto;
     border-top: 1px solid var(--line);
   }
 
@@ -3902,7 +4753,7 @@ summary:hover {
     display: flex;
     justify-content: space-between;
     gap: 8mm;
-    padding: 2.5mm 3mm;
+    padding: 2mm 2.5mm;
     border-bottom: 1px solid #e5ecef;
   }
 
@@ -3913,8 +4764,8 @@ summary:hover {
   }
 
   .print-totals .print-grand-total {
-    margin-top: 2mm;
-    padding: 4mm 3mm;
+    margin-top: 1.5mm;
+    padding: 3mm 2.5mm;
     border: 1px solid #b9d0c7;
     background: #edf5f1;
   }
@@ -3961,8 +4812,9 @@ summary:hover {
       <section class="calculator-grid">
         <form class="input-panel" id="calculator-form">
           <section class="form-section department-section">
-            <h3>Afdeling</h3>
-            <fieldset class="department-switch" aria-label="Afdeling kiezen">
+            <h3>Functie</h3>
+            <p class="active-function-name" id="active-function-name" hidden></p>
+            <fieldset class="department-switch" aria-label="Functie kiezen">
               <label class="department-choice">
                 <input type="radio" name="department" value="camera" checked>
                 <span>Camera</span>
@@ -4180,6 +5032,10 @@ summary:hover {
               </span>
               <small data-workday-save-badge>Pro</small>
             </button>
+            <button class="saas-secondary-button share-current-workday-button" type="button" id="share-current-workday" hidden>
+              <span aria-hidden="true">&#8599;</span>
+              Deel met collega's
+            </button>
           </div>
         </section>
 
@@ -4336,7 +5192,9 @@ summary:hover {
       <p class="pro-dialog-intro" id="pro-intro">Voor Pro heb je een account nodig. Zo blijven je abonnement en instellingen veilig aan jou gekoppeld.</p>
       <ul class="pro-benefits">
         <li><strong>Werkdagen</strong> - bewaar je begintijd en rond je werkdag later af</li>
+        <li>Deel werktijden veilig met collega's binnen Overuurtje</li>
         <li>Projecten met meerdere dagen of periodes</li>
+        <li>Functies met een eigen afdeling en dagtarief</li>
         <li>Persoonlijke instellingen opslaan</li>
         <li>Synchronisatie tussen apparaten</li>
         <li>Eigen apparatuur en toeslagen</li>
@@ -4351,7 +5209,7 @@ summary:hover {
       <button class="dialog-close" type="button" data-workday-dialog-close aria-label="Sluiten">&times;</button>
       <p class="dialog-eyebrow">Werkdag opslaan</p>
       <h2 id="duplicate-workday-title">Voor deze datum bestaat al een opgeslagen werkdag.</h2>
-      <p>Wil je de bestaande werkdag openen of een tweede werkdag voor dezelfde datum maken?</p>
+      <p id="duplicate-workday-copy">Wil je de bestaande werkdag openen of een tweede werkdag voor dezelfde datum maken?</p>
       <div class="dialog-action-stack">
         <button class="saas-primary-button" id="open-existing-workday" type="button">Doorgaan met bewerken</button>
         <button class="saas-secondary-button" id="create-duplicate-workday" type="button">Nieuwe werkdag op deze datum</button>
@@ -4362,7 +5220,7 @@ summary:hover {
       <button class="dialog-close" type="button" data-workday-dialog-close aria-label="Sluiten">&times;</button>
       <p class="dialog-eyebrow">Vandaag</p>
       <h2 id="today-workday-title">Je hebt vandaag al een werkdag opgeslagen.</h2>
-      <p>Wil je verdergaan met het bewerken van deze werkdag?</p>
+      <p id="today-workday-copy">Wil je verdergaan met het bewerken van deze werkdag?</p>
       <div class="dialog-action-stack">
         <button class="saas-primary-button" id="continue-today-workday" type="button">Verder met deze werkdag</button>
         <button class="saas-secondary-button" id="new-today-calculation" type="button">Nieuwe berekening</button>
@@ -4528,10 +5386,14 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
   }
 
   function signUp(email, password) {
+    const currentUrl = new URL(location.href);
+    const emailRedirectTo = currentUrl.searchParams.has("invite")
+      ? currentUrl.href
+      : config.accountUrl;
     return withClient((client) => client.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: config.accountUrl }
+      options: { emailRedirectTo }
     }));
   }
 
@@ -4755,6 +5617,161 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
 
     </script>
     <script>
+(function initializeFunctionService() {
+  "use strict";
+
+  const supabaseService = globalThis.OveruurtjeSupabase;
+  const COLUMNS = "id,user_id,name,department,day_rate,is_default,sort_order,created_at,updated_at";
+  const STANDARD_FUNCTIONS = Object.freeze([
+    Object.freeze({ name: "Camera", department: "camera", dayRate: 450, sortOrder: 0 }),
+    Object.freeze({ name: "Audio", department: "audio", dayRate: 395, sortOrder: 1 })
+  ]);
+
+  function normalize(row) {
+    return {
+      id: row.id,
+      userId: row.user_id,
+      name: String(row.name || "").trim(),
+      department: row.department === "audio" ? "audio" : "camera",
+      dayRate: Math.max(0, Number(row.day_rate) || 0),
+      isDefault: Boolean(row.is_default),
+      sortOrder: Number(row.sort_order) || 0,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  async function getClient() {
+    const client = await supabaseService.getClient();
+    if (!client) throw new Error("Supabase is niet beschikbaar.");
+    return client;
+  }
+
+  async function list(userId) {
+    if (!userId) return [];
+    const client = await getClient();
+    const { data, error } = await client
+      .from("work_functions")
+      .select(COLUMNS)
+      .eq("user_id", userId)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    return (data || []).map(normalize);
+  }
+
+  async function create(userId, values) {
+    const client = await getClient();
+    const { data, error } = await client
+      .from("work_functions")
+      .insert({
+        user_id: userId,
+        name: String(values.name || "").trim(),
+        department: values.department === "audio" ? "audio" : "camera",
+        day_rate: Math.max(0, Number(values.dayRate) || 0),
+        is_default: Boolean(values.isDefault),
+        sort_order: Number(values.sortOrder) || 0
+      })
+      .select(COLUMNS)
+      .single();
+    if (error) throw error;
+    return normalize(data);
+  }
+
+  async function update(userId, id, values) {
+    const client = await getClient();
+    const { data, error } = await client
+      .from("work_functions")
+      .update({
+        name: String(values.name || "").trim(),
+        department: values.department === "audio" ? "audio" : "camera",
+        day_rate: Math.max(0, Number(values.dayRate) || 0),
+        is_default: Boolean(values.isDefault),
+        sort_order: Number(values.sortOrder) || 0
+      })
+      .eq("id", id)
+      .eq("user_id", userId)
+      .select(COLUMNS)
+      .single();
+    if (error) throw error;
+    return normalize(data);
+  }
+
+  async function setDefault(userId, id) {
+    const client = await getClient();
+    const { error: clearError } = await client
+      .from("work_functions")
+      .update({ is_default: false })
+      .eq("user_id", userId)
+      .eq("is_default", true);
+    if (clearError) throw clearError;
+
+    const { data, error } = await client
+      .from("work_functions")
+      .update({ is_default: true })
+      .eq("id", id)
+      .eq("user_id", userId)
+      .select(COLUMNS)
+      .single();
+    if (error) throw error;
+    return normalize(data);
+  }
+
+  async function remove(userId, id) {
+    const client = await getClient();
+    const { error } = await client
+      .from("work_functions")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", userId);
+    if (error) throw error;
+  }
+
+  function isStandard(item) {
+    const name = String(item?.name || "").trim().toLocaleLowerCase("nl");
+    return STANDARD_FUNCTIONS.some((standard) => standard.name.toLocaleLowerCase("nl") === name);
+  }
+
+  async function ensureStandards(userId, items, settings = {}) {
+    const existing = [...(items || [])];
+    const defaultDepartment = settings.defaultDepartment === "audio" ? "audio" : "camera";
+    const hasDefault = existing.some((item) => item.isDefault);
+
+    for (const standard of STANDARD_FUNCTIONS) {
+      if (existing.some((item) => item.name.toLocaleLowerCase("nl") === standard.name.toLocaleLowerCase("nl"))) continue;
+      const created = await create(userId, {
+        ...standard,
+        dayRate: standard.department === defaultDepartment && Number.isFinite(Number(settings.defaultDayRate))
+          ? Number(settings.defaultDayRate)
+          : standard.dayRate,
+        isDefault: !hasDefault && standard.department === defaultDepartment
+      });
+      existing.push(created);
+    }
+
+    if (!existing.some((item) => item.isDefault) && existing.length) {
+      const preferred = existing.find((item) => item.department === defaultDepartment) || existing[0];
+      await setDefault(userId, preferred.id);
+      return list(userId);
+    }
+    return existing.sort((a, b) => a.sortOrder - b.sortOrder);
+  }
+
+  globalThis.OveruurtjeFunctions = Object.freeze({
+    standardFunctions: STANDARD_FUNCTIONS,
+    normalize,
+    list,
+    create,
+    update,
+    setDefault,
+    remove,
+    isStandard,
+    ensureStandards
+  });
+})();
+
+    </script>
+    <script>
 (function initializeEquipmentService() {
   "use strict";
 
@@ -4831,6 +5848,176 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
   }
 
   globalThis.OveruurtjeEquipment = Object.freeze({ normalize, list, create, update, remove });
+})();
+
+    </script>
+    <script>
+(function initializeProjectService() {
+  "use strict";
+
+  const supabaseService = globalThis.OveruurtjeSupabase;
+  const STORAGE_KEY = "overuurtjeMockProjects";
+  const PROJECT_COLUMNS = "id,user_id,name,client_name,start_date,end_date,notes,created_at,updated_at";
+  const DAY_COLUMNS = "id,project_id,user_id,work_date,calculation_data,created_at,updated_at";
+
+  const normalizeProject = (row) => ({
+    id: row.id, userId: row.user_id, name: row.name, clientName: row.client_name || "",
+    startDate: row.start_date, endDate: row.end_date, notes: row.notes || "",
+    createdAt: row.created_at, updatedAt: row.updated_at
+  });
+  const normalizeDay = (row) => ({
+    id: row.id, projectId: row.project_id, userId: row.user_id, workDate: row.work_date,
+    calculationData: row.calculation_data || {}, createdAt: row.created_at, updatedAt: row.updated_at
+  });
+  const mockId = () => globalThis.crypto?.randomUUID?.() || `mock-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const readMock = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; } };
+  const writeMock = (value) => localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+  const isMock = (options) => Boolean(options?.mock);
+
+  async function client() {
+    const value = await supabaseService.getClient();
+    if (!value) throw new Error("Supabase is niet beschikbaar.");
+    return value;
+  }
+
+  async function list(userId, options = {}) {
+    if (isMock(options)) return Object.values(readMock()[userId]?.projects || {}).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    const db = await client();
+    const { data, error } = await db.from("projects").select(PROJECT_COLUMNS).eq("user_id", userId).order("updated_at", { ascending: false });
+    if (error) throw error;
+    return (data || []).map(normalizeProject);
+  }
+
+  async function get(userId, id, options = {}) {
+    if (isMock(options)) {
+      const store = readMock()[userId] || { projects: {}, days: {} };
+      const project = store.projects?.[id];
+      return project ? { project, days: Object.values(store.days || {}).filter((day) => day.projectId === id).sort((a, b) => a.workDate.localeCompare(b.workDate)) } : null;
+    }
+    const db = await client();
+    const [{ data: projectRow, error: projectError }, { data: dayRows, error: dayError }] = await Promise.all([
+      db.from("projects").select(PROJECT_COLUMNS).eq("id", id).eq("user_id", userId).maybeSingle(),
+      db.from("project_days").select(DAY_COLUMNS).eq("project_id", id).eq("user_id", userId).order("work_date")
+    ]);
+    if (projectError) throw projectError;
+    if (dayError) throw dayError;
+    return projectRow ? { project: normalizeProject(projectRow), days: (dayRows || []).map(normalizeDay) } : null;
+  }
+
+  async function listDaysByDate(userId, workDate, options = {}) {
+    if (isMock(options)) {
+      const store = readMock()[userId] || { projects: {}, days: {} };
+      return Object.values(store.days || {})
+        .filter((day) => day.workDate === workDate)
+        .map((day) => ({ day, project: store.projects?.[day.projectId] }))
+        .filter((entry) => entry.project)
+        .sort((a, b) => b.project.updatedAt.localeCompare(a.project.updatedAt));
+    }
+
+    const db = await client();
+    const { data: dayRows, error: dayError } = await db.from("project_days")
+      .select(DAY_COLUMNS)
+      .eq("user_id", userId)
+      .eq("work_date", workDate)
+      .order("updated_at", { ascending: false });
+    if (dayError) throw dayError;
+    if (!dayRows?.length) return [];
+
+    const projectIds = [...new Set(dayRows.map((day) => day.project_id))];
+    const { data: projectRows, error: projectError } = await db.from("projects")
+      .select(PROJECT_COLUMNS)
+      .eq("user_id", userId)
+      .in("id", projectIds);
+    if (projectError) throw projectError;
+
+    const projectsById = new Map((projectRows || []).map((project) => [
+      project.id,
+      normalizeProject(project)
+    ]));
+    return dayRows
+      .map((day) => ({
+        day: normalizeDay(day),
+        project: projectsById.get(day.project_id)
+      }))
+      .filter((entry) => entry.project);
+  }
+
+  async function saveProject(userId, values, options = {}) {
+    const now = new Date().toISOString();
+    if (isMock(options)) {
+      const all = readMock(); const store = all[userId] || { projects: {}, days: {} };
+      const old = values.id ? store.projects[values.id] : null;
+      const project = { id: values.id || mockId(), userId, name: values.name.trim(), clientName: values.clientName?.trim() || "", startDate: values.startDate, endDate: values.endDate, notes: values.notes?.trim() || "", createdAt: old?.createdAt || now, updatedAt: now };
+      store.projects[project.id] = project; all[userId] = store; writeMock(all); return project;
+    }
+    const db = await client();
+    const payload = { user_id: userId, name: values.name.trim(), client_name: values.clientName?.trim() || null, start_date: values.startDate, end_date: values.endDate, notes: values.notes?.trim() || null };
+    const query = values.id ? db.from("projects").update(payload).eq("id", values.id).eq("user_id", userId) : db.from("projects").insert(payload);
+    const { data, error } = await query.select(PROJECT_COLUMNS).single();
+    if (error) throw error;
+    return normalizeProject(data);
+  }
+
+  async function replaceDays(userId, projectId, days, options = {}) {
+    if (isMock(options)) {
+      const all = readMock(); const store = all[userId] || { projects: {}, days: {} };
+      Object.keys(store.days).forEach((id) => { if (store.days[id].projectId === projectId) delete store.days[id]; });
+      days.forEach((item) => { const id = item.id || mockId(); const now = new Date().toISOString(); store.days[id] = { id, projectId, userId, workDate: item.workDate, calculationData: item.calculationData || {}, createdAt: now, updatedAt: now }; });
+      if (store.projects[projectId]) store.projects[projectId].updatedAt = new Date().toISOString();
+      all[userId] = store; writeMock(all); return get(userId, projectId, options);
+    }
+    const db = await client();
+    const { data: existingRows, error: existingError } = await db.from("project_days")
+      .select("id")
+      .eq("project_id", projectId)
+      .eq("user_id", userId);
+    if (existingError) throw existingError;
+    const incomingIds = new Set(days.map((day) => day.id).filter(Boolean));
+    const removedIds = (existingRows || []).map((row) => row.id).filter((id) => !incomingIds.has(id));
+    if (removedIds.length) {
+      const { error: deleteError } = await db.from("project_days")
+        .delete()
+        .eq("project_id", projectId)
+        .eq("user_id", userId)
+        .in("id", removedIds);
+      if (deleteError) throw deleteError;
+    }
+    if (days.length) {
+      const payload = days.map((day) => ({
+        ...(day.id ? { id: day.id } : {}),
+        project_id: projectId,
+        user_id: userId,
+        work_date: day.workDate,
+        calculation_data: day.calculationData || {}
+      }));
+      const { error } = await db.from("project_days").upsert(payload, { onConflict: "id" });
+      if (error) throw error;
+    }
+    await db.from("projects").update({ updated_at: new Date().toISOString() }).eq("id", projectId).eq("user_id", userId);
+    return get(userId, projectId, options);
+  }
+
+  async function remove(userId, id, options = {}) {
+    if (isMock(options)) {
+      const all = readMock(); const store = all[userId] || { projects: {}, days: {} };
+      delete store.projects[id]; Object.keys(store.days).forEach((dayId) => { if (store.days[dayId].projectId === id) delete store.days[dayId]; });
+      all[userId] = store; writeMock(all); return;
+    }
+    const db = await client();
+    const { error } = await db.from("projects").delete().eq("id", id).eq("user_id", userId);
+    if (error) throw error;
+  }
+
+  globalThis.OveruurtjeProjects = Object.freeze({
+    normalizeProject,
+    normalizeDay,
+    list,
+    get,
+    listDaysByDate,
+    saveProject,
+    replaceDays,
+    remove
+  });
 })();
 
     </script>
@@ -4957,6 +6144,138 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
 
     </script>
     <script>
+(function initializeShareService() {
+  "use strict";
+
+  const supabaseService = globalThis.OveruurtjeSupabase;
+
+  async function client() {
+    const value = await supabaseService.getClient();
+    if (!value) throw new Error("Supabase is niet beschikbaar.");
+    return value;
+  }
+
+  async function rpc(name, values = {}) {
+    const db = await client();
+    const { data, error } = await db.rpc(name, values);
+    if (error) throw error;
+    return data;
+  }
+
+  const normalizeReceived = (row) => ({
+    id: row.id,
+    sourceType: row.source_type,
+    sourceId: row.source_id,
+    ownerId: row.owner_id,
+    ownerName: row.owner_name || "Een collega",
+    workDate: row.work_date,
+    startTime: row.start_time || "",
+    endTime: row.end_time || "",
+    projectName: row.project_name || "",
+    optionalMessage: row.optional_message || "",
+    shareMode: row.share_mode,
+    acceptedAt: row.accepted_at,
+    sourceUpdatedAt: row.source_updated_at,
+    createdAt: row.created_at
+  });
+
+  const normalizeSent = (row) => ({
+    id: row.id,
+    recipientId: row.recipient_id,
+    recipientName: row.recipient_name || "",
+    recipientEmail: row.recipient_email || "",
+    optionalMessage: row.optional_message || "",
+    shareMode: row.share_mode,
+    deliveredAt: row.delivered_at,
+    acceptedAt: row.accepted_at
+  });
+
+  const normalizeNotification = (row) => ({
+    id: row.id,
+    type: row.notification_type,
+    shareId: row.share_id,
+    actorName: row.actor_name || "Een collega",
+    readAt: row.read_at,
+    createdAt: row.created_at
+  });
+
+  const normalizeInvite = (row) => ({
+    token: row.token,
+    ownerName: row.owner_name || "Een collega",
+    sourceType: row.source_type,
+    sourceId: row.source_id,
+    workDate: row.work_date,
+    startTime: row.start_time || "",
+    endTime: row.end_time || "",
+    projectName: row.project_name || "",
+    optionalMessage: row.optional_message || "",
+    shareMode: row.share_mode,
+    available: row.available !== false
+  });
+
+  async function createInvite({ sourceType, sourceId, message = "", shareMode = "direct" }) {
+    return rpc("create_workday_share_invite", {
+      p_source_type: sourceType,
+      p_source_id: sourceId,
+      p_message: message,
+      p_share_mode: shareMode
+    });
+  }
+
+  async function previewInvite(token) {
+    const rows = await rpc("preview_workday_share_invite", { p_token: token });
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    return row ? normalizeInvite(row) : null;
+  }
+
+  async function claimInvite(token) {
+    return rpc("claim_workday_share_invite", { p_token: token });
+  }
+
+  async function listReceived() {
+    return (await rpc("get_received_workday_shares") || []).map(normalizeReceived);
+  }
+
+  async function listSent(sourceType, sourceId) {
+    return (await rpc("get_sent_workday_shares", {
+      p_source_type: sourceType,
+      p_source_id: sourceId
+    }) || [])
+      .map(normalizeSent)
+      .sort((a, b) => a.recipientName.localeCompare(b.recipientName, "nl"));
+  }
+
+  async function accept(id) {
+    await rpc("accept_workday_share", { p_share_id: id });
+  }
+
+  async function remove(id) {
+    await rpc("remove_workday_share", { p_share_id: id });
+  }
+
+  async function listNotifications() {
+    return (await rpc("list_overuurtje_notifications") || []).map(normalizeNotification);
+  }
+
+  async function markNotificationsRead(ids = null) {
+    await rpc("mark_overuurtje_notifications_read", { p_ids: ids });
+  }
+
+  globalThis.OveruurtjeShares = Object.freeze({
+    createInvite,
+    previewInvite,
+    claimInvite,
+    listReceived,
+    listSent,
+    accept,
+    remove,
+    listNotifications,
+    markNotificationsRead
+  });
+})();
+
+    </script>
+    <script>
 (function initializeSubscriptionService() {
   "use strict";
 
@@ -5017,6 +6336,8 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     projects: { requiresPro: true },
     custom_equipment: { requiresPro: true },
     equipment_library: { requiresPro: true },
+    work_functions: { requiresPro: true },
+    workday_sharing: { requiresPro: true },
     pdf_export: { requiresPro: true },
     device_sync: { requiresPro: true }
   });
@@ -5623,6 +6944,7 @@ globalThis.TariffCalculator = {
   const auth = globalThis.OveruurtjeAuth;
   const profiles = globalThis.OveruurtjeProfiles;
   const subscriptions = globalThis.OveruurtjeSubscriptions;
+  const shares = globalThis.OveruurtjeShares;
   const config = globalThis.OveruurtjeConfig;
   let currentContext = Object.freeze({ auth: auth.getState(), profile: null, subscription: subscriptions.resolve(null), isPro: false });
   let contextPromiseResolve;
@@ -5659,6 +6981,10 @@ globalThis.TariffCalculator = {
   const manageButtons = document.querySelectorAll("[data-subscription-manage]");
   let authMode = "login";
   let showProChoiceAfterAuth = false;
+  let authPurpose = "";
+  let pendingSignupEmail = "";
+  let notificationTimer = null;
+  let notificationUi = null;
 
   function showToast(message) {
     if (globalThis.OveruurtjeAnalytics?.showToast) {
@@ -5684,19 +7010,159 @@ globalThis.TariffCalculator = {
     else dialog.removeAttribute("open");
   }
 
+  function notificationText(item) {
+    if (item.type === "workday_times_updated") return `${item.actorName} heeft de werktijden aangepast.`;
+    if (item.type === "workday_share_removed") return "Een gedeelde werkdag is niet langer beschikbaar.";
+    return `${item.actorName} heeft een werkdag met je gedeeld.`;
+  }
+
+  function ensureNotificationUi() {
+    if (notificationUi || !userMenu?.parentElement || !shares) return notificationUi;
+    const wrapper = document.createElement("div");
+    wrapper.className = "notification-menu";
+    wrapper.hidden = true;
+    wrapper.innerHTML = `
+      <button class="notification-button" type="button" aria-label="Notificaties" aria-expanded="false">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+          <path d="M10 21h4"></path>
+        </svg>
+        <span class="notification-badge" hidden>0</span>
+      </button>
+      <div class="notification-panel" hidden>
+        <div class="notification-panel-heading"><strong>Notificaties</strong><button type="button">Alles gelezen</button></div>
+        <div class="notification-list"></div>
+      </div>
+    `;
+    userMenu.parentElement.insertBefore(wrapper, userMenu);
+    const button = wrapper.querySelector(".notification-button");
+    const panel = wrapper.querySelector(".notification-panel");
+    button.addEventListener("click", async () => {
+      const opening = panel.hidden;
+      panel.hidden = !opening;
+      button.setAttribute("aria-expanded", String(opening));
+      if (opening) {
+        await refreshNotifications();
+        await shares.markNotificationsRead().catch(() => {});
+        wrapper.querySelector(".notification-badge").hidden = true;
+      }
+    });
+    wrapper.querySelector(".notification-panel-heading button").addEventListener("click", async () => {
+      await shares.markNotificationsRead();
+      await refreshNotifications();
+    });
+    notificationUi = wrapper;
+    return wrapper;
+  }
+
+  async function refreshNotifications() {
+    if (!auth.getState().user || !shares) return;
+    const wrapper = ensureNotificationUi();
+    if (!wrapper) return;
+    try {
+      const items = await shares.listNotifications();
+      const badge = wrapper.querySelector(".notification-badge");
+      const unread = items.filter((item) => !item.readAt).length;
+      badge.textContent = unread > 9 ? "9+" : String(unread);
+      badge.hidden = unread === 0;
+      const list = wrapper.querySelector(".notification-list");
+      if (!items.length) {
+        const empty = document.createElement("p");
+        empty.className = "notification-empty";
+        empty.textContent = "Nog geen notificaties.";
+        list.replaceChildren(empty);
+        return;
+      }
+      list.replaceChildren(...items.map((item) => {
+        const link = document.createElement(item.shareId ? "a" : "div");
+        link.className = `notification-item${item.readAt ? "" : " is-unread"}`;
+        if (item.shareId) link.href = `${config.workdaysUrl}?shared=${encodeURIComponent(item.shareId)}`;
+        const copy = document.createElement("span");
+        copy.textContent = notificationText(item);
+        const time = document.createElement("small");
+        time.textContent = new Intl.DateTimeFormat("nl-NL", {
+          day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
+        }).format(new Date(item.createdAt));
+        link.append(copy, time);
+        return link;
+      }));
+    } catch (error) {
+      console.warn("Notificaties konden niet worden geladen.", error);
+    }
+  }
+
+  function updateNotificationAccess(user) {
+    const wrapper = ensureNotificationUi();
+    if (wrapper) wrapper.hidden = !user;
+    clearInterval(notificationTimer);
+    notificationTimer = null;
+    if (!user || !shares) return;
+    refreshNotifications();
+    notificationTimer = setInterval(refreshNotifications, 60000);
+  }
+
+  function ensureSignupConfirmationDialog() {
+    let dialog = document.querySelector("#signup-confirmation-dialog");
+    if (dialog) return dialog;
+
+    dialog = document.createElement("dialog");
+    dialog.className = "saas-dialog signup-confirmation-dialog";
+    dialog.id = "signup-confirmation-dialog";
+    dialog.setAttribute("aria-labelledby", "signup-confirmation-title");
+    dialog.innerHTML = `
+      <button class="dialog-close" type="button" data-signup-confirmation-close aria-label="Sluiten">&times;</button>
+      <div class="signup-confirmation-icon" aria-hidden="true">&#9993;</div>
+      <p class="dialog-eyebrow">Account aangemaakt</p>
+      <h2 id="signup-confirmation-title">Controleer je inbox</h2>
+      <p class="signup-confirmation-copy">
+        We hebben een bevestigingsmail gestuurd naar
+        <strong id="signup-confirmation-email"></strong>.
+        Bevestig eerst je e-mailadres en log daarna in.
+      </p>
+      <button class="saas-primary-button" id="signup-confirmation-login" type="button">Naar inloggen</button>
+    `;
+    document.body.append(dialog);
+
+    dialog.querySelector("[data-signup-confirmation-close]")?.addEventListener("click", () => closeDialog(dialog));
+    dialog.querySelector("#signup-confirmation-login")?.addEventListener("click", () => {
+      closeDialog(dialog);
+      openAuth("login");
+      authEmail.value = pendingSignupEmail;
+      authPassword.focus();
+    });
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) closeDialog(dialog);
+    });
+    return dialog;
+  }
+
+  function openSignupConfirmation(email) {
+    pendingSignupEmail = email;
+    const dialog = ensureSignupConfirmationDialog();
+    dialog.querySelector("#signup-confirmation-email").textContent = email;
+    closeDialog(authDialog);
+    openDialog(dialog);
+    dialog.querySelector("#signup-confirmation-login")?.focus();
+  }
+
   function setAuthMode(mode) {
     authMode = ["login", "register", "forgot"].includes(mode) ? mode : "login";
     const isForgot = authMode === "forgot";
     const isRegister = authMode === "register";
 
+    const isShareInvite = authPurpose === "share";
     authTitle.textContent = isForgot
       ? "Wachtwoord herstellen"
-      : (isRegister && showProChoiceAfterAuth ? "Account maken voor Pro" : (isRegister ? "Account maken" : "Inloggen"));
+      : (isShareInvite
+        ? (isRegister ? "Account maken om tijden te ontvangen" : "Inloggen om tijden te ontvangen")
+        : (isRegister && showProChoiceAfterAuth ? "Account maken voor Pro" : (isRegister ? "Account maken" : "Inloggen")));
     authIntro.textContent = isForgot
       ? "We sturen een veilige herstellink naar je e-mailadres."
-      : (isRegister && showProChoiceAfterAuth
+      : (isShareInvite
+        ? "Log in of maak gratis een account. Daarna kun je de gedeelde tijden bekijken en overnemen."
+        : (isRegister && showProChoiceAfterAuth
         ? "Voor Pro heb je eerst een gratis account nodig. Na het aanmelden kies je direct Pro of ga je verder met Free."
-        : (isRegister ? "Maak een account om Overuurtje straks op al je apparaten te gebruiken." : "Log in bij je Overuurtje-account."));
+        : (isRegister ? "Maak een account om Overuurtje straks op al je apparaten te gebruiken." : "Log in bij je Overuurtje-account.")));
     authPasswordField.hidden = isForgot;
     authPassword.required = !isForgot;
     authPassword.autocomplete = isRegister ? "new-password" : "current-password";
@@ -5709,12 +7175,13 @@ globalThis.TariffCalculator = {
     authStatus.textContent = "";
   }
 
-  function openAuth(mode = "login", { continueToPro = false } = {}) {
+  function openAuth(mode = "login", { continueToPro = false, purpose = "" } = {}) {
     if (!auth.getState().available && !globalThis.OveruurtjeSupabase.isConfigured()) {
       showToast("Accounts worden actief zodra Supabase is gekoppeld.");
       return;
     }
     showProChoiceAfterAuth = continueToPro;
+    authPurpose = purpose;
     setAuthMode(mode);
     openDialog(authDialog);
     authEmail.focus();
@@ -5728,6 +7195,7 @@ globalThis.TariffCalculator = {
       button.hidden = Boolean(user);
     });
     userMenu.hidden = !user;
+    updateNotificationAccess(user);
     if (!user) return;
 
     const label = context.profile?.displayName || user.email || "Account";
@@ -5786,9 +7254,10 @@ globalThis.TariffCalculator = {
         : await auth.signIn(email, authPassword.value);
       if (response.error) throw response.error;
 
-      if (authMode === "register" && !response.data.session) {
-        sessionStorage.setItem("overuurtjePostSignupChoice", "true");
-        authStatus.textContent = "Controleer je e-mail om je account te bevestigen. Log daarna in om Pro te kiezen of verder te gaan met Free.";
+      if (authMode === "register" && !response.data?.session) {
+        if (showProChoiceAfterAuth) sessionStorage.setItem("overuurtjePostSignupChoice", "true");
+        authForm.reset();
+        openSignupConfirmation(email);
         return;
       }
 
@@ -5796,7 +7265,7 @@ globalThis.TariffCalculator = {
       closeDialog(authDialog);
       authForm.reset();
       showToast(completedRegistration ? "Account aangemaakt." : "Je bent ingelogd.");
-      if (completedRegistration || showProChoiceAfterAuth || sessionStorage.getItem("overuurtjePostSignupChoice") === "true") {
+      if (showProChoiceAfterAuth || sessionStorage.getItem("overuurtjePostSignupChoice") === "true") {
         sessionStorage.removeItem("overuurtjePostSignupChoice");
         showProChoiceAfterAuth = false;
         openUpgrade({ accountReady: true });
@@ -5865,7 +7334,13 @@ globalThis.TariffCalculator = {
       userDropdown.hidden = true;
       userMenuButton?.setAttribute("aria-expanded", "false");
     }
+    if (notificationUi && !event.target.closest(".notification-menu")) {
+      notificationUi.querySelector(".notification-panel").hidden = true;
+      notificationUi.querySelector(".notification-button").setAttribute("aria-expanded", "false");
+    }
   });
+  window.addEventListener("focus", refreshNotifications);
+  document.addEventListener("overuurtje:shares-changed", refreshNotifications);
 
   logoutButtons.forEach((button) => button.addEventListener("click", async () => {
     const { error } = await auth.signOut();
@@ -5896,11 +7371,394 @@ globalThis.TariffCalculator = {
 
     </script>
     <script>
+(function initializeShareUi() {
+  "use strict";
+
+  const shares = globalThis.OveruurtjeShares;
+  const sessionUi = globalThis.OveruurtjeSessionUI;
+  let activeSource = null;
+
+  function openDialog(dialog) {
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+  }
+
+  function closeDialog(dialog) {
+    if (typeof dialog.close === "function") dialog.close();
+    else dialog.removeAttribute("open");
+  }
+
+  function initials(name) {
+    return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "O";
+  }
+
+  function invitationUrl(token) {
+    const url = new URL("workdays.html", location.href);
+    url.search = "";
+    url.searchParams.set("invite", token);
+    return url.href;
+  }
+
+  async function shareLink(url) {
+    const payload = {
+      title: "Werkdag delen via Overuurtje.nl",
+      text: "Ik wil graag mijn werktijden met je delen via Overuurtje.nl.",
+      url
+    };
+    if (navigator.share) {
+      await navigator.share(payload);
+      return "Uitnodiging gedeeld.";
+    }
+    await navigator.clipboard.writeText(`${payload.text}\n${url}`);
+    return "Uitnodigingslink gekopieerd.";
+  }
+
+  function ensureDialog() {
+    let dialog = document.querySelector("#share-workday-dialog");
+    if (dialog) return dialog;
+    dialog = document.createElement("dialog");
+    dialog.className = "saas-dialog share-workday-dialog";
+    dialog.id = "share-workday-dialog";
+    dialog.innerHTML = `
+      <button class="dialog-close" type="button" data-share-close aria-label="Sluiten">&times;</button>
+      <p class="dialog-eyebrow">Overuurtje Pro</p>
+      <h2>Deel met collega's</h2>
+      <p class="share-privacy-note">Deel een persoonlijke uitnodigingslink via WhatsApp, Berichten, Mail of een andere app. Alleen datum en tijden worden zichtbaar; financiële gegevens blijven privé.</p>
+      <label>
+        <span>Bericht <small>(optioneel)</small></span>
+        <textarea data-share-message maxlength="500" rows="3" placeholder="Controleer de eindtijd nog even."></textarea>
+      </label>
+      <fieldset class="share-mode-options">
+        <legend>Deelmoment</legend>
+        <label class="share-mode-toggle">
+          <input type="radio" name="shareMode" value="direct" checked>
+          <span class="share-mode-switch" aria-hidden="true"></span>
+          <span><strong>Direct delen</strong><small>De tijden zijn meteen zichtbaar.</small></span>
+        </label>
+        <label class="share-mode-toggle">
+          <input type="radio" name="shareMode" value="on_completion">
+          <span class="share-mode-switch" aria-hidden="true"></span>
+          <span><strong>Delen zodra de werkdag is afgerond</strong><small>De melding volgt zodra een eindtijd is ingevuld.</small></span>
+        </label>
+      </fieldset>
+      <p class="share-account-note">De ontvanger kan een gratis of Pro-account gebruiken. Zonder account wordt eerst gevraagd om er een aan te maken.</p>
+      <p class="saas-form-status" data-share-status aria-live="polite"></p>
+      <button class="saas-primary-button share-invite-button" type="button" data-share-submit>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="m8.6 10.7 6.8-4.1M8.6 13.3l6.8 4.1"></path></svg>
+        Uitnodigingslink delen
+      </button>
+      <section class="shared-with-section" data-shared-with hidden>
+        <h3>Gedeeld met</h3>
+        <div data-shared-with-list></div>
+      </section>
+    `;
+    document.body.append(dialog);
+    dialog.querySelector("[data-share-submit]").addEventListener("click", () => submit(dialog));
+    dialog.querySelector("[data-share-close]").addEventListener("click", () => closeDialog(dialog));
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) closeDialog(dialog);
+    });
+    return dialog;
+  }
+
+  async function renderSent(dialog) {
+    const section = dialog.querySelector("[data-shared-with]");
+    const list = dialog.querySelector("[data-shared-with-list]");
+    try {
+      const sent = await shares.listSent(activeSource.type, activeSource.id);
+      section.hidden = sent.length === 0;
+      list.replaceChildren(...sent.map((item) => {
+        const row = document.createElement("div");
+        row.className = "shared-with-row";
+        row.innerHTML = `
+          <span class="share-avatar"></span>
+          <span><strong></strong><small></small></span>
+          <button type="button" aria-label="Niet meer delen">&times;</button>
+        `;
+        row.querySelector(".share-avatar").textContent = initials(item.recipientName || item.recipientEmail);
+        row.querySelector("strong").textContent = item.recipientName || item.recipientEmail;
+        row.querySelector("small").textContent = item.acceptedAt
+          ? "Werktijden overgenomen"
+          : (item.deliveredAt ? "Gedeeld" : "Wacht op eindtijd");
+        row.querySelector("button").addEventListener("click", async () => {
+          await shares.remove(item.id);
+          await renderSent(dialog);
+          sessionUi.showToast("Collega verwijderd.");
+          document.dispatchEvent(new CustomEvent("overuurtje:shares-changed"));
+        });
+        return row;
+      }));
+    } catch {
+      section.hidden = true;
+    }
+  }
+
+  async function submit(dialog) {
+    const status = dialog.querySelector("[data-share-status]");
+    const button = dialog.querySelector("[data-share-submit]");
+    button.disabled = true;
+    status.textContent = "Uitnodiging maken…";
+    try {
+      const token = await shares.createInvite({
+        sourceType: activeSource.type,
+        sourceId: activeSource.id,
+        message: dialog.querySelector("[data-share-message]").value,
+        shareMode: dialog.querySelector('[name="shareMode"]:checked').value
+      });
+      const message = await shareLink(invitationUrl(token));
+      status.textContent = message;
+      sessionUi.showToast(message);
+      globalThis.OveruurtjeAnalytics?.track?.("share_clicked", { share_type: "workday_invite" });
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        status.textContent = error.message || "Delen is niet gelukt.";
+      } else {
+        status.textContent = "";
+      }
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function open({ sourceType, sourceId }) {
+    const context = sessionUi.getContext();
+    if (!context?.isPro) {
+      sessionUi.openUpgrade();
+      return;
+    }
+    activeSource = { type: sourceType, id: sourceId };
+    const dialog = ensureDialog();
+    dialog.querySelector("[data-share-status]").textContent = "";
+    openDialog(dialog);
+    await renderSent(dialog);
+  }
+
+  globalThis.OveruurtjeShareUI = Object.freeze({ open });
+})();
+
+    </script>
+    <script>
+(function initializeSelectUi(global) {
+  "use strict";
+
+  const enhanced = new WeakMap();
+  let openControl = null;
+
+  function close(control = openControl) {
+    if (!control) return;
+    control.classList.remove("is-open");
+    control.querySelector(".styled-select-trigger")?.setAttribute("aria-expanded", "false");
+    control.querySelector(".styled-select-menu")?.setAttribute("hidden", "");
+    if (openControl === control) openControl = null;
+  }
+
+  function selectedLabel(select) {
+    return select.selectedOptions[0]?.textContent?.trim() || "Maak een keuze";
+  }
+
+  function refresh(select) {
+    const control = enhanced.get(select);
+    if (!control) return;
+    const trigger = control.querySelector(".styled-select-trigger");
+    const menu = control.querySelector(".styled-select-menu");
+    trigger.querySelector("span").textContent = selectedLabel(select);
+    trigger.disabled = select.disabled;
+    control.classList.toggle("is-disabled", select.disabled);
+
+    menu.replaceChildren(...Array.from(select.options).map((option) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "styled-select-option";
+      item.dataset.value = option.value;
+      item.disabled = option.disabled;
+      item.setAttribute("role", "option");
+      item.setAttribute("aria-selected", String(option.selected));
+      item.textContent = option.textContent;
+      item.addEventListener("click", () => {
+        if (option.disabled) return;
+        select.value = option.value;
+        select.dispatchEvent(new Event("input", { bubbles: true }));
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+        refresh(select);
+        close(control);
+        trigger.focus();
+      });
+      return item;
+    }));
+  }
+
+  function enhance(select) {
+    if (!select || select.dataset.nativeSelect !== undefined) return;
+    if (enhanced.has(select)) {
+      refresh(select);
+      return;
+    }
+
+    const control = document.createElement("div");
+    control.className = "styled-select";
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "styled-select-trigger";
+    trigger.setAttribute("aria-haspopup", "listbox");
+    trigger.setAttribute("aria-expanded", "false");
+    trigger.innerHTML = '<span></span><i aria-hidden="true"></i>';
+    const menu = document.createElement("div");
+    menu.className = "styled-select-menu";
+    menu.setAttribute("role", "listbox");
+    menu.hidden = true;
+
+    select.parentNode.insertBefore(control, select);
+    control.append(select, trigger, menu);
+    select.classList.add("styled-select-native");
+    enhanced.set(select, control);
+
+    trigger.addEventListener("click", () => {
+      const willOpen = !control.classList.contains("is-open");
+      close();
+      if (!willOpen || select.disabled) return;
+      refresh(select);
+      control.classList.add("is-open");
+      trigger.setAttribute("aria-expanded", "true");
+      menu.hidden = false;
+      openControl = control;
+    });
+    select.addEventListener("change", () => refresh(select));
+
+    new MutationObserver(() => refresh(select)).observe(select, {
+      attributes: true,
+      attributeFilter: ["disabled"],
+      childList: true,
+      subtree: true
+    });
+    refresh(select);
+  }
+
+  function enhanceAll(root = document) {
+    root.querySelectorAll("select").forEach(enhance);
+  }
+
+  document.addEventListener("click", (event) => {
+    if (openControl && !openControl.contains(event.target)) close();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") close();
+  });
+
+  enhanceAll();
+  global.OveruurtjeSelectUI = Object.freeze({ enhance, enhanceAll, refresh, close });
+})(globalThis);
+
+    </script>
+    <script>
+(function initializeTimePicker(global) {
+  "use strict";
+
+  const HOURS = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, "0"));
+  const QUARTER_HOURS = ["00", "15", "30", "45"];
+
+  function parts(value) {
+    const [hour = "00", minute = "00"] = String(value).split(":");
+    return {
+      hour: HOURS.includes(hour) ? hour : "00",
+      minute: QUARTER_HOURS.includes(minute) ? minute : "00"
+    };
+  }
+
+  function setValue(field, hour, minute) {
+    field.value = `${hour}:${minute}`;
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+    field.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function close(exceptPicker) {
+    document.querySelectorAll(".time-picker").forEach((picker) => {
+      if (picker !== exceptPicker) picker.hidden = true;
+    });
+  }
+
+  function render(field, picker) {
+    const selected = parts(field.value);
+    const hourColumn = picker.querySelector("[data-time-column='hours']");
+    const minuteColumn = picker.querySelector("[data-time-column='minutes']");
+
+    hourColumn.replaceChildren(...HOURS.map((hour) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = hour;
+      button.className = hour === selected.hour ? "active" : "";
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        setValue(field, hour, parts(field.value).minute);
+        render(field, picker);
+      });
+      return button;
+    }));
+
+    minuteColumn.replaceChildren(...QUARTER_HOURS.map((minute) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = minute;
+      button.className = minute === selected.minute ? "active" : "";
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        setValue(field, parts(field.value).hour, minute);
+        picker.hidden = true;
+      });
+      return button;
+    }));
+  }
+
+  function setup(field) {
+    if (!field || field.dataset.timePickerReady === "true") return;
+    const control = field.closest(".time-control");
+    const trigger = control?.querySelector(".time-picker-trigger");
+    if (!control || !trigger) return;
+    field.dataset.timePickerReady = "true";
+
+    const picker = document.createElement("div");
+    picker.className = "time-picker";
+    picker.hidden = true;
+    picker.innerHTML = `
+      <div class="time-picker-column" data-time-column="hours" aria-label="Uren"></div>
+      <div class="time-picker-column" data-time-column="minutes" aria-label="Minuten"></div>
+    `;
+    control.append(picker);
+    picker.addEventListener("click", (event) => event.stopPropagation());
+    picker.addEventListener("touchstart", (event) => event.stopPropagation(), { passive: true });
+
+    const open = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      render(field, picker);
+      close(picker);
+      picker.hidden = false;
+    };
+    field.addEventListener("click", open);
+    trigger.addEventListener("click", open);
+    field.addEventListener("touchend", open);
+    trigger.addEventListener("touchend", open);
+  }
+
+  function setupAll(root = document) {
+    root.querySelectorAll("[data-time-picker]").forEach(setup);
+  }
+
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".time-control")) close();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") close();
+  });
+
+  setupAll();
+  global.OveruurtjeTimePicker = Object.freeze({ setup, setupAll, close });
+})(globalThis);
+
+    </script>
+    <script>
 const { DEFAULT_SETTINGS, calculateTariff } = globalThis.TariffCalculator;
 
 const SETTINGS_KEY = "cameraTariefCalculatorSettings";
-const HOURS = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, "0"));
-const QUARTER_HOURS = ["00", "15", "30", "45"];
 
 const form = document.querySelector("#calculator-form");
 const settingsForm = document.querySelector("#settings-form");
@@ -5920,11 +7778,13 @@ const kilometerInput = document.querySelector("#kilometer-input");
 const parkingInput = document.querySelector("#parking-input");
 const inputOptions = document.querySelector(".input-options");
 const departmentSwitch = document.querySelector(".department-switch");
+const activeFunctionName = document.querySelector("#active-function-name");
 const projectCreateLink = document.querySelector("#project-create-link");
 const workdaySaveButton = document.querySelector("#save-workday");
 const workdaySaveLabel = workdaySaveButton?.querySelector("[data-workday-save-label]");
 const workdaySaveHint = workdaySaveButton?.querySelector("[data-workday-save-hint]");
 const workdaySaveBadge = workdaySaveButton?.querySelector("[data-workday-save-badge]");
+const shareCurrentWorkdayButton = document.querySelector("#share-current-workday");
 const clearEndTimeButton = document.querySelector("#clear-end-time");
 const duplicateWorkdayDialog = document.querySelector("#duplicate-workday-dialog");
 const todayWorkdayDialog = document.querySelector("#today-workday-dialog");
@@ -5937,9 +7797,12 @@ const roninResultRow = document.querySelector('[data-result="ronin4dTariffAmount
 const shareButton = document.querySelector("#share-site");
 const analytics = globalThis.OveruurtjeAnalytics;
 const accountSettingsService = globalThis.OveruurtjeSettings;
+const functionService = globalThis.OveruurtjeFunctions;
 const equipmentService = globalThis.OveruurtjeEquipment;
+const projectService = globalThis.OveruurtjeProjects;
 const workdayService = globalThis.OveruurtjeWorkdays;
 const sessionUi = globalThis.OveruurtjeSessionUI;
+const shareUi = globalThis.OveruurtjeShareUI;
 
 const SHARE_URL = "https://overuurtje.nl";
 const SHARE_TEXT = "Bereken eenvoudig je cameraman-, geluidsman- en productietarieven met Overuurtje.nl.";
@@ -5965,6 +7828,8 @@ let equipmentTariffs = {
   ronin: DEFAULT_SETTINGS.ronin4dTariffAmount
 };
 let customEquipment = [];
+let workFunctions = [];
+let activeWorkFunction = null;
 let hydratedAccountUserId = null;
 let cloudSyncTimer = null;
 let currentWorkdayId = null;
@@ -6053,6 +7918,8 @@ function populateSettings(settings) {
   if (breakField && Number.isFinite(Number(settings.breakMinutes))) {
     breakField.value = String(settings.breakMinutes);
   }
+  globalThis.OveruurtjeSelectUI?.enhanceAll(settingsForm);
+  globalThis.OveruurtjeSelectUI?.enhanceAll(form);
 }
 
 function getAccountSettingsSnapshot() {
@@ -6136,6 +8003,47 @@ function applyAccountSettings(accountSettings, isPro) {
   updateCalculation();
 }
 
+function selectedWorkFunction() {
+  return activeWorkFunction;
+}
+
+function renderWorkFunctions(items) {
+  workFunctions = items;
+  const isPro = Boolean(currentUserContext?.isPro);
+  activeWorkFunction = isPro ? (items.find((item) => item.isDefault) || items[0] || null) : null;
+  activeFunctionName.hidden = !activeWorkFunction;
+  departmentSwitch.hidden = Boolean(activeWorkFunction);
+  if (!isPro || !items.length) {
+    activeFunctionName.textContent = "";
+    return;
+  }
+  applyWorkFunction(activeWorkFunction);
+}
+
+function applyWorkFunction(workFunction, { preserveRate = false } = {}) {
+  if (!workFunction) return;
+  activeWorkFunction = workFunction;
+  activeFunctionName.textContent = workFunction.name;
+  activeFunctionName.hidden = false;
+  departmentSwitch.hidden = true;
+  const departmentField = form.querySelector(`input[name="department"][value="${workFunction.department}"]`);
+  if (departmentField) departmentField.checked = true;
+  departmentSwitch.querySelectorAll(".department-choice").forEach((choice) => {
+    const input = choice.querySelector("input");
+    choice.hidden = !input.checked;
+    input.disabled = !input.checked;
+  });
+  if (!preserveRate) {
+    populateSettings({
+      ...getSettingsFromForm(),
+      rateMode: "day",
+      dayRate: workFunction.dayRate
+    });
+  }
+  updateDepartmentVisibility();
+  updateRateSettingsVisibility();
+}
+
 function renderCustomEquipment(items) {
   customEquipment = items.filter((item) => item.isVisible);
   customEquipmentOptions.replaceChildren(...customEquipment.map((item) => {
@@ -6160,6 +8068,11 @@ function buildWorkdaySnapshot() {
     schemaVersion: 1,
     date: form.elements.namedItem("date").value,
     department: formData.get("department") || "camera",
+    workFunction: selectedWorkFunction() ? {
+      id: selectedWorkFunction().id,
+      name: selectedWorkFunction().name,
+      department: selectedWorkFunction().department
+    } : null,
     startTime: form.elements.namedItem("startTime").value,
     endTime,
     breakMinutes: settings.breakMinutes,
@@ -6209,8 +8122,12 @@ function applyWorkdaySnapshot(workday) {
   form.elements.namedItem("startTime").value = snapshot.startTime || "08:00";
   form.elements.namedItem("endTime").value = snapshot.endTime || "";
   if (snapshot.settings) populateSettings({ ...getSettingsFromForm(), ...snapshot.settings });
-  const department = form.querySelector(`input[name="department"][value="${snapshot.department || "camera"}"]`);
-  if (department && !department.disabled) department.checked = true;
+  if (snapshot.department) {
+    const department = form.querySelector(`input[name="department"][value="${snapshot.department}"]`);
+    if (department) department.checked = true;
+  }
+  const snapshotFunction = workFunctions.find((item) => item.id === snapshot.workFunction?.id);
+  if (snapshotFunction) applyWorkFunction(snapshotFunction, { preserveRate: true });
   form.elements.namedItem("breakMinutes").value = String(snapshot.breakMinutes || 0);
 
   const extras = snapshot.extras || {};
@@ -6240,6 +8157,65 @@ function applyWorkdaySnapshot(workday) {
   if (snapshot.endTime) updateCalculation();
   else clearCalculationDisplay();
   sessionUi?.showToast("Werkdag geopend.");
+}
+
+function projectDayUrl(entry) {
+  const url = new URL("projects.html", location.href);
+  url.searchParams.set("project", entry.project.id);
+  url.searchParams.set("day", entry.day.id);
+  return url;
+}
+
+function openExistingDateEntry(entry) {
+  if (!entry) return;
+  if (entry.kind === "project-day") {
+    location.href = projectDayUrl(entry).href;
+    return;
+  }
+  applyWorkdaySnapshot(entry.workday);
+}
+
+async function listExistingDateEntries(date) {
+  const options = { mock: currentUserContext?.subscription?.isMock };
+  const [workdays, projectDays] = await Promise.all([
+    workdayService.listByDate(currentAccountUser.id, date, options),
+    projectService.listDaysByDate(currentAccountUser.id, date, options)
+  ]);
+  return [
+    ...projectDays
+      .filter(({ project }) => project.startDate <= date && project.endDate >= date)
+      .map(({ project, day }) => ({ kind: "project-day", project, day })),
+    ...workdays.map((workday) => ({ kind: "workday", workday }))
+  ];
+}
+
+function configureDuplicateWorkdayDialog(entry) {
+  const projectDay = entry?.kind === "project-day";
+  document.querySelector("#duplicate-workday-title").textContent = projectDay
+    ? "Voor deze datum bestaat al een werkdag in een project."
+    : "Voor deze datum bestaat al een opgeslagen werkdag.";
+  document.querySelector("#duplicate-workday-copy").textContent = projectDay
+    ? `Deze werkdag hoort bij project “${entry.project.name}”. Wil je die projectdag verder bewerken of een nieuwe losse werkdag maken?`
+    : "Wil je de bestaande werkdag openen of een tweede werkdag voor dezelfde datum maken?";
+  document.querySelector("#open-existing-workday").textContent = projectDay
+    ? "Projectdag verder bewerken"
+    : "Doorgaan met bewerken";
+  document.querySelector("#create-duplicate-workday").textContent = projectDay
+    ? "Nieuwe losse werkdag op deze datum"
+    : "Nieuwe werkdag op deze datum";
+}
+
+function configureTodayWorkdayDialog(entry) {
+  const projectDay = entry?.kind === "project-day";
+  document.querySelector("#today-workday-title").textContent = projectDay
+    ? `Vandaag staat er een werkdag in project “${entry.project.name}”.`
+    : "Je hebt vandaag al een werkdag opgeslagen.";
+  document.querySelector("#today-workday-copy").textContent = projectDay
+    ? "Wil je verdergaan met het bewerken van deze projectdag?"
+    : "Wil je verdergaan met het bewerken van deze werkdag?";
+  document.querySelector("#continue-today-workday").textContent = projectDay
+    ? "Verder met deze projectdag"
+    : "Verder met deze werkdag";
 }
 
 async function persistWorkday(snapshot, id = null) {
@@ -6273,13 +8249,10 @@ async function saveWorkday({ allowDuplicate = false } = {}) {
       return;
     }
     if (!allowDuplicate) {
-      const existing = await workdayService.listByDate(
-        currentAccountUser.id,
-        date,
-        { mock: currentUserContext.subscription.isMock }
-      );
+      const existing = await listExistingDateEntries(date);
       if (existing.length) {
         pendingDuplicateWorkday = { snapshot, existing: existing[0] };
+        configureDuplicateWorkdayDialog(existing[0]);
         openNativeDialog(duplicateWorkdayDialog);
         return;
       }
@@ -6310,6 +8283,9 @@ function updateWorkdaySaveAccess() {
   workdaySaveButton.title = hasDate
     ? (isPro ? "Werkdag opslaan" : "Werkdagen zijn beschikbaar met Pro")
     : "Vul eerst een datum in";
+  if (shareCurrentWorkdayButton) {
+    shareCurrentWorkdayButton.hidden = !isPro || !currentWorkdayId;
+  }
 }
 
 async function initializeWorkdayContext() {
@@ -6333,13 +8309,10 @@ async function initializeWorkdayContext() {
     const promptKey = `overuurtjeTodayWorkdayPrompt:${localDateValue()}`;
     if (sessionStorage.getItem(promptKey)) return;
     sessionStorage.setItem(promptKey, "shown");
-    const existing = await workdayService.listByDate(
-      currentAccountUser.id,
-      localDateValue(),
-      { mock: currentUserContext.subscription.isMock }
-    );
+    const existing = await listExistingDateEntries(localDateValue());
     if (existing.length) {
       todayWorkday = existing[0];
+      configureTodayWorkdayDialog(todayWorkday);
       openNativeDialog(todayWorkdayDialog);
     }
   } catch (error) {
@@ -6407,6 +8380,25 @@ function updateProjectCreateAccess(isPro) {
   if (badge) badge.hidden = isPro;
 }
 
+function applySharedTimesImport() {
+  const raw = sessionStorage.getItem("overuurtjeSharedTimesImport");
+  if (!raw) return;
+  sessionStorage.removeItem("overuurtjeSharedTimesImport");
+  try {
+    const snapshot = JSON.parse(raw);
+    form.elements.namedItem("date").value = snapshot.date || "";
+    form.elements.namedItem("startTime").value = snapshot.startTime || "08:00";
+    form.elements.namedItem("endTime").value = snapshot.endTime || "";
+    currentWorkdayId = null;
+    updateWorkdaySaveAccess();
+    if (snapshot.endTime) updateCalculation();
+    else clearCalculationDisplay();
+    sessionUi?.showToast("Gedeelde tijden ingevuld. Voeg nu je eigen instellingen toe.");
+  } catch {
+    sessionUi?.showToast("Gedeelde tijden konden niet worden ingevuld.");
+  }
+}
+
 async function hydrateAccountSettings(context) {
   currentUserContext = context;
   currentAccountUser = context.auth.user;
@@ -6424,10 +8416,12 @@ async function hydrateAccountSettings(context) {
       ronin: DEFAULT_SETTINGS.ronin4dTariffAmount
     };
     renderCustomEquipment([]);
+    renderWorkFunctions([]);
     currentWorkdayId = null;
     workdayContextInitializedFor = null;
     populateSettings(getSavedSettings());
     departmentSwitch.classList.remove("is-account-locked");
+    departmentSwitch.hidden = false;
     departmentSwitch.removeAttribute("aria-disabled");
     departmentSwitch.querySelectorAll(".department-choice").forEach((choice) => {
       choice.hidden = false;
@@ -6436,31 +8430,55 @@ async function hydrateAccountSettings(context) {
     updateDepartmentVisibility();
     updatePauseVisibility();
     updateWorkdaySaveAccess();
+    applySharedTimesImport();
     return;
   }
   if (hydratedAccountUserId === currentAccountUser.id) return;
   hydratedAccountUserId = currentAccountUser.id;
 
   try {
-    const [saved, equipment] = await Promise.all([
+    const [savedResult, functionsResult, equipmentResult] = await Promise.allSettled([
       accountSettingsService.load(currentAccountUser.id),
+      context.isPro ? functionService.list(currentAccountUser.id) : Promise.resolve([]),
       context.isPro ? equipmentService.list(currentAccountUser.id) : Promise.resolve([])
     ]);
+    if (savedResult.status === "rejected") throw savedResult.reason;
+    const saved = savedResult.value;
+    let functions = functionsResult.status === "fulfilled" ? functionsResult.value : [];
+    const equipment = equipmentResult.status === "fulfilled" ? equipmentResult.value : [];
     if (saved) {
       applyAccountSettings(saved, context.isPro);
     } else {
       applyAccountSettings(await syncAccountSettings() || accountSettingsService.defaults, context.isPro);
     }
+    if (context.isPro && functionsResult.status === "fulfilled" && functions.length === 0) {
+      const department = currentAccountSettings.defaultDepartment === "audio" ? "audio" : "camera";
+      try {
+        functions = [await functionService.create(currentAccountUser.id, {
+          name: department === "audio" ? "Audio" : "Camera",
+          department,
+          dayRate: currentAccountSettings.defaultDayRate,
+          isDefault: true,
+          sortOrder: 0
+        })];
+      } catch (error) {
+        functions = await functionService.list(currentAccountUser.id);
+        if (!functions.length) throw error;
+      }
+    }
+    renderWorkFunctions(context.isPro ? functions : []);
     renderCustomEquipment(context.isPro ? equipment : []);
     updateCalculation();
     await initializeWorkdayContext();
   } catch (error) {
     console.warn("Accountinstellingen konden niet worden geladen.", error);
     applyAccountSettings(accountSettingsService.defaults, context.isPro);
+    renderWorkFunctions([]);
     renderCustomEquipment([]);
     await initializeWorkdayContext();
   }
   updateWorkdaySaveAccess();
+  applySharedTimesImport();
 }
 
 function formatHours(value) {
@@ -6922,98 +8940,6 @@ function trackOptionChange(target) {
   if (eventName) analytics?.track(eventName, { department });
 }
 
-function getTimeParts(value) {
-  const [hour = "00", minute = "00"] = String(value).split(":");
-  return {
-    hour: HOURS.includes(hour) ? hour : "00",
-    minute: QUARTER_HOURS.includes(minute) ? minute : "00"
-  };
-}
-
-function setTimeValue(field, hour, minute) {
-  field.value = `${hour}:${minute}`;
-  field.dispatchEvent(new Event("input", { bubbles: true }));
-}
-
-function closeTimePickers(exceptPicker) {
-  document.querySelectorAll(".time-picker").forEach((picker) => {
-    if (picker !== exceptPicker) picker.hidden = true;
-  });
-}
-
-function renderTimePicker(field, picker) {
-  const { hour: selectedHour, minute: selectedMinute } = getTimeParts(field.value);
-  const hourColumn = picker.querySelector("[data-time-column='hours']");
-  const minuteColumn = picker.querySelector("[data-time-column='minutes']");
-
-  hourColumn.replaceChildren(
-    ...HOURS.map((hour) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = hour;
-      button.dataset.timePart = "hour";
-      button.dataset.timeValue = hour;
-      button.className = hour === selectedHour ? "active" : "";
-      button.addEventListener("click", (event) => {
-        event.stopPropagation();
-        setTimeValue(field, hour, getTimeParts(field.value).minute);
-        renderTimePicker(field, picker);
-      });
-      return button;
-    })
-  );
-
-  minuteColumn.replaceChildren(
-    ...QUARTER_HOURS.map((minute) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = minute;
-      button.dataset.timePart = "minute";
-      button.dataset.timeValue = minute;
-      button.className = minute === selectedMinute ? "active" : "";
-      button.addEventListener("click", (event) => {
-        event.stopPropagation();
-        setTimeValue(field, getTimeParts(field.value).hour, minute);
-        picker.hidden = true;
-      });
-      return button;
-    })
-  );
-}
-
-function setupTimePicker(field) {
-  const control = field.closest(".time-control");
-  const trigger = control.querySelector(".time-picker-trigger");
-  const picker = document.createElement("div");
-  picker.className = "time-picker";
-  picker.hidden = true;
-  picker.innerHTML = `
-    <div class="time-picker-column" data-time-column="hours" aria-label="Uren"></div>
-    <div class="time-picker-column" data-time-column="minutes" aria-label="Minuten"></div>
-  `;
-  control.append(picker);
-
-  picker.addEventListener("click", (event) => {
-    event.stopPropagation();
-  });
-  picker.addEventListener("touchstart", (event) => {
-    event.stopPropagation();
-  }, { passive: true });
-
-  const openPicker = (event) => {
-    event.stopPropagation();
-    event.preventDefault();
-    renderTimePicker(field, picker);
-    closeTimePickers(picker);
-    picker.hidden = false;
-  };
-
-  field.addEventListener("click", openPicker);
-  trigger.addEventListener("click", openPicker);
-  field.addEventListener("touchend", openPicker);
-  trigger.addEventListener("touchend", openPicker);
-}
-
 populateSettings(getSavedSettings());
 if (!form.elements.namedItem("date").value) {
   form.elements.namedItem("date").value = localDateValue();
@@ -7025,14 +8951,6 @@ updateRateSettingsVisibility();
 updatePauseVisibility();
 updateKilometerVisibility();
 updateParkingVisibility();
-
-document.querySelectorAll("[data-time-picker]").forEach(setupTimePicker);
-document.addEventListener("click", (event) => {
-  if (!event.target.closest(".time-control")) closeTimePickers();
-});
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") closeTimePickers();
-});
 
 form.addEventListener("input", markCalculationStale);
 form.addEventListener("click", (event) => {
@@ -7078,13 +8996,16 @@ settingsForm.addEventListener("change", () => {
 });
 recalculateButton.addEventListener("click", () => updateCalculation(true));
 workdaySaveButton?.addEventListener("click", () => saveWorkday());
+shareCurrentWorkdayButton?.addEventListener("click", () => {
+  if (currentWorkdayId) shareUi?.open({ sourceType: "workday", sourceId: currentWorkdayId });
+});
 clearEndTimeButton?.addEventListener("click", () => {
   form.elements.namedItem("endTime").value = "";
   clearCalculationDisplay();
   markCalculationStale();
 });
 document.querySelector("#open-existing-workday")?.addEventListener("click", () => {
-  if (pendingDuplicateWorkday?.existing) applyWorkdaySnapshot(pendingDuplicateWorkday.existing);
+  if (pendingDuplicateWorkday?.existing) openExistingDateEntry(pendingDuplicateWorkday.existing);
   pendingDuplicateWorkday = null;
   closeNativeDialog(duplicateWorkdayDialog);
 });
@@ -7102,7 +9023,7 @@ document.querySelector("#create-duplicate-workday")?.addEventListener("click", a
   }
 });
 document.querySelector("#continue-today-workday")?.addEventListener("click", () => {
-  if (todayWorkday) applyWorkdaySnapshot(todayWorkday);
+  if (todayWorkday) openExistingDateEntry(todayWorkday);
   todayWorkday = null;
   closeNativeDialog(todayWorkdayDialog);
 });

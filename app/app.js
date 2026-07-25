@@ -1,8 +1,6 @@
 const { DEFAULT_SETTINGS, calculateTariff } = globalThis.TariffCalculator;
 
 const SETTINGS_KEY = "cameraTariefCalculatorSettings";
-const HOURS = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, "0"));
-const QUARTER_HOURS = ["00", "15", "30", "45"];
 
 const form = document.querySelector("#calculator-form");
 const settingsForm = document.querySelector("#settings-form");
@@ -22,11 +20,13 @@ const kilometerInput = document.querySelector("#kilometer-input");
 const parkingInput = document.querySelector("#parking-input");
 const inputOptions = document.querySelector(".input-options");
 const departmentSwitch = document.querySelector(".department-switch");
+const activeFunctionName = document.querySelector("#active-function-name");
 const projectCreateLink = document.querySelector("#project-create-link");
 const workdaySaveButton = document.querySelector("#save-workday");
 const workdaySaveLabel = workdaySaveButton?.querySelector("[data-workday-save-label]");
 const workdaySaveHint = workdaySaveButton?.querySelector("[data-workday-save-hint]");
 const workdaySaveBadge = workdaySaveButton?.querySelector("[data-workday-save-badge]");
+const shareCurrentWorkdayButton = document.querySelector("#share-current-workday");
 const clearEndTimeButton = document.querySelector("#clear-end-time");
 const duplicateWorkdayDialog = document.querySelector("#duplicate-workday-dialog");
 const todayWorkdayDialog = document.querySelector("#today-workday-dialog");
@@ -39,9 +39,12 @@ const roninResultRow = document.querySelector('[data-result="ronin4dTariffAmount
 const shareButton = document.querySelector("#share-site");
 const analytics = globalThis.OveruurtjeAnalytics;
 const accountSettingsService = globalThis.OveruurtjeSettings;
+const functionService = globalThis.OveruurtjeFunctions;
 const equipmentService = globalThis.OveruurtjeEquipment;
+const projectService = globalThis.OveruurtjeProjects;
 const workdayService = globalThis.OveruurtjeWorkdays;
 const sessionUi = globalThis.OveruurtjeSessionUI;
+const shareUi = globalThis.OveruurtjeShareUI;
 
 const SHARE_URL = "https://overuurtje.nl";
 const SHARE_TEXT = "Bereken eenvoudig je cameraman-, geluidsman- en productietarieven met Overuurtje.nl.";
@@ -67,6 +70,8 @@ let equipmentTariffs = {
   ronin: DEFAULT_SETTINGS.ronin4dTariffAmount
 };
 let customEquipment = [];
+let workFunctions = [];
+let activeWorkFunction = null;
 let hydratedAccountUserId = null;
 let cloudSyncTimer = null;
 let currentWorkdayId = null;
@@ -155,6 +160,8 @@ function populateSettings(settings) {
   if (breakField && Number.isFinite(Number(settings.breakMinutes))) {
     breakField.value = String(settings.breakMinutes);
   }
+  globalThis.OveruurtjeSelectUI?.enhanceAll(settingsForm);
+  globalThis.OveruurtjeSelectUI?.enhanceAll(form);
 }
 
 function getAccountSettingsSnapshot() {
@@ -238,6 +245,47 @@ function applyAccountSettings(accountSettings, isPro) {
   updateCalculation();
 }
 
+function selectedWorkFunction() {
+  return activeWorkFunction;
+}
+
+function renderWorkFunctions(items) {
+  workFunctions = items;
+  const isPro = Boolean(currentUserContext?.isPro);
+  activeWorkFunction = isPro ? (items.find((item) => item.isDefault) || items[0] || null) : null;
+  activeFunctionName.hidden = !activeWorkFunction;
+  departmentSwitch.hidden = Boolean(activeWorkFunction);
+  if (!isPro || !items.length) {
+    activeFunctionName.textContent = "";
+    return;
+  }
+  applyWorkFunction(activeWorkFunction);
+}
+
+function applyWorkFunction(workFunction, { preserveRate = false } = {}) {
+  if (!workFunction) return;
+  activeWorkFunction = workFunction;
+  activeFunctionName.textContent = workFunction.name;
+  activeFunctionName.hidden = false;
+  departmentSwitch.hidden = true;
+  const departmentField = form.querySelector(`input[name="department"][value="${workFunction.department}"]`);
+  if (departmentField) departmentField.checked = true;
+  departmentSwitch.querySelectorAll(".department-choice").forEach((choice) => {
+    const input = choice.querySelector("input");
+    choice.hidden = !input.checked;
+    input.disabled = !input.checked;
+  });
+  if (!preserveRate) {
+    populateSettings({
+      ...getSettingsFromForm(),
+      rateMode: "day",
+      dayRate: workFunction.dayRate
+    });
+  }
+  updateDepartmentVisibility();
+  updateRateSettingsVisibility();
+}
+
 function renderCustomEquipment(items) {
   customEquipment = items.filter((item) => item.isVisible);
   customEquipmentOptions.replaceChildren(...customEquipment.map((item) => {
@@ -262,6 +310,11 @@ function buildWorkdaySnapshot() {
     schemaVersion: 1,
     date: form.elements.namedItem("date").value,
     department: formData.get("department") || "camera",
+    workFunction: selectedWorkFunction() ? {
+      id: selectedWorkFunction().id,
+      name: selectedWorkFunction().name,
+      department: selectedWorkFunction().department
+    } : null,
     startTime: form.elements.namedItem("startTime").value,
     endTime,
     breakMinutes: settings.breakMinutes,
@@ -311,8 +364,12 @@ function applyWorkdaySnapshot(workday) {
   form.elements.namedItem("startTime").value = snapshot.startTime || "08:00";
   form.elements.namedItem("endTime").value = snapshot.endTime || "";
   if (snapshot.settings) populateSettings({ ...getSettingsFromForm(), ...snapshot.settings });
-  const department = form.querySelector(`input[name="department"][value="${snapshot.department || "camera"}"]`);
-  if (department && !department.disabled) department.checked = true;
+  if (snapshot.department) {
+    const department = form.querySelector(`input[name="department"][value="${snapshot.department}"]`);
+    if (department) department.checked = true;
+  }
+  const snapshotFunction = workFunctions.find((item) => item.id === snapshot.workFunction?.id);
+  if (snapshotFunction) applyWorkFunction(snapshotFunction, { preserveRate: true });
   form.elements.namedItem("breakMinutes").value = String(snapshot.breakMinutes || 0);
 
   const extras = snapshot.extras || {};
@@ -342,6 +399,65 @@ function applyWorkdaySnapshot(workday) {
   if (snapshot.endTime) updateCalculation();
   else clearCalculationDisplay();
   sessionUi?.showToast("Werkdag geopend.");
+}
+
+function projectDayUrl(entry) {
+  const url = new URL("projects.html", location.href);
+  url.searchParams.set("project", entry.project.id);
+  url.searchParams.set("day", entry.day.id);
+  return url;
+}
+
+function openExistingDateEntry(entry) {
+  if (!entry) return;
+  if (entry.kind === "project-day") {
+    location.href = projectDayUrl(entry).href;
+    return;
+  }
+  applyWorkdaySnapshot(entry.workday);
+}
+
+async function listExistingDateEntries(date) {
+  const options = { mock: currentUserContext?.subscription?.isMock };
+  const [workdays, projectDays] = await Promise.all([
+    workdayService.listByDate(currentAccountUser.id, date, options),
+    projectService.listDaysByDate(currentAccountUser.id, date, options)
+  ]);
+  return [
+    ...projectDays
+      .filter(({ project }) => project.startDate <= date && project.endDate >= date)
+      .map(({ project, day }) => ({ kind: "project-day", project, day })),
+    ...workdays.map((workday) => ({ kind: "workday", workday }))
+  ];
+}
+
+function configureDuplicateWorkdayDialog(entry) {
+  const projectDay = entry?.kind === "project-day";
+  document.querySelector("#duplicate-workday-title").textContent = projectDay
+    ? "Voor deze datum bestaat al een werkdag in een project."
+    : "Voor deze datum bestaat al een opgeslagen werkdag.";
+  document.querySelector("#duplicate-workday-copy").textContent = projectDay
+    ? `Deze werkdag hoort bij project “${entry.project.name}”. Wil je die projectdag verder bewerken of een nieuwe losse werkdag maken?`
+    : "Wil je de bestaande werkdag openen of een tweede werkdag voor dezelfde datum maken?";
+  document.querySelector("#open-existing-workday").textContent = projectDay
+    ? "Projectdag verder bewerken"
+    : "Doorgaan met bewerken";
+  document.querySelector("#create-duplicate-workday").textContent = projectDay
+    ? "Nieuwe losse werkdag op deze datum"
+    : "Nieuwe werkdag op deze datum";
+}
+
+function configureTodayWorkdayDialog(entry) {
+  const projectDay = entry?.kind === "project-day";
+  document.querySelector("#today-workday-title").textContent = projectDay
+    ? `Vandaag staat er een werkdag in project “${entry.project.name}”.`
+    : "Je hebt vandaag al een werkdag opgeslagen.";
+  document.querySelector("#today-workday-copy").textContent = projectDay
+    ? "Wil je verdergaan met het bewerken van deze projectdag?"
+    : "Wil je verdergaan met het bewerken van deze werkdag?";
+  document.querySelector("#continue-today-workday").textContent = projectDay
+    ? "Verder met deze projectdag"
+    : "Verder met deze werkdag";
 }
 
 async function persistWorkday(snapshot, id = null) {
@@ -375,13 +491,10 @@ async function saveWorkday({ allowDuplicate = false } = {}) {
       return;
     }
     if (!allowDuplicate) {
-      const existing = await workdayService.listByDate(
-        currentAccountUser.id,
-        date,
-        { mock: currentUserContext.subscription.isMock }
-      );
+      const existing = await listExistingDateEntries(date);
       if (existing.length) {
         pendingDuplicateWorkday = { snapshot, existing: existing[0] };
+        configureDuplicateWorkdayDialog(existing[0]);
         openNativeDialog(duplicateWorkdayDialog);
         return;
       }
@@ -412,6 +525,9 @@ function updateWorkdaySaveAccess() {
   workdaySaveButton.title = hasDate
     ? (isPro ? "Werkdag opslaan" : "Werkdagen zijn beschikbaar met Pro")
     : "Vul eerst een datum in";
+  if (shareCurrentWorkdayButton) {
+    shareCurrentWorkdayButton.hidden = !isPro || !currentWorkdayId;
+  }
 }
 
 async function initializeWorkdayContext() {
@@ -435,13 +551,10 @@ async function initializeWorkdayContext() {
     const promptKey = `overuurtjeTodayWorkdayPrompt:${localDateValue()}`;
     if (sessionStorage.getItem(promptKey)) return;
     sessionStorage.setItem(promptKey, "shown");
-    const existing = await workdayService.listByDate(
-      currentAccountUser.id,
-      localDateValue(),
-      { mock: currentUserContext.subscription.isMock }
-    );
+    const existing = await listExistingDateEntries(localDateValue());
     if (existing.length) {
       todayWorkday = existing[0];
+      configureTodayWorkdayDialog(todayWorkday);
       openNativeDialog(todayWorkdayDialog);
     }
   } catch (error) {
@@ -509,6 +622,25 @@ function updateProjectCreateAccess(isPro) {
   if (badge) badge.hidden = isPro;
 }
 
+function applySharedTimesImport() {
+  const raw = sessionStorage.getItem("overuurtjeSharedTimesImport");
+  if (!raw) return;
+  sessionStorage.removeItem("overuurtjeSharedTimesImport");
+  try {
+    const snapshot = JSON.parse(raw);
+    form.elements.namedItem("date").value = snapshot.date || "";
+    form.elements.namedItem("startTime").value = snapshot.startTime || "08:00";
+    form.elements.namedItem("endTime").value = snapshot.endTime || "";
+    currentWorkdayId = null;
+    updateWorkdaySaveAccess();
+    if (snapshot.endTime) updateCalculation();
+    else clearCalculationDisplay();
+    sessionUi?.showToast("Gedeelde tijden ingevuld. Voeg nu je eigen instellingen toe.");
+  } catch {
+    sessionUi?.showToast("Gedeelde tijden konden niet worden ingevuld.");
+  }
+}
+
 async function hydrateAccountSettings(context) {
   currentUserContext = context;
   currentAccountUser = context.auth.user;
@@ -526,10 +658,12 @@ async function hydrateAccountSettings(context) {
       ronin: DEFAULT_SETTINGS.ronin4dTariffAmount
     };
     renderCustomEquipment([]);
+    renderWorkFunctions([]);
     currentWorkdayId = null;
     workdayContextInitializedFor = null;
     populateSettings(getSavedSettings());
     departmentSwitch.classList.remove("is-account-locked");
+    departmentSwitch.hidden = false;
     departmentSwitch.removeAttribute("aria-disabled");
     departmentSwitch.querySelectorAll(".department-choice").forEach((choice) => {
       choice.hidden = false;
@@ -538,31 +672,55 @@ async function hydrateAccountSettings(context) {
     updateDepartmentVisibility();
     updatePauseVisibility();
     updateWorkdaySaveAccess();
+    applySharedTimesImport();
     return;
   }
   if (hydratedAccountUserId === currentAccountUser.id) return;
   hydratedAccountUserId = currentAccountUser.id;
 
   try {
-    const [saved, equipment] = await Promise.all([
+    const [savedResult, functionsResult, equipmentResult] = await Promise.allSettled([
       accountSettingsService.load(currentAccountUser.id),
+      context.isPro ? functionService.list(currentAccountUser.id) : Promise.resolve([]),
       context.isPro ? equipmentService.list(currentAccountUser.id) : Promise.resolve([])
     ]);
+    if (savedResult.status === "rejected") throw savedResult.reason;
+    const saved = savedResult.value;
+    let functions = functionsResult.status === "fulfilled" ? functionsResult.value : [];
+    const equipment = equipmentResult.status === "fulfilled" ? equipmentResult.value : [];
     if (saved) {
       applyAccountSettings(saved, context.isPro);
     } else {
       applyAccountSettings(await syncAccountSettings() || accountSettingsService.defaults, context.isPro);
     }
+    if (context.isPro && functionsResult.status === "fulfilled" && functions.length === 0) {
+      const department = currentAccountSettings.defaultDepartment === "audio" ? "audio" : "camera";
+      try {
+        functions = [await functionService.create(currentAccountUser.id, {
+          name: department === "audio" ? "Audio" : "Camera",
+          department,
+          dayRate: currentAccountSettings.defaultDayRate,
+          isDefault: true,
+          sortOrder: 0
+        })];
+      } catch (error) {
+        functions = await functionService.list(currentAccountUser.id);
+        if (!functions.length) throw error;
+      }
+    }
+    renderWorkFunctions(context.isPro ? functions : []);
     renderCustomEquipment(context.isPro ? equipment : []);
     updateCalculation();
     await initializeWorkdayContext();
   } catch (error) {
     console.warn("Accountinstellingen konden niet worden geladen.", error);
     applyAccountSettings(accountSettingsService.defaults, context.isPro);
+    renderWorkFunctions([]);
     renderCustomEquipment([]);
     await initializeWorkdayContext();
   }
   updateWorkdaySaveAccess();
+  applySharedTimesImport();
 }
 
 function formatHours(value) {
@@ -1024,98 +1182,6 @@ function trackOptionChange(target) {
   if (eventName) analytics?.track(eventName, { department });
 }
 
-function getTimeParts(value) {
-  const [hour = "00", minute = "00"] = String(value).split(":");
-  return {
-    hour: HOURS.includes(hour) ? hour : "00",
-    minute: QUARTER_HOURS.includes(minute) ? minute : "00"
-  };
-}
-
-function setTimeValue(field, hour, minute) {
-  field.value = `${hour}:${minute}`;
-  field.dispatchEvent(new Event("input", { bubbles: true }));
-}
-
-function closeTimePickers(exceptPicker) {
-  document.querySelectorAll(".time-picker").forEach((picker) => {
-    if (picker !== exceptPicker) picker.hidden = true;
-  });
-}
-
-function renderTimePicker(field, picker) {
-  const { hour: selectedHour, minute: selectedMinute } = getTimeParts(field.value);
-  const hourColumn = picker.querySelector("[data-time-column='hours']");
-  const minuteColumn = picker.querySelector("[data-time-column='minutes']");
-
-  hourColumn.replaceChildren(
-    ...HOURS.map((hour) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = hour;
-      button.dataset.timePart = "hour";
-      button.dataset.timeValue = hour;
-      button.className = hour === selectedHour ? "active" : "";
-      button.addEventListener("click", (event) => {
-        event.stopPropagation();
-        setTimeValue(field, hour, getTimeParts(field.value).minute);
-        renderTimePicker(field, picker);
-      });
-      return button;
-    })
-  );
-
-  minuteColumn.replaceChildren(
-    ...QUARTER_HOURS.map((minute) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = minute;
-      button.dataset.timePart = "minute";
-      button.dataset.timeValue = minute;
-      button.className = minute === selectedMinute ? "active" : "";
-      button.addEventListener("click", (event) => {
-        event.stopPropagation();
-        setTimeValue(field, getTimeParts(field.value).hour, minute);
-        picker.hidden = true;
-      });
-      return button;
-    })
-  );
-}
-
-function setupTimePicker(field) {
-  const control = field.closest(".time-control");
-  const trigger = control.querySelector(".time-picker-trigger");
-  const picker = document.createElement("div");
-  picker.className = "time-picker";
-  picker.hidden = true;
-  picker.innerHTML = `
-    <div class="time-picker-column" data-time-column="hours" aria-label="Uren"></div>
-    <div class="time-picker-column" data-time-column="minutes" aria-label="Minuten"></div>
-  `;
-  control.append(picker);
-
-  picker.addEventListener("click", (event) => {
-    event.stopPropagation();
-  });
-  picker.addEventListener("touchstart", (event) => {
-    event.stopPropagation();
-  }, { passive: true });
-
-  const openPicker = (event) => {
-    event.stopPropagation();
-    event.preventDefault();
-    renderTimePicker(field, picker);
-    closeTimePickers(picker);
-    picker.hidden = false;
-  };
-
-  field.addEventListener("click", openPicker);
-  trigger.addEventListener("click", openPicker);
-  field.addEventListener("touchend", openPicker);
-  trigger.addEventListener("touchend", openPicker);
-}
-
 populateSettings(getSavedSettings());
 if (!form.elements.namedItem("date").value) {
   form.elements.namedItem("date").value = localDateValue();
@@ -1127,14 +1193,6 @@ updateRateSettingsVisibility();
 updatePauseVisibility();
 updateKilometerVisibility();
 updateParkingVisibility();
-
-document.querySelectorAll("[data-time-picker]").forEach(setupTimePicker);
-document.addEventListener("click", (event) => {
-  if (!event.target.closest(".time-control")) closeTimePickers();
-});
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") closeTimePickers();
-});
 
 form.addEventListener("input", markCalculationStale);
 form.addEventListener("click", (event) => {
@@ -1180,13 +1238,16 @@ settingsForm.addEventListener("change", () => {
 });
 recalculateButton.addEventListener("click", () => updateCalculation(true));
 workdaySaveButton?.addEventListener("click", () => saveWorkday());
+shareCurrentWorkdayButton?.addEventListener("click", () => {
+  if (currentWorkdayId) shareUi?.open({ sourceType: "workday", sourceId: currentWorkdayId });
+});
 clearEndTimeButton?.addEventListener("click", () => {
   form.elements.namedItem("endTime").value = "";
   clearCalculationDisplay();
   markCalculationStale();
 });
 document.querySelector("#open-existing-workday")?.addEventListener("click", () => {
-  if (pendingDuplicateWorkday?.existing) applyWorkdaySnapshot(pendingDuplicateWorkday.existing);
+  if (pendingDuplicateWorkday?.existing) openExistingDateEntry(pendingDuplicateWorkday.existing);
   pendingDuplicateWorkday = null;
   closeNativeDialog(duplicateWorkdayDialog);
 });
@@ -1204,7 +1265,7 @@ document.querySelector("#create-duplicate-workday")?.addEventListener("click", a
   }
 });
 document.querySelector("#continue-today-workday")?.addEventListener("click", () => {
-  if (todayWorkday) applyWorkdaySnapshot(todayWorkday);
+  if (todayWorkday) openExistingDateEntry(todayWorkday);
   todayWorkday = null;
   closeNativeDialog(todayWorkdayDialog);
 });
