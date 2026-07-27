@@ -5,7 +5,7 @@
   "description": "Bereken en bewaar werkuren, toeslagen en factuurbedragen.",
   "lang": "nl-NL",
   "dir": "ltr",
-  "start_url": "./",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "display_override": [
@@ -27,7 +27,12 @@
     {
       "name": "Nieuwe berekening",
       "short_name": "Berekenen",
-      "url": "./"
+      "url": "./index.html?calculator=1"
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "url": "./dashboard.html"
     },
     {
       "name": "Werkdagen",
@@ -42,25 +47,25 @@
   ],
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "icon-192.png?v=20260727a",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "icon-512.png?v=20260727a",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-192.png",
+      "src": "icon-192.png?v=20260727a",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "icon-512.png",
+      "src": "icon-512.png?v=20260727a",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

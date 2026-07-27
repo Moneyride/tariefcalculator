@@ -9,6 +9,7 @@ const outputDirectory = path.join(rootDirectory, "dist");
 
 function publicRuntimeConfig() {
   return {
+    publicSiteUrl: process.env.PUBLIC_SITE_URL || "https://overuurtje.nl",
     supabaseUrl: process.env.SUPABASE_URL || "",
     supabaseAnonKey: process.env.SUPABASE_ANON_KEY || "",
     shopifyCheckoutUrl: process.env.SHOPIFY_CHECKOUT_URL || "",

@@ -37,9 +37,15 @@ Er bestaat geen eigen `/auth/confirm`- of `/auth/callback`-route. De Supabase-cl
 
 De huidige redirects zijn:
 
-- gewone registratie: `account.html`;
-- registratie via een gedeelde-werkdaguitnodiging: de bestaande `workdays.html?invite=...`-URL;
-- wachtwoordherstel: `account.html?mode=reset`.
+- gewone registratie: `https://overuurtje.nl/account.html`;
+- registratie via een gedeelde-werkdaguitnodiging: `https://overuurtje.nl/workdays.html?invite=...`;
+- wachtwoordherstel: `https://overuurtje.nl/account.html?mode=reset`.
+
+De browsercode gebruikt hiervoor `publicSiteUrl` uit `runtime-config.js`, met
+`https://overuurtje.nl` als vaste fallback. Authmails verwijzen daardoor ook
+naar productie wanneer een reset of registratie tijdens lokaal testen wordt
+aangevraagd. De gewone navigatie binnen de lokaal geopende app blijft wel
+lokaal.
 
 Daarom gebruiken de actietemplates `{{ .ConfirmationURL }}`. Vervang dit niet door een eigen `{{ .TokenHash }}`-link zonder eerst een callbackroute met `verifyOtp` te bouwen.
 
@@ -104,6 +110,37 @@ Controleer bij de SMTP-provider:
 
 Voeg nooit twee losse SPF-records voor hetzelfde domein toe. Combineer bestaande verzenddiensten volgens de instructies van de DNS- of mailprovider.
 
+### Aanbevolen productie-opzet voor afleverbaarheid
+
+De zichtbare combinatie `Overuurtje.nl <info@thegearharbor.com>` is technisch
+toegestaan. De afzendernaam hoeft niet hetzelfde te zijn als het domein. Voor
+spamfilters is vooral belangrijk dat SPF of DKIM slaagt en dat DMARC uitlijnt
+met het domein achter het zichtbare afzenderadres.
+
+Voor de duidelijkste domeinalignment is deze opzet op termijn sterker:
+
+- Resend-verzenddomein: `mail.overuurtje.nl`;
+- zichtbare afzender: `Overuurtje.nl <account@mail.overuurtje.nl>`;
+- optioneel Supabase Custom Domain: `auth.overuurtje.nl`;
+- website- en redirectlinks: `https://overuurtje.nl`.
+
+Gebruik niet hetzelfde subdomein voor Resend en Supabase Auth; beide diensten
+hebben hun eigen DNS-records nodig. Een apart mail- en authsubdomein houdt ook
+de reputaties en verantwoordelijkheden duidelijk.
+
+Controleer daarnaast in Resend:
+
+1. Domain status staat op **Verified**.
+2. DKIM en de Resend MAIL-FROM/SPF-records staan afzonderlijk op **Verified**.
+3. **Open tracking** en **Click tracking** staan uit voor authmails.
+4. In de log van een testmail staat geen bounce of provider warning.
+5. Bekijk in de ontvangen bronheaders of `SPF`, `DKIM` en `DMARC` op `pass`
+   staan.
+
+Een nieuw verzenddomein heeft nog weinig reputatie. Verstuur in het begin
+rustig en uitsluitend echte transactionele mails. Herhaaldelijk veel
+testregistraties naar dezelfde mailbox kunnen juist een negatief signaal zijn.
+
 ## 3. URL Configuration controleren
 
 Open in Supabase: **Authentication > URL Configuration**.
@@ -133,6 +170,10 @@ http://localhost:4173/app/workdays.html?invite=*
 ```
 
 Gebruik alleen de lokale regels tijdens ontwikkeling. Houd de productie-Site URL altijd op `https://overuurtje.nl`.
+
+De huidige app stuurt voor e-mailbevestiging en wachtwoordherstel altijd een
+publieke `redirectTo` naar `https://overuurtje.nl`. Lokale Redirect URLs zijn
+alleen nog nodig wanneer je bewust een afzonderlijke lokale authflow test.
 
 ## 4. Authentication-templates plaatsen
 

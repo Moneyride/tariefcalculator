@@ -8,6 +8,7 @@
   const equipmentService = globalThis.OveruurtjeEquipment;
   const projectService = globalThis.OveruurtjeProjects;
   const workdayService = globalThis.OveruurtjeWorkdays;
+  const profileService = globalThis.OveruurtjeProfiles;
   const subscriptions = globalThis.OveruurtjeSubscriptions;
   const unavailable = document.querySelector("#account-unavailable");
   const loggedOut = document.querySelector("#account-logged-out");
@@ -23,6 +24,8 @@
   const settingsStatus = document.querySelector("#account-settings-status");
   const passwordForm = document.querySelector("#password-form");
   const passwordStatus = document.querySelector("#password-status");
+  const profileNameForm = document.querySelector("#profile-name-form");
+  const profileNameStatus = document.querySelector("#profile-name-status");
   const planTitle = document.querySelector("#subscription-plan-title");
   const planDescription = document.querySelector("#subscription-plan-description");
   const upgradeButton = document.querySelector(".subscription-actions [data-subscription-upgrade]");
@@ -98,6 +101,7 @@
       defaultBreakMinutes: loadedSettings.defaultBreakMinutes || 0,
       enableBreak: checked("enableBreak"),
       normalDayHours: Number(data.get("normalDayHours")) === 12 ? 12 : 10,
+      minimumHours: Math.min(12, Math.max(1, Number(data.get("minimumHours")) || 1)),
       enableHalfDayUnder6Hours: checked("enableHalfDayUnder6Hours"),
       enableOvertime10To12: checked("enableOvertime10To12"),
       enableOvertimeFrom12: checked("enableOvertimeFrom12"),
@@ -221,6 +225,9 @@
     const rateMode = settingsForm.elements.namedItem("defaultRateMode").value;
     settingsForm.elements.namedItem("defaultDayRate").closest("label").hidden = rateMode === "hour";
     settingsForm.querySelector('[data-account-rate="hour"]').hidden = rateMode !== "hour";
+    settingsForm.querySelector('[data-account-rate-setting="day-hours"]').hidden = rateMode === "hour";
+    settingsForm.querySelector('[data-account-rate-setting="minimum-hours"]').hidden = rateMode !== "hour";
+    settingsForm.querySelector('[data-account-rate-setting="half-day"]').hidden = rateMode === "hour";
   }
 
   function updateNightFields() {
@@ -274,6 +281,7 @@
 
     email.textContent = authState.user.email || "-";
     created.textContent = formatDate(context.profile?.createdAt || authState.user.created_at);
+    profileNameForm.elements.namedItem("displayName").value = context.profile?.displayName || "";
     renderSubscription(context.subscription, context.profile);
 
     try {
@@ -320,10 +328,10 @@
         const copy = document.createElement("span");
         const title = document.createElement("strong");
         const detail = document.createElement("small");
-        title.textContent = formatWorkDate(workday.workDate);
+        title.textContent = workday.name || formatWorkDate(workday.workDate);
         detail.textContent = snapshot.endTime
-          ? `${snapshot.startTime || "-"} – ${snapshot.endTime} · Afgerond`
-          : `${snapshot.startTime || "-"} · Concept`;
+          ? `${workday.name ? `${formatWorkDate(workday.workDate)} · ` : ""}${snapshot.startTime || "-"} – ${snapshot.endTime} · Afgerond`
+          : `${workday.name ? `${formatWorkDate(workday.workDate)} · ` : ""}${snapshot.startTime || "-"} · Concept`;
         copy.append(title, detail);
         const arrow = document.createElement("span");
         arrow.setAttribute("aria-hidden", "true");
@@ -348,6 +356,23 @@
   }
 
   document.querySelector("#account-login-cta")?.addEventListener("click", () => sessionUi.openAuth("login"));
+  profileNameForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!currentContext?.auth.user || !profileNameForm.reportValidity()) return;
+    profileNameStatus.textContent = "Opslaan…";
+    try {
+      const profile = await profileService.saveDisplayName(
+        currentContext.auth.user,
+        profileNameForm.elements.namedItem("displayName").value
+      );
+      currentContext = { ...currentContext, profile };
+      profileNameForm.elements.namedItem("displayName").value = profile.displayName;
+      profileNameStatus.textContent = "Voornaam opgeslagen.";
+      document.dispatchEvent(new CustomEvent("overuurtje:profile-updated", { detail: profile }));
+    } catch (error) {
+      profileNameStatus.textContent = error.message || "Voornaam opslaan is niet gelukt.";
+    }
+  });
   settingsForm.addEventListener("change", () => { updateDepartmentFields(); updateRateFields(); updateNightFields(); });
   settingsForm.addEventListener("submit", async (event) => {
     event.preventDefault();

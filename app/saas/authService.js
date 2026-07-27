@@ -52,13 +52,14 @@
 
   function signUp(email, password) {
     const currentUrl = new URL(location.href);
-    const emailRedirectTo = currentUrl.searchParams.has("invite")
-      ? currentUrl.href
-      : config.accountUrl;
+    const inviteToken = currentUrl.searchParams.get("invite");
+    const emailRedirect = new URL(inviteToken ? config.authWorkdaysUrl : config.authAccountUrl);
+    if (inviteToken) emailRedirect.searchParams.set("invite", inviteToken);
+
     return withClient((client) => client.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo }
+      options: { emailRedirectTo: emailRedirect.href }
     }));
   }
 
@@ -67,7 +68,7 @@
   }
 
   function requestPasswordReset(email) {
-    const redirectTo = new URL(config.accountUrl);
+    const redirectTo = new URL(config.authAccountUrl);
     redirectTo.searchParams.set("mode", "reset");
     return withClient((client) => client.auth.resetPasswordForEmail(email, { redirectTo: redirectTo.href }));
   }

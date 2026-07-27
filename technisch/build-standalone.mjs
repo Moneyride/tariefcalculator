@@ -21,6 +21,8 @@ const scriptFiles = [
   "saas/subscriptionService.js",
   "saas/featureGate.js",
   "calculator.js",
+  "liveWorkday.js",
+  "workdayNotifications.js",
   "analytics.js",
   "saas/sessionUi.js",
   "saas/shareUi.js",

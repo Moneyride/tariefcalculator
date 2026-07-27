@@ -2,6 +2,7 @@
 const DEFAULT_SETTINGS = {
   dayRate: 450,
   normalDayHours: 10,
+  minimumHours: 1,
   vatPercent: 21,
   enableHalfDayUnder6Hours: false,
   enableOvertime10To12: true,
@@ -236,11 +237,7 @@ function calculateTariff(input, customSettings = {}) {
   const hourlyRate = rateMode === "hour"
     ? Math.max(0, Number(input.hourlyRate) || 0)
     : settings.dayRate / settings.normalDayHours;
-  const baseAmount = rateMode === "hour"
-    ? Math.min(totalHours, settings.normalDayHours) * hourlyRate
-    : (settings.enableHalfDayUnder6Hours && totalHours <= 6
-      ? settings.dayRate * HALF_DAY_FACTOR
-      : settings.dayRate);
+  const regularHours = Math.min(totalHours, settings.normalDayHours);
 
   const normalMinutes = settings.normalDayHours * MINUTES_PER_HOUR;
   const overtimeStart = interval.start + normalMinutes + breakMinutes;
@@ -269,6 +266,22 @@ function calculateTariff(input, customSettings = {}) {
     overtime.overtime10To12Amount +
     overtime.overtimeFrom12Amount +
     overtime.overtimeFrom14Amount;
+  const minimumHours = Math.min(12, Math.max(1, Number(settings.minimumHours) || 1));
+  const hourlyMinimumAmount = minimumHours * hourlyRate;
+  const minimumChargeApplied =
+    rateMode === "hour" && hourlyMinimumAmount > regularHours * hourlyRate + overtimeAmount;
+  const hourlyBaseAmount = Math.max(
+    regularHours * hourlyRate,
+    hourlyMinimumAmount - overtimeAmount
+  );
+  const baseAmount = rateMode === "hour"
+    ? hourlyBaseAmount
+    : (settings.enableHalfDayUnder6Hours && totalHours <= 6
+      ? settings.dayRate * HALF_DAY_FACTOR
+      : settings.dayRate);
+  const minimumAdjustmentAmount = rateMode === "hour"
+    ? Math.max(0, baseAmount - regularHours * hourlyRate)
+    : 0;
   const nightTariffEnabled = Boolean(settings.enableNightTariff);
   const pureNightAmount = pureNightHours * hourlyRate * settings.pureNightSurchargeFactor;
   const nightOvertimeSurcharge = calculateNightOvertimeSurcharge(
@@ -308,6 +321,11 @@ function calculateTariff(input, customSettings = {}) {
     breakMinutes,
     workedMinutes,
     hourlyRate,
+    regularHours,
+    minimumHours,
+    minimumChargeApplied,
+    hourlyMinimumAmount,
+    minimumAdjustmentAmount,
     totalHours,
     overtimeHours,
     standardOvertimeHours: overtime.standardOvertimeHours,

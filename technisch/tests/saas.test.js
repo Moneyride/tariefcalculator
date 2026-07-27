@@ -28,6 +28,7 @@ test("accountinstellingen gebruiken een stabiel databasecontract", async () => {
     defaultBreakMinutes: 30,
     enableBreak: true,
     normalDayHours: 12,
+    minimumHours: 6,
     enableHalfDayUnder6Hours: true,
     enableOvertime10To12: true,
     enableOvertimeFrom12: false,
@@ -51,6 +52,7 @@ test("accountinstellingen gebruiken een stabiel databasecontract", async () => {
   assert.equal(serialized.preferences.defaultBreakMinutes, 30);
   assert.equal(serialized.preferences.enableBreak, true);
   assert.equal(serialized.preferences.normalDayHours, 12);
+  assert.equal(serialized.preferences.minimumHours, 6);
   assert.equal(serialized.preferences.enableHalfDayUnder6Hours, true);
   assert.equal(serialized.preferences.enableOvertimeFrom12, false);
   assert.equal(serialized.preferences.enableOvertimeFrom14, true);
@@ -66,6 +68,7 @@ test("accountinstellingen gebruiken een stabiel databasecontract", async () => {
   const normalized = context.OveruurtjeSettings.normalize(serialized);
   assert.equal(normalized.enableBreak, true);
   assert.equal(normalized.normalDayHours, 12);
+  assert.equal(normalized.minimumHours, 6);
   assert.equal(normalized.enableHalfDayUnder6Hours, true);
   assert.equal(normalized.enableOvertimeFrom12, false);
   assert.equal(normalized.enableOvertimeFrom14, true);
@@ -179,6 +182,78 @@ test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", asy
   assert.ok(saveSettingsStart >= 0 && closeSettings > saveSettingsStart);
   assert.ok(backgroundSync > closeSettings);
   assert.doesNotMatch(calculatorScript, /lockedEquipmentSettings/);
+});
+
+test("het accountmenu heeft op iedere apppagina een vaste link naar Vandaag", async () => {
+  const pages = ["index.html", "account.html", "dashboard.html", "workdays.html", "projects.html"];
+  for (const page of pages) {
+    const html = await readFile(new URL(`../../app/${page}`, import.meta.url), "utf8");
+    assert.match(html, /id="today-page-link" href="index\.html"[^>]*>Vandaag<\/a>/);
+  }
+});
+
+test("Authmails verwijzen ook vanuit localhost altijd terug naar Overuurtje.nl", async () => {
+  const configContext = await runService("app/saas/config.js", {
+    URL,
+    location: {
+      href: "http://localhost:4173/app/index.html",
+      hostname: "localhost",
+      protocol: "http:"
+    },
+    OVERUURTJE_RUNTIME_CONFIG: {
+      publicSiteUrl: "https://overuurtje.nl",
+      supabaseUrl: "https://example.supabase.co",
+      supabaseAnonKey: "publishable"
+    }
+  });
+
+  assert.equal(configContext.OveruurtjeConfig.accountUrl, "http://localhost:4173/app/account.html");
+  assert.equal(configContext.OveruurtjeConfig.authAccountUrl, "https://overuurtje.nl/account.html");
+  assert.equal(configContext.OveruurtjeConfig.authWorkdaysUrl, "https://overuurtje.nl/workdays.html");
+
+  const calls = [];
+  const client = {
+    auth: {
+      getSession: async () => ({ data: { session: null }, error: null }),
+      onAuthStateChange: () => {},
+      signUp: async (payload) => {
+        calls.push({ method: "signUp", payload });
+        return { data: {}, error: null };
+      },
+      resetPasswordForEmail: async (email, options) => {
+        calls.push({ method: "reset", email, options });
+        return { data: {}, error: null };
+      }
+    }
+  };
+  class CustomEvent {
+    constructor(type, options) {
+      this.type = type;
+      this.detail = options?.detail;
+    }
+  }
+  const authContext = await runService("app/saas/authService.js", {
+    CustomEvent,
+    document: { dispatchEvent: () => {} },
+    location: { href: "http://localhost:4173/app/workdays.html?invite=invite-token" },
+    URL,
+    OveruurtjeConfig: configContext.OveruurtjeConfig,
+    OveruurtjeSupabase: { getClient: async () => client }
+  });
+
+  await authContext.OveruurtjeAuth.ready;
+  await authContext.OveruurtjeAuth.signUp("test@example.com", "secret");
+  await authContext.OveruurtjeAuth.requestPasswordReset("test@example.com");
+
+  assert.equal(
+    calls[0].payload.options.emailRedirectTo,
+    "https://overuurtje.nl/workdays.html?invite=invite-token"
+  );
+  assert.equal(
+    calls[1].options.redirectTo,
+    "https://overuurtje.nl/account.html?mode=reset"
+  );
+  assert.equal(JSON.stringify(calls).includes("localhost"), false);
 });
 
 test("authfouten tonen nooit een leeg object aan de gebruiker", async () => {
@@ -372,6 +447,26 @@ test("Werkdagenservice ondersteunt meerdere werkdagen op dezelfde datum", async 
   assert.equal(sameDate.some((item) => item.calculationData.endTime === "22:00"), true);
 });
 
+test("Werkdagen bewaren een optionele naam zonder die in financiële data te dupliceren", async () => {
+  const storage = new Map();
+  const context = await runService("app/saas/workdayService.js", {
+    crypto: { randomUUID: () => "named-workday" },
+    localStorage: {
+      getItem: (key) => storage.get(key) || null,
+      setItem: (key, value) => storage.set(key, value)
+    },
+    OveruurtjeSupabase: { getClient: async () => null }
+  });
+  const saved = await context.OveruurtjeWorkdays.save("user-1", {
+    name: "KLM Commercial",
+    workDate: "2026-07-27",
+    calculationData: { startTime: "08:00", endTime: "18:00" }
+  }, { mock: true });
+
+  assert.equal(saved.name, "KLM Commercial");
+  assert.equal(saved.calculationData.name, undefined);
+});
+
 test("Projectservice vindt een geselecteerde projectdag op datum", async () => {
   const storage = new Map();
   const context = await runService("app/saas/projectService.js", {
@@ -435,7 +530,50 @@ test("Werkdagen delen gebruikt verwijzingen, redacted RPCs en ontvanger-RLS", as
   assert.match(workdaysHtml, /id="take-over-shared-times"/);
   assert.match(projectsHtml, /id="share-project-day"/);
   assert.match(indexHtml, /id="share-current-workday"/);
+  assert.match(indexHtml, /id="share-current-workday" disabled/);
   assert.ok(indexHtml.indexOf("saas/shareService.js") < indexHtml.indexOf("saas/sessionUi.js"));
+});
+
+test("Delen kan een ingevulde werkdag klaarzetten en verstuurt wijzigingen pas na opslaan", async () => {
+  const appScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
+  const inviteMigration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202607250003_workday_share_invites.sql"),
+    "utf8"
+  );
+
+  assert.match(appScript, /const canShare = isPro && hasDate && hasStartTime/);
+  assert.match(
+    appScript,
+    /if \(!sourceId\)\s*\{\s*const saved = await persistWorkday\(buildWorkdaySnapshot\(\)\)/
+  );
+  assert.match(inviteMigration, /after update of calculation_data on public\.workdays/i);
+  assert.doesNotMatch(appScript, /overuurtje:shares-changed[\s\S]{0,200}persistWorkday/);
+});
+
+test("Werkdagnamen en deelnemers worden privacyvriendelijk gedeeld", async () => {
+  const migration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202607270001_workday_names_and_participants.sql"),
+    "utf8"
+  );
+  const calculatorHtml = await readFile(path.join(rootDirectory, "app/index.html"), "utf8");
+  const accountHtml = await readFile(path.join(rootDirectory, "app/account.html"), "utf8");
+  const workdaysHtml = await readFile(path.join(rootDirectory, "app/workdays.html"), "utf8");
+
+  assert.match(migration, /add column if not exists name text/i);
+  assert.match(migration, /create or replace function public\.get_workday_share_participants/i);
+  assert.match(migration, /split_part\(trim\(p\.display_name\), ' ', 1\)/i);
+  assert.doesNotMatch(migration, /calculation_data\s*->>\s*'[^']*(rate|amount|parking|kilometer)/i);
+  assert.match(calculatorHtml, /name="workdayName"/);
+  assert.match(accountHtml, /name="displayName"/);
+  assert.match(workdaysHtml, /data-share-participants-list/);
+});
+
+test("ongelezen notificaties krijgen een eenmalige duidelijke openingsmelding", async () => {
+  const sessionUi = await readFile(path.join(rootDirectory, "app/saas/sessionUi.js"), "utf8");
+  assert.match(sessionUi, /Je hebt een nieuw bericht/);
+  assert.match(sessionUi, /Bekijk bericht/);
+  assert.match(sessionUi, /overuurtjeNotificationPrompt:/);
+  assert.match(sessionUi, /sessionStorage\.setItem\(promptKey, "shown"\)/);
 });
 
 test("Deelservice maakt een uitnodiging zonder gebruikerszoekopdracht of financiële data", async () => {
@@ -524,6 +662,7 @@ test("Auth-mails zijn plakklare templates zonder zichtbare metadata of dubbele b
     );
     assert.equal(template.trimStart().startsWith("<!--"), false, `${templateName} bevat zichtbare metadata`);
     assert.equal(template.includes("Flow:"), false, `${templateName} bevat zichtbare flowtekst`);
+    assert.equal(template.includes("localhost"), false, `${templateName} bevat een lokale link`);
   }
 
   const confirmationTemplate = await readFile(

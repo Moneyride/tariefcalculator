@@ -385,9 +385,62 @@
   padding: 24px 17px;
 }
 
+.notification-alert-dialog {
+  width: min(440px, calc(100vw - 28px));
+}
+
+.notification-alert-icon {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  margin-bottom: 18px;
+  place-items: center;
+  border-radius: 16px;
+  background: rgba(255, 106, 26, 0.12);
+  color: var(--orange);
+}
+
+.notification-alert-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.notification-alert-copy {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.notification-alert-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 26px;
+}
+
+.notification-alert-actions .saas-primary-button {
+  width: auto;
+  min-width: 170px;
+}
+
+.notification-alert-actions .saas-text-button {
+  min-height: 44px;
+  padding: 8px 12px;
+}
+
 .share-current-workday-button {
   min-height: 58px;
   gap: 12px;
+}
+
+.share-current-workday-button:disabled {
+  border-color: rgba(31, 67, 53, 0.1);
+  background: rgba(255, 255, 255, 0.34);
+  box-shadow: none;
+  color: rgba(31, 67, 53, 0.42);
+  cursor: not-allowed;
+  opacity: 1;
+  transform: none;
 }
 
 .share-workday-dialog {
@@ -632,6 +685,84 @@
   color: #8e3a2b;
 }
 
+.workday-name-field {
+  grid-column: 1 / -1;
+}
+
+.workday-name-field small,
+.profile-name-form small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.share-participants {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.share-participants h3 {
+  margin: 0;
+  color: var(--accent-dark);
+  font-size: 0.86rem;
+}
+
+.participant-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.participant-chip {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px 6px 6px;
+  border: 1px solid rgba(31, 67, 53, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.48);
+  color: var(--accent-dark);
+  font-size: 0.75rem;
+}
+
+.participant-chip .share-avatar {
+  width: 28px;
+  height: 28px;
+  font-size: 0.68rem;
+}
+
+.current-workday-participants {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.34);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 14px;
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  margin: 14px auto 0;
+  max-width: 720px;
+  padding: 11px 14px;
+}
+
+.current-workday-participants[hidden] {
+  display: none;
+}
+
+.current-workday-participants > strong {
+  color: var(--accent-dark);
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 640px) {
+  .current-workday-participants {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 9px;
+  }
+}
+
 .workday-list-item {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
@@ -803,6 +934,15 @@
   .received-workday-status {
     grid-column: 2;
     justify-self: start;
+  }
+
+  .notification-alert-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .notification-alert-actions .saas-primary-button {
+    width: 100%;
   }
 }
 
@@ -1372,11 +1512,20 @@ label {
 }
 
 .time-field {
+  position: relative;
   display: grid;
 }
 
 .time-field label {
   padding: 0;
+}
+
+.time-field-heading {
+  display: flex;
+  min-height: 24px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .time-control {
@@ -1763,6 +1912,12 @@ button.secondary:hover {
   font-size: 1.05rem;
 }
 
+.workday-action-group {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
 .result-panel {
   padding: 28px;
   background: rgba(255, 255, 255, 0.1);
@@ -1942,14 +2097,8 @@ dd {
 .account-settings-entry {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 15px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  justify-content: flex-end;
+  padding: 0;
 }
 
 .account-settings-entry[hidden] {
@@ -2199,6 +2348,58 @@ summary:hover {
   padding: 8px 12px;
 }
 
+.options-section {
+  overflow: visible;
+}
+
+.options-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 50px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-align: left;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.options-toggle:hover {
+  border-color: rgba(255, 106, 26, 0.22);
+  background: rgba(255, 255, 255, 0.28);
+  color: var(--accent);
+  transform: none;
+}
+
+.options-summary-state {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 150ms ease;
+}
+
+.options-toggle[aria-expanded="true"] .options-summary-state {
+  transform: translateY(2px) rotate(225deg);
+}
+
+.options-section.is-open > .input-options {
+  margin-top: 12px;
+}
+
+.input-options[hidden] {
+  display: none;
+}
+
 .extra-field {
   display: grid;
   gap: 6px;
@@ -2329,7 +2530,7 @@ summary:hover {
 .site-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 20px;
   padding: 2px 30px 30px;
 }
@@ -2337,7 +2538,9 @@ summary:hover {
 .footer-utility-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 18px;
+  flex-wrap: wrap;
 }
 
 .share-button,
@@ -3760,28 +3963,27 @@ summary:hover {
   }
 
   .site-footer {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 12px;
+    justify-content: center;
     padding: 2px 12px 24px;
   }
 
   .share-button {
-    width: 100%;
+    width: auto;
   }
 
   .footer-utility-actions {
-    align-items: stretch;
-    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-direction: row;
     gap: 10px;
   }
 
   .install-app-button {
-    width: 100%;
+    width: auto;
   }
 
   .cookie-settings-link {
-    align-self: center;
+    align-self: auto;
   }
 
   .cookie-banner {
@@ -3984,29 +4186,186 @@ summary:hover {
   text-transform: uppercase;
 }
 
-.time-field-heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.time-later-button {
-  min-height: auto;
+.account-avatar,
+.notification-button {
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  min-height: 42px;
   padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--muted);
-  box-shadow: none;
-  font-size: 0.68rem;
-  font-weight: 700;
+  border-radius: 50%;
 }
 
-.time-later-button:hover {
-  background: transparent;
+.live-workday-status {
+  position: static;
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 32px;
+  margin-top: 8px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  border: 1px solid rgba(255, 106, 26, 0.3);
+  border-radius: 10px;
+  background: rgba(255, 246, 237, 0.78);
+  color: var(--accent-dark);
+  box-shadow: 0 5px 16px rgba(255, 106, 26, 0.08);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.live-workday-status[hidden] {
+  display: none;
+}
+
+.live-workday-status > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
+}
+
+.live-workday-status strong {
+  color: var(--orange-dark);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  line-height: 1.15;
+}
+
+.live-workday-status small {
+  color: var(--muted);
+  font-size: 0.6rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.live-workday-pulse {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--orange);
+  box-shadow: 0 0 0 0 rgba(255, 106, 26, 0.35);
+  animation: live-workday-pulse 1.6s ease-out infinite;
+}
+
+.live-workday-status button {
+  min-height: auto;
+  margin-left: auto;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 7px;
+  background: rgba(31, 67, 53, 0.08);
+  color: var(--accent-dark);
+  box-shadow: none;
+  font-size: 0.56rem;
+  font-weight: 750;
+}
+
+.live-workday-status button:hover {
+  background: rgba(31, 67, 53, 0.13);
+  transform: none;
+}
+
+.live-workday-status.is-stopping .live-workday-pulse {
+  animation: none;
+  box-shadow: 0 0 0 7px rgba(255, 106, 26, 0.08);
+}
+
+.resume-live-button {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 0 0 0 auto;
+  padding: 3px 8px;
+  border: 1px solid rgba(255, 106, 26, 0.24);
+  border-radius: 8px;
+  background: rgba(255, 246, 237, 0.68);
+  color: var(--orange-dark);
+  box-shadow: none;
+  font-size: 0.6rem;
+  font-weight: 750;
+}
+
+.resume-live-button[hidden] {
+  display: none;
+}
+
+.resume-live-button:hover {
+  border-color: rgba(255, 106, 26, 0.4);
+  background: rgba(255, 246, 237, 0.9);
   color: var(--orange-dark);
   transform: none;
+}
+
+.live-end-timecode {
+  position: absolute;
+  z-index: 1;
+  left: 20px;
+  top: 50%;
+  color: var(--accent-dark);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: clamp(1.05rem, 2.2vw, 1.42rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+  letter-spacing: 0;
+  line-height: 1;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition: color 220ms ease, opacity 220ms ease, transform 220ms ease;
+}
+
+.live-end-timecode[hidden] {
+  display: none;
+}
+
+.time-control.is-live {
+  border-color: rgba(255, 106, 26, 0.62);
+  background:
+    linear-gradient(90deg, rgba(255, 242, 229, 0.94), rgba(255, 255, 255, 0.76));
+  box-shadow:
+    0 0 0 4px rgba(255, 106, 26, 0.1),
+    0 10px 25px rgba(255, 106, 26, 0.08);
+}
+
+.time-control.is-live input {
+  color: transparent;
+  caret-color: transparent;
+}
+
+.time-control.is-live input::placeholder {
+  color: transparent;
+}
+
+.time-control.is-live .time-picker-trigger {
+  color: var(--orange-dark);
+}
+
+.time-control.is-stopping .live-end-timecode {
+  color: var(--orange-dark);
+  transform: translateY(-50%) scale(1.025);
+}
+
+.time-control.is-settled .live-end-timecode {
+  color: var(--accent-dark);
+  transform: translateY(-50%) scale(1);
+}
+
+@media (min-width: 761px) {
+  .end-time-field .live-workday-status {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 10px);
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+}
+
+@keyframes live-workday-pulse {
+  70% { box-shadow: 0 0 0 8px rgba(255, 106, 26, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 106, 26, 0); }
 }
 
 .dialog-action-stack {
@@ -4184,14 +4543,274 @@ summary:hover {
   margin-top: 22px;
 }
 
+/* Dashboard */
+.dashboard-glass {
+  display: grid;
+  gap: 0;
+}
+
+.dashboard-guest,
+.dashboard-content {
+  width: calc(100% - 56px);
+  margin: 0 auto;
+}
+
+.dashboard-guest {
+  padding: 72px 0 96px;
+  text-align: center;
+}
+
+.dashboard-guest h1 {
+  max-width: 720px;
+  margin: 8px auto 16px;
+  color: var(--accent-dark);
+  font-size: clamp(2rem, 5vw, 4.2rem);
+  line-height: 1.02;
+}
+
+.dashboard-guest > p:not(.account-section-kicker) {
+  max-width: 560px;
+  margin: 0 auto;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.dashboard-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.dashboard-actions a {
+  text-decoration: none;
+}
+
+.dashboard-content {
+  display: grid;
+  gap: 26px;
+  padding: 34px 0 56px;
+}
+
+.dashboard-active-workday {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border: 1px solid rgba(255, 106, 26, 0.22);
+  border-radius: 16px;
+  background: rgba(255, 248, 239, 0.62);
+  color: var(--accent-dark);
+  text-decoration: none;
+  box-shadow: 0 10px 28px rgba(31, 67, 53, 0.06);
+  transition: transform 150ms ease, background-color 150ms ease;
+}
+
+.dashboard-active-workday:hover {
+  background: rgba(255, 248, 239, 0.78);
+  transform: translateY(-2px);
+}
+
+.dashboard-active-workday > span:nth-child(2) {
+  display: grid;
+  gap: 2px;
+}
+
+.dashboard-active-workday small {
+  color: var(--orange-dark);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.dashboard-period-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.dashboard-period-card,
+.dashboard-personal,
+.dashboard-free-note {
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.34);
+  box-shadow: 0 12px 34px rgba(31, 67, 53, 0.06);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+
+.dashboard-period-card {
+  overflow: hidden;
+  transition: transform 150ms ease, background-color 150ms ease;
+}
+
+.dashboard-period-card:hover {
+  background: rgba(255, 255, 255, 0.42);
+  transform: translateY(-2px);
+}
+
+.dashboard-card-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 24px 24px 20px;
+}
+
+.dashboard-card-heading p {
+  margin: 0 0 4px;
+  color: var(--orange-dark);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.dashboard-card-heading h2 {
+  margin: 0;
+  color: var(--accent-dark);
+  font-size: 1rem;
+  text-transform: capitalize;
+}
+
+.dashboard-card-heading a {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.dashboard-card-heading a:hover {
+  color: var(--accent-dark);
+}
+
+.dashboard-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  border-top: 1px solid rgba(31, 67, 53, 0.08);
+}
+
+.dashboard-metrics > div {
+  display: grid;
+  gap: 5px;
+  padding: 20px 24px;
+  border-right: 1px solid rgba(31, 67, 53, 0.08);
+  border-bottom: 1px solid rgba(31, 67, 53, 0.08);
+}
+
+.dashboard-metrics > div:nth-child(even) {
+  border-right: 0;
+}
+
+.dashboard-metrics > div:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.dashboard-metrics dt {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.dashboard-metrics dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.dashboard-personal {
+  padding: 26px;
+}
+
+.dashboard-section-heading h2 {
+  margin: 5px 0 0;
+  color: var(--accent-dark);
+  font-size: 1.45rem;
+}
+
+.dashboard-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.dashboard-stat-grid article {
+  display: grid;
+  align-content: start;
+  min-height: 132px;
+  padding: 17px;
+  border: 1px solid rgba(31, 67, 53, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.32);
+  transition: transform 150ms ease, background-color 150ms ease;
+}
+
+.dashboard-stat-grid article:hover {
+  background: rgba(255, 255, 255, 0.44);
+  transform: translateY(-2px);
+}
+
+.dashboard-stat-grid span {
+  min-height: 34px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.dashboard-stat-grid strong {
+  margin-top: 12px;
+  color: var(--accent-dark);
+  font-size: 1.25rem;
+}
+
+.dashboard-stat-grid small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.62rem;
+}
+
+.dashboard-free-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 26px;
+}
+
+.dashboard-free-note h2 {
+  margin: 4px 0 6px;
+  color: var(--accent-dark);
+}
+
+.dashboard-free-note p:last-child {
+  max-width: 680px;
+  margin: 0;
+  color: var(--muted);
+}
+
 @media (max-width: 760px) {
   .calculate-action .button-row {
     width: 100%;
     flex-direction: column;
   }
 
+  .workday-action-group {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .workday-save-button {
     width: 100%;
+  }
+
+  .share-current-workday-button {
+    width: 100%;
+    padding-inline: 12px;
+    line-height: 1.25;
   }
 
   .workdays-topbar {
@@ -4211,6 +4830,63 @@ summary:hover {
 
   .workdays-summary {
     gap: 10px;
+  }
+
+  .dashboard-guest,
+  .dashboard-content {
+    width: calc(100% - 24px);
+  }
+
+  .dashboard-guest {
+    padding: 42px 12px 64px;
+  }
+
+  .dashboard-actions,
+  .dashboard-free-note {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dashboard-actions a,
+  .dashboard-actions button,
+  .dashboard-free-note button {
+    width: 100%;
+    text-align: center;
+  }
+
+  .dashboard-content {
+    gap: 16px;
+    padding-top: 22px;
+  }
+
+  .dashboard-period-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .dashboard-card-heading {
+    padding: 20px 18px 17px;
+  }
+
+  .dashboard-metrics > div {
+    padding: 17px 18px;
+  }
+
+  .dashboard-personal {
+    padding: 20px 18px;
+  }
+
+  .dashboard-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-stat-grid article:last-child {
+    grid-column: 1 / -1;
+    min-height: 108px;
+  }
+
+  .dashboard-free-note {
+    padding: 21px 18px;
   }
 
   .workdays-summary > div {

@@ -3,11 +3,12 @@
 
   const supabaseService = globalThis.OveruurtjeSupabase;
   const STORAGE_KEY = "overuurtjeMockWorkdays";
-  const COLUMNS = "id,user_id,work_date,calculation_data,created_at,updated_at";
+  const COLUMNS = "id,user_id,name,work_date,calculation_data,created_at,updated_at";
 
   const normalize = (row) => ({
     id: row.id,
     userId: row.user_id,
+    name: row.name || "",
     workDate: row.work_date,
     calculationData: row.calculation_data || {},
     createdAt: row.created_at,
@@ -79,6 +80,7 @@
       const workday = {
         id: values.id || mockId(),
         userId,
+        name: String(values.name || "").trim(),
         workDate: values.workDate,
         calculationData: values.calculationData || {},
         createdAt: old?.createdAt || now,
@@ -92,6 +94,7 @@
     const db = await client();
     const payload = {
       user_id: userId,
+      name: String(values.name || "").trim() || null,
       work_date: values.workDate,
       calculation_data: values.calculationData || {}
     };

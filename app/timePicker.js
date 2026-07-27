@@ -3,6 +3,7 @@
 
   const HOURS = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, "0"));
   const QUARTER_HOURS = ["00", "15", "30", "45"];
+  const liveWorkday = globalThis.OveruurtjeLiveWorkday;
 
   function parts(value) {
     const [hour = "00", minute = "00"] = String(value).split(":");
@@ -14,6 +15,8 @@
 
   function setValue(field, hour, minute) {
     field.value = `${hour}:${minute}`;
+    field.dataset.timePicked = "true";
+    delete field.dataset.liveStopped;
     field.dispatchEvent(new Event("input", { bubbles: true }));
     field.dispatchEvent(new Event("change", { bubbles: true }));
   }
@@ -77,6 +80,18 @@
     const open = (event) => {
       event.preventDefault();
       event.stopPropagation();
+      if (
+        field.hasAttribute("data-time-picker-current")
+        && field.dataset.timePicked !== "true"
+        && field.dataset.timeRestored !== "true"
+        && liveWorkday
+      ) {
+        field.value = liveWorkday.roundedCurrentTime();
+        field.dataset.timePicked = "true";
+        delete field.dataset.liveStopped;
+        field.dispatchEvent(new Event("input", { bubbles: true }));
+        field.dispatchEvent(new Event("change", { bubbles: true }));
+      }
       render(field, picker);
       close(picker);
       picker.hidden = false;

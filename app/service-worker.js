@@ -1,9 +1,10 @@
 "use strict";
 
-const CACHE_NAME = "overuurtje-app-v9";
+const CACHE_NAME = "overuurtje-app-v19";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./dashboard.html",
   "./account.html",
   "./workdays.html",
   "./projects.html",
@@ -13,7 +14,11 @@ const APP_SHELL = [
   "./analytics.js",
   "./selectUi.js",
   "./timePicker.js",
+  "./liveWorkday.js",
+  "./workdayNotifications.js",
+  "./statsEngine.js",
   "./app.js",
+  "./dashboard.js",
   "./account.js",
   "./workdays.js",
   "./projects.js",
@@ -111,4 +116,15 @@ self.addEventListener("fetch", (event) => {
     || url.pathname.endsWith(".ico")) {
     event.respondWith(cacheFirst(request));
   }
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      const existing = clients.find((client) => "focus" in client);
+      if (existing) return existing.focus();
+      return self.clients.openWindow("./");
+    })
+  );
 });

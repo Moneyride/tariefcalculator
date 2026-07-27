@@ -16,6 +16,7 @@
   const userMenuButton = document.querySelector("#account-user-button");
   const userDropdown = document.querySelector("#account-dropdown");
   const userInitial = document.querySelector("#account-user-initial");
+  let dashboardLink = document.querySelector("#dashboard-page-link");
   const accountLink = document.querySelector("#account-page-link");
   const workdaysLink = document.querySelector("#workdays-page-link");
   const projectsLink = document.querySelector("#projects-page-link");
@@ -45,6 +46,8 @@
   let pendingSignupEmail = "";
   let notificationTimer = null;
   let notificationUi = null;
+  let notificationPromptTimer = null;
+  let pendingNotificationPrompt = null;
 
   function showToast(message) {
     if (globalThis.OveruurtjeAnalytics?.showToast) {
@@ -117,6 +120,73 @@
     return `${item.actorName} heeft een werkdag met je gedeeld.`;
   }
 
+  function ensureNotificationPrompt() {
+    let dialog = document.querySelector("#notification-alert-dialog");
+    if (dialog) return dialog;
+
+    dialog = document.createElement("dialog");
+    dialog.className = "saas-dialog notification-alert-dialog";
+    dialog.id = "notification-alert-dialog";
+    dialog.setAttribute("aria-labelledby", "notification-alert-title");
+    dialog.innerHTML = `
+      <button class="dialog-close" type="button" data-notification-alert-close aria-label="Sluiten">&times;</button>
+      <div class="notification-alert-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+          <path d="M10 21h4"></path>
+        </svg>
+      </div>
+      <p class="dialog-eyebrow">Nieuw bericht</p>
+      <h2 id="notification-alert-title">Je hebt een nieuw bericht</h2>
+      <p class="notification-alert-copy"></p>
+      <div class="notification-alert-actions">
+        <button class="saas-primary-button" type="button" data-notification-alert-open>Bekijk bericht</button>
+        <button class="saas-text-button" type="button" data-notification-alert-close>Later</button>
+      </div>
+    `;
+    document.body.append(dialog);
+    dialog.querySelectorAll("[data-notification-alert-close]").forEach((button) => {
+      button.addEventListener("click", () => closeDialog(dialog));
+    });
+    dialog.querySelector("[data-notification-alert-open]")?.addEventListener("click", () => {
+      const item = pendingNotificationPrompt;
+      closeDialog(dialog);
+      if (item?.shareId) {
+        location.href = `${config.workdaysUrl}?shared=${encodeURIComponent(item.shareId)}`;
+        return;
+      }
+      notificationUi?.querySelector(".notification-button")?.click();
+    });
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) closeDialog(dialog);
+    });
+    return dialog;
+  }
+
+  function maybeShowNotificationPrompt(items) {
+    const newestUnread = items.find((item) => !item.readAt);
+    if (!newestUnread || pendingNotificationPrompt?.id === newestUnread.id) return;
+    const promptKey = `overuurtjeNotificationPrompt:${newestUnread.id}`;
+    if (sessionStorage.getItem(promptKey)) return;
+
+    clearTimeout(notificationPromptTimer);
+    notificationPromptTimer = setTimeout(() => {
+      const otherDialog = [...document.querySelectorAll("dialog[open]")]
+        .some((dialog) => dialog.id !== "notification-alert-dialog");
+      if (otherDialog) {
+        pendingNotificationPrompt = null;
+        maybeShowNotificationPrompt(items);
+        return;
+      }
+      pendingNotificationPrompt = newestUnread;
+      sessionStorage.setItem(promptKey, "shown");
+      const dialog = ensureNotificationPrompt();
+      dialog.querySelector(".notification-alert-copy").textContent = notificationText(newestUnread);
+      openDialog(dialog);
+      dialog.querySelector("[data-notification-alert-open]")?.focus();
+    }, 700);
+  }
+
   function ensureNotificationUi() {
     if (notificationUi || !userMenu?.parentElement || !shares) return notificationUi;
     const wrapper = document.createElement("div");
@@ -166,6 +236,7 @@
       const unread = items.filter((item) => !item.readAt).length;
       badge.textContent = unread > 9 ? "9+" : String(unread);
       badge.hidden = unread === 0;
+      maybeShowNotificationPrompt(items);
       const list = wrapper.querySelector(".notification-list");
       if (!items.length) {
         const empty = document.createElement("p");
@@ -291,6 +362,14 @@
   function renderHeader(context) {
     if (!loginButton || !userMenu) return;
     const user = context.auth.user;
+    if (!dashboardLink && userDropdown && accountLink) {
+      dashboardLink = document.createElement("a");
+      dashboardLink.id = "dashboard-page-link";
+      dashboardLink.href = config.dashboardUrl;
+      dashboardLink.setAttribute("role", "menuitem");
+      dashboardLink.textContent = "Dashboard";
+      userDropdown.insertBefore(dashboardLink, accountLink);
+    }
     loginButton.hidden = Boolean(user);
     document.querySelectorAll(".account-navigation [data-subscription-upgrade]").forEach((button) => {
       button.hidden = Boolean(user);
@@ -302,6 +381,7 @@
     const label = context.profile?.displayName || user.email || "Account";
     userInitial.textContent = label.trim().charAt(0).toUpperCase() || "O";
     userMenuButton.setAttribute("aria-label", `Account van ${label}`);
+    if (dashboardLink) dashboardLink.href = config.dashboardUrl;
     accountLink.href = config.accountUrl;
     if (workdaysLink) workdaysLink.href = config.workdaysUrl;
     if (projectsLink) projectsLink.href = config.projectsUrl;
@@ -463,6 +543,10 @@
   proContinue?.addEventListener("click", () => closeDialog(proDialog));
   document.addEventListener("overuurtje:pro-required", openUpgrade);
   document.addEventListener("overuurtje:subscription-changed", () => buildContext(auth.getState()));
+  document.addEventListener("overuurtje:profile-updated", (event) => {
+    currentContext = Object.freeze({ ...currentContext, profile: event.detail });
+    renderHeader(currentContext);
+  });
   auth.subscribe(buildContext);
 
   globalThis.OveruurtjeSessionUI = Object.freeze({

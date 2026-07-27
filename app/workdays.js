@@ -112,7 +112,9 @@
           <button class="workday-share-button" type="button">Deel met collega's</button>
           <button class="workday-delete-button" type="button" aria-label="Werkdag verwijderen" title="Werkdag verwijderen">&times;</button>
         `;
-        article.querySelector(".workday-date").textContent = dateFormat.format(parseDate(workday.workDate));
+        article.querySelector(".workday-date").textContent = workday.name
+          ? `${workday.name} · ${dateFormat.format(parseDate(workday.workDate))}`
+          : dateFormat.format(parseDate(workday.workDate));
         article.querySelector(".workday-times").textContent = snapshot.endTime
           ? `${snapshot.startTime || "-"} – ${snapshot.endTime}`
           : `${snapshot.startTime || "-"} – eindtijd open`;
@@ -155,8 +157,8 @@
       button.querySelector(".share-avatar").textContent = item.ownerName.charAt(0).toUpperCase();
       button.querySelector("strong").textContent = `${item.ownerName} · ${dateFormat.format(parseDate(item.workDate))}`;
       const project = button.querySelector(".received-workday-project");
-      project.textContent = item.projectName;
-      project.hidden = !item.projectName;
+      project.textContent = item.projectName || item.workdayName;
+      project.hidden = !item.projectName && !item.workdayName;
       button.querySelector("small").textContent = `${item.startTime || "-"} – ${item.endTime || "eindtijd open"}`;
       const status = button.querySelector(".received-workday-status");
       status.textContent = item.acceptedAt ? "Overgenomen" : "Nieuw";
@@ -170,19 +172,45 @@
     activeReceivedShare = item;
     document.querySelector("#shared-workday-title").textContent = `${item.ownerName} heeft een werkdag gedeeld`;
     const project = sharedDetailDialog.querySelector("[data-shared-project]");
-    project.textContent = item.projectName ? `Project: ${item.projectName}` : "";
-    project.hidden = !item.projectName;
+    project.textContent = item.projectName
+      ? `Project: ${item.projectName}`
+      : (item.workdayName ? `Werkdag: ${item.workdayName}` : "");
+    project.hidden = !item.projectName && !item.workdayName;
     sharedDetailDialog.querySelector("[data-shared-date]").textContent = dateFormat.format(parseDate(item.workDate));
     sharedDetailDialog.querySelector("[data-shared-times]").textContent = `${item.startTime || "-"} – ${item.endTime || "eindtijd nog niet ingevuld"}`;
     const message = sharedDetailDialog.querySelector("[data-shared-message]");
     message.textContent = item.optionalMessage;
     message.hidden = !item.optionalMessage;
+    renderParticipants(sharedDetailDialog, item.sourceType, item.sourceId);
     openDialog(sharedDetailDialog);
+  }
+
+  async function renderParticipants(dialog, sourceType, sourceId) {
+    const section = dialog.querySelector("[data-share-participants]");
+    const list = dialog.querySelector("[data-share-participants-list]");
+    if (!section || !list) return;
+    try {
+      const participants = await shareService.listParticipants(sourceType, sourceId);
+      section.hidden = participants.length === 0;
+      list.replaceChildren(...participants.map((participant) => {
+        const chip = document.createElement("span");
+        chip.className = "participant-chip";
+        chip.innerHTML = `<span class="share-avatar"></span><strong></strong>`;
+        chip.querySelector(".share-avatar").textContent = participant.firstName.charAt(0).toUpperCase();
+        chip.querySelector("strong").textContent = participant.isCurrentUser
+          ? `${participant.firstName} (jij)`
+          : participant.firstName;
+        return chip;
+      }));
+    } catch {
+      section.hidden = true;
+    }
   }
 
   function takeoverSnapshot(item) {
     return {
       schemaVersion: 1,
+      workdayName: item.workdayName || "",
       date: item.workDate,
       startTime: item.startTime,
       endTime: item.endTime,
@@ -218,6 +246,7 @@
       return;
     }
     const saved = await workdayService.save(currentContext.auth.user.id, {
+      name: item.workdayName,
       workDate: item.workDate,
       calculationData: takeoverSnapshot(item)
     }, { mock: currentContext.subscription.isMock });
@@ -258,6 +287,7 @@
     };
     await workdayService.save(currentContext.auth.user.id, {
       id: entry.workday.id,
+      name: entry.workday.name || item.workdayName,
       workDate: item.workDate,
       calculationData: snapshot
     }, { mock: currentContext.subscription.isMock });
@@ -287,8 +317,10 @@
     activeInvite = invite;
     document.querySelector("#shared-invite-title").textContent = `${invite.ownerName} wil graag tijden met je delen`;
     const project = sharedInviteDialog.querySelector("[data-invite-project]");
-    project.textContent = invite.projectName ? `Project: ${invite.projectName}` : "";
-    project.hidden = !invite.projectName;
+    project.textContent = invite.projectName
+      ? `Project: ${invite.projectName}`
+      : (invite.workdayName ? `Werkdag: ${invite.workdayName}` : "");
+    project.hidden = !invite.projectName && !invite.workdayName;
     sharedInviteDialog.querySelector("[data-invite-date]").textContent = dateFormat.format(parseDate(invite.workDate));
     sharedInviteDialog.querySelector("[data-invite-times]").textContent = `${invite.startTime || "-"} – ${invite.endTime || "eindtijd nog niet ingevuld"}`;
     const message = sharedInviteDialog.querySelector("[data-invite-message]");

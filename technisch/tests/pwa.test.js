@@ -22,7 +22,7 @@ async function pngDimensions(relativePath) {
 test("manifest beschrijft een zelfstandig installeerbare Overuurtje-app", async () => {
   const manifest = JSON.parse(await read("app/site.webmanifest"));
   assert.equal(manifest.name, "Overuurtje.nl");
-  assert.equal(manifest.start_url, "./");
+  assert.equal(manifest.start_url, "./index.html");
   assert.equal(manifest.scope, "./");
   assert.equal(manifest.display, "standalone");
   assert.equal(manifest.theme_color, "#073f3d");
@@ -38,7 +38,7 @@ test("PWA-iconen hebben de vereiste afmetingen", async () => {
 });
 
 test("alle webapp-pagina's registreren dezelfde PWA-laag", async () => {
-  for (const page of ["index.html", "account.html", "workdays.html", "projects.html"]) {
+  for (const page of ["index.html", "dashboard.html", "account.html", "workdays.html", "projects.html"]) {
     const html = await read(`app/${page}`);
     assert.match(html, /viewport-fit=cover/);
     assert.match(html, /apple-mobile-web-app-capable/);
@@ -63,6 +63,7 @@ test("service worker bewaart de app-shell maar nooit API-verkeer", async () => {
   assert.match(worker, /const APP_SHELL/);
   assert.match(worker, /\.\/calculator\.js/);
   assert.match(worker, /\.\/workdays\.html/);
+  assert.match(worker, /\.\/dashboard\.html/);
   assert.match(worker, /url\.origin !== self\.location\.origin/);
   assert.match(worker, /url\.pathname\.startsWith\("\/api\/"\)/);
   assert.match(worker, /url\.pathname\.startsWith\("\/\.netlify\/functions\/"\)/);

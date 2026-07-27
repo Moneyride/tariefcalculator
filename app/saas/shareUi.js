@@ -65,7 +65,7 @@
         <label class="share-mode-toggle">
           <input type="radio" name="shareMode" value="on_completion">
           <span class="share-mode-switch" aria-hidden="true"></span>
-          <span><strong>Delen zodra de werkdag is afgerond</strong><small>De melding volgt zodra een eindtijd is ingevuld.</small></span>
+          <span><strong>Delen zodra de werkdag is afgerond</strong><small>De melding volgt zodra een eindtijd is ingevuld en de werkdag is opgeslagen.</small></span>
         </label>
       </fieldset>
       <p class="share-account-note">De ontvanger kan een gratis of Pro-account gebruiken. Zonder account wordt eerst gevraagd om er een aan te maken.</p>
@@ -75,7 +75,7 @@
         Uitnodigingslink delen
       </button>
       <section class="shared-with-section" data-shared-with hidden>
-        <h3>Gedeeld met</h3>
+        <h3>Deelnemers</h3>
         <div data-shared-with-list></div>
       </section>
     `;
@@ -92,9 +92,14 @@
     const section = dialog.querySelector("[data-shared-with]");
     const list = dialog.querySelector("[data-shared-with-list]");
     try {
-      const sent = await shares.listSent(activeSource.type, activeSource.id);
-      section.hidden = sent.length === 0;
-      list.replaceChildren(...sent.map((item) => {
+      const [sent, participants] = await Promise.all([
+        shares.listSent(activeSource.type, activeSource.id),
+        shares.listParticipants(activeSource.type, activeSource.id)
+      ]);
+      const sentByUserId = new Map(sent.map((item) => [item.recipientId, item]));
+      section.hidden = participants.length === 0;
+      list.replaceChildren(...participants.map((participant) => {
+        const item = sentByUserId.get(participant.userId);
         const row = document.createElement("div");
         row.className = "shared-with-row";
         row.innerHTML = `
@@ -102,17 +107,23 @@
           <span><strong></strong><small></small></span>
           <button type="button" aria-label="Niet meer delen">&times;</button>
         `;
-        row.querySelector(".share-avatar").textContent = initials(item.recipientName || item.recipientEmail);
-        row.querySelector("strong").textContent = item.recipientName || item.recipientEmail;
-        row.querySelector("small").textContent = item.acceptedAt
-          ? "Werktijden overgenomen"
-          : (item.deliveredAt ? "Gedeeld" : "Wacht op eindtijd");
-        row.querySelector("button").addEventListener("click", async () => {
-          await shares.remove(item.id);
-          await renderSent(dialog);
-          sessionUi.showToast("Collega verwijderd.");
-          document.dispatchEvent(new CustomEvent("overuurtje:shares-changed"));
-        });
+        row.querySelector(".share-avatar").textContent = initials(participant.firstName);
+        row.querySelector("strong").textContent = participant.isCurrentUser
+          ? `${participant.firstName} (jij)`
+          : participant.firstName;
+        row.querySelector("small").textContent = participant.isOwner
+          ? "Eigenaar"
+          : (item?.deliveredAt ? "Deelnemer" : "Wacht op eindtijd");
+        const removeButton = row.querySelector("button");
+        removeButton.hidden = participant.isOwner || !item;
+        if (item) {
+          removeButton.addEventListener("click", async () => {
+            await shares.remove(item.id);
+            await renderSent(dialog);
+            sessionUi.showToast("Collega verwijderd.");
+            document.dispatchEvent(new CustomEvent("overuurtje:shares-changed"));
+          });
+        }
         return row;
       }));
     } catch {

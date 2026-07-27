@@ -50,6 +50,7 @@
       rateMode: defaultFunction ? "day" : rateMode,
       rateAmount: defaultFunction?.dayRate ?? (rateMode === "hour" ? accountSettings.defaultHourlyRate : accountSettings.defaultDayRate),
       normalDayHours: accountSettings.normalDayHours,
+      minimumHours: accountSettings.minimumHours,
       enableHalfDayUnder6Hours: accountSettings.enableHalfDayUnder6Hours,
       enableOvertime10To12: accountSettings.enableOvertime10To12,
       enableOvertimeFrom12: accountSettings.enableOvertimeFrom12,
@@ -71,6 +72,7 @@
       ...calculator.DEFAULT_SETTINGS,
       dayRate: data.rateMode === "day" ? data.rateAmount : accountSettings.defaultDayRate,
       normalDayHours: Number(data.normalDayHours) || 10,
+      minimumHours: Math.min(12, Math.max(1, Number(data.minimumHours) || 1)),
       enableHalfDayUnder6Hours: Boolean(data.enableHalfDayUnder6Hours),
       enableOvertime10To12: Boolean(data.enableOvertime10To12),
       enableOvertimeFrom12: Boolean(data.enableOvertimeFrom12),
@@ -309,7 +311,7 @@
       workFunctionId: workFunction?.id || existingData.workFunctionId || "",
       workFunctionName: workFunction?.name || existingData.workFunctionName || "",
       department: workFunction?.department || existingData.department || accountSettings.defaultDepartment,
-      rateMode: data.get("rateMode"), rateAmount: Number(data.get("rateAmount")), normalDayHours: Number(data.get("normalDayHours")),
+      rateMode: data.get("rateMode"), rateAmount: Number(data.get("rateAmount")), normalDayHours: Number(data.get("normalDayHours")), minimumHours: Number(data.get("minimumHours")),
       enableHalfDayUnder6Hours: checked("enableHalfDayUnder6Hours"), enableOvertime10To12: checked("enableOvertime10To12"), enableOvertimeFrom12: checked("enableOvertimeFrom12"), enableOvertimeFrom14: checked("enableOvertimeFrom14"), enableNightTariff: checked("enableNightTariff"), nightStart: data.get("nightStart"), nightEnd: data.get("nightEnd"),
       enableKilometers: checked("enableKilometers"), kilometers: Number(data.get("kilometers")) || 0, kilometerRate: accountSettings.mileageRate,
       enableParkingCosts: checked("enableParkingCosts"), parkingCosts: Number(data.get("parkingCosts")) || 0,
@@ -382,12 +384,16 @@
     document.querySelectorAll("#day-form .conditional-field[data-for]").forEach((field) => {
       field.hidden = !dayForm.elements.namedItem(field.dataset.for).checked;
     });
+    const hourly = dayForm.elements.namedItem("rateMode").value === "hour";
+    dayForm.querySelector('[data-project-rate-setting="day-hours"]').hidden = hourly;
+    dayForm.querySelector('[data-project-rate-setting="minimum-hours"]').hidden = !hourly;
+    dayForm.querySelector('[data-project-rate-setting="half-day"]').hidden = hourly;
   }
 
   function openDay(id) {
     currentDayId = id; const day = current.days.find((item) => item.id === id); const data = { ...defaultDayData(), ...day.calculationData };
     document.querySelector("#day-editor-title").textContent = formatDate(day.workDate);
-    ["startTime", "endTime", "breakMinutes", "rateMode", "rateAmount", "normalDayHours", "nightStart", "nightEnd", "kilometers", "parkingCosts"].forEach((name) => { dayForm.elements.namedItem(name).value = data[name]; });
+    ["startTime", "endTime", "breakMinutes", "rateMode", "rateAmount", "normalDayHours", "minimumHours", "nightStart", "nightEnd", "kilometers", "parkingCosts"].forEach((name) => { dayForm.elements.namedItem(name).value = data[name]; });
     ["enableHalfDayUnder6Hours", "enableOvertime10To12", "enableOvertimeFrom12", "enableOvertimeFrom14", "enableNightTariff", "enableKilometers", "enableParkingCosts"].forEach((name) => { dayForm.elements.namedItem(name).checked = Boolean(data[name]); });
     renderEquipmentOptions(data);
     document.querySelector("#copy-day-targets").innerHTML = current.days.filter((item) => item.id !== id).map((item) => `<label><input type="checkbox" value="${item.id}"><span>${formatDate(item.workDate)}</span></label>`).join("");
@@ -431,7 +437,13 @@
     const pages = current.days.map((day) => {
       const data = { ...defaultDayData(), ...day.calculationData }; const r = calculate(data);
       const lines = [
-        printLine("Basistarief", data.rateMode === "hour" ? `${number.format(Math.min(r.totalHours, data.normalDayHours))} uur × ${euro.format(r.hourlyRate)}` : `Dagtarief ${euro.format(data.rateAmount)}`, r.baseAmount),
+        printLine(
+          data.rateMode === "hour" && r.minimumChargeApplied ? "Minimale afname" : "Basistarief",
+          data.rateMode === "hour"
+            ? `${number.format(r.regularHours)} uur × ${euro.format(r.hourlyRate)}${r.minimumChargeApplied ? ` + ${euro.format(r.minimumAdjustmentAmount)} minimumcorrectie tot ${number.format(r.minimumHours)} uur` : ""}`
+            : `Dagtarief ${euro.format(data.rateAmount)}`,
+          r.baseAmount
+        ),
         printLine("Overuren 100%", `${number.format(r.standardOvertimeHours)} uur × ${euro.format(r.hourlyRate)} × 100%`, r.standardOvertimeAmount),
         printLine("Overuren 150%", `${number.format(r.overtime10To12Hours)} uur × ${euro.format(r.hourlyRate)} × 150%`, r.overtime10To12Amount),
         printLine("Overuren 200%", `${number.format(r.overtimeFrom12Hours)} uur × ${euro.format(r.hourlyRate)} × 200%`, r.overtimeFrom12Amount),

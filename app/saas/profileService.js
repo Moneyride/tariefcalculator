@@ -60,5 +60,21 @@
     return normalize(created, user);
   }
 
-  globalThis.OveruurtjeProfiles = Object.freeze({ getForUser });
+  async function saveDisplayName(user, displayName) {
+    if (!user) throw new Error("Log eerst in.");
+    const value = String(displayName || "").trim();
+    if (value.length > 80) throw new Error("Gebruik maximaal 80 tekens.");
+    const client = await supabaseService.getClient();
+    if (!client) throw new Error("Supabase is niet beschikbaar.");
+    const { data, error } = await client
+      .from("profiles")
+      .update({ display_name: value || null })
+      .eq("id", user.id)
+      .select(PROFILE_COLUMNS)
+      .single();
+    if (error) throw error;
+    return normalize(data, user);
+  }
+
+  globalThis.OveruurtjeProfiles = Object.freeze({ getForUser, saveDisplayName });
 })();

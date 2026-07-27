@@ -88,6 +88,28 @@
       .filter((entry) => entry.project);
   }
 
+  async function listAllDays(userId, options = {}) {
+    if (isMock(options)) {
+      const store = readMock()[userId] || { projects: {}, days: {} };
+      return Object.values(store.days || {})
+        .map((day) => ({ day, project: store.projects?.[day.projectId] }))
+        .filter((entry) => entry.project)
+        .sort((a, b) => b.day.workDate.localeCompare(a.day.workDate));
+    }
+
+    const db = await client();
+    const [{ data: dayRows, error: dayError }, { data: projectRows, error: projectError }] = await Promise.all([
+      db.from("project_days").select(DAY_COLUMNS).eq("user_id", userId).order("work_date", { ascending: false }),
+      db.from("projects").select(PROJECT_COLUMNS).eq("user_id", userId)
+    ]);
+    if (dayError) throw dayError;
+    if (projectError) throw projectError;
+    const projectsById = new Map((projectRows || []).map((project) => [project.id, normalizeProject(project)]));
+    return (dayRows || [])
+      .map((day) => ({ day: normalizeDay(day), project: projectsById.get(day.project_id) }))
+      .filter((entry) => entry.project);
+  }
+
   async function saveProject(userId, values, options = {}) {
     const now = new Date().toISOString();
     if (isMock(options)) {
@@ -160,6 +182,7 @@
     list,
     get,
     listDaysByDate,
+    listAllDays,
     saveProject,
     replaceDays,
     remove

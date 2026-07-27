@@ -290,3 +290,38 @@ test("uurtarief rekent gewerkte normale uren en overuren vanuit hetzelfde basist
   assertMoney(result.overtimeAmount, 90);
   assertMoney(result.subtotalExVat, 690);
 });
+
+test("uurtarief rekent minimaal het ingestelde aantal uren", () => {
+  const result = calculateTariff(
+    { startTime: "08:00", endTime: "11:00", rateMode: "hour", hourlyRate: 60 },
+    { ...DEFAULT_SETTINGS, minimumHours: 6, enableNightTariff: false }
+  );
+
+  assert.equal(result.totalHours, 3);
+  assert.equal(result.minimumHours, 6);
+  assert.equal(result.minimumChargeApplied, true);
+  assertMoney(result.baseAmount, 360);
+  assertMoney(result.subtotalExVat, 360);
+});
+
+test("minimale afname telt overuren niet dubbel", () => {
+  const result = calculateTariff(
+    { startTime: "08:00", endTime: "19:00", rateMode: "hour", hourlyRate: 60 },
+    { ...DEFAULT_SETTINGS, minimumHours: 12, enableNightTariff: false }
+  );
+
+  assert.equal(result.totalHours, 11);
+  assertMoney(result.overtimeAmount, 90);
+  assertMoney(result.baseAmount, 630);
+  assertMoney(result.subtotalExVat, 720);
+});
+
+test("halve dag wordt nooit toegepast op een uurtarief", () => {
+  const result = calculateTariff(
+    { startTime: "08:00", endTime: "11:00", rateMode: "hour", hourlyRate: 60 },
+    { ...DEFAULT_SETTINGS, minimumHours: 2, enableHalfDayUnder6Hours: true, enableNightTariff: false }
+  );
+
+  assert.equal(result.minimumChargeApplied, false);
+  assertMoney(result.baseAmount, 180);
+});

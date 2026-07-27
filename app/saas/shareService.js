@@ -26,6 +26,7 @@
     startTime: row.start_time || "",
     endTime: row.end_time || "",
     projectName: row.project_name || "",
+    workdayName: row.workday_name || "",
     optionalMessage: row.optional_message || "",
     shareMode: row.share_mode,
     acceptedAt: row.accepted_at,
@@ -62,6 +63,7 @@
     startTime: row.start_time || "",
     endTime: row.end_time || "",
     projectName: row.project_name || "",
+    workdayName: row.workday_name || "",
     optionalMessage: row.optional_message || "",
     shareMode: row.share_mode,
     available: row.available !== false
@@ -99,6 +101,18 @@
       .sort((a, b) => a.recipientName.localeCompare(b.recipientName, "nl"));
   }
 
+  async function listParticipants(sourceType, sourceId) {
+    return (await rpc("get_workday_share_participants", {
+      p_source_type: sourceType,
+      p_source_id: sourceId
+    }) || []).map((row) => ({
+      userId: row.user_id,
+      firstName: row.first_name || "Collega",
+      isOwner: Boolean(row.is_owner),
+      isCurrentUser: Boolean(row.is_current_user)
+    }));
+  }
+
   async function accept(id) {
     await rpc("accept_workday_share", { p_share_id: id });
   }
@@ -121,6 +135,7 @@
     claimInvite,
     listReceived,
     listSent,
+    listParticipants,
     accept,
     remove,
     listNotifications,

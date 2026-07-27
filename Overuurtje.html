@@ -41,8 +41,8 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=20260718c">
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png?v=20260718c">
     <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=20260718c">
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260718c">
-    <link rel="manifest" href="site.webmanifest?v=20260724a">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
+    <link rel="manifest" href="site.webmanifest?v=20260727c">
     <style>
 :root {
   color-scheme: light;
@@ -431,9 +431,62 @@
   padding: 24px 17px;
 }
 
+.notification-alert-dialog {
+  width: min(440px, calc(100vw - 28px));
+}
+
+.notification-alert-icon {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  margin-bottom: 18px;
+  place-items: center;
+  border-radius: 16px;
+  background: rgba(255, 106, 26, 0.12);
+  color: var(--orange);
+}
+
+.notification-alert-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.notification-alert-copy {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.notification-alert-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 26px;
+}
+
+.notification-alert-actions .saas-primary-button {
+  width: auto;
+  min-width: 170px;
+}
+
+.notification-alert-actions .saas-text-button {
+  min-height: 44px;
+  padding: 8px 12px;
+}
+
 .share-current-workday-button {
   min-height: 58px;
   gap: 12px;
+}
+
+.share-current-workday-button:disabled {
+  border-color: rgba(31, 67, 53, 0.1);
+  background: rgba(255, 255, 255, 0.34);
+  box-shadow: none;
+  color: rgba(31, 67, 53, 0.42);
+  cursor: not-allowed;
+  opacity: 1;
+  transform: none;
 }
 
 .share-workday-dialog {
@@ -678,6 +731,84 @@
   color: #8e3a2b;
 }
 
+.workday-name-field {
+  grid-column: 1 / -1;
+}
+
+.workday-name-field small,
+.profile-name-form small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.share-participants {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.share-participants h3 {
+  margin: 0;
+  color: var(--accent-dark);
+  font-size: 0.86rem;
+}
+
+.participant-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.participant-chip {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px 6px 6px;
+  border: 1px solid rgba(31, 67, 53, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.48);
+  color: var(--accent-dark);
+  font-size: 0.75rem;
+}
+
+.participant-chip .share-avatar {
+  width: 28px;
+  height: 28px;
+  font-size: 0.68rem;
+}
+
+.current-workday-participants {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.34);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 14px;
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  margin: 14px auto 0;
+  max-width: 720px;
+  padding: 11px 14px;
+}
+
+.current-workday-participants[hidden] {
+  display: none;
+}
+
+.current-workday-participants > strong {
+  color: var(--accent-dark);
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 640px) {
+  .current-workday-participants {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 9px;
+  }
+}
+
 .workday-list-item {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
@@ -849,6 +980,15 @@
   .received-workday-status {
     grid-column: 2;
     justify-self: start;
+  }
+
+  .notification-alert-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .notification-alert-actions .saas-primary-button {
+    width: 100%;
   }
 }
 
@@ -1418,11 +1558,20 @@ label {
 }
 
 .time-field {
+  position: relative;
   display: grid;
 }
 
 .time-field label {
   padding: 0;
+}
+
+.time-field-heading {
+  display: flex;
+  min-height: 24px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .time-control {
@@ -1809,6 +1958,12 @@ button.secondary:hover {
   font-size: 1.05rem;
 }
 
+.workday-action-group {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
 .result-panel {
   padding: 28px;
   background: rgba(255, 255, 255, 0.1);
@@ -1988,14 +2143,8 @@ dd {
 .account-settings-entry {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 15px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  justify-content: flex-end;
+  padding: 0;
 }
 
 .account-settings-entry[hidden] {
@@ -2245,6 +2394,58 @@ summary:hover {
   padding: 8px 12px;
 }
 
+.options-section {
+  overflow: visible;
+}
+
+.options-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 50px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-align: left;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.options-toggle:hover {
+  border-color: rgba(255, 106, 26, 0.22);
+  background: rgba(255, 255, 255, 0.28);
+  color: var(--accent);
+  transform: none;
+}
+
+.options-summary-state {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 150ms ease;
+}
+
+.options-toggle[aria-expanded="true"] .options-summary-state {
+  transform: translateY(2px) rotate(225deg);
+}
+
+.options-section.is-open > .input-options {
+  margin-top: 12px;
+}
+
+.input-options[hidden] {
+  display: none;
+}
+
 .extra-field {
   display: grid;
   gap: 6px;
@@ -2375,7 +2576,7 @@ summary:hover {
 .site-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 20px;
   padding: 2px 30px 30px;
 }
@@ -2383,7 +2584,9 @@ summary:hover {
 .footer-utility-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 18px;
+  flex-wrap: wrap;
 }
 
 .share-button,
@@ -3806,28 +4009,27 @@ summary:hover {
   }
 
   .site-footer {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 12px;
+    justify-content: center;
     padding: 2px 12px 24px;
   }
 
   .share-button {
-    width: 100%;
+    width: auto;
   }
 
   .footer-utility-actions {
-    align-items: stretch;
-    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-direction: row;
     gap: 10px;
   }
 
   .install-app-button {
-    width: 100%;
+    width: auto;
   }
 
   .cookie-settings-link {
-    align-self: center;
+    align-self: auto;
   }
 
   .cookie-banner {
@@ -4030,29 +4232,186 @@ summary:hover {
   text-transform: uppercase;
 }
 
-.time-field-heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.time-later-button {
-  min-height: auto;
+.account-avatar,
+.notification-button {
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  min-height: 42px;
   padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--muted);
-  box-shadow: none;
-  font-size: 0.68rem;
-  font-weight: 700;
+  border-radius: 50%;
 }
 
-.time-later-button:hover {
-  background: transparent;
+.live-workday-status {
+  position: static;
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 32px;
+  margin-top: 8px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  border: 1px solid rgba(255, 106, 26, 0.3);
+  border-radius: 10px;
+  background: rgba(255, 246, 237, 0.78);
+  color: var(--accent-dark);
+  box-shadow: 0 5px 16px rgba(255, 106, 26, 0.08);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.live-workday-status[hidden] {
+  display: none;
+}
+
+.live-workday-status > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
+}
+
+.live-workday-status strong {
+  color: var(--orange-dark);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  line-height: 1.15;
+}
+
+.live-workday-status small {
+  color: var(--muted);
+  font-size: 0.6rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.live-workday-pulse {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--orange);
+  box-shadow: 0 0 0 0 rgba(255, 106, 26, 0.35);
+  animation: live-workday-pulse 1.6s ease-out infinite;
+}
+
+.live-workday-status button {
+  min-height: auto;
+  margin-left: auto;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 7px;
+  background: rgba(31, 67, 53, 0.08);
+  color: var(--accent-dark);
+  box-shadow: none;
+  font-size: 0.56rem;
+  font-weight: 750;
+}
+
+.live-workday-status button:hover {
+  background: rgba(31, 67, 53, 0.13);
+  transform: none;
+}
+
+.live-workday-status.is-stopping .live-workday-pulse {
+  animation: none;
+  box-shadow: 0 0 0 7px rgba(255, 106, 26, 0.08);
+}
+
+.resume-live-button {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 0 0 0 auto;
+  padding: 3px 8px;
+  border: 1px solid rgba(255, 106, 26, 0.24);
+  border-radius: 8px;
+  background: rgba(255, 246, 237, 0.68);
+  color: var(--orange-dark);
+  box-shadow: none;
+  font-size: 0.6rem;
+  font-weight: 750;
+}
+
+.resume-live-button[hidden] {
+  display: none;
+}
+
+.resume-live-button:hover {
+  border-color: rgba(255, 106, 26, 0.4);
+  background: rgba(255, 246, 237, 0.9);
   color: var(--orange-dark);
   transform: none;
+}
+
+.live-end-timecode {
+  position: absolute;
+  z-index: 1;
+  left: 20px;
+  top: 50%;
+  color: var(--accent-dark);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: clamp(1.05rem, 2.2vw, 1.42rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+  letter-spacing: 0;
+  line-height: 1;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition: color 220ms ease, opacity 220ms ease, transform 220ms ease;
+}
+
+.live-end-timecode[hidden] {
+  display: none;
+}
+
+.time-control.is-live {
+  border-color: rgba(255, 106, 26, 0.62);
+  background:
+    linear-gradient(90deg, rgba(255, 242, 229, 0.94), rgba(255, 255, 255, 0.76));
+  box-shadow:
+    0 0 0 4px rgba(255, 106, 26, 0.1),
+    0 10px 25px rgba(255, 106, 26, 0.08);
+}
+
+.time-control.is-live input {
+  color: transparent;
+  caret-color: transparent;
+}
+
+.time-control.is-live input::placeholder {
+  color: transparent;
+}
+
+.time-control.is-live .time-picker-trigger {
+  color: var(--orange-dark);
+}
+
+.time-control.is-stopping .live-end-timecode {
+  color: var(--orange-dark);
+  transform: translateY(-50%) scale(1.025);
+}
+
+.time-control.is-settled .live-end-timecode {
+  color: var(--accent-dark);
+  transform: translateY(-50%) scale(1);
+}
+
+@media (min-width: 761px) {
+  .end-time-field .live-workday-status {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 10px);
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+}
+
+@keyframes live-workday-pulse {
+  70% { box-shadow: 0 0 0 8px rgba(255, 106, 26, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 106, 26, 0); }
 }
 
 .dialog-action-stack {
@@ -4230,14 +4589,274 @@ summary:hover {
   margin-top: 22px;
 }
 
+/* Dashboard */
+.dashboard-glass {
+  display: grid;
+  gap: 0;
+}
+
+.dashboard-guest,
+.dashboard-content {
+  width: calc(100% - 56px);
+  margin: 0 auto;
+}
+
+.dashboard-guest {
+  padding: 72px 0 96px;
+  text-align: center;
+}
+
+.dashboard-guest h1 {
+  max-width: 720px;
+  margin: 8px auto 16px;
+  color: var(--accent-dark);
+  font-size: clamp(2rem, 5vw, 4.2rem);
+  line-height: 1.02;
+}
+
+.dashboard-guest > p:not(.account-section-kicker) {
+  max-width: 560px;
+  margin: 0 auto;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.dashboard-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.dashboard-actions a {
+  text-decoration: none;
+}
+
+.dashboard-content {
+  display: grid;
+  gap: 26px;
+  padding: 34px 0 56px;
+}
+
+.dashboard-active-workday {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border: 1px solid rgba(255, 106, 26, 0.22);
+  border-radius: 16px;
+  background: rgba(255, 248, 239, 0.62);
+  color: var(--accent-dark);
+  text-decoration: none;
+  box-shadow: 0 10px 28px rgba(31, 67, 53, 0.06);
+  transition: transform 150ms ease, background-color 150ms ease;
+}
+
+.dashboard-active-workday:hover {
+  background: rgba(255, 248, 239, 0.78);
+  transform: translateY(-2px);
+}
+
+.dashboard-active-workday > span:nth-child(2) {
+  display: grid;
+  gap: 2px;
+}
+
+.dashboard-active-workday small {
+  color: var(--orange-dark);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.dashboard-period-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.dashboard-period-card,
+.dashboard-personal,
+.dashboard-free-note {
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.34);
+  box-shadow: 0 12px 34px rgba(31, 67, 53, 0.06);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+
+.dashboard-period-card {
+  overflow: hidden;
+  transition: transform 150ms ease, background-color 150ms ease;
+}
+
+.dashboard-period-card:hover {
+  background: rgba(255, 255, 255, 0.42);
+  transform: translateY(-2px);
+}
+
+.dashboard-card-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 24px 24px 20px;
+}
+
+.dashboard-card-heading p {
+  margin: 0 0 4px;
+  color: var(--orange-dark);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.dashboard-card-heading h2 {
+  margin: 0;
+  color: var(--accent-dark);
+  font-size: 1rem;
+  text-transform: capitalize;
+}
+
+.dashboard-card-heading a {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.dashboard-card-heading a:hover {
+  color: var(--accent-dark);
+}
+
+.dashboard-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  border-top: 1px solid rgba(31, 67, 53, 0.08);
+}
+
+.dashboard-metrics > div {
+  display: grid;
+  gap: 5px;
+  padding: 20px 24px;
+  border-right: 1px solid rgba(31, 67, 53, 0.08);
+  border-bottom: 1px solid rgba(31, 67, 53, 0.08);
+}
+
+.dashboard-metrics > div:nth-child(even) {
+  border-right: 0;
+}
+
+.dashboard-metrics > div:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.dashboard-metrics dt {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.dashboard-metrics dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.dashboard-personal {
+  padding: 26px;
+}
+
+.dashboard-section-heading h2 {
+  margin: 5px 0 0;
+  color: var(--accent-dark);
+  font-size: 1.45rem;
+}
+
+.dashboard-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.dashboard-stat-grid article {
+  display: grid;
+  align-content: start;
+  min-height: 132px;
+  padding: 17px;
+  border: 1px solid rgba(31, 67, 53, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.32);
+  transition: transform 150ms ease, background-color 150ms ease;
+}
+
+.dashboard-stat-grid article:hover {
+  background: rgba(255, 255, 255, 0.44);
+  transform: translateY(-2px);
+}
+
+.dashboard-stat-grid span {
+  min-height: 34px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.dashboard-stat-grid strong {
+  margin-top: 12px;
+  color: var(--accent-dark);
+  font-size: 1.25rem;
+}
+
+.dashboard-stat-grid small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.62rem;
+}
+
+.dashboard-free-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 26px;
+}
+
+.dashboard-free-note h2 {
+  margin: 4px 0 6px;
+  color: var(--accent-dark);
+}
+
+.dashboard-free-note p:last-child {
+  max-width: 680px;
+  margin: 0;
+  color: var(--muted);
+}
+
 @media (max-width: 760px) {
   .calculate-action .button-row {
     width: 100%;
     flex-direction: column;
   }
 
+  .workday-action-group {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .workday-save-button {
     width: 100%;
+  }
+
+  .share-current-workday-button {
+    width: 100%;
+    padding-inline: 12px;
+    line-height: 1.25;
   }
 
   .workdays-topbar {
@@ -4257,6 +4876,63 @@ summary:hover {
 
   .workdays-summary {
     gap: 10px;
+  }
+
+  .dashboard-guest,
+  .dashboard-content {
+    width: calc(100% - 24px);
+  }
+
+  .dashboard-guest {
+    padding: 42px 12px 64px;
+  }
+
+  .dashboard-actions,
+  .dashboard-free-note {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dashboard-actions a,
+  .dashboard-actions button,
+  .dashboard-free-note button {
+    width: 100%;
+    text-align: center;
+  }
+
+  .dashboard-content {
+    gap: 16px;
+    padding-top: 22px;
+  }
+
+  .dashboard-period-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .dashboard-card-heading {
+    padding: 20px 18px 17px;
+  }
+
+  .dashboard-metrics > div {
+    padding: 17px 18px;
+  }
+
+  .dashboard-personal {
+    padding: 20px 18px;
+  }
+
+  .dashboard-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-stat-grid article:last-child {
+    grid-column: 1 / -1;
+    min-height: 108px;
+  }
+
+  .dashboard-free-note {
+    padding: 21px 18px;
   }
 
   .workdays-summary > div {
@@ -4807,6 +5483,7 @@ summary:hover {
               <span id="account-user-initial">O</span>
             </button>
             <div class="account-dropdown" id="account-dropdown" role="menu" hidden>
+                <a id="today-page-link" href="index.html" role="menuitem">Vandaag</a>
                 <a id="account-page-link" href="account.html" role="menuitem">Account</a>
                 <a id="workdays-page-link" href="workdays.html" role="menuitem">Werkdagen</a>
                 <a id="projects-page-link" href="projects.html" role="menuitem">Projecten</a>
@@ -4841,6 +5518,10 @@ summary:hover {
               </a>
             </div>
             <div class="planning-grid">
+              <label class="workday-name-field" id="workday-name-field" hidden>
+                <span>Naam werkdag <small>(optioneel)</small></span>
+                <input type="text" name="workdayName" maxlength="100" placeholder="werkdag">
+              </label>
               <label class="date-field">
                 <span>Datum</span>
                 <span class="date-control">
@@ -4851,24 +5532,36 @@ summary:hover {
             <div class="time-field">
               <label for="startTime">Starttijd</label>
               <div class="time-control">
-                <input id="startTime" type="text" name="startTime" value="08:00" data-time-picker readonly required>
+                <input id="startTime" type="text" name="startTime" value="08:00" data-time-picker data-time-picker-current readonly required>
                 <button class="time-picker-trigger" type="button" aria-label="Starttijd kiezen" title="Tijd kiezen">
                   <span class="clock-icon" aria-hidden="true"></span>
                 </button>
               </div>
             </div>
 
-            <div class="time-field">
+            <div class="time-field end-time-field">
               <div class="time-field-heading">
                 <label for="endTime">Eindtijd</label>
-                <button class="time-later-button" id="clear-end-time" type="button">Later invullen</button>
+                <button class="resume-live-button" type="button" id="resume-live-workday" hidden>
+                  <span aria-hidden="true">↺</span>
+                  Terug naar live
+                </button>
               </div>
               <div class="time-control">
-                <input id="endTime" type="text" name="endTime" value="18:00" placeholder="Nog niet ingevuld" data-time-picker readonly>
+                <input id="endTime" type="text" name="endTime" value="" placeholder="Eindtijd kiezen" data-time-picker data-time-picker-current readonly>
+                <output class="live-end-timecode" id="live-end-timecode" for="endTime" hidden>00:00:00:00</output>
                 <button class="time-picker-trigger" type="button" aria-label="Eindtijd kiezen" title="Tijd kiezen">
                   <span class="clock-icon" aria-hidden="true"></span>
                 </button>
               </div>
+              <aside class="live-workday-status" id="live-workday-status" aria-live="polite" hidden>
+                <span class="live-workday-pulse" aria-hidden="true"></span>
+                <span>
+                  <strong>LIVE</strong>
+                  <small id="live-workday-duration">0 uur gewerkt</small>
+                </span>
+                <button type="button" id="enable-workday-notifications" hidden>Meldingen aanzetten</button>
+              </aside>
             </div>
 
             <label class="planning-break-field" id="planning-break-field" hidden>
@@ -4887,8 +5580,11 @@ summary:hover {
           </section>
 
           <section class="form-section options-section">
-            <h3>Extra’s</h3>
-            <div class="input-options">
+            <button class="options-toggle" id="toggle-extras" type="button" aria-expanded="false" aria-controls="extra-options">
+              <span>Extra’s</span>
+              <span class="options-summary-state" aria-hidden="true"></span>
+            </button>
+            <div class="input-options" id="extra-options" hidden>
               <div class="extra-option kilometer-option">
                 <label class="checkbox-label">
                   <input type="checkbox" name="enableKilometers">
@@ -4940,11 +5636,20 @@ summary:hover {
             <label><span>Tariefsoort</span><select name="rateMode"><option value="day">Dagtarief</option><option value="hour">Uurtarief</option></select></label>
             <label data-local-rate="day"><span>Dagtarief</span><input type="number" name="dayRate" min="0" step="0.01" required></label>
             <label data-local-rate="hour" hidden><span>Uurtarief</span><input type="number" name="hourlyRate" min="0" step="0.01" value="45" required></label>
-            <label>
+            <label data-rate-setting="day-hours">
               <span>Werkdag tijden</span>
               <select name="normalDayHours" required>
                 <option value="10">Gebaseerd op 10 uur</option>
                 <option value="12">Gebaseerd op 12 uur</option>
+              </select>
+            </label>
+            <label data-rate-setting="minimum-hours" hidden>
+              <span>Minimale afname</span>
+              <select name="minimumHours" required>
+                <option value="1">1 uur</option><option value="2">2 uur</option><option value="3">3 uur</option>
+                <option value="4">4 uur</option><option value="5">5 uur</option><option value="6">6 uur</option>
+                <option value="7">7 uur</option><option value="8">8 uur</option><option value="9">9 uur</option>
+                <option value="10">10 uur</option><option value="11">11 uur</option><option value="12">12 uur</option>
               </select>
             </label>
             <label class="checkbox-label">
@@ -5016,13 +5721,9 @@ summary:hover {
       </details>
 
         <aside class="account-settings-entry" id="account-settings-entry" hidden>
-          <div>
-            <strong>Rekeninstellingen</strong>
-            <span>Beheer je standaardtarieven en werkregels via je account.</span>
-          </div>
           <a href="account.html#calculator-settings" aria-label="Rekeninstellingen openen">
             <span class="settings-icon" aria-hidden="true">&#9881;</span>
-            Instellingen
+            Rekeninstellingen
           </a>
         </aside>
 
@@ -5032,18 +5733,24 @@ summary:hover {
           </p>
           <div class="button-row">
             <button type="button" id="recalculate">Berekenen</button>
-            <button class="workday-save-button is-pro-locked" type="button" id="save-workday" disabled>
-              <span class="workday-save-copy">
-                <strong data-workday-save-label>Werkdag opslaan</strong>
-                <span data-workday-save-hint>Bewaar je begintijd; vul later je eindtijd in</span>
-              </span>
-              <small data-workday-save-badge>Pro</small>
-            </button>
-            <button class="saas-secondary-button share-current-workday-button" type="button" id="share-current-workday" hidden>
-              <span aria-hidden="true">&#8599;</span>
-              Deel met collega's
-            </button>
+            <div class="workday-action-group">
+              <button class="workday-save-button is-pro-locked" type="button" id="save-workday" disabled>
+                <span class="workday-save-copy">
+                  <strong data-workday-save-label>Werkdag opslaan</strong>
+                  <span data-workday-save-hint>Bewaar je begintijd; vul later je eindtijd in</span>
+                </span>
+                <small data-workday-save-badge>Pro</small>
+              </button>
+              <button class="saas-secondary-button share-current-workday-button" type="button" id="share-current-workday" disabled>
+                <span aria-hidden="true">&#8599;</span>
+                Deel met collega's
+              </button>
+            </div>
           </div>
+          <aside class="current-workday-participants" id="current-workday-participants" hidden>
+            <strong>Deelnemers</strong>
+            <div class="participant-list" id="current-workday-participant-list"></div>
+          </aside>
         </section>
 
         <section class="result-panel" aria-live="polite">
@@ -5099,16 +5806,6 @@ summary:hover {
       </div>
 
       <footer class="site-footer">
-        <button class="share-button" type="button" id="share-site">
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="18" cy="5" r="3"></circle>
-            <circle cx="6" cy="12" r="3"></circle>
-            <circle cx="18" cy="19" r="3"></circle>
-            <path d="m8.6 10.5 6.8-4"></path>
-            <path d="m8.6 13.5 6.8 4"></path>
-          </svg>
-          <span>Deel Overuurtje met een collega</span>
-        </button>
         <div class="footer-utility-actions">
           <button class="install-app-button" type="button" id="install-app" hidden>
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -5117,6 +5814,16 @@ summary:hover {
               <path d="M5 21h14"></path>
             </svg>
             <span>Installeer Overuurtje</span>
+          </button>
+          <button class="share-button" type="button" id="share-site">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <path d="m8.6 10.5 6.8-4"></path>
+              <path d="m8.6 13.5 6.8 4"></path>
+            </svg>
+            <span>Deel Overuurtje met een collega</span>
           </button>
           <button class="cookie-settings-link" type="button" id="cookie-settings">Cookie settings</button>
         </div>
@@ -5246,6 +5953,7 @@ summary:hover {
     <div class="site-toast" id="site-toast" role="status" aria-live="polite" hidden></div>
     <script>
 window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
+  publicSiteUrl: "https://overuurtje.nl",
   supabaseUrl: "https://kdevseeblnjwrqnanfke.supabase.co",
   supabaseAnonKey: "sb_publishable_2dPD9Xz4pufhcG5MfYNpxw_NlPL2z25",
   shopifyCheckoutUrl: "",
@@ -5260,8 +5968,10 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
 
   const runtime = globalThis.OVERUURTJE_RUNTIME_CONFIG || {};
   const localHostnames = new Set(["localhost", "127.0.0.1", "::1"]);
+  const publicSiteUrl = new URL(String(runtime.publicSiteUrl || "https://overuurtje.nl"));
 
   const config = Object.freeze({
+    publicSiteUrl: publicSiteUrl.href.replace(/\/$/, ""),
     supabaseUrl: String(runtime.supabaseUrl || "").replace(/\/$/, ""),
     supabaseAnonKey: String(runtime.supabaseAnonKey || ""),
     shopifyCheckoutUrl: String(runtime.shopifyCheckoutUrl || ""),
@@ -5269,10 +5979,13 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     allowMockSubscriptions: Boolean(runtime.allowMockSubscriptions)
       || localHostnames.has(location.hostname)
       || location.protocol === "file:",
+    dashboardUrl: new URL("dashboard.html", location.href).href,
     accountUrl: new URL("account.html", location.href).href,
     workdaysUrl: new URL("workdays.html", location.href).href,
     projectsUrl: new URL("projects.html", location.href).href,
-    calculatorUrl: new URL("index.html", location.href).href
+    calculatorUrl: new URL("index.html", location.href).href,
+    authAccountUrl: new URL("account.html", `${publicSiteUrl.href.replace(/\/$/, "")}/`).href,
+    authWorkdaysUrl: new URL("workdays.html", `${publicSiteUrl.href.replace(/\/$/, "")}/`).href
   });
 
   globalThis.OveruurtjeConfig = config;
@@ -5394,13 +6107,14 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
 
   function signUp(email, password) {
     const currentUrl = new URL(location.href);
-    const emailRedirectTo = currentUrl.searchParams.has("invite")
-      ? currentUrl.href
-      : config.accountUrl;
+    const inviteToken = currentUrl.searchParams.get("invite");
+    const emailRedirect = new URL(inviteToken ? config.authWorkdaysUrl : config.authAccountUrl);
+    if (inviteToken) emailRedirect.searchParams.set("invite", inviteToken);
+
     return withClient((client) => client.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo }
+      options: { emailRedirectTo: emailRedirect.href }
     }));
   }
 
@@ -5409,7 +6123,7 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
   }
 
   function requestPasswordReset(email) {
-    const redirectTo = new URL(config.accountUrl);
+    const redirectTo = new URL(config.authAccountUrl);
     redirectTo.searchParams.set("mode", "reset");
     return withClient((client) => client.auth.resetPasswordForEmail(email, { redirectTo: redirectTo.href }));
   }
@@ -5495,7 +6209,23 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     return normalize(created, user);
   }
 
-  globalThis.OveruurtjeProfiles = Object.freeze({ getForUser });
+  async function saveDisplayName(user, displayName) {
+    if (!user) throw new Error("Log eerst in.");
+    const value = String(displayName || "").trim();
+    if (value.length > 80) throw new Error("Gebruik maximaal 80 tekens.");
+    const client = await supabaseService.getClient();
+    if (!client) throw new Error("Supabase is niet beschikbaar.");
+    const { data, error } = await client
+      .from("profiles")
+      .update({ display_name: value || null })
+      .eq("id", user.id)
+      .select(PROFILE_COLUMNS)
+      .single();
+    if (error) throw error;
+    return normalize(data, user);
+  }
+
+  globalThis.OveruurtjeProfiles = Object.freeze({ getForUser, saveDisplayName });
 })();
 
     </script>
@@ -5513,6 +6243,7 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     defaultBreakMinutes: 0,
     enableBreak: false,
     normalDayHours: 10,
+    minimumHours: 1,
     enableHalfDayUnder6Hours: false,
     enableOvertime10To12: true,
     enableOvertimeFrom12: true,
@@ -5541,6 +6272,7 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
       defaultBreakMinutes: Math.max(0, Number(preferences.defaultBreakMinutes ?? defaults.defaultBreakMinutes)),
       enableBreak: booleanPreference("enableBreak", defaults.enableBreak),
       normalDayHours: Number(preferences.normalDayHours) === 12 ? 12 : 10,
+      minimumHours: Math.min(12, Math.max(1, Number(preferences.minimumHours) || defaults.minimumHours)),
       enableHalfDayUnder6Hours: booleanPreference("enableHalfDayUnder6Hours", defaults.enableHalfDayUnder6Hours),
       enableOvertime10To12: booleanPreference("enableOvertime10To12", defaults.enableOvertime10To12),
       enableOvertimeFrom12: booleanPreference("enableOvertimeFrom12", defaults.enableOvertimeFrom12),
@@ -5577,6 +6309,7 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
         defaultBreakMinutes: Math.max(0, Number(settings.defaultBreakMinutes) || 0),
         enableBreak: Boolean(settings.enableBreak),
         normalDayHours: Number(settings.normalDayHours) === 12 ? 12 : 10,
+        minimumHours: Math.min(12, Math.max(1, Number(settings.minimumHours) || defaults.minimumHours)),
         enableHalfDayUnder6Hours: Boolean(settings.enableHalfDayUnder6Hours),
         enableOvertime10To12: Boolean(settings.enableOvertime10To12),
         enableOvertimeFrom12: Boolean(settings.enableOvertimeFrom12),
@@ -5949,6 +6682,28 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
       .filter((entry) => entry.project);
   }
 
+  async function listAllDays(userId, options = {}) {
+    if (isMock(options)) {
+      const store = readMock()[userId] || { projects: {}, days: {} };
+      return Object.values(store.days || {})
+        .map((day) => ({ day, project: store.projects?.[day.projectId] }))
+        .filter((entry) => entry.project)
+        .sort((a, b) => b.day.workDate.localeCompare(a.day.workDate));
+    }
+
+    const db = await client();
+    const [{ data: dayRows, error: dayError }, { data: projectRows, error: projectError }] = await Promise.all([
+      db.from("project_days").select(DAY_COLUMNS).eq("user_id", userId).order("work_date", { ascending: false }),
+      db.from("projects").select(PROJECT_COLUMNS).eq("user_id", userId)
+    ]);
+    if (dayError) throw dayError;
+    if (projectError) throw projectError;
+    const projectsById = new Map((projectRows || []).map((project) => [project.id, normalizeProject(project)]));
+    return (dayRows || [])
+      .map((day) => ({ day: normalizeDay(day), project: projectsById.get(day.project_id) }))
+      .filter((entry) => entry.project);
+  }
+
   async function saveProject(userId, values, options = {}) {
     const now = new Date().toISOString();
     if (isMock(options)) {
@@ -6021,6 +6776,7 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     list,
     get,
     listDaysByDate,
+    listAllDays,
     saveProject,
     replaceDays,
     remove
@@ -6034,11 +6790,12 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
 
   const supabaseService = globalThis.OveruurtjeSupabase;
   const STORAGE_KEY = "overuurtjeMockWorkdays";
-  const COLUMNS = "id,user_id,work_date,calculation_data,created_at,updated_at";
+  const COLUMNS = "id,user_id,name,work_date,calculation_data,created_at,updated_at";
 
   const normalize = (row) => ({
     id: row.id,
     userId: row.user_id,
+    name: row.name || "",
     workDate: row.work_date,
     calculationData: row.calculation_data || {},
     createdAt: row.created_at,
@@ -6110,6 +6867,7 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
       const workday = {
         id: values.id || mockId(),
         userId,
+        name: String(values.name || "").trim(),
         workDate: values.workDate,
         calculationData: values.calculationData || {},
         createdAt: old?.createdAt || now,
@@ -6123,6 +6881,7 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     const db = await client();
     const payload = {
       user_id: userId,
+      name: String(values.name || "").trim() || null,
       work_date: values.workDate,
       calculation_data: values.calculationData || {}
     };
@@ -6179,6 +6938,7 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     startTime: row.start_time || "",
     endTime: row.end_time || "",
     projectName: row.project_name || "",
+    workdayName: row.workday_name || "",
     optionalMessage: row.optional_message || "",
     shareMode: row.share_mode,
     acceptedAt: row.accepted_at,
@@ -6215,6 +6975,7 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     startTime: row.start_time || "",
     endTime: row.end_time || "",
     projectName: row.project_name || "",
+    workdayName: row.workday_name || "",
     optionalMessage: row.optional_message || "",
     shareMode: row.share_mode,
     available: row.available !== false
@@ -6252,6 +7013,18 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
       .sort((a, b) => a.recipientName.localeCompare(b.recipientName, "nl"));
   }
 
+  async function listParticipants(sourceType, sourceId) {
+    return (await rpc("get_workday_share_participants", {
+      p_source_type: sourceType,
+      p_source_id: sourceId
+    }) || []).map((row) => ({
+      userId: row.user_id,
+      firstName: row.first_name || "Collega",
+      isOwner: Boolean(row.is_owner),
+      isCurrentUser: Boolean(row.is_current_user)
+    }));
+  }
+
   async function accept(id) {
     await rpc("accept_workday_share", { p_share_id: id });
   }
@@ -6274,6 +7047,7 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     claimInvite,
     listReceived,
     listSent,
+    listParticipants,
     accept,
     remove,
     listNotifications,
@@ -6378,6 +7152,7 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
 const DEFAULT_SETTINGS = {
   dayRate: 450,
   normalDayHours: 10,
+  minimumHours: 1,
   vatPercent: 21,
   enableHalfDayUnder6Hours: false,
   enableOvertime10To12: true,
@@ -6612,11 +7387,7 @@ function calculateTariff(input, customSettings = {}) {
   const hourlyRate = rateMode === "hour"
     ? Math.max(0, Number(input.hourlyRate) || 0)
     : settings.dayRate / settings.normalDayHours;
-  const baseAmount = rateMode === "hour"
-    ? Math.min(totalHours, settings.normalDayHours) * hourlyRate
-    : (settings.enableHalfDayUnder6Hours && totalHours <= 6
-      ? settings.dayRate * HALF_DAY_FACTOR
-      : settings.dayRate);
+  const regularHours = Math.min(totalHours, settings.normalDayHours);
 
   const normalMinutes = settings.normalDayHours * MINUTES_PER_HOUR;
   const overtimeStart = interval.start + normalMinutes + breakMinutes;
@@ -6645,6 +7416,22 @@ function calculateTariff(input, customSettings = {}) {
     overtime.overtime10To12Amount +
     overtime.overtimeFrom12Amount +
     overtime.overtimeFrom14Amount;
+  const minimumHours = Math.min(12, Math.max(1, Number(settings.minimumHours) || 1));
+  const hourlyMinimumAmount = minimumHours * hourlyRate;
+  const minimumChargeApplied =
+    rateMode === "hour" && hourlyMinimumAmount > regularHours * hourlyRate + overtimeAmount;
+  const hourlyBaseAmount = Math.max(
+    regularHours * hourlyRate,
+    hourlyMinimumAmount - overtimeAmount
+  );
+  const baseAmount = rateMode === "hour"
+    ? hourlyBaseAmount
+    : (settings.enableHalfDayUnder6Hours && totalHours <= 6
+      ? settings.dayRate * HALF_DAY_FACTOR
+      : settings.dayRate);
+  const minimumAdjustmentAmount = rateMode === "hour"
+    ? Math.max(0, baseAmount - regularHours * hourlyRate)
+    : 0;
   const nightTariffEnabled = Boolean(settings.enableNightTariff);
   const pureNightAmount = pureNightHours * hourlyRate * settings.pureNightSurchargeFactor;
   const nightOvertimeSurcharge = calculateNightOvertimeSurcharge(
@@ -6684,6 +7471,11 @@ function calculateTariff(input, customSettings = {}) {
     breakMinutes,
     workedMinutes,
     hourlyRate,
+    regularHours,
+    minimumHours,
+    minimumChargeApplied,
+    hourlyMinimumAmount,
+    minimumAdjustmentAmount,
     totalHours,
     overtimeHours,
     standardOvertimeHours: overtime.standardOvertimeHours,
@@ -6732,6 +7524,266 @@ globalThis.TariffCalculator = {
   roundUpToInterval
 };
 })();
+
+    </script>
+    <script>
+(function initializeLiveWorkday(global) {
+  "use strict";
+
+  const MINUTES_PER_DAY = 24 * 60;
+  const QUARTER_MINUTES = 15;
+  const FRAMES_PER_SECOND = 25;
+  const FRAME_DURATION_MS = 1000 / FRAMES_PER_SECOND;
+
+  function localDateValue(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  function previousLocalDateValue(date = new Date()) {
+    const previousDate = new Date(date);
+    previousDate.setDate(previousDate.getDate() - 1);
+    return localDateValue(previousDate);
+  }
+
+  function parseTime(value) {
+    const match = /^(\d{2}):(\d{2})$/.exec(String(value || ""));
+    if (!match) return null;
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    if (hours > 23 || minutes > 59) return null;
+    return hours * 60 + minutes;
+  }
+
+  function roundedCurrentTime(date = new Date()) {
+    const minutes = date.getHours() * 60 + date.getMinutes();
+    const rounded = Math.round(minutes / QUARTER_MINUTES) * QUARTER_MINUTES;
+    const normalized = rounded % MINUTES_PER_DAY;
+    return `${String(Math.floor(normalized / 60)).padStart(2, "0")}:${String(normalized % 60).padStart(2, "0")}`;
+  }
+
+  function formatDuration(minutes) {
+    const safeMinutes = Math.max(0, Math.floor(minutes));
+    const hours = Math.floor(safeMinutes / 60);
+    const remainder = safeMinutes % 60;
+    const hourText = `${hours} ${hours === 1 ? "uur" : "uur"}`;
+    return remainder ? `${hourText} ${remainder} minuten` : hourText;
+  }
+
+  function formatTimecode(date = new Date()) {
+    const frames = Math.min(
+      FRAMES_PER_SECOND - 1,
+      Math.floor(date.getMilliseconds() / FRAME_DURATION_MS)
+    );
+    return [
+      date.getHours(),
+      date.getMinutes(),
+      date.getSeconds(),
+      frames
+    ].map((part) => String(part).padStart(2, "0")).join(":");
+  }
+
+  function getState({ date, startTime, endTime, breakMinutes = 0, now = new Date() }) {
+    const startMinutes = parseTime(startTime);
+    const isToday = date === localDateValue(now);
+    const isYesterday = date === previousLocalDateValue(now);
+    if (
+      !date
+      || (!isToday && !isYesterday)
+      || startMinutes === null
+      || endTime
+    ) {
+      return { active: false, elapsedMinutes: 0, workedMinutes: 0 };
+    }
+
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const elapsedSinceStart = currentMinutes - startMinutes + (isYesterday ? MINUTES_PER_DAY : 0);
+    if (elapsedSinceStart < 0) {
+      return { active: false, elapsedMinutes: 0, workedMinutes: 0 };
+    }
+
+    const elapsedMinutes = Math.floor(elapsedSinceStart / QUARTER_MINUTES) * QUARTER_MINUTES;
+    const workedMinutes = Math.max(0, elapsedMinutes - Math.max(0, Number(breakMinutes) || 0));
+    return {
+      active: true,
+      elapsedMinutes,
+      workedMinutes,
+      label: `${formatDuration(workedMinutes)} gewerkt`,
+      timecode: formatTimecode(now)
+    };
+  }
+
+  function createController({ read, render, onTick = () => {} }) {
+    let timer = null;
+    let lastTickSecond = null;
+
+    function renderCurrent() {
+      const now = new Date();
+      const state = getState({ ...read(), now });
+      render(state);
+      const tickSecond = Math.floor(now.getTime() / 1000);
+      if (tickSecond !== lastTickSecond) {
+        lastTickSecond = tickSecond;
+        onTick(state, now);
+      }
+      return state;
+    }
+
+    function schedule() {
+      clearTimeout(timer);
+      const state = renderCurrent();
+      const now = new Date();
+      const elapsedInQuarter = (
+        (now.getMinutes() % QUARTER_MINUTES) * 60 + now.getSeconds()
+      ) * 1000 + now.getMilliseconds();
+      const delay = state.active
+        ? Math.max(10, FRAME_DURATION_MS - (now.getMilliseconds() % FRAME_DURATION_MS))
+        : Math.max(1000, QUARTER_MINUTES * 60 * 1000 - elapsedInQuarter + 100);
+      timer = setTimeout(schedule, delay);
+      return state;
+    }
+
+    function update() {
+      return schedule();
+    }
+
+    function stop() {
+      clearTimeout(timer);
+      timer = null;
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") schedule();
+    });
+
+    schedule();
+    return Object.freeze({ update, stop });
+  }
+
+  global.OveruurtjeLiveWorkday = Object.freeze({
+    QUARTER_MINUTES,
+    FRAMES_PER_SECOND,
+    localDateValue,
+    previousLocalDateValue,
+    parseTime,
+    roundedCurrentTime,
+    formatDuration,
+    formatTimecode,
+    getState,
+    createController
+  });
+})(globalThis);
+
+    </script>
+    <script>
+(function initializeWorkdayNotifications(global) {
+  "use strict";
+
+  const REMINDER_MINUTES = 15;
+  const FIRED_KEY = "overuurtjeWorkdayReminders";
+
+  function readFired() {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(FIRED_KEY) || "[]"));
+    } catch {
+      return new Set();
+    }
+  }
+
+  function writeFired(values) {
+    localStorage.setItem(FIRED_KEY, JSON.stringify(Array.from(values).slice(-100)));
+  }
+
+  function dateAtTime(dateValue, timeValue) {
+    const [year, month, day] = String(dateValue).split("-").map(Number);
+    const [hour, minute] = String(timeValue || "00:00").split(":").map(Number);
+    return new Date(year, month - 1, day, hour, minute, 0, 0);
+  }
+
+  function buildReminders({ date, startTime, breakMinutes = 0, normalDayHours = 10, enableNightTariff, nightStart }) {
+    if (!date || !startTime) return [];
+    const start = dateAtTime(date, startTime);
+    const overtimeAt = new Date(start.getTime() + (Number(normalDayHours) * 60 + Number(breakMinutes || 0)) * 60000);
+    const reminders = [{
+      id: `${date}:${startTime}:overtime`,
+      type: "overtime",
+      at: new Date(overtimeAt.getTime() - REMINDER_MINUTES * 60000),
+      title: "Overuren beginnen over 15 minuten",
+      body: `Vanaf ${overtimeAt.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })} begint je overurentijd.`
+    }];
+
+    if (enableNightTariff && nightStart) {
+      const nightAt = dateAtTime(date, nightStart);
+      if (nightAt <= start) nightAt.setDate(nightAt.getDate() + 1);
+      reminders.push({
+        id: `${date}:${startTime}:night:${nightStart}`,
+        type: "night",
+        at: new Date(nightAt.getTime() - REMINDER_MINUTES * 60000),
+        title: "Nachttoeslag begint over 15 minuten",
+        body: `Vanaf ${nightStart} valt je werktijd binnen de ingestelde nachtperiode.`
+      });
+    }
+    return reminders;
+  }
+
+  async function showSystemNotification(reminder) {
+    if (!("Notification" in global) || Notification.permission !== "granted") return false;
+    try {
+      const registration = await navigator.serviceWorker?.ready;
+      if (registration?.showNotification) {
+        await registration.showNotification(reminder.title, {
+          body: reminder.body,
+          icon: "icon-192.png",
+          badge: "favicon-32x32.png",
+          tag: reminder.id
+        });
+      } else {
+        new Notification(reminder.title, { body: reminder.body, icon: "icon-192.png", tag: reminder.id });
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function createController({ read, onReminder }) {
+    const fired = readFired();
+
+    async function check(now = new Date()) {
+      const state = read();
+      if (!state.active) return;
+      const reminders = buildReminders(state);
+      for (const reminder of reminders) {
+        const difference = now.getTime() - reminder.at.getTime();
+        if (difference < 0 || difference >= REMINDER_MINUTES * 60000 || fired.has(reminder.id)) continue;
+        fired.add(reminder.id);
+        writeFired(fired);
+        const shown = await showSystemNotification(reminder);
+        onReminder?.(reminder, { systemNotificationShown: shown });
+      }
+    }
+
+    async function requestPermission() {
+      if (!("Notification" in global)) return "unsupported";
+      if (Notification.permission !== "default") return Notification.permission;
+      return Notification.requestPermission();
+    }
+
+    return Object.freeze({
+      check,
+      requestPermission,
+      permission: () => ("Notification" in global ? Notification.permission : "unsupported")
+    });
+  }
+
+  global.OveruurtjeWorkdayNotifications = Object.freeze({
+    REMINDER_MINUTES,
+    buildReminders,
+    createController
+  });
+})(globalThis);
 
     </script>
     <script>
@@ -6963,6 +8015,7 @@ globalThis.TariffCalculator = {
   const userMenuButton = document.querySelector("#account-user-button");
   const userDropdown = document.querySelector("#account-dropdown");
   const userInitial = document.querySelector("#account-user-initial");
+  let dashboardLink = document.querySelector("#dashboard-page-link");
   const accountLink = document.querySelector("#account-page-link");
   const workdaysLink = document.querySelector("#workdays-page-link");
   const projectsLink = document.querySelector("#projects-page-link");
@@ -6992,6 +8045,8 @@ globalThis.TariffCalculator = {
   let pendingSignupEmail = "";
   let notificationTimer = null;
   let notificationUi = null;
+  let notificationPromptTimer = null;
+  let pendingNotificationPrompt = null;
 
   function showToast(message) {
     if (globalThis.OveruurtjeAnalytics?.showToast) {
@@ -7064,6 +8119,73 @@ globalThis.TariffCalculator = {
     return `${item.actorName} heeft een werkdag met je gedeeld.`;
   }
 
+  function ensureNotificationPrompt() {
+    let dialog = document.querySelector("#notification-alert-dialog");
+    if (dialog) return dialog;
+
+    dialog = document.createElement("dialog");
+    dialog.className = "saas-dialog notification-alert-dialog";
+    dialog.id = "notification-alert-dialog";
+    dialog.setAttribute("aria-labelledby", "notification-alert-title");
+    dialog.innerHTML = `
+      <button class="dialog-close" type="button" data-notification-alert-close aria-label="Sluiten">&times;</button>
+      <div class="notification-alert-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+          <path d="M10 21h4"></path>
+        </svg>
+      </div>
+      <p class="dialog-eyebrow">Nieuw bericht</p>
+      <h2 id="notification-alert-title">Je hebt een nieuw bericht</h2>
+      <p class="notification-alert-copy"></p>
+      <div class="notification-alert-actions">
+        <button class="saas-primary-button" type="button" data-notification-alert-open>Bekijk bericht</button>
+        <button class="saas-text-button" type="button" data-notification-alert-close>Later</button>
+      </div>
+    `;
+    document.body.append(dialog);
+    dialog.querySelectorAll("[data-notification-alert-close]").forEach((button) => {
+      button.addEventListener("click", () => closeDialog(dialog));
+    });
+    dialog.querySelector("[data-notification-alert-open]")?.addEventListener("click", () => {
+      const item = pendingNotificationPrompt;
+      closeDialog(dialog);
+      if (item?.shareId) {
+        location.href = `${config.workdaysUrl}?shared=${encodeURIComponent(item.shareId)}`;
+        return;
+      }
+      notificationUi?.querySelector(".notification-button")?.click();
+    });
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) closeDialog(dialog);
+    });
+    return dialog;
+  }
+
+  function maybeShowNotificationPrompt(items) {
+    const newestUnread = items.find((item) => !item.readAt);
+    if (!newestUnread || pendingNotificationPrompt?.id === newestUnread.id) return;
+    const promptKey = `overuurtjeNotificationPrompt:${newestUnread.id}`;
+    if (sessionStorage.getItem(promptKey)) return;
+
+    clearTimeout(notificationPromptTimer);
+    notificationPromptTimer = setTimeout(() => {
+      const otherDialog = [...document.querySelectorAll("dialog[open]")]
+        .some((dialog) => dialog.id !== "notification-alert-dialog");
+      if (otherDialog) {
+        pendingNotificationPrompt = null;
+        maybeShowNotificationPrompt(items);
+        return;
+      }
+      pendingNotificationPrompt = newestUnread;
+      sessionStorage.setItem(promptKey, "shown");
+      const dialog = ensureNotificationPrompt();
+      dialog.querySelector(".notification-alert-copy").textContent = notificationText(newestUnread);
+      openDialog(dialog);
+      dialog.querySelector("[data-notification-alert-open]")?.focus();
+    }, 700);
+  }
+
   function ensureNotificationUi() {
     if (notificationUi || !userMenu?.parentElement || !shares) return notificationUi;
     const wrapper = document.createElement("div");
@@ -7113,6 +8235,7 @@ globalThis.TariffCalculator = {
       const unread = items.filter((item) => !item.readAt).length;
       badge.textContent = unread > 9 ? "9+" : String(unread);
       badge.hidden = unread === 0;
+      maybeShowNotificationPrompt(items);
       const list = wrapper.querySelector(".notification-list");
       if (!items.length) {
         const empty = document.createElement("p");
@@ -7238,6 +8361,14 @@ globalThis.TariffCalculator = {
   function renderHeader(context) {
     if (!loginButton || !userMenu) return;
     const user = context.auth.user;
+    if (!dashboardLink && userDropdown && accountLink) {
+      dashboardLink = document.createElement("a");
+      dashboardLink.id = "dashboard-page-link";
+      dashboardLink.href = config.dashboardUrl;
+      dashboardLink.setAttribute("role", "menuitem");
+      dashboardLink.textContent = "Dashboard";
+      userDropdown.insertBefore(dashboardLink, accountLink);
+    }
     loginButton.hidden = Boolean(user);
     document.querySelectorAll(".account-navigation [data-subscription-upgrade]").forEach((button) => {
       button.hidden = Boolean(user);
@@ -7249,6 +8380,7 @@ globalThis.TariffCalculator = {
     const label = context.profile?.displayName || user.email || "Account";
     userInitial.textContent = label.trim().charAt(0).toUpperCase() || "O";
     userMenuButton.setAttribute("aria-label", `Account van ${label}`);
+    if (dashboardLink) dashboardLink.href = config.dashboardUrl;
     accountLink.href = config.accountUrl;
     if (workdaysLink) workdaysLink.href = config.workdaysUrl;
     if (projectsLink) projectsLink.href = config.projectsUrl;
@@ -7410,6 +8542,10 @@ globalThis.TariffCalculator = {
   proContinue?.addEventListener("click", () => closeDialog(proDialog));
   document.addEventListener("overuurtje:pro-required", openUpgrade);
   document.addEventListener("overuurtje:subscription-changed", () => buildContext(auth.getState()));
+  document.addEventListener("overuurtje:profile-updated", (event) => {
+    currentContext = Object.freeze({ ...currentContext, profile: event.detail });
+    renderHeader(currentContext);
+  });
   auth.subscribe(buildContext);
 
   globalThis.OveruurtjeSessionUI = Object.freeze({
@@ -7491,7 +8627,7 @@ globalThis.TariffCalculator = {
         <label class="share-mode-toggle">
           <input type="radio" name="shareMode" value="on_completion">
           <span class="share-mode-switch" aria-hidden="true"></span>
-          <span><strong>Delen zodra de werkdag is afgerond</strong><small>De melding volgt zodra een eindtijd is ingevuld.</small></span>
+          <span><strong>Delen zodra de werkdag is afgerond</strong><small>De melding volgt zodra een eindtijd is ingevuld en de werkdag is opgeslagen.</small></span>
         </label>
       </fieldset>
       <p class="share-account-note">De ontvanger kan een gratis of Pro-account gebruiken. Zonder account wordt eerst gevraagd om er een aan te maken.</p>
@@ -7501,7 +8637,7 @@ globalThis.TariffCalculator = {
         Uitnodigingslink delen
       </button>
       <section class="shared-with-section" data-shared-with hidden>
-        <h3>Gedeeld met</h3>
+        <h3>Deelnemers</h3>
         <div data-shared-with-list></div>
       </section>
     `;
@@ -7518,9 +8654,14 @@ globalThis.TariffCalculator = {
     const section = dialog.querySelector("[data-shared-with]");
     const list = dialog.querySelector("[data-shared-with-list]");
     try {
-      const sent = await shares.listSent(activeSource.type, activeSource.id);
-      section.hidden = sent.length === 0;
-      list.replaceChildren(...sent.map((item) => {
+      const [sent, participants] = await Promise.all([
+        shares.listSent(activeSource.type, activeSource.id),
+        shares.listParticipants(activeSource.type, activeSource.id)
+      ]);
+      const sentByUserId = new Map(sent.map((item) => [item.recipientId, item]));
+      section.hidden = participants.length === 0;
+      list.replaceChildren(...participants.map((participant) => {
+        const item = sentByUserId.get(participant.userId);
         const row = document.createElement("div");
         row.className = "shared-with-row";
         row.innerHTML = `
@@ -7528,17 +8669,23 @@ globalThis.TariffCalculator = {
           <span><strong></strong><small></small></span>
           <button type="button" aria-label="Niet meer delen">&times;</button>
         `;
-        row.querySelector(".share-avatar").textContent = initials(item.recipientName || item.recipientEmail);
-        row.querySelector("strong").textContent = item.recipientName || item.recipientEmail;
-        row.querySelector("small").textContent = item.acceptedAt
-          ? "Werktijden overgenomen"
-          : (item.deliveredAt ? "Gedeeld" : "Wacht op eindtijd");
-        row.querySelector("button").addEventListener("click", async () => {
-          await shares.remove(item.id);
-          await renderSent(dialog);
-          sessionUi.showToast("Collega verwijderd.");
-          document.dispatchEvent(new CustomEvent("overuurtje:shares-changed"));
-        });
+        row.querySelector(".share-avatar").textContent = initials(participant.firstName);
+        row.querySelector("strong").textContent = participant.isCurrentUser
+          ? `${participant.firstName} (jij)`
+          : participant.firstName;
+        row.querySelector("small").textContent = participant.isOwner
+          ? "Eigenaar"
+          : (item?.deliveredAt ? "Deelnemer" : "Wacht op eindtijd");
+        const removeButton = row.querySelector("button");
+        removeButton.hidden = participant.isOwner || !item;
+        if (item) {
+          removeButton.addEventListener("click", async () => {
+            await shares.remove(item.id);
+            await renderSent(dialog);
+            sessionUi.showToast("Collega verwijderd.");
+            document.dispatchEvent(new CustomEvent("overuurtje:shares-changed"));
+          });
+        }
         return row;
       }));
     } catch {
@@ -7708,6 +8855,7 @@ globalThis.TariffCalculator = {
 
   const HOURS = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, "0"));
   const QUARTER_HOURS = ["00", "15", "30", "45"];
+  const liveWorkday = globalThis.OveruurtjeLiveWorkday;
 
   function parts(value) {
     const [hour = "00", minute = "00"] = String(value).split(":");
@@ -7719,6 +8867,8 @@ globalThis.TariffCalculator = {
 
   function setValue(field, hour, minute) {
     field.value = `${hour}:${minute}`;
+    field.dataset.timePicked = "true";
+    delete field.dataset.liveStopped;
     field.dispatchEvent(new Event("input", { bubbles: true }));
     field.dispatchEvent(new Event("change", { bubbles: true }));
   }
@@ -7782,6 +8932,18 @@ globalThis.TariffCalculator = {
     const open = (event) => {
       event.preventDefault();
       event.stopPropagation();
+      if (
+        field.hasAttribute("data-time-picker-current")
+        && field.dataset.timePicked !== "true"
+        && field.dataset.timeRestored !== "true"
+        && liveWorkday
+      ) {
+        field.value = liveWorkday.roundedCurrentTime();
+        field.dataset.timePicked = "true";
+        delete field.dataset.liveStopped;
+        field.dispatchEvent(new Event("input", { bubbles: true }));
+        field.dispatchEvent(new Event("change", { bubbles: true }));
+      }
       render(field, picker);
       close(picker);
       picker.hidden = false;
@@ -7830,6 +8992,7 @@ const planningBreakField = document.querySelector("#planning-break-field");
 const kilometerInput = document.querySelector("#kilometer-input");
 const parkingInput = document.querySelector("#parking-input");
 const inputOptions = document.querySelector(".input-options");
+const optionsToggle = document.querySelector("#toggle-extras");
 const departmentSwitch = document.querySelector(".department-switch");
 const activeFunctionName = document.querySelector("#active-function-name");
 const projectCreateLink = document.querySelector("#project-create-link");
@@ -7838,7 +9001,14 @@ const workdaySaveLabel = workdaySaveButton?.querySelector("[data-workday-save-la
 const workdaySaveHint = workdaySaveButton?.querySelector("[data-workday-save-hint]");
 const workdaySaveBadge = workdaySaveButton?.querySelector("[data-workday-save-badge]");
 const shareCurrentWorkdayButton = document.querySelector("#share-current-workday");
-const clearEndTimeButton = document.querySelector("#clear-end-time");
+const workdayNameField = document.querySelector("#workday-name-field");
+const currentWorkdayParticipants = document.querySelector("#current-workday-participants");
+const currentWorkdayParticipantList = document.querySelector("#current-workday-participant-list");
+const liveWorkdayStatus = document.querySelector("#live-workday-status");
+const liveWorkdayDuration = document.querySelector("#live-workday-duration");
+const liveEndTimecode = document.querySelector("#live-end-timecode");
+const resumeLiveWorkdayButton = document.querySelector("#resume-live-workday");
+const enableWorkdayNotifications = document.querySelector("#enable-workday-notifications");
 const duplicateWorkdayDialog = document.querySelector("#duplicate-workday-dialog");
 const todayWorkdayDialog = document.querySelector("#today-workday-dialog");
 const droneOption = document.querySelector("#drone-option");
@@ -7856,6 +9026,9 @@ const projectService = globalThis.OveruurtjeProjects;
 const workdayService = globalThis.OveruurtjeWorkdays;
 const sessionUi = globalThis.OveruurtjeSessionUI;
 const shareUi = globalThis.OveruurtjeShareUI;
+const shareService = globalThis.OveruurtjeShares;
+const liveWorkday = globalThis.OveruurtjeLiveWorkday;
+const workdayNotifications = globalThis.OveruurtjeWorkdayNotifications;
 
 const SHARE_URL = "https://overuurtje.nl";
 const SHARE_TEXT = "Bereken eenvoudig je cameraman-, geluidsman- en productietarieven met Overuurtje.nl.";
@@ -7889,6 +9062,8 @@ let currentWorkdayId = null;
 let pendingDuplicateWorkday = null;
 let todayWorkday = null;
 let workdayContextInitializedFor = null;
+let liveWorkdayController = null;
+let workdayNotificationController = null;
 
 function localDateValue(date = new Date()) {
   const year = date.getFullYear();
@@ -7940,6 +9115,7 @@ function getSettingsFromForm() {
     enableBreak,
     breakMinutes: enableBreak ? readNumber(calculatorData, "breakMinutes") : 0,
     normalDayHours: readNumber(formData, "normalDayHours"),
+    minimumHours: readNumber(formData, "minimumHours"),
     vatPercent: DEFAULT_SETTINGS.vatPercent,
     enableHalfDayUnder6Hours: readCheckbox(formData, "enableHalfDayUnder6Hours"),
     enableOvertime10To12: readCheckbox(formData, "enableOvertime10To12"),
@@ -7986,6 +9162,7 @@ function getAccountSettingsSnapshot() {
     defaultBreakMinutes: 0,
     enableBreak: settings.enableBreak,
     normalDayHours: settings.normalDayHours,
+    minimumHours: settings.minimumHours,
     enableHalfDayUnder6Hours: settings.enableHalfDayUnder6Hours,
     enableOvertime10To12: settings.enableOvertime10To12,
     enableOvertimeFrom12: settings.enableOvertimeFrom12,
@@ -8022,6 +9199,7 @@ function applyAccountSettings(accountSettings, isPro) {
     enableBreak: accountSettings.enableBreak,
     breakMinutes: 0,
     normalDayHours: accountSettings.normalDayHours,
+    minimumHours: accountSettings.minimumHours,
     enableHalfDayUnder6Hours: accountSettings.enableHalfDayUnder6Hours,
     enableOvertime10To12: accountSettings.enableOvertime10To12,
     enableOvertimeFrom12: accountSettings.enableOvertimeFrom12,
@@ -8119,6 +9297,7 @@ function buildWorkdaySnapshot() {
   const endTime = form.elements.namedItem("endTime").value;
   return {
     schemaVersion: 1,
+    workdayName: String(form.elements.namedItem("workdayName")?.value || "").trim(),
     date: form.elements.namedItem("date").value,
     department: formData.get("department") || "camera",
     workFunction: selectedWorkFunction() ? {
@@ -8166,14 +9345,49 @@ function clearCalculationDisplay() {
   nextDayNotice.hidden = true;
 }
 
+async function refreshCurrentWorkdayParticipants() {
+  if (!currentWorkdayParticipants || !currentWorkdayParticipantList) return;
+  if (!currentUserContext?.isPro || !currentWorkdayId || !shareService) {
+    currentWorkdayParticipants.hidden = true;
+    currentWorkdayParticipantList.replaceChildren();
+    return;
+  }
+  try {
+    const participants = await shareService.listParticipants("workday", currentWorkdayId);
+    currentWorkdayParticipants.hidden = participants.length < 2;
+    currentWorkdayParticipantList.replaceChildren(...participants.map((participant) => {
+      const chip = document.createElement("span");
+      chip.className = "participant-chip";
+      chip.textContent = participant.isCurrentUser
+        ? `${participant.firstName} (jij)`
+        : participant.firstName;
+      return chip;
+    }));
+  } catch {
+    currentWorkdayParticipants.hidden = true;
+    currentWorkdayParticipantList.replaceChildren();
+  }
+}
+
 function applyWorkdaySnapshot(workday) {
   const snapshot = workday?.calculationData || {};
   if (!snapshot.date) return;
 
   currentWorkdayId = workday.id;
+  if (form.elements.namedItem("workdayName")) {
+    form.elements.namedItem("workdayName").value = workday.name || snapshot.workdayName || "";
+  }
   form.elements.namedItem("date").value = snapshot.date;
   form.elements.namedItem("startTime").value = snapshot.startTime || "08:00";
-  form.elements.namedItem("endTime").value = snapshot.endTime || "";
+  const restoredEndTime = form.elements.namedItem("endTime");
+  restoredEndTime.value = snapshot.endTime || "";
+  delete restoredEndTime.dataset.timePicked;
+  delete restoredEndTime.dataset.liveCalculated;
+  delete restoredEndTime.dataset.liveStopped;
+  if (resumeLiveWorkdayButton) resumeLiveWorkdayButton.hidden = true;
+  form.elements.namedItem("startTime").dataset.timeRestored = "true";
+  if (snapshot.endTime) restoredEndTime.dataset.timeRestored = "true";
+  else delete restoredEndTime.dataset.timeRestored;
   if (snapshot.settings) populateSettings({ ...getSettingsFromForm(), ...snapshot.settings });
   if (snapshot.department) {
     const department = form.querySelector(`input[name="department"][value="${snapshot.department}"]`);
@@ -8204,6 +9418,7 @@ function applyWorkdaySnapshot(workday) {
   updateRateSettingsVisibility();
   updatePauseVisibility();
   updateWorkdaySaveAccess();
+  refreshCurrentWorkdayParticipants();
   const url = new URL(location.href);
   url.searchParams.set("workday", workday.id);
   history.replaceState({}, "", url);
@@ -8274,11 +9489,13 @@ function configureTodayWorkdayDialog(entry) {
 async function persistWorkday(snapshot, id = null) {
   const saved = await workdayService.save(currentAccountUser.id, {
     id,
+    name: snapshot.workdayName,
     workDate: snapshot.date,
     calculationData: snapshot
   }, { mock: currentUserContext?.subscription?.isMock });
   currentWorkdayId = saved.id;
   updateWorkdaySaveAccess();
+  refreshCurrentWorkdayParticipants();
   const url = new URL(location.href);
   url.searchParams.set("workday", saved.id);
   history.replaceState({}, "", url);
@@ -8298,8 +9515,7 @@ async function saveWorkday({ allowDuplicate = false } = {}) {
   try {
     const snapshot = buildWorkdaySnapshot();
     if (currentWorkdayId) {
-      await persistWorkday(snapshot, currentWorkdayId);
-      return;
+      return await persistWorkday(snapshot, currentWorkdayId);
     }
     if (!allowDuplicate) {
       const existing = await listExistingDateEntries(date);
@@ -8310,20 +9526,23 @@ async function saveWorkday({ allowDuplicate = false } = {}) {
         return;
       }
     }
-    await persistWorkday(snapshot);
+    return await persistWorkday(snapshot);
   } catch (error) {
     console.warn("Werkdag opslaan is mislukt.", error);
     sessionUi?.showToast(error.message || "Werkdag opslaan is niet gelukt.");
   } finally {
     updateWorkdaySaveAccess();
   }
+  return null;
 }
 
 function updateWorkdaySaveAccess() {
   if (!workdaySaveButton) return;
   const hasDate = Boolean(form.elements.namedItem("date").value);
+  const hasStartTime = Boolean(form.elements.namedItem("startTime").value);
   const isPro = Boolean(currentUserContext?.isPro);
   const isToday = form.elements.namedItem("date").value === localDateValue();
+  if (workdayNameField) workdayNameField.hidden = !isPro;
   workdaySaveButton.disabled = !hasDate;
   workdaySaveButton.classList.toggle("is-pro-locked", !isPro);
   if (workdaySaveLabel) {
@@ -8337,7 +9556,21 @@ function updateWorkdaySaveAccess() {
     ? (isPro ? "Werkdag opslaan" : "Werkdagen zijn beschikbaar met Pro")
     : "Vul eerst een datum in";
   if (shareCurrentWorkdayButton) {
-    shareCurrentWorkdayButton.hidden = !isPro || !currentWorkdayId;
+    const canShare = isPro && hasDate && hasStartTime;
+    shareCurrentWorkdayButton.hidden = false;
+    shareCurrentWorkdayButton.disabled = !canShare;
+    shareCurrentWorkdayButton.classList.toggle("is-pro-locked", !isPro);
+    shareCurrentWorkdayButton.title = canShare
+      ? "Deel deze werkdag met collega's"
+      : (isPro ? "Vul eerst een datum en starttijd in" : "Delen met collega's is beschikbaar met Pro");
+    shareCurrentWorkdayButton.setAttribute(
+      "aria-label",
+      canShare ? "Deel deze werkdag met collega's" : shareCurrentWorkdayButton.title
+    );
+  }
+  if (!isPro || !currentWorkdayId) {
+    currentWorkdayParticipants.hidden = true;
+    currentWorkdayParticipantList?.replaceChildren();
   }
 }
 
@@ -8439,9 +9672,20 @@ function applySharedTimesImport() {
   sessionStorage.removeItem("overuurtjeSharedTimesImport");
   try {
     const snapshot = JSON.parse(raw);
+    if (form.elements.namedItem("workdayName")) {
+      form.elements.namedItem("workdayName").value = snapshot.workdayName || "";
+    }
     form.elements.namedItem("date").value = snapshot.date || "";
     form.elements.namedItem("startTime").value = snapshot.startTime || "08:00";
-    form.elements.namedItem("endTime").value = snapshot.endTime || "";
+    const importedEndTime = form.elements.namedItem("endTime");
+    importedEndTime.value = snapshot.endTime || "";
+    delete importedEndTime.dataset.timePicked;
+    delete importedEndTime.dataset.liveCalculated;
+    delete importedEndTime.dataset.liveStopped;
+    if (resumeLiveWorkdayButton) resumeLiveWorkdayButton.hidden = true;
+    form.elements.namedItem("startTime").dataset.timeRestored = "true";
+    if (snapshot.endTime) importedEndTime.dataset.timeRestored = "true";
+    else delete importedEndTime.dataset.timeRestored;
     currentWorkdayId = null;
     updateWorkdaySaveAccess();
     if (snapshot.endTime) updateCalculation();
@@ -8595,9 +9839,11 @@ function renderPrintBreakdown(result) {
 
   lines.replaceChildren();
   addPrintCalculationLine(lines,
-    result.rateMode === "hour" ? "Gewerkte uren" : (usesHalfDayRate ? "Halve dagvergoeding" : "Minimale dagvergoeding"),
     result.rateMode === "hour"
-      ? `${numberFormatter.format(Math.min(result.totalHours, result.settings.normalDayHours))} uur × ${euroFormatter.format(result.hourlyRate)}`
+      ? (result.minimumChargeApplied ? "Minimale afname" : "Gewerkte uren")
+      : (usesHalfDayRate ? "Halve dagvergoeding" : "Minimale dagvergoeding"),
+    result.rateMode === "hour"
+      ? `${numberFormatter.format(result.regularHours)} uur × ${euroFormatter.format(result.hourlyRate)}${result.minimumChargeApplied ? ` + ${euroFormatter.format(result.minimumAdjustmentAmount)} minimumcorrectie tot ${numberFormatter.format(result.minimumHours)} uur` : ""}`
       : (usesHalfDayRate ? `75% van ${euroFormatter.format(result.settings.dayRate)}` : `Dagtarief voor maximaal ${numberFormatter.format(result.settings.normalDayHours)} uur`),
     result.baseAmount
   );
@@ -8700,8 +9946,10 @@ function buildSummary(result) {
 }
 
 function updateCalculation(trackCompletion = false) {
+  const endTimeField = form.elements.namedItem("endTime");
+
   if (!form.reportValidity() || !settingsForm.reportValidity()) return;
-  if (!form.elements.namedItem("endTime").value) {
+  if (!endTimeField.value) {
     clearCalculationDisplay();
     if (trackCompletion) sessionUi?.showToast("Vul eerst de eindtijd in om te berekenen.");
     return;
@@ -8770,6 +10018,64 @@ function updateCalculation(trackCompletion = false) {
   }
 }
 
+function wait(milliseconds) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
+async function stopLiveWorkdayAndCalculate() {
+  const endTimeField = form.elements.namedItem("endTime");
+  const endTimeIsFixed = endTimeField.dataset.timePicked === "true"
+    || endTimeField.dataset.timeRestored === "true";
+  const liveState = !endTimeIsFixed && liveWorkday
+    ? liveWorkday.getState(readLiveWorkdayState())
+    : null;
+
+  if (!liveState?.active) {
+    updateCalculation(true);
+    return;
+  }
+
+  const timeControl = endTimeField.closest(".time-control");
+  const roundedEndTime = liveWorkday.roundedCurrentTime();
+  recalculateButton.disabled = true;
+  liveWorkdayController?.stop();
+  timeControl?.classList.add("is-stopping");
+  liveWorkdayStatus?.classList.add("is-stopping");
+
+  await wait(260);
+  endTimeField.value = roundedEndTime;
+  endTimeField.dataset.timePicked = "true";
+  endTimeField.dataset.liveStopped = "true";
+  delete endTimeField.dataset.timeRestored;
+  delete endTimeField.dataset.liveCalculated;
+  liveEndTimecode.textContent = roundedEndTime;
+  timeControl?.classList.add("is-settled");
+
+  await wait(420);
+  timeControl?.classList.remove("is-live", "is-stopping", "is-settled");
+  liveWorkdayStatus?.classList.remove("is-stopping");
+  liveWorkdayStatus.hidden = true;
+  liveEndTimecode.hidden = true;
+  resumeLiveWorkdayButton.hidden = false;
+  recalculateButton.disabled = false;
+  liveWorkdayController?.update();
+  updateCalculation(true);
+  sessionUi?.showToast(`Werkdag gestopt om ${roundedEndTime}.`);
+}
+
+function resumeLiveWorkday() {
+  const endTimeField = form.elements.namedItem("endTime");
+  endTimeField.value = "";
+  delete endTimeField.dataset.timePicked;
+  delete endTimeField.dataset.timeRestored;
+  delete endTimeField.dataset.liveStopped;
+  delete endTimeField.dataset.liveCalculated;
+  resumeLiveWorkdayButton.hidden = true;
+  clearCalculationDisplay();
+  liveWorkdayController?.update();
+  sessionUi?.showToast("Live tijd hervat.");
+}
+
 function saveCurrentSettings() {
   if (!settingsForm.reportValidity()) {
     sessionUi?.showToast("Controleer de gemarkeerde instellingen.");
@@ -8803,6 +10109,9 @@ function updateRateSettingsVisibility() {
   const hasAccount = Boolean(currentAccountUser);
   settingsForm.querySelector('[data-local-rate="day"]').hidden = hasAccount || rateMode === "hour";
   settingsForm.querySelector('[data-local-rate="hour"]').hidden = hasAccount || rateMode !== "hour";
+  settingsForm.querySelector('[data-rate-setting="day-hours"]').hidden = rateMode === "hour";
+  settingsForm.querySelector('[data-rate-setting="minimum-hours"]').hidden = rateMode !== "hour";
+  settingsForm.querySelector(".half-day-setting").hidden = rateMode === "hour";
 }
 
 function updatePauseVisibility() {
@@ -8993,6 +10302,48 @@ function trackOptionChange(target) {
   if (eventName) analytics?.track(eventName, { department });
 }
 
+function readLiveWorkdayState() {
+  const settings = getSettingsFromForm();
+  const endTimeField = form.elements.namedItem("endTime");
+  const endTimeIsFixed = endTimeField.dataset.timePicked === "true"
+    || endTimeField.dataset.timeRestored === "true";
+  return {
+    date: form.elements.namedItem("date").value,
+    startTime: form.elements.namedItem("startTime").value,
+    endTime: endTimeIsFixed ? endTimeField.value : "",
+    breakMinutes: settings.breakMinutes,
+    normalDayHours: settings.normalDayHours,
+    enableNightTariff: settings.enableNightTariff,
+    nightStart: settings.nightStart
+  };
+}
+
+function renderLiveWorkday(state) {
+  if (!liveWorkdayStatus || !liveWorkdayDuration) return;
+  liveWorkdayStatus.hidden = !state.active;
+  liveEndTimecode.hidden = !state.active;
+  liveEndTimecode.closest(".time-control")?.classList.toggle("is-live", state.active);
+  if (!state.active) return;
+  liveWorkdayDuration.textContent = state.label;
+  liveEndTimecode.textContent = state.timecode;
+  if (enableWorkdayNotifications && workdayNotificationController) {
+    enableWorkdayNotifications.hidden = workdayNotificationController.permission() !== "default";
+  }
+}
+
+function initializeLiveWorkday() {
+  if (!liveWorkday || !liveWorkdayStatus) return;
+  workdayNotificationController = workdayNotifications?.createController({
+    read: () => ({ ...readLiveWorkdayState(), active: !liveWorkdayStatus.hidden }),
+    onReminder: (reminder) => sessionUi?.showToast(reminder.title)
+  }) || null;
+  liveWorkdayController = liveWorkday.createController({
+    read: readLiveWorkdayState,
+    render: renderLiveWorkday,
+    onTick: () => workdayNotificationController?.check()
+  });
+}
+
 populateSettings(getSavedSettings());
 if (!form.elements.namedItem("date").value) {
   form.elements.namedItem("date").value = localDateValue();
@@ -9004,8 +10355,12 @@ updateRateSettingsVisibility();
 updatePauseVisibility();
 updateKilometerVisibility();
 updateParkingVisibility();
+initializeLiveWorkday();
 
-form.addEventListener("input", markCalculationStale);
+form.addEventListener("input", () => {
+  markCalculationStale();
+  liveWorkdayController?.update();
+});
 form.addEventListener("click", (event) => {
   if (currentUserContext?.isPro) return;
   if (event.target.closest("#drone-option, #ronin-option")) {
@@ -9026,6 +10381,9 @@ projectCreateLink?.addEventListener("click", (event) => {
   sessionUi?.openUpgrade();
 });
 form.addEventListener("change", (event) => {
+  if (event.target.name === "endTime" && event.target.dataset.liveStopped !== "true") {
+    resumeLiveWorkdayButton.hidden = true;
+  }
   trackOptionChange(event.target);
   updateDepartmentVisibility();
   updateKilometerVisibility();
@@ -9035,10 +10393,11 @@ form.addEventListener("change", (event) => {
     scheduleAccountSettingsSync();
   }
   if (event.target.name === "date") updateWorkdaySaveAccess();
+  liveWorkdayController?.update();
 });
 settingsForm.addEventListener("input", (event) => {
   markCalculationStale();
-  if (["dayRate", "hourlyRate", "normalDayHours", "kilometerRate"].includes(event.target.name)) scheduleAccountSettingsSync();
+  if (["dayRate", "hourlyRate", "normalDayHours", "minimumHours", "kilometerRate"].includes(event.target.name)) scheduleAccountSettingsSync();
 });
 settingsForm.addEventListener("change", () => {
   updateNightSettingsVisibility();
@@ -9046,16 +10405,39 @@ settingsForm.addEventListener("change", () => {
   updatePauseVisibility();
   markCalculationStale();
   scheduleAccountSettingsSync();
+  liveWorkdayController?.update();
 });
-recalculateButton.addEventListener("click", () => updateCalculation(true));
+recalculateButton.addEventListener("click", () => stopLiveWorkdayAndCalculate());
+resumeLiveWorkdayButton?.addEventListener("click", resumeLiveWorkday);
 workdaySaveButton?.addEventListener("click", () => saveWorkday());
-shareCurrentWorkdayButton?.addEventListener("click", () => {
-  if (currentWorkdayId) shareUi?.open({ sourceType: "workday", sourceId: currentWorkdayId });
+shareCurrentWorkdayButton?.addEventListener("click", async () => {
+  if (!currentUserContext?.isPro) {
+    sessionUi?.openUpgrade();
+    return;
+  }
+  shareCurrentWorkdayButton.disabled = true;
+  try {
+    let sourceId = currentWorkdayId;
+    if (!sourceId) {
+      const saved = await persistWorkday(buildWorkdaySnapshot());
+      sourceId = saved?.id;
+    }
+    if (sourceId) await shareUi?.open({ sourceType: "workday", sourceId });
+  } catch (error) {
+    console.warn("Werkdag delen is mislukt.", error);
+    sessionUi?.showToast(error.message || "De werkdag kon niet worden klaargezet om te delen.");
+  } finally {
+    updateWorkdaySaveAccess();
+  }
 });
-clearEndTimeButton?.addEventListener("click", () => {
-  form.elements.namedItem("endTime").value = "";
-  clearCalculationDisplay();
-  markCalculationStale();
+document.addEventListener("overuurtje:shares-changed", refreshCurrentWorkdayParticipants);
+window.addEventListener("focus", refreshCurrentWorkdayParticipants);
+enableWorkdayNotifications?.addEventListener("click", async () => {
+  const permission = await workdayNotificationController?.requestPermission();
+  if (permission === "granted") sessionUi?.showToast("Werkdagmeldingen staan aan zolang Overuurtje actief is.");
+  else if (permission === "denied") sessionUi?.showToast("Meldingen zijn geblokkeerd in je browserinstellingen.");
+  else if (permission === "unsupported") sessionUi?.showToast("Deze browser ondersteunt geen systeemmeldingen.");
+  liveWorkdayController?.update();
 });
 document.querySelector("#open-existing-workday")?.addEventListener("click", () => {
   if (pendingDuplicateWorkday?.existing) openExistingDateEntry(pendingDuplicateWorkday.existing);
@@ -9093,6 +10475,12 @@ pdfButton.addEventListener("click", () => {
   globalThis.OveruurtjeFeatureGate.require("pdf_export", currentUserContext, () => window.print());
 });
 shareButton.addEventListener("click", shareSite);
+optionsToggle?.addEventListener("click", () => {
+  const expanded = optionsToggle.getAttribute("aria-expanded") === "true";
+  optionsToggle.setAttribute("aria-expanded", String(!expanded));
+  inputOptions.hidden = expanded;
+  optionsToggle.closest(".options-section")?.classList.toggle("is-open", !expanded);
+});
 
 window.addEventListener("beforeprint", () => {
   renderPrintBreakdown(latestResult);
