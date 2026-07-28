@@ -83,6 +83,7 @@ let hydratedAccountUserId = null;
 let cloudSyncTimer = null;
 let functionSyncTimer = null;
 let currentWorkdayId = null;
+let currentSharedSource = null;
 let pendingDuplicateWorkday = null;
 let todayWorkday = null;
 let workdayContextInitializedFor = null;
@@ -440,13 +441,16 @@ function clearCalculationDisplay() {
 
 async function refreshCurrentWorkdayParticipants() {
   if (!currentWorkdayParticipants || !currentWorkdayParticipantList) return;
-  if (!currentUserContext?.isPro || !currentWorkdayId || !shareService) {
+  const source = currentWorkdayId
+    ? { type: "workday", id: currentWorkdayId }
+    : currentSharedSource;
+  if (!currentAccountUser || !source?.type || !source?.id || !shareService) {
     currentWorkdayParticipants.hidden = true;
     currentWorkdayParticipantList.replaceChildren();
     return;
   }
   try {
-    const participants = await shareService.listParticipants("workday", currentWorkdayId);
+    const participants = await shareService.listParticipants(source.type, source.id);
     currentWorkdayParticipants.hidden = participants.length < 2;
     currentWorkdayParticipantList.replaceChildren(...participants.map((participant) => {
       const chip = document.createElement("span");
@@ -467,6 +471,7 @@ function applyWorkdaySnapshot(workday) {
   if (!snapshot.date) return;
 
   currentWorkdayId = workday.id;
+  currentSharedSource = null;
   if (form.elements.namedItem("workdayName")) {
     form.elements.namedItem("workdayName").value = workday.name || snapshot.workdayName || "";
   }
@@ -665,7 +670,7 @@ function updateWorkdaySaveAccess() {
       canShare ? "Deel deze werkdag met collega's" : shareCurrentWorkdayButton.title
     );
   }
-  if (!isPro || !currentWorkdayId) {
+  if (!currentWorkdayId && !currentSharedSource) {
     currentWorkdayParticipants.hidden = true;
     currentWorkdayParticipantList?.replaceChildren();
   }
@@ -781,7 +786,11 @@ function applySharedTimesImport() {
     if (snapshot.endTime) importedEndTime.dataset.timeRestored = "true";
     else delete importedEndTime.dataset.timeRestored;
     currentWorkdayId = null;
+    currentSharedSource = snapshot.sharedSourceType && snapshot.sharedSourceId
+      ? { type: snapshot.sharedSourceType, id: snapshot.sharedSourceId }
+      : null;
     updateWorkdaySaveAccess();
+    refreshCurrentWorkdayParticipants();
     if (snapshot.endTime) updateCalculation();
     else clearCalculationDisplay();
     requestAnimationFrame(() => {
@@ -813,6 +822,7 @@ async function hydrateAccountSettings(context) {
     renderCustomEquipment([]);
     renderWorkFunctions([]);
     currentWorkdayId = null;
+    currentSharedSource = null;
     workdayContextInitializedFor = null;
     populateSettings(getSavedSettings());
     departmentSwitch.classList.remove("is-account-locked");

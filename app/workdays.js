@@ -215,7 +215,9 @@
       startTime: item.startTime,
       endTime: item.endTime,
       result: null,
-      importedFromShare: item.id
+      importedFromShare: item.id,
+      sharedSourceType: item.sourceType || "",
+      sharedSourceId: item.sourceId || ""
     };
   }
 
@@ -358,15 +360,13 @@
     status.textContent = "Uitnodiging accepteren…";
     try {
       const shareId = await shareService.claimInvite(token);
-      const inviteCanBeImported = activeInvite
-        && (activeInvite.shareMode === "direct" || Boolean(activeInvite.endTime));
-      if (!currentContext.isPro && inviteCanBeImported) {
-        await openSharedTimesInCalculator({ ...activeInvite, id: shareId });
-        return;
-      }
       const received = await shareService.listReceived();
       renderReceived(received);
       const shared = received.find((item) => item.id === shareId);
+      if (!currentContext.isPro) {
+        await openSharedTimesInCalculator(shared || { ...activeInvite, id: shareId });
+        return;
+      }
       const url = new URL(location.href);
       url.searchParams.delete("invite");
       if (shared) url.searchParams.set("shared", shareId);

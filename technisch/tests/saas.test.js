@@ -660,20 +660,31 @@ test("Deelservice maakt een uitnodiging zonder gebruikerszoekopdracht of financi
 
 test("Gratis ontvangers nemen gedeelde tijden over in de reguliere calculator", async () => {
   const workdaysScript = await readFile(path.join(rootDirectory, "app/workdays.js"), "utf8");
+  const appScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
 
   assert.match(
     workdaysScript,
-    /if \(!currentContext\.isPro && inviteCanBeImported\)\s*\{\s*await openSharedTimesInCalculator/
+    /if \(!currentContext\.isPro\)\s*\{\s*await openSharedTimesInCalculator\(shared \|\| \{ \.\.\.activeInvite, id: shareId \}\)/
   );
+  assert.doesNotMatch(workdaysScript, /inviteCanBeImported/);
   assert.match(
     workdaysScript,
     /sessionStorage\.setItem\(\s*"overuurtjeSharedTimesImport"/
   );
+  assert.match(workdaysScript, /sharedSourceType: item\.sourceType/);
+  assert.match(workdaysScript, /sharedSourceId: item\.sourceId/);
   assert.match(workdaysScript, /location\.href = "index\.html\?sharedTimes=1"/);
+  const freeImportStart = workdaysScript.indexOf("async function openSharedTimesInCalculator");
+  const freeImportEnd = workdaysScript.indexOf("\n  async function findExistingEntry", freeImportStart);
+  const freeImportFunction = workdaysScript.slice(freeImportStart, freeImportEnd);
+  assert.doesNotMatch(freeImportFunction, /workdayService\.save/);
+  assert.match(appScript, /let currentSharedSource = null/);
+  assert.match(appScript, /shareService\.listParticipants\(source\.type, source\.id\)/);
   assert.doesNotMatch(
-    workdaysScript,
-    /if \(!currentContext\.isPro && inviteCanBeImported\)[\s\S]{0,300}workdayService\.save/
+    appScript,
+    /async function refreshCurrentWorkdayParticipants\(\)[\s\S]{0,250}!currentUserContext\?\.isPro/
   );
+  assert.match(appScript, /const canShare = isPro && hasDate && hasStartTime/);
 });
 
 test("Projectdagen behouden hun id zodat deelrelaties niet verdwijnen bij opslaan", async () => {
