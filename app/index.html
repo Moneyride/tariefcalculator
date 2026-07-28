@@ -130,13 +130,13 @@
                   <small>Een naam toevoegen deelt deze werkdag niet automatisch.</small>
                 </div>
                 <div class="participant-list" id="current-workday-participant-list"></div>
-                <form class="private-participant-form" id="private-participant-form" hidden>
+                <div class="private-participant-form" id="private-participant-form" hidden>
                   <label>
                     <span class="sr-only">Naam deelnemer</span>
                     <input id="private-participant-name" type="text" maxlength="80" placeholder="Naam toevoegen">
                   </label>
-                  <button type="submit">Toevoegen</button>
-                </form>
+                  <button type="button" id="add-private-participant">Toevoegen</button>
+                </div>
               </aside>
               <label class="date-field">
                 <span>Datum</span>

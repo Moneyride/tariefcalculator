@@ -33,6 +33,7 @@ const currentWorkdayParticipants = document.querySelector("#current-workday-part
 const currentWorkdayParticipantList = document.querySelector("#current-workday-participant-list");
 const privateParticipantForm = document.querySelector("#private-participant-form");
 const privateParticipantName = document.querySelector("#private-participant-name");
+const addPrivateParticipantButton = document.querySelector("#add-private-participant");
 const liveWorkdayStatus = document.querySelector("#live-workday-status");
 const liveWorkdayDuration = document.querySelector("#live-workday-duration");
 const liveEndTimecode = document.querySelector("#live-end-timecode");
@@ -1303,19 +1304,19 @@ function updateDepartmentVisibility() {
       option.removeAttribute("aria-label");
     }
   });
-  [droneCheckbox, roninCheckbox].forEach((checkbox) => { checkbox.disabled = !isPro; });
+  [droneCheckbox, roninCheckbox].filter(Boolean).forEach((checkbox) => { checkbox.disabled = !isPro; });
   document.querySelectorAll(".pro-option-badge").forEach((badge) => { badge.hidden = isPro; });
   if (!isPro) {
-    droneCheckbox.checked = false;
-    roninCheckbox.checked = false;
+    if (droneCheckbox) droneCheckbox.checked = false;
+    if (roninCheckbox) roninCheckbox.checked = false;
   }
 
-  if (!showDrone) {
+  if (!showDrone && droneCheckbox) {
     droneCheckbox.checked = false;
     setResult("droneTariffAmount", 0, formatEuro);
   }
 
-  if (!showRonin) {
+  if (!showRonin && roninCheckbox) {
     roninCheckbox.checked = false;
     setResult("ronin4dTariffAmount", 0, formatEuro);
   }
@@ -1547,8 +1548,7 @@ shareCurrentWorkdayButton?.addEventListener("click", async () => {
     updateWorkdaySaveAccess();
   }
 });
-privateParticipantForm?.addEventListener("submit", (event) => {
-  event.preventDefault();
+function addPrivateParticipant() {
   if (!currentUserContext?.isPro) {
     sessionUi?.openUpgrade();
     return;
@@ -1558,9 +1558,16 @@ privateParticipantForm?.addEventListener("submit", (event) => {
   if (!privateParticipants.some((item) => item.toLocaleLowerCase("nl-NL") === name.toLocaleLowerCase("nl-NL"))) {
     privateParticipants.push(name);
   }
-  privateParticipantForm.reset();
+  privateParticipantName.value = "";
   renderCurrentWorkdayParticipants();
   markCalculationStale();
+}
+
+addPrivateParticipantButton?.addEventListener("click", addPrivateParticipant);
+privateParticipantName?.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  addPrivateParticipant();
 });
 document.addEventListener("overuurtje:shares-changed", refreshCurrentWorkdayParticipants);
 window.addEventListener("focus", refreshCurrentWorkdayParticipants);
