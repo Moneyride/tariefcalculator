@@ -37,6 +37,7 @@ const privateParticipantName = document.querySelector("#private-participant-name
 const addPrivateParticipantButton = document.querySelector("#add-private-participant");
 const sharedReceiverContext = document.querySelector("#shared-receiver-context");
 const sharedReceiverTitle = document.querySelector("#shared-receiver-title");
+const resumeSharedWorkdayButton = document.querySelector("#resume-shared-workday");
 const sharedStartTimeLockButton = document.querySelector("#lock-shared-start-time");
 const sharedEndTimeLockButton = document.querySelector("#lock-shared-end-time");
 const projectDayContextPanel = document.querySelector("#project-day-context");
@@ -50,6 +51,8 @@ const resumeLiveWorkdayButton = document.querySelector("#resume-live-workday");
 const enableWorkdayNotifications = document.querySelector("#enable-workday-notifications");
 const duplicateWorkdayDialog = document.querySelector("#duplicate-workday-dialog");
 const todayWorkdayDialog = document.querySelector("#today-workday-dialog");
+const unfinishedSharedWorkdayDialog = document.querySelector("#unfinished-shared-workday-dialog");
+const confirmSharedCalculationButton = document.querySelector("#confirm-shared-calculation");
 const droneOption = document.querySelector("#drone-option");
 const roninOption = document.querySelector("#ronin-option");
 const customEquipmentOptions = document.querySelector("#custom-equipment-options");
@@ -98,6 +101,8 @@ let currentWorkdayId = null;
 let currentProjectDayContext = null;
 let currentSharedSource = null;
 let currentSharedOwnerName = "";
+let currentSharedSourceEndTime = "";
+let sharedReceiverCalculatedEarly = false;
 let sharedTimeOverrides = new Set();
 let sharedParticipants = [];
 let privateParticipants = [];
@@ -599,13 +604,18 @@ async function refreshSharedReceiverTimes({ announce = false } = {}) {
     const startTime = form.elements.namedItem("startTime");
     const endTime = form.elements.namedItem("endTime");
     const previousEndTime = endTime.value;
+    currentSharedSourceEndTime = shared.endTime || "";
     let changed = false;
 
     if (!sharedTimeOverrides.has("startTime") && startTime.value !== shared.startTime) {
       startTime.value = shared.startTime || "";
       changed = true;
     }
-    if (!sharedTimeOverrides.has("endTime") && endTime.value !== shared.endTime) {
+    if (
+      !sharedReceiverCalculatedEarly
+      && !sharedTimeOverrides.has("endTime")
+      && endTime.value !== shared.endTime
+    ) {
       endTime.value = shared.endTime || "";
       delete endTime.dataset.timePicked;
       delete endTime.dataset.liveCalculated;
@@ -746,6 +756,9 @@ function updateSharedReceiverMode() {
   if (privateParticipantPanel) privateParticipantPanel.hidden = active || !currentUserContext?.isPro;
   if (privateParticipantForm) privateParticipantForm.hidden = active || !currentUserContext?.isPro;
   if (resumeLiveWorkdayButton && active) resumeLiveWorkdayButton.hidden = true;
+  if (resumeSharedWorkdayButton) {
+    resumeSharedWorkdayButton.hidden = !active || !sharedReceiverCalculatedEarly;
+  }
   updateSharedReceiverSync();
 }
 
@@ -758,6 +771,8 @@ function applyWorkdaySnapshot(workday, { projectContext = null } = {}) {
   currentSharedSource = snapshot.sharedSourceType && snapshot.sharedSourceId
     ? { type: snapshot.sharedSourceType, id: snapshot.sharedSourceId }
     : null;
+  currentSharedSourceEndTime = currentSharedSource ? (snapshot.endTime || "") : "";
+  sharedReceiverCalculatedEarly = false;
   sharedTimeOverrides = new Set();
   currentSharedOwnerName = snapshot.sharedOwnerName || "";
   privateParticipants = Array.isArray(snapshot.privateParticipants)
@@ -1165,6 +1180,8 @@ function applySharedTimesImport() {
     currentSharedSource = snapshot.sharedSourceType && snapshot.sharedSourceId
       ? { type: snapshot.sharedSourceType, id: snapshot.sharedSourceId }
       : null;
+    currentSharedSourceEndTime = currentSharedSource ? (snapshot.endTime || "") : "";
+    sharedReceiverCalculatedEarly = false;
     sharedTimeOverrides = new Set();
     currentSharedOwnerName = snapshot.sharedOwnerName || "";
     updateSharedReceiverMode();
@@ -1203,6 +1220,8 @@ async function hydrateAccountSettings(context) {
     currentWorkdayId = null;
     currentSharedSource = null;
     currentSharedOwnerName = "";
+    currentSharedSourceEndTime = "";
+    sharedReceiverCalculatedEarly = false;
     sharedTimeOverrides = new Set();
     workdayContextInitializedFor = null;
     updateSharedReceiverMode();
@@ -1874,8 +1893,48 @@ settingsForm.addEventListener("change", () => {
   scheduleActiveWorkFunctionSync();
   liveWorkdayController?.update();
 });
-recalculateButton.addEventListener("click", () => stopLiveWorkdayAndCalculate());
+function requestCalculation() {
+  if (currentSharedSource && !currentSharedSourceEndTime && !sharedReceiverCalculatedEarly) {
+    openNativeDialog(unfinishedSharedWorkdayDialog);
+    return;
+  }
+  stopLiveWorkdayAndCalculate();
+}
+
+async function resumeSharedWorkday() {
+  if (!currentSharedSource) return;
+  sharedReceiverCalculatedEarly = false;
+  sharedTimeOverrides.delete("endTime");
+  const endTimeField = form.elements.namedItem("endTime");
+  endTimeField.value = "";
+  delete endTimeField.dataset.timePicked;
+  delete endTimeField.dataset.timeRestored;
+  delete endTimeField.dataset.liveStopped;
+  delete endTimeField.dataset.liveCalculated;
+  clearCalculationDisplay();
+  updateSharedReceiverMode();
+  await refreshSharedReceiverTimes();
+  liveWorkdayController?.update();
+  updateResumeLiveAccess();
+  sessionUi?.showToast(
+    currentSharedSourceEndTime
+      ? "De definitieve gedeelde tijden zijn bijgewerkt."
+      : "Je doet weer mee met de gedeelde werkdag."
+  );
+}
+
+recalculateButton.addEventListener("click", requestCalculation);
 resumeLiveWorkdayButton?.addEventListener("click", resumeLiveWorkday);
+resumeSharedWorkdayButton?.addEventListener("click", resumeSharedWorkday);
+confirmSharedCalculationButton?.addEventListener("click", () => {
+  sharedReceiverCalculatedEarly = true;
+  closeNativeDialog(unfinishedSharedWorkdayDialog);
+  updateSharedReceiverMode();
+  stopLiveWorkdayAndCalculate();
+});
+document.querySelectorAll("[data-shared-calculation-cancel]").forEach((button) => {
+  button.addEventListener("click", () => closeNativeDialog(unfinishedSharedWorkdayDialog));
+});
 workdaySaveButton?.addEventListener("click", () => saveWorkday());
 
 async function openCurrentWorkdayShare() {

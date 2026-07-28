@@ -139,6 +139,20 @@ test("resultaatacties staan onder het resultaat en de algemene deelknop is verwi
   assert.doesNotMatch(html, /id="share-site"/);
 });
 
+test("opslaan en PDF gebruiken consistente lijniconen zonder PDF-lettermerk", async () => {
+  const html = await readFile(path.join(rootDirectory, "app/index.html"), "utf8");
+  const styles = await readFile(path.join(rootDirectory, "app/styles.css"), "utf8");
+  const saveButton = html.match(/<button class="workday-save-button[\s\S]*?<\/button>/)?.[0] || "";
+  const pdfButton = html.match(/<button class="secondary pro-action-button"[^>]+id="save-pdf"[\s\S]*?<\/button>/)?.[0] || "";
+
+  assert.match(saveButton, /class="button-line-icon"/);
+  assert.match(saveButton, /M5 3h12l2 2v16H5z/);
+  assert.match(pdfButton, /class="button-line-icon"/);
+  assert.match(pdfButton, /M6 3h8l4 4v14H6z/);
+  assert.doesNotMatch(pdfButton, /<svg[\s\S]*?>\s*PDF\s*</i);
+  assert.match(styles, /\.button-line-icon\s*\{[\s\S]*stroke-width:\s*1\.8/);
+});
+
 test("feature gate laat Pro toe en meldt een upgrade voor Free", async () => {
   const events = [];
   class CustomEvent {
@@ -685,6 +699,7 @@ test("Werkdagnamen en deelnemers worden privacyvriendelijk gedeeld", async () =>
 });
 
 test("direct gedeelde werkdagen blijven live en melden een opgeslagen eindtijd", async () => {
+  const calculatorHtml = await readFile(path.join(rootDirectory, "app/index.html"), "utf8");
   const calculatorScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
   const sessionUi = await readFile(path.join(rootDirectory, "app/saas/sessionUi.js"), "utf8");
   const migration = await readFile(
@@ -695,6 +710,12 @@ test("direct gedeelde werkdagen blijven live en melden een opgeslagen eindtijd",
   assert.match(calculatorScript, /endTime: currentSharedSource\s*\?\s*endTimeField\.value/);
   assert.match(calculatorScript, /refreshSharedReceiverTimes/);
   assert.match(calculatorScript, /setInterval\([\s\S]*refreshSharedReceiverTimes[\s\S]*15000/);
+  assert.match(calculatorScript, /currentSharedSource && !currentSharedSourceEndTime && !sharedReceiverCalculatedEarly/);
+  assert.match(calculatorScript, /sharedReceiverCalculatedEarly = true/);
+  assert.match(calculatorScript, /async function resumeSharedWorkday\(\)/);
+  assert.match(calculatorScript, /sharedTimeOverrides\.delete\("endTime"\)/);
+  assert.match(calculatorHtml, /id="unfinished-shared-workday-dialog"/);
+  assert.match(calculatorHtml, /Verder met gedeelde werkdag/);
   assert.match(migration, /when old_end = '' and new_end <> '' then 'workday_completed'/);
   assert.doesNotMatch(migration, /accepted_at is null/);
   assert.match(sessionUi, /workday_completed/);
@@ -876,4 +897,32 @@ test("Accountmenu en desktop-accountlayouts blijven consequent uitgelijnd", asyn
   assert.match(account, /id="compact-function-setting"[\s\S]*name="defaultRateMode"[\s\S]*name="defaultDayRate"/);
   assert.match(styles, /\.account-credentials-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2/);
   assert.match(styles, /\.workdays-content\s*\{[^}]*width:\s*min\(820px,\s*calc\(100% - 64px\)\)/);
+  assert.match(
+    styles,
+    /\.received-workdays\s*\{[^}]*width:\s*min\(820px,\s*calc\(100% - 64px\)\);[^}]*margin:\s*8px auto 0;/
+  );
+  assert.match(
+    styles,
+    /@media \(max-width:\s*760px\)[\s\S]*\.workdays-content\s*\{[^}]*width:\s*calc\(100% - 40px\);[\s\S]*\.received-workdays\s*\{[^}]*width:\s*calc\(100% - 40px\);/
+  );
+  assert.match(
+    styles,
+    /\.timeline-workday-actions\s*\{[^}]*grid-template-columns:\s*minmax\(96px,\s*128px\)\s*42px;[^}]*justify-content:\s*end;/
+  );
+  assert.match(
+    styles,
+    /\.timeline-workday-actions \.workday-share-button\s*\{[^}]*grid-column:\s*1;[^}]*grid-row:\s*1;/
+  );
+  assert.match(
+    styles,
+    /\.timeline-workday-actions \.workday-delete-button\s*\{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;/
+  );
+  assert.match(
+    styles,
+    /\.input-panel\.is-shared-receiver \.time-control\.is-shared-locked\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;/
+  );
+  assert.match(
+    styles,
+    /\.input-panel\.is-shared-receiver \.time-control\.is-shared-locked input\[data-time-picker\]\s*\{[^}]*border-radius:\s*12px;[^}]*background:\s*rgba\(255,\s*255,\s*255,\s*0\.34\);/
+  );
 });

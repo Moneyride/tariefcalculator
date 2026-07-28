@@ -43,7 +43,7 @@
     <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260727c">
-    <link rel="stylesheet" href="styles.css?v=20260728k">
+    <link rel="stylesheet" href="styles.css?v=20260728p">
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
@@ -65,7 +65,7 @@
     <script src="saas/shareUi.js?v=20260728a" defer></script>
     <script src="selectUi.js?v=20260725a" defer></script>
     <script src="timePicker.js?v=20260728a" defer></script>
-    <script src="app.js?v=20260728k" defer></script>
+    <script src="app.js?v=20260728l" defer></script>
     <script src="pwa.js?v=20260727c" defer></script>
   </head>
   <body>
@@ -105,6 +105,7 @@
               <small>De datum en tijden komen van je collega. Je eigen extra's en berekening blijven van jou.</small>
             </div>
             <div class="shared-receiver-actions">
+              <button type="button" id="resume-shared-workday" hidden>Verder met gedeelde werkdag</button>
               <a href="index.html" id="leave-shared-view">Terug naar mijn calculator</a>
             </div>
           </aside>
@@ -395,6 +396,11 @@
             <button type="button" id="recalculate">Berekenen</button>
           </div>
           <button class="workday-save-button is-pro-locked" type="button" id="save-workday" disabled>
+            <svg class="button-line-icon" aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M5 3h12l2 2v16H5z"></path>
+              <path d="M8 3v6h8V3"></path>
+              <path d="M8 21v-7h8v7"></path>
+            </svg>
             <span class="workday-save-copy">
               <strong data-workday-save-label>Werkdag opslaan</strong>
               <span data-workday-save-hint>Bewaar je begintijd; vul later je eindtijd in</span>
@@ -452,7 +458,16 @@
       <div class="footer-actions">
         <button class="invoice-copy-button" type="button" id="copy-summary">Kopiëren voor factuur</button>
         <div class="result-secondary-actions">
-          <button class="secondary pro-action-button" type="button" id="save-pdf">Pdf opslaan <span data-pro-badge>Pro</span></button>
+          <button class="secondary pro-action-button" type="button" id="save-pdf">
+            <svg class="button-line-icon" aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M6 3h8l4 4v14H6z"></path>
+              <path d="M14 3v4h4"></path>
+              <path d="M12 10v7"></path>
+              <path d="m9 14 3 3 3-3"></path>
+            </svg>
+            Pdf opslaan
+            <span data-pro-badge>Pro</span>
+          </button>
         </div>
         <p class="copy-status" id="copy-status" aria-live="polite"></p>
       </div>
@@ -584,6 +599,17 @@
       <div class="dialog-action-stack">
         <button class="saas-primary-button" id="continue-today-workday" type="button">Verder met deze werkdag</button>
         <button class="saas-secondary-button" id="new-today-calculation" type="button">Nieuwe berekening</button>
+      </div>
+    </dialog>
+
+    <dialog class="saas-dialog workday-dialog" id="unfinished-shared-workday-dialog" aria-labelledby="unfinished-shared-workday-title">
+      <button class="dialog-close" type="button" data-shared-calculation-cancel aria-label="Sluiten">&times;</button>
+      <p class="dialog-eyebrow">Gedeelde werkdag</p>
+      <h2 id="unfinished-shared-workday-title">Deze werkdag is nog niet afgerond.</h2>
+      <p>Je collega heeft nog geen definitieve eindtijd opgeslagen. Weet je zeker dat je deze werkdag nu al wilt berekenen?</p>
+      <div class="dialog-action-stack">
+        <button class="saas-primary-button" id="confirm-shared-calculation" type="button">Toch berekenen</button>
+        <button class="saas-secondary-button" type="button" data-shared-calculation-cancel>Nog even wachten</button>
       </div>
     </dialog>
 

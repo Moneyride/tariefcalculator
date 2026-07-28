@@ -1042,12 +1042,12 @@
 }
 
 .received-workdays {
-  width: 100%;
-  max-width: 100%;
+  width: min(820px, calc(100% - 64px));
+  max-width: 820px;
   min-width: 0;
   display: grid;
   gap: 14px;
-  margin-top: 8px;
+  margin: 8px auto 0;
   padding-top: 28px;
   border-top: 1px solid rgba(31, 67, 53, 0.1);
 }
@@ -1333,14 +1333,24 @@
   }
 
   .timeline-workday-actions {
-    grid-template-columns: minmax(0, 1fr) 42px;
+    grid-template-columns: minmax(96px, 128px) 42px;
+    justify-content: end;
     padding: 8px 12px 12px;
     border-top: 1px solid rgba(31, 67, 53, 0.08);
     border-left: 0;
   }
 
   .timeline-workday-actions .workday-share-button {
+    grid-column: 1;
+    grid-row: 1;
     width: 100%;
+    min-width: 0;
+    padding-inline: 10px;
+  }
+
+  .timeline-workday-actions .workday-delete-button {
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .notification-alert-actions {
@@ -1752,18 +1762,23 @@ h3 {
   transform: translateY(-1px);
 }
 
-.input-panel.is-shared-receiver .date-control,
-.input-panel.is-shared-receiver .time-control.is-shared-locked {
+.input-panel.is-shared-receiver .date-control {
   background: rgba(255, 255, 255, 0.34);
   border-color: rgba(31, 67, 53, 0.06);
   box-shadow: none;
   outline: 0;
 }
 
-.input-panel.is-shared-receiver .date-control:focus-within,
-.input-panel.is-shared-receiver .time-control.is-shared-locked:focus-within {
+.input-panel.is-shared-receiver .date-control:focus-within {
   border-color: rgba(31, 67, 53, 0.06);
   box-shadow: none;
+}
+
+.input-panel.is-shared-receiver .time-control.is-shared-locked {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: 0;
 }
 
 .input-panel.is-shared-receiver .date-field,
@@ -1776,6 +1791,13 @@ h3 {
   color: var(--accent-dark);
   cursor: default;
   opacity: 0.88;
+}
+
+.input-panel.is-shared-receiver .time-control.is-shared-locked input[data-time-picker] {
+  border-color: rgba(31, 67, 53, 0.06);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.34);
+  box-shadow: none;
 }
 
 .input-panel.is-shared-receiver .time-control.is-shared-locked .time-picker-trigger:disabled {
@@ -4816,6 +4838,24 @@ summary:hover {
   box-shadow: none;
 }
 
+.button-line-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#save-pdf {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+
 .result-secondary-actions .workday-save-button {
   min-height: 54px;
 }
@@ -5488,9 +5528,14 @@ summary:hover {
   }
 
   .workdays-content {
-    width: calc(100% - 24px);
+    width: calc(100% - 40px);
     gap: 18px;
     padding-top: 18px;
+  }
+
+  .received-workdays {
+    width: calc(100% - 40px);
+    max-width: none;
   }
 
   .workdays-summary {
