@@ -77,6 +77,18 @@ test("accountinstellingen gebruiken een stabiel databasecontract", async () => {
   assert.equal(normalized.nightEnd, "07:00");
 });
 
+test("accountinstellingen bewaren geen minimale afname als nul", async () => {
+  const context = await runService("app/saas/settingsService.js", {
+    OveruurtjeSupabase: { getClient: async () => null }
+  });
+
+  const serialized = context.OveruurtjeSettings.serialize("user-1", { minimumHours: 0 });
+  const normalized = context.OveruurtjeSettings.normalize({ preferences: { minimumHours: 0 } });
+
+  assert.equal(serialized.preferences.minimumHours, 0);
+  assert.equal(normalized.minimumHours, 0);
+});
+
 test("functies bewaren een uitbreidbare calculatorpreset", async () => {
   const context = await runService("app/saas/functionService.js", {
     OveruurtjeSupabase: { getClient: async () => null }

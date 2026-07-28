@@ -28,6 +28,11 @@
     preferences: {}
   });
 
+  function normalizeMinimumHours(value) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? Math.min(12, Math.max(0, parsed)) : defaults.minimumHours;
+  }
+
   function normalize(row = {}) {
     const preferences = row.preferences && typeof row.preferences === "object" ? row.preferences : {};
     const booleanPreference = (name, fallback) => typeof preferences[name] === "boolean" ? preferences[name] : fallback;
@@ -40,7 +45,7 @@
       defaultBreakMinutes: Math.max(0, Number(preferences.defaultBreakMinutes ?? defaults.defaultBreakMinutes)),
       enableBreak: booleanPreference("enableBreak", defaults.enableBreak),
       normalDayHours: Number(preferences.normalDayHours) === 12 ? 12 : 10,
-      minimumHours: Math.min(12, Math.max(1, Number(preferences.minimumHours) || defaults.minimumHours)),
+      minimumHours: normalizeMinimumHours(preferences.minimumHours),
       enableHalfDayUnder6Hours: booleanPreference("enableHalfDayUnder6Hours", defaults.enableHalfDayUnder6Hours),
       enableOvertime10To12: booleanPreference("enableOvertime10To12", defaults.enableOvertime10To12),
       enableOvertimeFrom12: booleanPreference("enableOvertimeFrom12", defaults.enableOvertimeFrom12),
@@ -77,7 +82,7 @@
         defaultBreakMinutes: Math.max(0, Number(settings.defaultBreakMinutes) || 0),
         enableBreak: Boolean(settings.enableBreak),
         normalDayHours: Number(settings.normalDayHours) === 12 ? 12 : 10,
-        minimumHours: Math.min(12, Math.max(1, Number(settings.minimumHours) || defaults.minimumHours)),
+        minimumHours: normalizeMinimumHours(settings.minimumHours),
         enableHalfDayUnder6Hours: Boolean(settings.enableHalfDayUnder6Hours),
         enableOvertime10To12: Boolean(settings.enableOvertime10To12),
         enableOvertimeFrom12: Boolean(settings.enableOvertimeFrom12),

@@ -72,7 +72,7 @@
       ...calculator.DEFAULT_SETTINGS,
       dayRate: data.rateMode === "day" ? data.rateAmount : accountSettings.defaultDayRate,
       normalDayHours: Number(data.normalDayHours) || 10,
-      minimumHours: Math.min(12, Math.max(1, Number(data.minimumHours) || 1)),
+      minimumHours: Math.min(12, Math.max(0, Number(data.minimumHours) || 0)),
       enableHalfDayUnder6Hours: Boolean(data.enableHalfDayUnder6Hours),
       enableOvertime10To12: Boolean(data.enableOvertime10To12),
       enableOvertimeFrom12: Boolean(data.enableOvertimeFrom12),

@@ -791,6 +791,74 @@
   padding: 11px 14px;
 }
 
+.participant-heading {
+  display: grid;
+  min-width: 150px;
+  gap: 2px;
+}
+
+.participant-heading small {
+  max-width: 270px;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.private-participant-form {
+  display: flex;
+  min-width: min(100%, 270px);
+  margin-left: auto;
+  gap: 7px;
+}
+
+.private-participant-form label {
+  min-width: 0;
+  flex: 1;
+}
+
+.private-participant-form input {
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid rgba(31, 67, 53, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.private-participant-form button,
+.participant-chip.is-private button {
+  min-height: auto;
+  border: 0;
+  box-shadow: none;
+}
+
+.private-participant-form button {
+  padding: 7px 11px;
+  border-radius: 10px;
+  background: rgba(31, 67, 53, 0.09);
+  color: var(--accent-dark);
+  font-size: 0.68rem;
+}
+
+.participant-chip.is-private {
+  padding-left: 10px;
+  border-style: dashed;
+}
+
+.participant-chip.is-private small {
+  color: var(--orange-dark);
+  font-size: 0.56rem;
+  font-weight: 750;
+}
+
+.participant-chip.is-private button {
+  padding: 0 1px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
 .current-workday-participants[hidden] {
   display: none;
 }
@@ -806,6 +874,11 @@
     align-items: flex-start;
     flex-direction: column;
     gap: 9px;
+  }
+
+  .private-participant-form {
+    width: 100%;
+    margin-left: 0;
   }
 }
 
@@ -832,11 +905,112 @@
 }
 
 .received-workdays {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   display: grid;
   gap: 14px;
   margin-top: 8px;
   padding-top: 28px;
   border-top: 1px solid rgba(31, 67, 53, 0.1);
+}
+
+.timeline-workday-item {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.34);
+  color: var(--text);
+  box-shadow: none;
+}
+
+.timeline-workday-item.is-shared {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto auto 20px;
+  gap: 13px;
+  align-items: center;
+  min-height: 0;
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.timeline-workday-item.is-owned {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.timeline-workday-main {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto auto 20px;
+  gap: 13px;
+  align-items: center;
+  padding: 14px 16px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.timeline-workday-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.timeline-workday-copy strong,
+.timeline-workday-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timeline-workday-copy small,
+.received-workday-project {
+  color: var(--muted);
+}
+
+.timeline-workday-total {
+  color: var(--accent-dark);
+  font-size: 0.76rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.timeline-workday-actions {
+  display: grid;
+  grid-template-columns: auto 42px;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border-left: 1px solid rgba(31, 67, 53, 0.08);
+}
+
+.timeline-workday-actions .workday-share-button {
+  min-height: 42px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.timeline-workday-actions .workday-delete-button {
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
+  border: 1px solid rgba(142, 58, 43, 0.12);
+  border-radius: 10px;
+  background: rgba(142, 58, 43, 0.04);
+}
+
+.workday-origin-tag {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(255, 106, 26, 0.13);
+  color: var(--orange-dark);
+  font-size: 0.62rem;
+  font-weight: 800;
 }
 
 .received-workdays-heading {
@@ -982,6 +1156,56 @@
     justify-self: start;
   }
 
+  .timeline-workday-item.is-shared {
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+  }
+
+  .timeline-workday-item.is-shared .workday-origin-tag {
+    grid-column: 2;
+    width: fit-content;
+  }
+
+  .timeline-workday-item.is-shared .received-workday-status {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+
+  .timeline-workday-item.is-shared > span:last-child {
+    display: none;
+  }
+
+  .timeline-workday-item.is-owned {
+    grid-template-columns: 1fr;
+  }
+
+  .timeline-workday-main {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .timeline-workday-main .timeline-workday-total {
+    grid-column: 1;
+  }
+
+  .timeline-workday-main .workday-status {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .timeline-workday-main > span:last-child {
+    display: none;
+  }
+
+  .timeline-workday-actions {
+    grid-template-columns: minmax(0, 1fr) 42px;
+    padding: 8px 12px 12px;
+    border-top: 1px solid rgba(31, 67, 53, 0.08);
+    border-left: 0;
+  }
+
+  .timeline-workday-actions .workday-share-button {
+    width: 100%;
+  }
+
   .notification-alert-actions {
     align-items: stretch;
     flex-direction: column;
@@ -1065,8 +1289,7 @@ select {
   overflow: visible;
   background: rgba(255, 255, 255, 0.54);
   border: 1px solid rgba(255, 255, 255, 0.38);
-  border-top: 0;
-  border-radius: 0 0 8px 8px;
+  border-radius: 24px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.14);
   -webkit-backdrop-filter: blur(30px) saturate(106%);
   backdrop-filter: blur(30px) saturate(106%);
@@ -1486,6 +1709,10 @@ h3 {
 .planning-grid > *,
 .date-field {
   min-width: 0;
+}
+
+.end-time-field {
+  position: relative;
 }
 
 .date-control {
@@ -4431,7 +4658,8 @@ summary:hover {
   .end-time-field .live-workday-status {
     position: absolute;
     right: 0;
-    bottom: calc(100% + 10px);
+    top: -5px;
+    bottom: auto;
     margin-top: 0;
     margin-bottom: 0;
   }
@@ -5551,8 +5779,18 @@ summary:hover {
                 <input type="text" name="workdayName" maxlength="100" placeholder="werkdag">
               </label>
               <aside class="current-workday-participants" id="current-workday-participants" hidden>
-                <strong>Deelnemers</strong>
+                <div class="participant-heading">
+                  <strong>Deelnemers</strong>
+                  <small>Een naam toevoegen deelt deze werkdag niet automatisch.</small>
+                </div>
                 <div class="participant-list" id="current-workday-participant-list"></div>
+                <form class="private-participant-form" id="private-participant-form" hidden>
+                  <label>
+                    <span class="sr-only">Naam deelnemer</span>
+                    <input id="private-participant-name" type="text" maxlength="80" placeholder="Naam toevoegen">
+                  </label>
+                  <button type="submit">Toevoegen</button>
+                </form>
               </aside>
               <label class="date-field">
                 <span>Datum</span>
@@ -5678,7 +5916,7 @@ summary:hover {
             <label data-rate-setting="minimum-hours" hidden>
               <span>Minimale afname</span>
               <select name="minimumHours" required>
-                <option value="1">1 uur</option><option value="2">2 uur</option><option value="3">3 uur</option>
+                <option value="0">Geen</option><option value="1">1 uur</option><option value="2">2 uur</option><option value="3">3 uur</option>
                 <option value="4">4 uur</option><option value="5">5 uur</option><option value="6">6 uur</option>
                 <option value="7">7 uur</option><option value="8">8 uur</option><option value="9">9 uur</option>
                 <option value="10">10 uur</option><option value="11">11 uur</option><option value="12">12 uur</option>
@@ -5900,6 +6138,10 @@ summary:hover {
         </div>
       </div>
       <form class="auth-form" id="auth-form">
+        <label id="auth-name-field" hidden>
+          <span>Naam</span>
+          <input id="auth-name" type="text" autocomplete="name" maxlength="80" placeholder="Vul hier jouw naam in">
+        </label>
         <label>
           <span>E-mailadres</span>
           <input id="auth-email" type="email" autocomplete="email" required>
@@ -6123,7 +6365,7 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     return withClient((client) => client.auth.signInWithPassword({ email, password }));
   }
 
-  function signUp(email, password) {
+  function signUp(email, password, displayName) {
     const currentUrl = new URL(location.href);
     const inviteToken = currentUrl.searchParams.get("invite");
     const emailRedirect = new URL(inviteToken ? config.authWorkdaysUrl : config.authAccountUrl);
@@ -6132,7 +6374,10 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     return withClient((client) => client.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: emailRedirect.href }
+      options: {
+        emailRedirectTo: emailRedirect.href,
+        data: { display_name: String(displayName || "").trim() }
+      }
     }));
   }
 
@@ -6230,12 +6475,13 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
   async function saveDisplayName(user, displayName) {
     if (!user) throw new Error("Log eerst in.");
     const value = String(displayName || "").trim();
+    if (!value) throw new Error("Vul je naam in.");
     if (value.length > 80) throw new Error("Gebruik maximaal 80 tekens.");
     const client = await supabaseService.getClient();
     if (!client) throw new Error("Supabase is niet beschikbaar.");
     const { data, error } = await client
       .from("profiles")
-      .update({ display_name: value || null })
+      .update({ display_name: value })
       .eq("id", user.id)
       .select(PROFILE_COLUMNS)
       .single();
@@ -6278,6 +6524,11 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     preferences: {}
   });
 
+  function normalizeMinimumHours(value) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? Math.min(12, Math.max(0, parsed)) : defaults.minimumHours;
+  }
+
   function normalize(row = {}) {
     const preferences = row.preferences && typeof row.preferences === "object" ? row.preferences : {};
     const booleanPreference = (name, fallback) => typeof preferences[name] === "boolean" ? preferences[name] : fallback;
@@ -6290,7 +6541,7 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
       defaultBreakMinutes: Math.max(0, Number(preferences.defaultBreakMinutes ?? defaults.defaultBreakMinutes)),
       enableBreak: booleanPreference("enableBreak", defaults.enableBreak),
       normalDayHours: Number(preferences.normalDayHours) === 12 ? 12 : 10,
-      minimumHours: Math.min(12, Math.max(1, Number(preferences.minimumHours) || defaults.minimumHours)),
+      minimumHours: normalizeMinimumHours(preferences.minimumHours),
       enableHalfDayUnder6Hours: booleanPreference("enableHalfDayUnder6Hours", defaults.enableHalfDayUnder6Hours),
       enableOvertime10To12: booleanPreference("enableOvertime10To12", defaults.enableOvertime10To12),
       enableOvertimeFrom12: booleanPreference("enableOvertimeFrom12", defaults.enableOvertimeFrom12),
@@ -6327,7 +6578,7 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
         defaultBreakMinutes: Math.max(0, Number(settings.defaultBreakMinutes) || 0),
         enableBreak: Boolean(settings.enableBreak),
         normalDayHours: Number(settings.normalDayHours) === 12 ? 12 : 10,
-        minimumHours: Math.min(12, Math.max(1, Number(settings.minimumHours) || defaults.minimumHours)),
+        minimumHours: normalizeMinimumHours(settings.minimumHours),
         enableHalfDayUnder6Hours: Boolean(settings.enableHalfDayUnder6Hours),
         enableOvertime10To12: Boolean(settings.enableOvertime10To12),
         enableOvertimeFrom12: Boolean(settings.enableOvertimeFrom12),
@@ -7443,7 +7694,10 @@ function calculateTariff(input, customSettings = {}) {
     overtime.overtime10To12Amount +
     overtime.overtimeFrom12Amount +
     overtime.overtimeFrom14Amount;
-  const minimumHours = Math.min(12, Math.max(1, Number(settings.minimumHours) || 1));
+  const parsedMinimumHours = Number(settings.minimumHours);
+  const minimumHours = Number.isFinite(parsedMinimumHours)
+    ? Math.min(12, Math.max(0, parsedMinimumHours))
+    : DEFAULT_SETTINGS.minimumHours;
   const hourlyMinimumAmount = minimumHours * hourlyRate;
   const minimumChargeApplied =
     rateMode === "hour" && hourlyMinimumAmount > regularHours * hourlyRate + overtimeAmount;
@@ -8052,6 +8306,8 @@ globalThis.TariffCalculator = {
   const authTitle = document.querySelector("#auth-title");
   const authIntro = document.querySelector("#auth-intro");
   const authEmail = document.querySelector("#auth-email");
+  const authName = document.querySelector("#auth-name");
+  const authNameField = document.querySelector("#auth-name-field");
   const authPassword = document.querySelector("#auth-password");
   const authPasswordField = document.querySelector("#auth-password-field");
   const authSubmit = document.querySelector("#auth-submit");
@@ -8364,6 +8620,8 @@ globalThis.TariffCalculator = {
     authPasswordField.hidden = isForgot;
     authPassword.required = !isForgot;
     authPassword.autocomplete = isRegister ? "new-password" : "current-password";
+    if (authNameField) authNameField.hidden = !isRegister;
+    if (authName) authName.required = isRegister;
     authSubmit.textContent = isForgot
       ? "Stuur herstellink"
       : (isRegister && showProChoiceAfterAuth ? "Account maken en doorgaan" : (isRegister ? "Account maken" : "Inloggen"));
@@ -8457,7 +8715,7 @@ globalThis.TariffCalculator = {
       }
 
       response = authMode === "register"
-        ? await auth.signUp(email, authPassword.value)
+        ? await auth.signUp(email, authPassword.value, authName?.value)
         : await auth.signIn(email, authPassword.value);
       if (response.error) throw response.error;
 
@@ -9031,6 +9289,8 @@ const shareCurrentWorkdayButton = document.querySelector("#share-current-workday
 const workdayNameField = document.querySelector("#workday-name-field");
 const currentWorkdayParticipants = document.querySelector("#current-workday-participants");
 const currentWorkdayParticipantList = document.querySelector("#current-workday-participant-list");
+const privateParticipantForm = document.querySelector("#private-participant-form");
+const privateParticipantName = document.querySelector("#private-participant-name");
 const liveWorkdayStatus = document.querySelector("#live-workday-status");
 const liveWorkdayDuration = document.querySelector("#live-workday-duration");
 const liveEndTimecode = document.querySelector("#live-end-timecode");
@@ -9084,6 +9344,8 @@ let cloudSyncTimer = null;
 let functionSyncTimer = null;
 let currentWorkdayId = null;
 let currentSharedSource = null;
+let sharedParticipants = [];
+let privateParticipants = [];
 let pendingDuplicateWorkday = null;
 let todayWorkday = null;
 let workdayContextInitializedFor = null;
@@ -9402,6 +9664,7 @@ function buildWorkdaySnapshot() {
     startTime: form.elements.namedItem("startTime").value,
     endTime,
     breakMinutes: settings.breakMinutes,
+    privateParticipants: [...privateParticipants],
     settings,
     extras: {
       enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
@@ -9445,25 +9708,55 @@ async function refreshCurrentWorkdayParticipants() {
     ? { type: "workday", id: currentWorkdayId }
     : currentSharedSource;
   if (!currentAccountUser || !source?.type || !source?.id || !shareService) {
-    currentWorkdayParticipants.hidden = true;
-    currentWorkdayParticipantList.replaceChildren();
+    sharedParticipants = [];
+    renderCurrentWorkdayParticipants();
     return;
   }
   try {
-    const participants = await shareService.listParticipants(source.type, source.id);
-    currentWorkdayParticipants.hidden = participants.length < 2;
-    currentWorkdayParticipantList.replaceChildren(...participants.map((participant) => {
+    sharedParticipants = await shareService.listParticipants(source.type, source.id);
+    renderCurrentWorkdayParticipants();
+  } catch {
+    sharedParticipants = [];
+    renderCurrentWorkdayParticipants();
+  }
+}
+
+function renderCurrentWorkdayParticipants() {
+  if (!currentWorkdayParticipants || !currentWorkdayParticipantList) return;
+  const isPro = Boolean(currentUserContext?.isPro);
+  const visibleShared = sharedParticipants.length >= 2 ? sharedParticipants : [];
+  const chips = [
+    ...visibleShared.map((participant) => {
       const chip = document.createElement("span");
       chip.className = "participant-chip";
       chip.textContent = participant.isCurrentUser
         ? `${participant.firstName} (jij)`
         : participant.firstName;
       return chip;
-    }));
-  } catch {
-    currentWorkdayParticipants.hidden = true;
-    currentWorkdayParticipantList.replaceChildren();
-  }
+    }),
+    ...privateParticipants.map((name, index) => {
+      const chip = document.createElement("span");
+      chip.className = "participant-chip is-private";
+      const label = document.createElement("span");
+      label.textContent = name;
+      const badge = document.createElement("small");
+      badge.textContent = "Niet gedeeld";
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.setAttribute("aria-label", `${name} verwijderen`);
+      remove.textContent = "×";
+      remove.addEventListener("click", () => {
+        privateParticipants.splice(index, 1);
+        renderCurrentWorkdayParticipants();
+        markCalculationStale();
+      });
+      chip.append(label, badge, remove);
+      return chip;
+    })
+  ];
+  currentWorkdayParticipantList.replaceChildren(...chips);
+  if (privateParticipantForm) privateParticipantForm.hidden = !isPro;
+  currentWorkdayParticipants.hidden = !isPro && visibleShared.length === 0;
 }
 
 function applyWorkdaySnapshot(workday) {
@@ -9472,6 +9765,9 @@ function applyWorkdaySnapshot(workday) {
 
   currentWorkdayId = workday.id;
   currentSharedSource = null;
+  privateParticipants = Array.isArray(snapshot.privateParticipants)
+    ? snapshot.privateParticipants.map((name) => String(name || "").trim()).filter(Boolean)
+    : [];
   if (form.elements.namedItem("workdayName")) {
     form.elements.namedItem("workdayName").value = workday.name || snapshot.workdayName || "";
   }
@@ -9671,8 +9967,8 @@ function updateWorkdaySaveAccess() {
     );
   }
   if (!currentWorkdayId && !currentSharedSource) {
-    currentWorkdayParticipants.hidden = true;
-    currentWorkdayParticipantList?.replaceChildren();
+    sharedParticipants = [];
+    renderCurrentWorkdayParticipants();
   }
 }
 
@@ -10508,6 +10804,21 @@ shareCurrentWorkdayButton?.addEventListener("click", async () => {
   } finally {
     updateWorkdaySaveAccess();
   }
+});
+privateParticipantForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!currentUserContext?.isPro) {
+    sessionUi?.openUpgrade();
+    return;
+  }
+  const name = String(privateParticipantName?.value || "").trim();
+  if (!name) return;
+  if (!privateParticipants.some((item) => item.toLocaleLowerCase("nl-NL") === name.toLocaleLowerCase("nl-NL"))) {
+    privateParticipants.push(name);
+  }
+  privateParticipantForm.reset();
+  renderCurrentWorkdayParticipants();
+  markCalculationStale();
 });
 document.addEventListener("overuurtje:shares-changed", refreshCurrentWorkdayParticipants);
 window.addEventListener("focus", refreshCurrentWorkdayParticipants);

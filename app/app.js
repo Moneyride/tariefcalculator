@@ -31,6 +31,8 @@ const shareCurrentWorkdayButton = document.querySelector("#share-current-workday
 const workdayNameField = document.querySelector("#workday-name-field");
 const currentWorkdayParticipants = document.querySelector("#current-workday-participants");
 const currentWorkdayParticipantList = document.querySelector("#current-workday-participant-list");
+const privateParticipantForm = document.querySelector("#private-participant-form");
+const privateParticipantName = document.querySelector("#private-participant-name");
 const liveWorkdayStatus = document.querySelector("#live-workday-status");
 const liveWorkdayDuration = document.querySelector("#live-workday-duration");
 const liveEndTimecode = document.querySelector("#live-end-timecode");
@@ -84,6 +86,8 @@ let cloudSyncTimer = null;
 let functionSyncTimer = null;
 let currentWorkdayId = null;
 let currentSharedSource = null;
+let sharedParticipants = [];
+let privateParticipants = [];
 let pendingDuplicateWorkday = null;
 let todayWorkday = null;
 let workdayContextInitializedFor = null;
@@ -402,6 +406,7 @@ function buildWorkdaySnapshot() {
     startTime: form.elements.namedItem("startTime").value,
     endTime,
     breakMinutes: settings.breakMinutes,
+    privateParticipants: [...privateParticipants],
     settings,
     extras: {
       enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
@@ -445,25 +450,55 @@ async function refreshCurrentWorkdayParticipants() {
     ? { type: "workday", id: currentWorkdayId }
     : currentSharedSource;
   if (!currentAccountUser || !source?.type || !source?.id || !shareService) {
-    currentWorkdayParticipants.hidden = true;
-    currentWorkdayParticipantList.replaceChildren();
+    sharedParticipants = [];
+    renderCurrentWorkdayParticipants();
     return;
   }
   try {
-    const participants = await shareService.listParticipants(source.type, source.id);
-    currentWorkdayParticipants.hidden = participants.length < 2;
-    currentWorkdayParticipantList.replaceChildren(...participants.map((participant) => {
+    sharedParticipants = await shareService.listParticipants(source.type, source.id);
+    renderCurrentWorkdayParticipants();
+  } catch {
+    sharedParticipants = [];
+    renderCurrentWorkdayParticipants();
+  }
+}
+
+function renderCurrentWorkdayParticipants() {
+  if (!currentWorkdayParticipants || !currentWorkdayParticipantList) return;
+  const isPro = Boolean(currentUserContext?.isPro);
+  const visibleShared = sharedParticipants.length >= 2 ? sharedParticipants : [];
+  const chips = [
+    ...visibleShared.map((participant) => {
       const chip = document.createElement("span");
       chip.className = "participant-chip";
       chip.textContent = participant.isCurrentUser
         ? `${participant.firstName} (jij)`
         : participant.firstName;
       return chip;
-    }));
-  } catch {
-    currentWorkdayParticipants.hidden = true;
-    currentWorkdayParticipantList.replaceChildren();
-  }
+    }),
+    ...privateParticipants.map((name, index) => {
+      const chip = document.createElement("span");
+      chip.className = "participant-chip is-private";
+      const label = document.createElement("span");
+      label.textContent = name;
+      const badge = document.createElement("small");
+      badge.textContent = "Niet gedeeld";
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.setAttribute("aria-label", `${name} verwijderen`);
+      remove.textContent = "×";
+      remove.addEventListener("click", () => {
+        privateParticipants.splice(index, 1);
+        renderCurrentWorkdayParticipants();
+        markCalculationStale();
+      });
+      chip.append(label, badge, remove);
+      return chip;
+    })
+  ];
+  currentWorkdayParticipantList.replaceChildren(...chips);
+  if (privateParticipantForm) privateParticipantForm.hidden = !isPro;
+  currentWorkdayParticipants.hidden = !isPro && visibleShared.length === 0;
 }
 
 function applyWorkdaySnapshot(workday) {
@@ -472,6 +507,9 @@ function applyWorkdaySnapshot(workday) {
 
   currentWorkdayId = workday.id;
   currentSharedSource = null;
+  privateParticipants = Array.isArray(snapshot.privateParticipants)
+    ? snapshot.privateParticipants.map((name) => String(name || "").trim()).filter(Boolean)
+    : [];
   if (form.elements.namedItem("workdayName")) {
     form.elements.namedItem("workdayName").value = workday.name || snapshot.workdayName || "";
   }
@@ -671,8 +709,8 @@ function updateWorkdaySaveAccess() {
     );
   }
   if (!currentWorkdayId && !currentSharedSource) {
-    currentWorkdayParticipants.hidden = true;
-    currentWorkdayParticipantList?.replaceChildren();
+    sharedParticipants = [];
+    renderCurrentWorkdayParticipants();
   }
 }
 
@@ -1508,6 +1546,21 @@ shareCurrentWorkdayButton?.addEventListener("click", async () => {
   } finally {
     updateWorkdaySaveAccess();
   }
+});
+privateParticipantForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!currentUserContext?.isPro) {
+    sessionUi?.openUpgrade();
+    return;
+  }
+  const name = String(privateParticipantName?.value || "").trim();
+  if (!name) return;
+  if (!privateParticipants.some((item) => item.toLocaleLowerCase("nl-NL") === name.toLocaleLowerCase("nl-NL"))) {
+    privateParticipants.push(name);
+  }
+  privateParticipantForm.reset();
+  renderCurrentWorkdayParticipants();
+  markCalculationStale();
 });
 document.addEventListener("overuurtje:shares-changed", refreshCurrentWorkdayParticipants);
 window.addEventListener("focus", refreshCurrentWorkdayParticipants);

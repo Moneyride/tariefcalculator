@@ -43,7 +43,7 @@
     <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260727c">
-    <link rel="stylesheet" href="styles.css?v=20260728c">
+    <link rel="stylesheet" href="styles.css?v=20260728d">
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
@@ -125,8 +125,18 @@
                 <input type="text" name="workdayName" maxlength="100" placeholder="werkdag">
               </label>
               <aside class="current-workday-participants" id="current-workday-participants" hidden>
-                <strong>Deelnemers</strong>
+                <div class="participant-heading">
+                  <strong>Deelnemers</strong>
+                  <small>Een naam toevoegen deelt deze werkdag niet automatisch.</small>
+                </div>
                 <div class="participant-list" id="current-workday-participant-list"></div>
+                <form class="private-participant-form" id="private-participant-form" hidden>
+                  <label>
+                    <span class="sr-only">Naam deelnemer</span>
+                    <input id="private-participant-name" type="text" maxlength="80" placeholder="Naam toevoegen">
+                  </label>
+                  <button type="submit">Toevoegen</button>
+                </form>
               </aside>
               <label class="date-field">
                 <span>Datum</span>
@@ -252,7 +262,7 @@
             <label data-rate-setting="minimum-hours" hidden>
               <span>Minimale afname</span>
               <select name="minimumHours" required>
-                <option value="1">1 uur</option><option value="2">2 uur</option><option value="3">3 uur</option>
+                <option value="0">Geen</option><option value="1">1 uur</option><option value="2">2 uur</option><option value="3">3 uur</option>
                 <option value="4">4 uur</option><option value="5">5 uur</option><option value="6">6 uur</option>
                 <option value="7">7 uur</option><option value="8">8 uur</option><option value="9">9 uur</option>
                 <option value="10">10 uur</option><option value="11">11 uur</option><option value="12">12 uur</option>
@@ -474,6 +484,10 @@
         </div>
       </div>
       <form class="auth-form" id="auth-form">
+        <label id="auth-name-field" hidden>
+          <span>Naam</span>
+          <input id="auth-name" type="text" autocomplete="name" maxlength="80" placeholder="Vul hier jouw naam in">
+        </label>
         <label>
           <span>E-mailadres</span>
           <input id="auth-email" type="email" autocomplete="email" required>

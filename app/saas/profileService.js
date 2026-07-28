@@ -63,12 +63,13 @@
   async function saveDisplayName(user, displayName) {
     if (!user) throw new Error("Log eerst in.");
     const value = String(displayName || "").trim();
+    if (!value) throw new Error("Vul je naam in.");
     if (value.length > 80) throw new Error("Gebruik maximaal 80 tekens.");
     const client = await supabaseService.getClient();
     if (!client) throw new Error("Supabase is niet beschikbaar.");
     const { data, error } = await client
       .from("profiles")
-      .update({ display_name: value || null })
+      .update({ display_name: value })
       .eq("id", user.id)
       .select(PROFILE_COLUMNS)
       .single();

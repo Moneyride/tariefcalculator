@@ -325,3 +325,15 @@ test("halve dag wordt nooit toegepast op een uurtarief", () => {
   assert.equal(result.minimumChargeApplied, false);
   assertMoney(result.baseAmount, 180);
 });
+
+test("uurtarief kan zonder minimale afname worden berekend", () => {
+  const result = calculateTariff(
+    { startTime: "08:00", endTime: "10:00", rateMode: "hour", hourlyRate: 45 },
+    { ...DEFAULT_SETTINGS, minimumHours: 0, enableNightTariff: false }
+  );
+
+  assert.equal(result.minimumHours, 0);
+  assert.equal(result.minimumChargeApplied, false);
+  assertMoney(result.baseAmount, 90);
+  assertMoney(result.subtotalExVat, 90);
+});

@@ -15,7 +15,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260727c">
-    <link rel="stylesheet" href="styles.css?v=20260728c">
+    <link rel="stylesheet" href="styles.css?v=20260728d">
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
@@ -139,6 +139,7 @@
       <button class="dialog-close" type="button" data-dialog-close aria-label="Sluiten">&times;</button>
       <div class="dialog-heading"><span class="dialog-mark" aria-hidden="true">O</span><div><h2 id="auth-title">Inloggen</h2><p id="auth-intro">Log in bij je Overuurtje-account.</p></div></div>
       <form class="auth-form" id="auth-form">
+        <label id="auth-name-field" hidden><span>Naam</span><input id="auth-name" type="text" autocomplete="name" maxlength="80" placeholder="Vul hier jouw naam in"></label>
         <label><span>E-mailadres</span><input id="auth-email" type="email" autocomplete="email" required></label>
         <label id="auth-password-field"><span>Wachtwoord</span><input id="auth-password" type="password" autocomplete="current-password" minlength="8" required></label>
         <button class="saas-primary-button" id="auth-submit" type="submit">Inloggen</button>

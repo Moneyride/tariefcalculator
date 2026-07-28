@@ -102,7 +102,7 @@
       defaultBreakMinutes: loadedSettings.defaultBreakMinutes || 0,
       enableBreak: checked("enableBreak"),
       normalDayHours: Number(data.get("normalDayHours")) === 12 ? 12 : 10,
-      minimumHours: Math.min(12, Math.max(1, Number(data.get("minimumHours")) || 1)),
+      minimumHours: Math.min(12, Math.max(0, Number(data.get("minimumHours")) || 0)),
       enableHalfDayUnder6Hours: checked("enableHalfDayUnder6Hours"),
       enableOvertime10To12: checked("enableOvertime10To12"),
       enableOvertimeFrom12: checked("enableOvertimeFrom12"),

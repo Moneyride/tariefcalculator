@@ -21,9 +21,9 @@
   const sharedInviteDialog = document.querySelector("#shared-invite-dialog");
   const euro = new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" });
   const dateFormat = new Intl.DateTimeFormat("nl-NL", { weekday: "short", day: "numeric", month: "long", year: "numeric" });
-  const monthFormat = new Intl.DateTimeFormat("nl-NL", { month: "long", year: "numeric" });
   let currentContext = null;
   let pendingDeleteId = null;
+  let ownedWorkdays = [];
   let receivedShares = [];
   let activeReceivedShare = null;
   let existingTakeoverEntry = null;
@@ -75,97 +75,100 @@
   }
 
   function render(items) {
+    ownedWorkdays = items;
     document.querySelector("#workdays-count").textContent = String(items.length);
     document.querySelector("#workdays-draft-count").textContent = String(
       items.filter((item) => !item.calculationData?.endTime).length
     );
     empty.hidden = items.length > 0;
-    groups.hidden = items.length === 0;
-
-    const grouped = new Map();
-    items.forEach((item) => {
-      const key = item.workDate.slice(0, 7);
-      if (!grouped.has(key)) grouped.set(key, []);
-      grouped.get(key).push(item);
-    });
-
-    groups.replaceChildren(...Array.from(grouped.entries()).map(([month, workdays]) => {
-      const section = document.createElement("section");
-      section.className = "workday-month";
-      const heading = document.createElement("h2");
-      heading.textContent = monthFormat.format(parseDate(`${month}-01`));
-      const list = document.createElement("div");
-      list.className = "workday-list";
-      list.replaceChildren(...workdays.map((workday) => {
-        const snapshot = workday.calculationData || {};
-        const result = deriveResult(snapshot);
-        const article = document.createElement("article");
-        article.className = "workday-list-item";
-        article.innerHTML = `
-          <a class="workday-main-link" href="index.html?workday=${encodeURIComponent(workday.id)}">
-            <span class="workday-date"></span>
-            <span class="workday-times"></span>
-            <span class="workday-total"></span>
-            <span class="workday-status"></span>
-            <span class="workday-arrow" aria-hidden="true">→</span>
-          </a>
-          <button class="workday-share-button" type="button">Deel met collega's</button>
-          <button class="workday-delete-button" type="button" aria-label="Werkdag verwijderen" title="Werkdag verwijderen">&times;</button>
-        `;
-        article.querySelector(".workday-date").textContent = workday.name
-          ? `${workday.name} · ${dateFormat.format(parseDate(workday.workDate))}`
-          : dateFormat.format(parseDate(workday.workDate));
-        article.querySelector(".workday-times").textContent = snapshot.endTime
-          ? `${snapshot.startTime || "-"} – ${snapshot.endTime}`
-          : `${snapshot.startTime || "-"} – eindtijd open`;
-        article.querySelector(".workday-total").textContent = result ? euro.format(result.subtotalExVat) : "Nog geen totaal";
-        const status = article.querySelector(".workday-status");
-        status.textContent = snapshot.endTime ? "Afgerond" : "Concept";
-        status.classList.toggle("is-complete", Boolean(snapshot.endTime));
-        article.querySelector(".workday-share-button").addEventListener("click", () => {
-          shareUi.open({ sourceType: "workday", sourceId: workday.id });
-        });
-        article.querySelector(".workday-delete-button").addEventListener("click", () => {
-          pendingDeleteId = workday.id;
-          openDialog(deleteDialog);
-        });
-        return article;
-      }));
-      section.append(heading, list);
-      return section;
-    }));
+    groups.hidden = true;
+    groups.replaceChildren();
+    renderTimeline();
   }
 
   function renderReceived(items) {
     receivedShares = items;
-    receivedSection.hidden = items.length === 0;
-    receivedCount.textContent = String(items.length);
-    receivedList.replaceChildren(...items.map((item) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "received-workday-item";
-      button.innerHTML = `
-        <span class="share-avatar"></span>
-        <span class="received-workday-copy">
-          <strong></strong>
-          <span class="received-workday-project"></span>
-          <small></small>
-        </span>
-        <span class="received-workday-status"></span>
+    renderTimeline();
+  }
+
+  function createOwnedTimelineItem(workday) {
+    const snapshot = workday.calculationData || {};
+    const result = deriveResult(snapshot);
+    const article = document.createElement("article");
+    article.className = "timeline-workday-item is-owned";
+    article.innerHTML = `
+      <a class="timeline-workday-main" href="index.html?workday=${encodeURIComponent(workday.id)}">
+        <span class="timeline-workday-copy"><strong></strong><small></small></span>
+        <span class="timeline-workday-total"></span>
+        <span class="workday-status"></span>
         <span aria-hidden="true">→</span>
-      `;
-      button.querySelector(".share-avatar").textContent = item.ownerName.charAt(0).toUpperCase();
-      button.querySelector("strong").textContent = `${item.ownerName} · ${dateFormat.format(parseDate(item.workDate))}`;
-      const project = button.querySelector(".received-workday-project");
-      project.textContent = item.projectName || item.workdayName;
-      project.hidden = !item.projectName && !item.workdayName;
-      button.querySelector("small").textContent = `${item.startTime || "-"} – ${item.endTime || "eindtijd open"}`;
-      const status = button.querySelector(".received-workday-status");
-      status.textContent = item.acceptedAt ? "Overgenomen" : "Nieuw";
-      status.classList.toggle("is-complete", Boolean(item.acceptedAt));
-      button.addEventListener("click", () => openReceived(item));
-      return button;
-    }));
+      </a>
+      <div class="timeline-workday-actions">
+        <button class="workday-share-button" type="button">Delen</button>
+        <button class="workday-delete-button" type="button" aria-label="Werkdag verwijderen" title="Werkdag verwijderen">&times;</button>
+      </div>
+    `;
+    article.querySelector("strong").textContent = workday.name
+      ? `${workday.name} · ${dateFormat.format(parseDate(workday.workDate))}`
+      : dateFormat.format(parseDate(workday.workDate));
+    article.querySelector("small").textContent = snapshot.endTime
+      ? `${snapshot.startTime || "-"} – ${snapshot.endTime}`
+      : `${snapshot.startTime || "-"} – eindtijd open`;
+    article.querySelector(".timeline-workday-total").textContent = result
+      ? euro.format(result.subtotalExVat)
+      : "Nog geen totaal";
+    const status = article.querySelector(".workday-status");
+    status.textContent = snapshot.endTime ? "Afgerond" : "Concept";
+    status.classList.toggle("is-complete", Boolean(snapshot.endTime));
+    article.querySelector(".workday-share-button").addEventListener("click", () => {
+      shareUi.open({ sourceType: "workday", sourceId: workday.id });
+    });
+    article.querySelector(".workday-delete-button").addEventListener("click", () => {
+      pendingDeleteId = workday.id;
+      openDialog(deleteDialog);
+    });
+    return article;
+  }
+
+  function createSharedTimelineItem(item) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "timeline-workday-item is-shared";
+    button.innerHTML = `
+      <span class="share-avatar"></span>
+      <span class="timeline-workday-copy">
+        <strong></strong>
+        <span class="received-workday-project"></span>
+        <small></small>
+      </span>
+      <span class="workday-origin-tag">Gedeeld</span>
+      <span class="received-workday-status"></span>
+      <span aria-hidden="true">→</span>
+    `;
+    button.querySelector(".share-avatar").textContent = item.ownerName.charAt(0).toUpperCase();
+    button.querySelector("strong").textContent = `${item.ownerName} · ${dateFormat.format(parseDate(item.workDate))}`;
+    const project = button.querySelector(".received-workday-project");
+    project.textContent = item.projectName || item.workdayName;
+    project.hidden = !item.projectName && !item.workdayName;
+    button.querySelector("small").textContent = `${item.startTime || "-"} – ${item.endTime || "eindtijd open"}`;
+    const status = button.querySelector(".received-workday-status");
+    status.textContent = item.acceptedAt ? "Overgenomen" : "Nieuw";
+    status.classList.toggle("is-complete", Boolean(item.acceptedAt));
+    button.addEventListener("click", () => openReceived(item));
+    return button;
+  }
+
+  function renderTimeline() {
+    const entries = [
+      ...ownedWorkdays.map((item) => ({ kind: "owned", date: item.workDate, item })),
+      ...receivedShares.map((item) => ({ kind: "shared", date: item.workDate, item }))
+    ].sort((a, b) => b.date.localeCompare(a.date));
+    receivedSection.hidden = entries.length === 0;
+    receivedCount.textContent = String(entries.length);
+    receivedList.replaceChildren(...entries.map((entry) => entry.kind === "owned"
+      ? createOwnedTimelineItem(entry.item)
+      : createSharedTimelineItem(entry.item)));
+    empty.hidden = entries.length > 0;
   }
 
   function openReceived(item) {

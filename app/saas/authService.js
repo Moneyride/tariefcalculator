@@ -50,7 +50,7 @@
     return withClient((client) => client.auth.signInWithPassword({ email, password }));
   }
 
-  function signUp(email, password) {
+  function signUp(email, password, displayName) {
     const currentUrl = new URL(location.href);
     const inviteToken = currentUrl.searchParams.get("invite");
     const emailRedirect = new URL(inviteToken ? config.authWorkdaysUrl : config.authAccountUrl);
@@ -59,7 +59,10 @@
     return withClient((client) => client.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: emailRedirect.href }
+      options: {
+        emailRedirectTo: emailRedirect.href,
+        data: { display_name: String(displayName || "").trim() }
+      }
     }));
   }
 

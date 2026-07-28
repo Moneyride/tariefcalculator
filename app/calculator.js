@@ -266,7 +266,10 @@ function calculateTariff(input, customSettings = {}) {
     overtime.overtime10To12Amount +
     overtime.overtimeFrom12Amount +
     overtime.overtimeFrom14Amount;
-  const minimumHours = Math.min(12, Math.max(1, Number(settings.minimumHours) || 1));
+  const parsedMinimumHours = Number(settings.minimumHours);
+  const minimumHours = Number.isFinite(parsedMinimumHours)
+    ? Math.min(12, Math.max(0, parsedMinimumHours))
+    : DEFAULT_SETTINGS.minimumHours;
   const hourlyMinimumAmount = minimumHours * hourlyRate;
   const minimumChargeApplied =
     rateMode === "hour" && hourlyMinimumAmount > regularHours * hourlyRate + overtimeAmount;

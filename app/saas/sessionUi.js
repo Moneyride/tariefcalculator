@@ -26,6 +26,8 @@
   const authTitle = document.querySelector("#auth-title");
   const authIntro = document.querySelector("#auth-intro");
   const authEmail = document.querySelector("#auth-email");
+  const authName = document.querySelector("#auth-name");
+  const authNameField = document.querySelector("#auth-name-field");
   const authPassword = document.querySelector("#auth-password");
   const authPasswordField = document.querySelector("#auth-password-field");
   const authSubmit = document.querySelector("#auth-submit");
@@ -338,6 +340,8 @@
     authPasswordField.hidden = isForgot;
     authPassword.required = !isForgot;
     authPassword.autocomplete = isRegister ? "new-password" : "current-password";
+    if (authNameField) authNameField.hidden = !isRegister;
+    if (authName) authName.required = isRegister;
     authSubmit.textContent = isForgot
       ? "Stuur herstellink"
       : (isRegister && showProChoiceAfterAuth ? "Account maken en doorgaan" : (isRegister ? "Account maken" : "Inloggen"));
@@ -431,7 +435,7 @@
       }
 
       response = authMode === "register"
-        ? await auth.signUp(email, authPassword.value)
+        ? await auth.signUp(email, authPassword.value, authName?.value)
         : await auth.signIn(email, authPassword.value);
       if (response.error) throw response.error;
 
