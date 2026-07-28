@@ -28,12 +28,17 @@ const workdaySaveLabel = workdaySaveButton?.querySelector("[data-workday-save-la
 const workdaySaveHint = workdaySaveButton?.querySelector("[data-workday-save-hint]");
 const workdaySaveBadge = workdaySaveButton?.querySelector("[data-workday-save-badge]");
 const shareCurrentWorkdayButton = document.querySelector("#share-current-workday");
+const shareFromParticipantsButton = document.querySelector("#share-from-participants");
 const workdayNameField = document.querySelector("#workday-name-field");
 const currentWorkdayParticipants = document.querySelector("#current-workday-participants");
 const currentWorkdayParticipantList = document.querySelector("#current-workday-participant-list");
 const privateParticipantForm = document.querySelector("#private-participant-form");
 const privateParticipantName = document.querySelector("#private-participant-name");
 const addPrivateParticipantButton = document.querySelector("#add-private-participant");
+const projectDayContextPanel = document.querySelector("#project-day-context");
+const projectDayContextName = document.querySelector("#project-day-context-name");
+const projectDayContextDate = document.querySelector("#project-day-context-date");
+const projectDayContextLink = document.querySelector("#project-day-context-link");
 const liveWorkdayStatus = document.querySelector("#live-workday-status");
 const liveWorkdayDuration = document.querySelector("#live-workday-duration");
 const liveEndTimecode = document.querySelector("#live-end-timecode");
@@ -86,6 +91,7 @@ let hydratedAccountUserId = null;
 let cloudSyncTimer = null;
 let functionSyncTimer = null;
 let currentWorkdayId = null;
+let currentProjectDayContext = null;
 let currentSharedSource = null;
 let sharedParticipants = [];
 let privateParticipants = [];
@@ -427,6 +433,98 @@ function buildWorkdaySnapshot() {
   };
 }
 
+function projectDayToWorkdaySnapshot(project, day) {
+  const data = day?.calculationData || {};
+  const currentSettings = getSettingsFromForm();
+  const normalDayHours = Number(data.normalDayHours) || currentSettings.normalDayHours;
+  const rateMode = data.rateMode === "hour" ? "hour" : "day";
+  const rateAmount = Number(data.rateAmount);
+  const dayRate = rateMode === "day" && Number.isFinite(rateAmount) && rateAmount > 0
+    ? rateAmount
+    : currentSettings.dayRate;
+  const hourlyRate = rateMode === "hour" && Number.isFinite(rateAmount) && rateAmount > 0
+    ? rateAmount
+    : dayRate / normalDayHours;
+  return {
+    schemaVersion: 1,
+    workdayName: "",
+    date: day.workDate,
+    department: data.department || currentAccountSettings?.defaultDepartment || "camera",
+    workFunction: data.workFunctionId ? {
+      id: data.workFunctionId,
+      name: data.workFunctionName || "",
+      department: data.department || "camera"
+    } : null,
+    startTime: data.startTime || "08:00",
+    endTime: data.endTime || "",
+    breakMinutes: Number(data.breakMinutes) || 0,
+    privateParticipants: Array.isArray(data.privateParticipants) ? data.privateParticipants : [],
+    settings: {
+      ...currentSettings,
+      rateMode,
+      dayRate,
+      hourlyRate,
+      enableBreak: Boolean(currentSettings.enableBreak || Number(data.breakMinutes) > 0),
+      breakMinutes: Number(data.breakMinutes) || 0,
+      normalDayHours,
+      minimumHours: Number.isFinite(Number(data.minimumHours)) ? Number(data.minimumHours) : currentSettings.minimumHours,
+      enableHalfDayUnder6Hours: Boolean(data.enableHalfDayUnder6Hours),
+      enableOvertime10To12: Boolean(data.enableOvertime10To12),
+      enableOvertimeFrom12: Boolean(data.enableOvertimeFrom12),
+      enableOvertimeFrom14: Boolean(data.enableOvertimeFrom14),
+      enableNightTariff: Boolean(data.enableNightTariff),
+      nightStart: data.nightStart || currentSettings.nightStart,
+      nightEnd: data.nightEnd || currentSettings.nightEnd,
+      kilometerRate: Number(data.kilometerRate) || currentSettings.kilometerRate
+    },
+    extras: {
+      enableDroneTariff: Boolean(data.enableDroneTariff),
+      enableRonin4dTariff: Boolean(data.enableRonin4dTariff),
+      enableKilometers: Boolean(data.enableKilometers),
+      kilometers: Number(data.kilometers) || 0,
+      enableParkingCosts: Boolean(data.enableParkingCosts),
+      parkingCosts: Number(data.parkingCosts) || 0,
+      customEquipment: Array.isArray(data.customEquipment) ? data.customEquipment : []
+    },
+    result: null,
+    projectName: project?.name || ""
+  };
+}
+
+function workdaySnapshotToProjectDay(snapshot, existing = {}) {
+  const settings = snapshot.settings || {};
+  const extras = snapshot.extras || {};
+  return {
+    ...existing,
+    startTime: snapshot.startTime,
+    endTime: snapshot.endTime,
+    breakMinutes: Number(snapshot.breakMinutes) || 0,
+    workFunctionId: snapshot.workFunction?.id || existing.workFunctionId || "",
+    workFunctionName: snapshot.workFunction?.name || existing.workFunctionName || "",
+    department: snapshot.department || existing.department || "camera",
+    rateMode: settings.rateMode === "hour" ? "hour" : "day",
+    rateAmount: settings.rateMode === "hour" ? settings.hourlyRate : settings.dayRate,
+    normalDayHours: settings.normalDayHours,
+    minimumHours: settings.minimumHours,
+    enableHalfDayUnder6Hours: Boolean(settings.enableHalfDayUnder6Hours),
+    enableOvertime10To12: Boolean(settings.enableOvertime10To12),
+    enableOvertimeFrom12: Boolean(settings.enableOvertimeFrom12),
+    enableOvertimeFrom14: Boolean(settings.enableOvertimeFrom14),
+    enableNightTariff: Boolean(settings.enableNightTariff),
+    nightStart: settings.nightStart,
+    nightEnd: settings.nightEnd,
+    enableKilometers: Boolean(extras.enableKilometers),
+    kilometers: Number(extras.kilometers) || 0,
+    kilometerRate: Number(settings.kilometerRate) || 0,
+    enableParkingCosts: Boolean(extras.enableParkingCosts),
+    parkingCosts: Number(extras.parkingCosts) || 0,
+    enableDroneTariff: Boolean(extras.enableDroneTariff),
+    enableRonin4dTariff: Boolean(extras.enableRonin4dTariff),
+    customEquipment: Array.isArray(extras.customEquipment) ? extras.customEquipment : [],
+    privateParticipants: Array.isArray(snapshot.privateParticipants) ? snapshot.privateParticipants : []
+  };
+}
+
 function clearCalculationDisplay() {
   [
     "totalHours", "overtimeHours", "overtime10To12Hours", "overtimeFrom12Hours",
@@ -447,7 +545,9 @@ function clearCalculationDisplay() {
 
 async function refreshCurrentWorkdayParticipants() {
   if (!currentWorkdayParticipants || !currentWorkdayParticipantList) return;
-  const source = currentWorkdayId
+  const source = currentProjectDayContext?.day?.id
+    ? { type: "project_day", id: currentProjectDayContext.day.id }
+    : currentWorkdayId
     ? { type: "workday", id: currentWorkdayId }
     : currentSharedSource;
   if (!currentAccountUser || !source?.type || !source?.id || !shareService) {
@@ -502,11 +602,12 @@ function renderCurrentWorkdayParticipants() {
   currentWorkdayParticipants.hidden = !isPro && visibleShared.length === 0;
 }
 
-function applyWorkdaySnapshot(workday) {
+function applyWorkdaySnapshot(workday, { projectContext = null } = {}) {
   const snapshot = workday?.calculationData || {};
   if (!snapshot.date) return;
 
-  currentWorkdayId = workday.id;
+  currentWorkdayId = projectContext ? null : workday.id;
+  currentProjectDayContext = projectContext;
   currentSharedSource = null;
   privateParticipants = Array.isArray(snapshot.privateParticipants)
     ? snapshot.privateParticipants.map((name) => String(name || "").trim()).filter(Boolean)
@@ -557,7 +658,15 @@ function applyWorkdaySnapshot(workday) {
   updateWorkdaySaveAccess();
   refreshCurrentWorkdayParticipants();
   const url = new URL(location.href);
-  url.searchParams.set("workday", workday.id);
+  url.searchParams.delete("workday");
+  url.searchParams.delete("project");
+  url.searchParams.delete("projectDay");
+  if (projectContext) {
+    url.searchParams.set("project", projectContext.project.id);
+    url.searchParams.set("projectDay", projectContext.day.id);
+  } else {
+    url.searchParams.set("workday", workday.id);
+  }
   history.replaceState({}, "", url);
   if (snapshot.endTime) updateCalculation();
   else clearCalculationDisplay();
@@ -565,13 +674,13 @@ function applyWorkdaySnapshot(workday) {
     liveWorkdayController?.update();
     updateResumeLiveAccess();
   });
-  sessionUi?.showToast("Werkdag geopend.");
+  sessionUi?.showToast(projectContext ? "Projectdag geopend." : "Werkdag geopend.");
 }
 
 function projectDayUrl(entry) {
-  const url = new URL("projects.html", location.href);
+  const url = new URL("index.html", location.href);
   url.searchParams.set("project", entry.project.id);
-  url.searchParams.set("day", entry.day.id);
+  url.searchParams.set("projectDay", entry.day.id);
   return url;
 }
 
@@ -644,6 +753,23 @@ async function persistWorkday(snapshot, id = null) {
   return saved;
 }
 
+async function persistProjectDay(snapshot) {
+  if (!currentProjectDayContext?.project?.id || !currentProjectDayContext?.day?.id) {
+    throw new Error("Projectdag niet gevonden.");
+  }
+  const { project, day } = currentProjectDayContext;
+  const savedDay = await projectService.saveDay(currentAccountUser.id, project.id, {
+    id: day.id,
+    workDate: snapshot.date,
+    calculationData: workdaySnapshotToProjectDay(snapshot, day.calculationData)
+  }, { mock: currentUserContext?.subscription?.isMock });
+  currentProjectDayContext = { project, day: savedDay };
+  updateWorkdaySaveAccess();
+  refreshCurrentWorkdayParticipants();
+  sessionUi?.showToast("Projectdag opgeslagen.");
+  return savedDay;
+}
+
 async function saveWorkday({ allowDuplicate = false } = {}) {
   const date = form.elements.namedItem("date").value;
   if (!date) return;
@@ -655,6 +781,9 @@ async function saveWorkday({ allowDuplicate = false } = {}) {
   workdaySaveButton.disabled = true;
   try {
     const snapshot = buildWorkdaySnapshot();
+    if (currentProjectDayContext) {
+      return await persistProjectDay(snapshot);
+    }
     if (currentWorkdayId) {
       return await persistWorkday(snapshot, currentWorkdayId);
     }
@@ -683,12 +812,26 @@ function updateWorkdaySaveAccess() {
   const hasStartTime = Boolean(form.elements.namedItem("startTime").value);
   const isPro = Boolean(currentUserContext?.isPro);
   const isToday = form.elements.namedItem("date").value === localDateValue();
-  if (workdayNameField) workdayNameField.hidden = !isPro;
+  const isProjectDay = Boolean(currentProjectDayContext);
+  if (workdayNameField) workdayNameField.hidden = !isPro || isProjectDay;
+  if (projectDayContextPanel) projectDayContextPanel.hidden = !isProjectDay;
+  if (isProjectDay) {
+    projectDayContextName.textContent = currentProjectDayContext.project.name;
+    projectDayContextDate.textContent = new Intl.DateTimeFormat("nl-NL", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    }).format(new Date(`${currentProjectDayContext.day.workDate}T12:00:00`));
+    projectDayContextLink.href = `projects.html?project=${encodeURIComponent(currentProjectDayContext.project.id)}`;
+  }
   workdaySaveButton.disabled = !hasDate;
   workdaySaveButton.classList.toggle("is-pro-locked", !isPro);
   if (workdaySaveLabel) {
-    workdaySaveLabel.textContent = currentWorkdayId
-      ? "Werkdag bijwerken"
+    workdaySaveLabel.textContent = isProjectDay
+      ? "Projectdag bijwerken"
+      : currentWorkdayId
+        ? "Werkdag bijwerken"
       : (!isPro && isToday ? "Werkdag van vandaag opslaan" : "Werkdag opslaan");
   }
   if (workdaySaveHint) workdaySaveHint.hidden = isPro;
@@ -709,7 +852,15 @@ function updateWorkdaySaveAccess() {
       canShare ? "Deel deze werkdag met collega's" : shareCurrentWorkdayButton.title
     );
   }
-  if (!currentWorkdayId && !currentSharedSource) {
+  if (shareFromParticipantsButton) {
+    const canShare = isPro && hasDate && hasStartTime;
+    shareFromParticipantsButton.disabled = !canShare;
+    shareFromParticipantsButton.title = canShare
+      ? "Deel deze werkdag met collega's"
+      : (isPro ? "Vul eerst een datum en starttijd in" : "Delen met collega's is beschikbaar met Pro");
+    shareFromParticipantsButton.setAttribute("aria-label", shareFromParticipantsButton.title);
+  }
+  if (!currentWorkdayId && !currentProjectDayContext && !currentSharedSource) {
     sharedParticipants = [];
     renderCurrentWorkdayParticipants();
   }
@@ -720,8 +871,34 @@ async function initializeWorkdayContext() {
     return;
   }
   workdayContextInitializedFor = currentAccountUser.id;
-  const requestedId = new URLSearchParams(location.search).get("workday");
+  const search = new URLSearchParams(location.search);
+  const requestedId = search.get("workday");
+  const requestedProjectId = search.get("project");
+  const requestedProjectDayId = search.get("projectDay");
   try {
+    if (requestedProjectId && requestedProjectDayId) {
+      const requestedProject = await projectService.get(
+        currentAccountUser.id,
+        requestedProjectId,
+        { mock: currentUserContext.subscription.isMock }
+      );
+      const requestedDay = requestedProject?.days.find((day) => day.id === requestedProjectDayId);
+      if (!requestedProject || !requestedDay) {
+        sessionUi?.showToast("Deze projectdag kon niet worden gevonden.");
+        return;
+      }
+      applyWorkdaySnapshot({
+        id: requestedDay.id,
+        name: "",
+        calculationData: projectDayToWorkdaySnapshot(requestedProject.project, requestedDay)
+      }, {
+        projectContext: {
+          project: requestedProject.project,
+          day: requestedDay
+        }
+      });
+      return;
+    }
     if (requestedId) {
       const requested = await workdayService.get(
         currentAccountUser.id,
@@ -1528,26 +1705,33 @@ settingsForm.addEventListener("change", () => {
 recalculateButton.addEventListener("click", () => stopLiveWorkdayAndCalculate());
 resumeLiveWorkdayButton?.addEventListener("click", resumeLiveWorkday);
 workdaySaveButton?.addEventListener("click", () => saveWorkday());
-shareCurrentWorkdayButton?.addEventListener("click", async () => {
+
+async function openCurrentWorkdayShare() {
   if (!currentUserContext?.isPro) {
     sessionUi?.openUpgrade();
     return;
   }
-  shareCurrentWorkdayButton.disabled = true;
+  if (shareCurrentWorkdayButton) shareCurrentWorkdayButton.disabled = true;
+  if (shareFromParticipantsButton) shareFromParticipantsButton.disabled = true;
   try {
-    let sourceId = currentWorkdayId;
-    if (!sourceId) {
+    const projectDayId = currentProjectDayContext?.day?.id;
+    let sourceType = projectDayId ? "project_day" : "workday";
+    let sourceId = projectDayId || currentWorkdayId;
+    if (!sourceId && sourceType === "workday") {
       const saved = await persistWorkday(buildWorkdaySnapshot());
       sourceId = saved?.id;
     }
-    if (sourceId) await shareUi?.open({ sourceType: "workday", sourceId });
+    if (sourceId) await shareUi?.open({ sourceType, sourceId });
   } catch (error) {
     console.warn("Werkdag delen is mislukt.", error);
     sessionUi?.showToast(error.message || "De werkdag kon niet worden klaargezet om te delen.");
   } finally {
     updateWorkdaySaveAccess();
   }
-});
+}
+
+shareCurrentWorkdayButton?.addEventListener("click", openCurrentWorkdayShare);
+shareFromParticipantsButton?.addEventListener("click", openCurrentWorkdayShare);
 function addPrivateParticipant() {
   if (!currentUserContext?.isPro) {
     sessionUi?.openUpgrade();

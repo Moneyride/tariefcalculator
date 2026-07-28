@@ -480,6 +480,10 @@ test("Werkdagen bewaren versieerbare calculatorsnapshots met Pro-RLS", async () 
   assert.match(calculatorScript, /function listExistingDateEntries/);
   assert.match(calculatorScript, /projectService\.listDaysByDate/);
   assert.match(calculatorScript, /function projectDayUrl/);
+  assert.match(calculatorScript, /projectService\.saveDay/);
+  assert.match(calculatorScript, /sourceType = projectDayId \? "project_day" : "workday"/);
+  assert.match(calculatorHtml, /id="project-day-context"/);
+  assert.match(calculatorHtml, /id="share-from-participants"/);
   assert.doesNotMatch(calculatorScript, /sessionStorage\.getItem\(promptKey\)/);
   assert.match(workdaysHtml, /<h1>Werkdagen<\/h1>/);
   assert.match(accountHtml, /id="account-workday-list"/);
@@ -552,6 +556,43 @@ test("Projectservice vindt een geselecteerde projectdag op datum", async () => {
   assert.equal(matches[0].day.workDate, "2026-07-25");
 });
 
+test("Projectservice werkt één projectdag bij zonder andere projectdagen te overschrijven", async () => {
+  const storage = new Map();
+  const context = await runService("app/saas/projectService.js", {
+    crypto: { randomUUID: (() => { let id = 0; return () => `project-day-${++id}`; })() },
+    localStorage: {
+      getItem: (key) => storage.get(key) || null,
+      setItem: (key, value) => storage.set(key, value)
+    },
+    OveruurtjeSupabase: { getClient: async () => null }
+  });
+  const service = context.OveruurtjeProjects;
+  const project = await service.saveProject("user-1", {
+    name: "Project met losse opslag",
+    startDate: "2026-07-28",
+    endDate: "2026-07-29"
+  }, { mock: true });
+  const initial = await service.replaceDays("user-1", project.id, [{
+    workDate: "2026-07-28",
+    calculationData: { startTime: "08:00", endTime: "18:00" }
+  }, {
+    workDate: "2026-07-29",
+    calculationData: { startTime: "09:00", endTime: "17:00" }
+  }], { mock: true });
+  const first = initial.days[0];
+
+  await service.saveDay("user-1", project.id, {
+    id: first.id,
+    workDate: first.workDate,
+    calculationData: { startTime: "07:30", endTime: "18:30" }
+  }, { mock: true });
+
+  const updated = await service.get("user-1", project.id, { mock: true });
+  assert.equal(updated.days.length, 2);
+  assert.equal(updated.days[0].calculationData.startTime, "07:30");
+  assert.equal(updated.days[1].calculationData.startTime, "09:00");
+});
+
 test("Werkdagen delen gebruikt verwijzingen, redacted RPCs en ontvanger-RLS", async () => {
   const foundationMigration = await readFile(
     path.join(rootDirectory, "supabase/migrations/202607250002_workday_sharing.sql"),
@@ -602,8 +643,9 @@ test("Delen kan een ingevulde werkdag klaarzetten en verstuurt wijzigingen pas n
   assert.match(appScript, /const canShare = isPro && hasDate && hasStartTime/);
   assert.match(
     appScript,
-    /if \(!sourceId\)\s*\{\s*const saved = await persistWorkday\(buildWorkdaySnapshot\(\)\)/
+    /if \(!sourceId && sourceType === "workday"\)\s*\{\s*const saved = await persistWorkday\(buildWorkdaySnapshot\(\)\)/
   );
+  assert.match(appScript, /sourceType = projectDayId \? "project_day" : "workday"/);
   assert.match(inviteMigration, /after update of calculation_data on public\.workdays/i);
   assert.doesNotMatch(appScript, /overuurtje:shares-changed[\s\S]{0,200}persistWorkday/);
 });

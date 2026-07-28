@@ -43,7 +43,7 @@
     <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260727c">
-    <link rel="stylesheet" href="styles.css?v=20260728d">
+    <link rel="stylesheet" href="styles.css?v=20260728e">
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
@@ -52,7 +52,7 @@
     <script src="saas/settingsService.js?v=20260727b" defer></script>
     <script src="saas/functionService.js?v=20260725a" defer></script>
     <script src="saas/equipmentService.js?v=20260722a" defer></script>
-    <script src="saas/projectService.js?v=20260727b" defer></script>
+    <script src="saas/projectService.js?v=20260728a" defer></script>
     <script src="saas/workdayService.js?v=20260727d" defer></script>
     <script src="saas/shareService.js?v=20260727d" defer></script>
     <script src="saas/subscriptionService.js?v=20260722d" defer></script>
@@ -65,7 +65,7 @@
     <script src="saas/shareUi.js?v=20260727d" defer></script>
     <script src="selectUi.js?v=20260725a" defer></script>
     <script src="timePicker.js?v=20260727b" defer></script>
-    <script src="app.js?v=20260728c" defer></script>
+    <script src="app.js?v=20260728d" defer></script>
     <script src="pwa.js?v=20260727c" defer></script>
   </head>
   <body>
@@ -113,6 +113,14 @@
           </section>
 
           <section class="form-section planning-section">
+            <aside class="project-day-context" id="project-day-context" hidden>
+              <div>
+                <span>Projectdag</span>
+                <strong id="project-day-context-name"></strong>
+                <small id="project-day-context-date"></small>
+              </div>
+              <a id="project-day-context-link" href="projects.html">Project openen</a>
+            </aside>
             <div class="section-heading-row">
               <h3>Planning</h3>
               <a class="project-create-link is-pro-locked" id="project-create-link" href="projects.html?new=1" aria-label="Project aanmaken is beschikbaar met Pro">
@@ -126,8 +134,18 @@
               </label>
               <aside class="current-workday-participants" id="current-workday-participants" hidden>
                 <div class="participant-heading">
-                  <strong>Deelnemers</strong>
-                  <small>Een naam toevoegen deelt deze werkdag niet automatisch.</small>
+                  <div>
+                    <strong>Deelnemers</strong>
+                    <small>Voeg namen toe voor je administratie of nodig collega's uit.</small>
+                  </div>
+                  <button class="participant-share-button" id="share-from-participants" type="button" aria-label="Deel deze werkdag met collega's" title="Delen met collega's">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <circle cx="18" cy="5" r="3"></circle>
+                      <circle cx="6" cy="12" r="3"></circle>
+                      <circle cx="18" cy="19" r="3"></circle>
+                      <path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"></path>
+                    </svg>
+                  </button>
                 </div>
                 <div class="participant-list" id="current-workday-participant-list"></div>
                 <div class="private-participant-form" id="private-participant-form" hidden>

@@ -279,7 +279,7 @@
         mock: currentContext.subscription.isMock
       });
       await shareService.accept(item.id);
-      location.href = `projects.html?project=${encodeURIComponent(entry.project.id)}&day=${encodeURIComponent(entry.day.id)}`;
+      location.href = `index.html?project=${encodeURIComponent(entry.project.id)}&projectDay=${encodeURIComponent(entry.day.id)}`;
       return;
     }
     const snapshot = {

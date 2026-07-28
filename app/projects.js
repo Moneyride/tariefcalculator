@@ -391,14 +391,10 @@
   }
 
   function openDay(id) {
-    currentDayId = id; const day = current.days.find((item) => item.id === id); const data = { ...defaultDayData(), ...day.calculationData };
-    document.querySelector("#day-editor-title").textContent = formatDate(day.workDate);
-    ["startTime", "endTime", "breakMinutes", "rateMode", "rateAmount", "normalDayHours", "minimumHours", "nightStart", "nightEnd", "kilometers", "parkingCosts"].forEach((name) => { dayForm.elements.namedItem(name).value = data[name]; });
-    ["enableHalfDayUnder6Hours", "enableOvertime10To12", "enableOvertimeFrom12", "enableOvertimeFrom14", "enableNightTariff", "enableKilometers", "enableParkingCosts"].forEach((name) => { dayForm.elements.namedItem(name).checked = Boolean(data[name]); });
-    renderEquipmentOptions(data);
-    document.querySelector("#copy-day-targets").innerHTML = current.days.filter((item) => item.id !== id).map((item) => `<label><input type="checkbox" value="${item.id}"><span>${formatDate(item.workDate)}</span></label>`).join("");
-    globalThis.OveruurtjeSelectUI?.enhanceAll(dayForm);
-    document.querySelector("#day-form-status").textContent = ""; setDirty(false); updateDayConditionalFields(); updateDayPreview(); show("day-editor-view");
+    const url = new URL("index.html", location.href);
+    url.searchParams.set("project", current.project.id);
+    url.searchParams.set("projectDay", id);
+    location.href = url.href;
   }
 
   async function persistDays(message) {

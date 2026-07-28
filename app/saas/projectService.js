@@ -165,6 +165,45 @@
     return get(userId, projectId, options);
   }
 
+  async function saveDay(userId, projectId, day, options = {}) {
+    const now = new Date().toISOString();
+    if (isMock(options)) {
+      const all = readMock();
+      const store = all[userId] || { projects: {}, days: {} };
+      const existing = store.days?.[day.id];
+      if (!existing || existing.projectId !== projectId) throw new Error("Projectdag niet gevonden.");
+      store.days[day.id] = {
+        ...existing,
+        workDate: day.workDate || existing.workDate,
+        calculationData: day.calculationData || {},
+        updatedAt: now
+      };
+      if (store.projects[projectId]) store.projects[projectId].updatedAt = now;
+      all[userId] = store;
+      writeMock(all);
+      return store.days[day.id];
+    }
+
+    const db = await client();
+    const { data, error } = await db.from("project_days")
+      .update({
+        work_date: day.workDate,
+        calculation_data: day.calculationData || {},
+        updated_at: now
+      })
+      .eq("id", day.id)
+      .eq("project_id", projectId)
+      .eq("user_id", userId)
+      .select(DAY_COLUMNS)
+      .single();
+    if (error) throw error;
+    await db.from("projects")
+      .update({ updated_at: now })
+      .eq("id", projectId)
+      .eq("user_id", userId);
+    return normalizeDay(data);
+  }
+
   async function remove(userId, id, options = {}) {
     if (isMock(options)) {
       const all = readMock(); const store = all[userId] || { projects: {}, days: {} };
@@ -185,6 +224,7 @@
     listAllDays,
     saveProject,
     replaceDays,
+    saveDay,
     remove
   });
 })();

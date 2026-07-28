@@ -122,7 +122,7 @@
     link.hidden = !active;
     if (!active) return;
     if (active.type === "project") {
-      link.href = `projects.html?project=${encodeURIComponent(active.projectId)}&day=${encodeURIComponent(active.id)}`;
+      link.href = `index.html?project=${encodeURIComponent(active.projectId)}&projectDay=${encodeURIComponent(active.id)}`;
       document.querySelector("#dashboard-active-title").textContent = "Verder met projectdag van vandaag";
     } else {
       link.href = `index.html?workday=${encodeURIComponent(active.id)}`;
