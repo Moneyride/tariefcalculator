@@ -785,9 +785,9 @@
   border-radius: 14px;
   display: flex;
   gap: 14px;
-  justify-content: center;
-  margin: 14px auto 0;
-  max-width: 720px;
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+  margin: -4px 0 2px;
   padding: 11px 14px;
 }
 
@@ -2549,10 +2549,10 @@ summary:hover {
 }
 
 .footer-actions {
-  display: flex;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: minmax(230px, 0.8fr) minmax(0, 1.7fr);
+  align-items: stretch;
   gap: 14px;
-  flex-wrap: wrap;
   margin-top: 0;
   padding: 24px 30px 30px;
   border: 0;
@@ -2570,7 +2570,27 @@ summary:hover {
 }
 
 .footer-actions button {
-  min-width: 190px;
+  min-width: 0;
+}
+
+.invoice-copy-button {
+  min-height: 64px;
+  font-size: 1rem;
+}
+
+.result-secondary-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.result-secondary-actions > button {
+  width: 100%;
+  height: 100%;
+}
+
+.footer-actions .copy-status {
+  grid-column: 1 / -1;
 }
 
 .site-footer {
@@ -4000,12 +4020,16 @@ summary:hover {
   }
 
   .footer-actions {
-    justify-content: stretch;
+    grid-template-columns: 1fr;
     padding: 20px 12px;
   }
 
   .footer-actions button {
     width: 100%;
+  }
+
+  .result-secondary-actions {
+    grid-template-columns: 1fr;
   }
 
   .site-footer {
@@ -4194,6 +4218,10 @@ summary:hover {
   background: rgba(255, 255, 255, 0.58);
   color: var(--accent-dark);
   box-shadow: none;
+}
+
+.result-secondary-actions .workday-save-button {
+  min-height: 54px;
 }
 
 .workday-save-button:hover {
@@ -5522,6 +5550,10 @@ summary:hover {
                 <span>Naam werkdag <small>(optioneel)</small></span>
                 <input type="text" name="workdayName" maxlength="100" placeholder="werkdag">
               </label>
+              <aside class="current-workday-participants" id="current-workday-participants" hidden>
+                <strong>Deelnemers</strong>
+                <div class="participant-list" id="current-workday-participant-list"></div>
+              </aside>
               <label class="date-field">
                 <span>Datum</span>
                 <span class="date-control">
@@ -5733,24 +5765,7 @@ summary:hover {
           </p>
           <div class="button-row">
             <button type="button" id="recalculate">Berekenen</button>
-            <div class="workday-action-group">
-              <button class="workday-save-button is-pro-locked" type="button" id="save-workday" disabled>
-                <span class="workday-save-copy">
-                  <strong data-workday-save-label>Werkdag opslaan</strong>
-                  <span data-workday-save-hint>Bewaar je begintijd; vul later je eindtijd in</span>
-                </span>
-                <small data-workday-save-badge>Pro</small>
-              </button>
-              <button class="saas-secondary-button share-current-workday-button" type="button" id="share-current-workday" disabled>
-                <span aria-hidden="true">&#8599;</span>
-                Deel met collega's
-              </button>
-            </div>
           </div>
-          <aside class="current-workday-participants" id="current-workday-participants" hidden>
-            <strong>Deelnemers</strong>
-            <div class="participant-list" id="current-workday-participant-list"></div>
-          </aside>
         </section>
 
         <section class="result-panel" aria-live="polite">
@@ -5800,8 +5815,21 @@ summary:hover {
       </section>
 
       <div class="footer-actions">
-        <button type="button" id="copy-summary">Kopiëren voor factuur</button>
-        <button class="secondary pro-action-button" type="button" id="save-pdf">Pdf opslaan <span data-pro-badge>Pro</span></button>
+        <button class="invoice-copy-button" type="button" id="copy-summary">Kopiëren voor factuur</button>
+        <div class="result-secondary-actions">
+          <button class="secondary pro-action-button" type="button" id="save-pdf">Pdf opslaan <span data-pro-badge>Pro</span></button>
+          <button class="workday-save-button is-pro-locked" type="button" id="save-workday" disabled>
+            <span class="workday-save-copy">
+              <strong data-workday-save-label>Werkdag opslaan</strong>
+              <span data-workday-save-hint>Bewaar je begintijd; vul later je eindtijd in</span>
+            </span>
+            <small data-workday-save-badge>Pro</small>
+          </button>
+          <button class="saas-secondary-button share-current-workday-button" type="button" id="share-current-workday" disabled>
+            <span aria-hidden="true">&#8599;</span>
+            Deel werkdag met collega's
+          </button>
+        </div>
         <p class="copy-status" id="copy-status" aria-live="polite"></p>
       </div>
 
@@ -5814,16 +5842,6 @@ summary:hover {
               <path d="M5 21h14"></path>
             </svg>
             <span>Installeer Overuurtje</span>
-          </button>
-          <button class="share-button" type="button" id="share-site">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="18" cy="5" r="3"></circle>
-              <circle cx="6" cy="12" r="3"></circle>
-              <circle cx="18" cy="19" r="3"></circle>
-              <path d="m8.6 10.5 6.8-4"></path>
-              <path d="m8.6 13.5 6.8 4"></path>
-            </svg>
-            <span>Deel Overuurtje met een collega</span>
           </button>
           <button class="cookie-settings-link" type="button" id="cookie-settings">Cookie settings</button>
         </div>
@@ -6361,7 +6379,7 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
   "use strict";
 
   const supabaseService = globalThis.OveruurtjeSupabase;
-  const COLUMNS = "id,user_id,name,department,day_rate,is_default,sort_order,created_at,updated_at";
+  const COLUMNS = "id,user_id,name,department,day_rate,is_default,sort_order,calculation_settings,created_at,updated_at";
   const STANDARD_FUNCTIONS = Object.freeze([
     Object.freeze({ name: "Camera", department: "camera", dayRate: 450, sortOrder: 0 }),
     Object.freeze({ name: "Audio", department: "audio", dayRate: 395, sortOrder: 1 })
@@ -6376,6 +6394,9 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
       dayRate: Math.max(0, Number(row.day_rate) || 0),
       isDefault: Boolean(row.is_default),
       sortOrder: Number(row.sort_order) || 0,
+      calculationSettings: row.calculation_settings && typeof row.calculation_settings === "object"
+        ? row.calculation_settings
+        : {},
       createdAt: row.created_at,
       updatedAt: row.updated_at
     };
@@ -6410,7 +6431,10 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
         department: values.department === "audio" ? "audio" : "camera",
         day_rate: Math.max(0, Number(values.dayRate) || 0),
         is_default: Boolean(values.isDefault),
-        sort_order: Number(values.sortOrder) || 0
+        sort_order: Number(values.sortOrder) || 0,
+        calculation_settings: values.calculationSettings && typeof values.calculationSettings === "object"
+          ? values.calculationSettings
+          : {}
       })
       .select(COLUMNS)
       .single();
@@ -6427,7 +6451,10 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
         department: values.department === "audio" ? "audio" : "camera",
         day_rate: Math.max(0, Number(values.dayRate) || 0),
         is_default: Boolean(values.isDefault),
-        sort_order: Number(values.sortOrder) || 0
+        sort_order: Number(values.sortOrder) || 0,
+        calculation_settings: values.calculationSettings && typeof values.calculationSettings === "object"
+          ? values.calculationSettings
+          : {}
       })
       .eq("id", id)
       .eq("user_id", userId)
@@ -8620,14 +8647,14 @@ globalThis.TariffCalculator = {
       <fieldset class="share-mode-options">
         <legend>Deelmoment</legend>
         <label class="share-mode-toggle">
-          <input type="radio" name="shareMode" value="direct" checked>
-          <span class="share-mode-switch" aria-hidden="true"></span>
-          <span><strong>Direct delen</strong><small>De tijden zijn meteen zichtbaar.</small></span>
-        </label>
-        <label class="share-mode-toggle">
-          <input type="radio" name="shareMode" value="on_completion">
+          <input type="radio" name="shareMode" value="on_completion" checked>
           <span class="share-mode-switch" aria-hidden="true"></span>
           <span><strong>Delen zodra de werkdag is afgerond</strong><small>De melding volgt zodra een eindtijd is ingevuld en de werkdag is opgeslagen.</small></span>
+        </label>
+        <label class="share-mode-toggle">
+          <input type="radio" name="shareMode" value="direct">
+          <span class="share-mode-switch" aria-hidden="true"></span>
+          <span><strong>Direct delen</strong><small>De tijden zijn meteen zichtbaar.</small></span>
         </label>
       </fieldset>
       <p class="share-account-note">De ontvanger kan een gratis of Pro-account gebruiken. Zonder account wordt eerst gevraagd om er een aan te maken.</p>
@@ -9017,7 +9044,6 @@ const customEquipmentOptions = document.querySelector("#custom-equipment-options
 const customEquipmentResults = document.querySelector("#custom-equipment-results");
 const droneResultRow = document.querySelector('[data-result="droneTariffAmount"]').closest("div");
 const roninResultRow = document.querySelector('[data-result="ronin4dTariffAmount"]').closest("div");
-const shareButton = document.querySelector("#share-site");
 const analytics = globalThis.OveruurtjeAnalytics;
 const accountSettingsService = globalThis.OveruurtjeSettings;
 const functionService = globalThis.OveruurtjeFunctions;
@@ -9029,9 +9055,6 @@ const shareUi = globalThis.OveruurtjeShareUI;
 const shareService = globalThis.OveruurtjeShares;
 const liveWorkday = globalThis.OveruurtjeLiveWorkday;
 const workdayNotifications = globalThis.OveruurtjeWorkdayNotifications;
-
-const SHARE_URL = "https://overuurtje.nl";
-const SHARE_TEXT = "Bereken eenvoudig je cameraman-, geluidsman- en productietarieven met Overuurtje.nl.";
 
 const euroFormatter = new Intl.NumberFormat("nl-NL", {
   style: "currency",
@@ -9058,6 +9081,7 @@ let workFunctions = [];
 let activeWorkFunction = null;
 let hydratedAccountUserId = null;
 let cloudSyncTimer = null;
+let functionSyncTimer = null;
 let currentWorkdayId = null;
 let pendingDuplicateWorkday = null;
 let todayWorkday = null;
@@ -9238,6 +9262,33 @@ function selectedWorkFunction() {
   return activeWorkFunction;
 }
 
+function getWorkFunctionPreset() {
+  const formData = new FormData(form);
+  return {
+    settings: getSettingsFromForm(),
+    extras: {
+      enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
+      enableRonin4dTariff: readCheckbox(formData, "enableRonin4dTariff"),
+      enableKilometers: readCheckbox(formData, "enableKilometers"),
+      enableParkingCosts: readCheckbox(formData, "enableParkingCosts"),
+      customEquipmentIds: getSelectedCustomEquipment()
+        .filter((item) => item.enabled)
+        .map((item) => item.id)
+    }
+  };
+}
+
+function applyWorkFunctionExtras(extras = {}) {
+  ["enableDroneTariff", "enableRonin4dTariff", "enableKilometers", "enableParkingCosts"].forEach((name) => {
+    const field = form.elements.namedItem(name);
+    if (field && !field.disabled && Object.hasOwn(extras, name)) field.checked = Boolean(extras[name]);
+  });
+  const selectedEquipment = new Set(extras.customEquipmentIds || []);
+  customEquipmentOptions.querySelectorAll("[data-custom-equipment-id]").forEach((field) => {
+    field.checked = selectedEquipment.has(field.dataset.customEquipmentId);
+  });
+}
+
 function renderWorkFunctions(items) {
   workFunctions = items;
   const isPro = Boolean(currentUserContext?.isPro);
@@ -9251,7 +9302,7 @@ function renderWorkFunctions(items) {
   applyWorkFunction(activeWorkFunction);
 }
 
-function applyWorkFunction(workFunction, { preserveRate = false } = {}) {
+function applyWorkFunction(workFunction, { preserveRate = false, preserveSettings = false } = {}) {
   if (!workFunction) return;
   activeWorkFunction = workFunction;
   activeFunctionName.textContent = workFunction.name;
@@ -9264,15 +9315,57 @@ function applyWorkFunction(workFunction, { preserveRate = false } = {}) {
     choice.hidden = !input.checked;
     input.disabled = !input.checked;
   });
-  if (!preserveRate) {
+  const preset = workFunction.calculationSettings || {};
+  if (!preserveRate && !preserveSettings) {
+    if (preset.equipmentVisibility) {
+      accountEquipmentVisibility = {
+        drone: Boolean(preset.equipmentVisibility.drone),
+        ronin: Boolean(preset.equipmentVisibility.ronin)
+      };
+    }
+    if (preset.settings) {
+      equipmentTariffs = {
+        drone: Number(preset.settings.droneTariffAmount) || equipmentTariffs.drone,
+        ronin: Number(preset.settings.ronin4dTariffAmount) || equipmentTariffs.ronin
+      };
+    }
     populateSettings({
       ...getSettingsFromForm(),
-      rateMode: "day",
+      ...(preset.settings || {}),
       dayRate: workFunction.dayRate
     });
   }
   updateDepartmentVisibility();
   updateRateSettingsVisibility();
+  updateNightSettingsVisibility();
+  updatePauseVisibility();
+  if (!preserveSettings) {
+    applyWorkFunctionExtras(preset.extras);
+    updateKilometerVisibility();
+    updateParkingVisibility();
+  }
+}
+
+async function syncActiveWorkFunction() {
+  if (!currentAccountUser || !currentUserContext?.isPro || !activeWorkFunction?.id) return;
+  try {
+    const preset = getWorkFunctionPreset();
+    const saved = await functionService.update(currentAccountUser.id, activeWorkFunction.id, {
+      ...activeWorkFunction,
+      dayRate: preset.settings.dayRate,
+      calculationSettings: preset
+    });
+    workFunctions = workFunctions.map((item) => item.id === saved.id ? saved : item);
+    activeWorkFunction = saved;
+  } catch (error) {
+    console.warn("Functie-instellingen konden niet worden opgeslagen.", error);
+  }
+}
+
+function scheduleActiveWorkFunctionSync() {
+  if (!currentUserContext?.isPro || !activeWorkFunction) return;
+  clearTimeout(functionSyncTimer);
+  functionSyncTimer = setTimeout(() => syncActiveWorkFunction(), 900);
 }
 
 function renderCustomEquipment(items) {
@@ -9394,7 +9487,7 @@ function applyWorkdaySnapshot(workday) {
     if (department) department.checked = true;
   }
   const snapshotFunction = workFunctions.find((item) => item.id === snapshot.workFunction?.id);
-  if (snapshotFunction) applyWorkFunction(snapshotFunction, { preserveRate: true });
+  if (snapshotFunction) applyWorkFunction(snapshotFunction, { preserveRate: true, preserveSettings: true });
   form.elements.namedItem("breakMinutes").value = String(snapshot.breakMinutes || 0);
 
   const extras = snapshot.extras || {};
@@ -9424,6 +9517,10 @@ function applyWorkdaySnapshot(workday) {
   history.replaceState({}, "", url);
   if (snapshot.endTime) updateCalculation();
   else clearCalculationDisplay();
+  requestAnimationFrame(() => {
+    liveWorkdayController?.update();
+    updateResumeLiveAccess();
+  });
   sessionUi?.showToast("Werkdag geopend.");
 }
 
@@ -9592,9 +9689,6 @@ async function initializeWorkdayContext() {
       return;
     }
 
-    const promptKey = `overuurtjeTodayWorkdayPrompt:${localDateValue()}`;
-    if (sessionStorage.getItem(promptKey)) return;
-    sessionStorage.setItem(promptKey, "shown");
     const existing = await listExistingDateEntries(localDateValue());
     if (existing.length) {
       todayWorkday = existing[0];
@@ -9690,6 +9784,10 @@ function applySharedTimesImport() {
     updateWorkdaySaveAccess();
     if (snapshot.endTime) updateCalculation();
     else clearCalculationDisplay();
+    requestAnimationFrame(() => {
+      liveWorkdayController?.update();
+      updateResumeLiveAccess();
+    });
     sessionUi?.showToast("Gedeelde tijden ingevuld. Voeg nu je eigen instellingen toe.");
   } catch {
     sessionUi?.showToast("Gedeelde tijden konden niet worden ingevuld.");
@@ -9756,15 +9854,16 @@ async function hydrateAccountSettings(context) {
           department,
           dayRate: currentAccountSettings.defaultDayRate,
           isDefault: true,
-          sortOrder: 0
+          sortOrder: 0,
+          calculationSettings: {}
         })];
       } catch (error) {
         functions = await functionService.list(currentAccountUser.id);
         if (!functions.length) throw error;
       }
     }
-    renderWorkFunctions(context.isPro ? functions : []);
     renderCustomEquipment(context.isPro ? equipment : []);
+    renderWorkFunctions(context.isPro ? functions : []);
     updateCalculation();
     await initializeWorkdayContext();
   } catch (error) {
@@ -10231,56 +10330,6 @@ function copyWithTextarea(text) {
   }
 }
 
-function showSiteToast(message) {
-  if (analytics?.showToast) {
-    analytics.showToast(message);
-    return;
-  }
-
-  const toast = document.querySelector("#site-toast");
-  if (!toast) return;
-  toast.textContent = message;
-  toast.hidden = false;
-  toast.classList.add("visible");
-}
-
-async function copyShareUrl() {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(SHARE_URL);
-  } else {
-    copyWithTextarea(SHARE_URL);
-  }
-}
-
-async function shareSite() {
-  const supportsNativeShare = typeof navigator.share === "function";
-  analytics?.track("share_clicked", {
-    method: supportsNativeShare ? "web_share" : "clipboard",
-    content_type: "website"
-  });
-
-  if (supportsNativeShare) {
-    try {
-      await navigator.share({
-        title: "Overuurtje.nl",
-        text: SHARE_TEXT,
-        url: SHARE_URL
-      });
-      showSiteToast("Link gedeeld!");
-      return;
-    } catch (error) {
-      if (error?.name === "AbortError") return;
-    }
-  }
-
-  try {
-    await copyShareUrl();
-    showSiteToast("Link gekopieerd naar klembord!");
-  } catch {
-    showSiteToast("Link kopiëren is niet toegestaan door de browser.");
-  }
-}
-
 function trackOptionChange(target) {
   if (!(target instanceof HTMLInputElement)) return;
 
@@ -10318,12 +10367,30 @@ function readLiveWorkdayState() {
   };
 }
 
+function updateResumeLiveAccess() {
+  if (!resumeLiveWorkdayButton || !liveWorkday) return;
+  const endTimeField = form.elements.namedItem("endTime");
+  const hasFixedEndTime = Boolean(endTimeField.value)
+    && (endTimeField.dataset.timePicked === "true"
+      || endTimeField.dataset.timeRestored === "true"
+      || endTimeField.dataset.liveStopped === "true");
+  const liveCandidate = liveWorkday.getState({
+    ...readLiveWorkdayState(),
+    endTime: ""
+  });
+  resumeLiveWorkdayButton.hidden = !(hasFixedEndTime && liveCandidate.active);
+}
+
 function renderLiveWorkday(state) {
   if (!liveWorkdayStatus || !liveWorkdayDuration) return;
   liveWorkdayStatus.hidden = !state.active;
   liveEndTimecode.hidden = !state.active;
   liveEndTimecode.closest(".time-control")?.classList.toggle("is-live", state.active);
-  if (!state.active) return;
+  if (!state.active) {
+    updateResumeLiveAccess();
+    return;
+  }
+  resumeLiveWorkdayButton.hidden = true;
   liveWorkdayDuration.textContent = state.label;
   liveEndTimecode.textContent = state.timecode;
   if (enableWorkdayNotifications && workdayNotificationController) {
@@ -10360,6 +10427,7 @@ initializeLiveWorkday();
 form.addEventListener("input", () => {
   markCalculationStale();
   liveWorkdayController?.update();
+  updateResumeLiveAccess();
 });
 form.addEventListener("click", (event) => {
   if (currentUserContext?.isPro) return;
@@ -10381,9 +10449,6 @@ projectCreateLink?.addEventListener("click", (event) => {
   sessionUi?.openUpgrade();
 });
 form.addEventListener("change", (event) => {
-  if (event.target.name === "endTime" && event.target.dataset.liveStopped !== "true") {
-    resumeLiveWorkdayButton.hidden = true;
-  }
   trackOptionChange(event.target);
   updateDepartmentVisibility();
   updateKilometerVisibility();
@@ -10392,12 +10457,15 @@ form.addEventListener("change", (event) => {
   if (["department", "enableDroneTariff", "enableRonin4dTariff"].includes(event.target.name)) {
     scheduleAccountSettingsSync();
   }
+  scheduleActiveWorkFunctionSync();
   if (event.target.name === "date") updateWorkdaySaveAccess();
   liveWorkdayController?.update();
+  updateResumeLiveAccess();
 });
 settingsForm.addEventListener("input", (event) => {
   markCalculationStale();
   if (["dayRate", "hourlyRate", "normalDayHours", "minimumHours", "kilometerRate"].includes(event.target.name)) scheduleAccountSettingsSync();
+  scheduleActiveWorkFunctionSync();
 });
 settingsForm.addEventListener("change", () => {
   updateNightSettingsVisibility();
@@ -10405,6 +10473,7 @@ settingsForm.addEventListener("change", () => {
   updatePauseVisibility();
   markCalculationStale();
   scheduleAccountSettingsSync();
+  scheduleActiveWorkFunctionSync();
   liveWorkdayController?.update();
 });
 recalculateButton.addEventListener("click", () => stopLiveWorkdayAndCalculate());
@@ -10474,7 +10543,6 @@ saveSettingsButton.addEventListener("click", saveCurrentSettings);
 pdfButton.addEventListener("click", () => {
   globalThis.OveruurtjeFeatureGate.require("pdf_export", currentUserContext, () => window.print());
 });
-shareButton.addEventListener("click", shareSite);
 optionsToggle?.addEventListener("click", () => {
   const expanded = optionsToggle.getAttribute("aria-expanded") === "true";
   optionsToggle.setAttribute("aria-expanded", String(!expanded));

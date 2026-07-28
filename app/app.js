@@ -44,7 +44,6 @@ const customEquipmentOptions = document.querySelector("#custom-equipment-options
 const customEquipmentResults = document.querySelector("#custom-equipment-results");
 const droneResultRow = document.querySelector('[data-result="droneTariffAmount"]').closest("div");
 const roninResultRow = document.querySelector('[data-result="ronin4dTariffAmount"]').closest("div");
-const shareButton = document.querySelector("#share-site");
 const analytics = globalThis.OveruurtjeAnalytics;
 const accountSettingsService = globalThis.OveruurtjeSettings;
 const functionService = globalThis.OveruurtjeFunctions;
@@ -56,9 +55,6 @@ const shareUi = globalThis.OveruurtjeShareUI;
 const shareService = globalThis.OveruurtjeShares;
 const liveWorkday = globalThis.OveruurtjeLiveWorkday;
 const workdayNotifications = globalThis.OveruurtjeWorkdayNotifications;
-
-const SHARE_URL = "https://overuurtje.nl";
-const SHARE_TEXT = "Bereken eenvoudig je cameraman-, geluidsman- en productietarieven met Overuurtje.nl.";
 
 const euroFormatter = new Intl.NumberFormat("nl-NL", {
   style: "currency",
@@ -85,6 +81,7 @@ let workFunctions = [];
 let activeWorkFunction = null;
 let hydratedAccountUserId = null;
 let cloudSyncTimer = null;
+let functionSyncTimer = null;
 let currentWorkdayId = null;
 let pendingDuplicateWorkday = null;
 let todayWorkday = null;
@@ -265,6 +262,33 @@ function selectedWorkFunction() {
   return activeWorkFunction;
 }
 
+function getWorkFunctionPreset() {
+  const formData = new FormData(form);
+  return {
+    settings: getSettingsFromForm(),
+    extras: {
+      enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
+      enableRonin4dTariff: readCheckbox(formData, "enableRonin4dTariff"),
+      enableKilometers: readCheckbox(formData, "enableKilometers"),
+      enableParkingCosts: readCheckbox(formData, "enableParkingCosts"),
+      customEquipmentIds: getSelectedCustomEquipment()
+        .filter((item) => item.enabled)
+        .map((item) => item.id)
+    }
+  };
+}
+
+function applyWorkFunctionExtras(extras = {}) {
+  ["enableDroneTariff", "enableRonin4dTariff", "enableKilometers", "enableParkingCosts"].forEach((name) => {
+    const field = form.elements.namedItem(name);
+    if (field && !field.disabled && Object.hasOwn(extras, name)) field.checked = Boolean(extras[name]);
+  });
+  const selectedEquipment = new Set(extras.customEquipmentIds || []);
+  customEquipmentOptions.querySelectorAll("[data-custom-equipment-id]").forEach((field) => {
+    field.checked = selectedEquipment.has(field.dataset.customEquipmentId);
+  });
+}
+
 function renderWorkFunctions(items) {
   workFunctions = items;
   const isPro = Boolean(currentUserContext?.isPro);
@@ -278,7 +302,7 @@ function renderWorkFunctions(items) {
   applyWorkFunction(activeWorkFunction);
 }
 
-function applyWorkFunction(workFunction, { preserveRate = false } = {}) {
+function applyWorkFunction(workFunction, { preserveRate = false, preserveSettings = false } = {}) {
   if (!workFunction) return;
   activeWorkFunction = workFunction;
   activeFunctionName.textContent = workFunction.name;
@@ -291,15 +315,57 @@ function applyWorkFunction(workFunction, { preserveRate = false } = {}) {
     choice.hidden = !input.checked;
     input.disabled = !input.checked;
   });
-  if (!preserveRate) {
+  const preset = workFunction.calculationSettings || {};
+  if (!preserveRate && !preserveSettings) {
+    if (preset.equipmentVisibility) {
+      accountEquipmentVisibility = {
+        drone: Boolean(preset.equipmentVisibility.drone),
+        ronin: Boolean(preset.equipmentVisibility.ronin)
+      };
+    }
+    if (preset.settings) {
+      equipmentTariffs = {
+        drone: Number(preset.settings.droneTariffAmount) || equipmentTariffs.drone,
+        ronin: Number(preset.settings.ronin4dTariffAmount) || equipmentTariffs.ronin
+      };
+    }
     populateSettings({
       ...getSettingsFromForm(),
-      rateMode: "day",
+      ...(preset.settings || {}),
       dayRate: workFunction.dayRate
     });
   }
   updateDepartmentVisibility();
   updateRateSettingsVisibility();
+  updateNightSettingsVisibility();
+  updatePauseVisibility();
+  if (!preserveSettings) {
+    applyWorkFunctionExtras(preset.extras);
+    updateKilometerVisibility();
+    updateParkingVisibility();
+  }
+}
+
+async function syncActiveWorkFunction() {
+  if (!currentAccountUser || !currentUserContext?.isPro || !activeWorkFunction?.id) return;
+  try {
+    const preset = getWorkFunctionPreset();
+    const saved = await functionService.update(currentAccountUser.id, activeWorkFunction.id, {
+      ...activeWorkFunction,
+      dayRate: preset.settings.dayRate,
+      calculationSettings: preset
+    });
+    workFunctions = workFunctions.map((item) => item.id === saved.id ? saved : item);
+    activeWorkFunction = saved;
+  } catch (error) {
+    console.warn("Functie-instellingen konden niet worden opgeslagen.", error);
+  }
+}
+
+function scheduleActiveWorkFunctionSync() {
+  if (!currentUserContext?.isPro || !activeWorkFunction) return;
+  clearTimeout(functionSyncTimer);
+  functionSyncTimer = setTimeout(() => syncActiveWorkFunction(), 900);
 }
 
 function renderCustomEquipment(items) {
@@ -421,7 +487,7 @@ function applyWorkdaySnapshot(workday) {
     if (department) department.checked = true;
   }
   const snapshotFunction = workFunctions.find((item) => item.id === snapshot.workFunction?.id);
-  if (snapshotFunction) applyWorkFunction(snapshotFunction, { preserveRate: true });
+  if (snapshotFunction) applyWorkFunction(snapshotFunction, { preserveRate: true, preserveSettings: true });
   form.elements.namedItem("breakMinutes").value = String(snapshot.breakMinutes || 0);
 
   const extras = snapshot.extras || {};
@@ -451,6 +517,10 @@ function applyWorkdaySnapshot(workday) {
   history.replaceState({}, "", url);
   if (snapshot.endTime) updateCalculation();
   else clearCalculationDisplay();
+  requestAnimationFrame(() => {
+    liveWorkdayController?.update();
+    updateResumeLiveAccess();
+  });
   sessionUi?.showToast("Werkdag geopend.");
 }
 
@@ -619,9 +689,6 @@ async function initializeWorkdayContext() {
       return;
     }
 
-    const promptKey = `overuurtjeTodayWorkdayPrompt:${localDateValue()}`;
-    if (sessionStorage.getItem(promptKey)) return;
-    sessionStorage.setItem(promptKey, "shown");
     const existing = await listExistingDateEntries(localDateValue());
     if (existing.length) {
       todayWorkday = existing[0];
@@ -717,6 +784,10 @@ function applySharedTimesImport() {
     updateWorkdaySaveAccess();
     if (snapshot.endTime) updateCalculation();
     else clearCalculationDisplay();
+    requestAnimationFrame(() => {
+      liveWorkdayController?.update();
+      updateResumeLiveAccess();
+    });
     sessionUi?.showToast("Gedeelde tijden ingevuld. Voeg nu je eigen instellingen toe.");
   } catch {
     sessionUi?.showToast("Gedeelde tijden konden niet worden ingevuld.");
@@ -783,15 +854,16 @@ async function hydrateAccountSettings(context) {
           department,
           dayRate: currentAccountSettings.defaultDayRate,
           isDefault: true,
-          sortOrder: 0
+          sortOrder: 0,
+          calculationSettings: {}
         })];
       } catch (error) {
         functions = await functionService.list(currentAccountUser.id);
         if (!functions.length) throw error;
       }
     }
-    renderWorkFunctions(context.isPro ? functions : []);
     renderCustomEquipment(context.isPro ? equipment : []);
+    renderWorkFunctions(context.isPro ? functions : []);
     updateCalculation();
     await initializeWorkdayContext();
   } catch (error) {
@@ -1258,56 +1330,6 @@ function copyWithTextarea(text) {
   }
 }
 
-function showSiteToast(message) {
-  if (analytics?.showToast) {
-    analytics.showToast(message);
-    return;
-  }
-
-  const toast = document.querySelector("#site-toast");
-  if (!toast) return;
-  toast.textContent = message;
-  toast.hidden = false;
-  toast.classList.add("visible");
-}
-
-async function copyShareUrl() {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(SHARE_URL);
-  } else {
-    copyWithTextarea(SHARE_URL);
-  }
-}
-
-async function shareSite() {
-  const supportsNativeShare = typeof navigator.share === "function";
-  analytics?.track("share_clicked", {
-    method: supportsNativeShare ? "web_share" : "clipboard",
-    content_type: "website"
-  });
-
-  if (supportsNativeShare) {
-    try {
-      await navigator.share({
-        title: "Overuurtje.nl",
-        text: SHARE_TEXT,
-        url: SHARE_URL
-      });
-      showSiteToast("Link gedeeld!");
-      return;
-    } catch (error) {
-      if (error?.name === "AbortError") return;
-    }
-  }
-
-  try {
-    await copyShareUrl();
-    showSiteToast("Link gekopieerd naar klembord!");
-  } catch {
-    showSiteToast("Link kopiëren is niet toegestaan door de browser.");
-  }
-}
-
 function trackOptionChange(target) {
   if (!(target instanceof HTMLInputElement)) return;
 
@@ -1345,12 +1367,30 @@ function readLiveWorkdayState() {
   };
 }
 
+function updateResumeLiveAccess() {
+  if (!resumeLiveWorkdayButton || !liveWorkday) return;
+  const endTimeField = form.elements.namedItem("endTime");
+  const hasFixedEndTime = Boolean(endTimeField.value)
+    && (endTimeField.dataset.timePicked === "true"
+      || endTimeField.dataset.timeRestored === "true"
+      || endTimeField.dataset.liveStopped === "true");
+  const liveCandidate = liveWorkday.getState({
+    ...readLiveWorkdayState(),
+    endTime: ""
+  });
+  resumeLiveWorkdayButton.hidden = !(hasFixedEndTime && liveCandidate.active);
+}
+
 function renderLiveWorkday(state) {
   if (!liveWorkdayStatus || !liveWorkdayDuration) return;
   liveWorkdayStatus.hidden = !state.active;
   liveEndTimecode.hidden = !state.active;
   liveEndTimecode.closest(".time-control")?.classList.toggle("is-live", state.active);
-  if (!state.active) return;
+  if (!state.active) {
+    updateResumeLiveAccess();
+    return;
+  }
+  resumeLiveWorkdayButton.hidden = true;
   liveWorkdayDuration.textContent = state.label;
   liveEndTimecode.textContent = state.timecode;
   if (enableWorkdayNotifications && workdayNotificationController) {
@@ -1387,6 +1427,7 @@ initializeLiveWorkday();
 form.addEventListener("input", () => {
   markCalculationStale();
   liveWorkdayController?.update();
+  updateResumeLiveAccess();
 });
 form.addEventListener("click", (event) => {
   if (currentUserContext?.isPro) return;
@@ -1408,9 +1449,6 @@ projectCreateLink?.addEventListener("click", (event) => {
   sessionUi?.openUpgrade();
 });
 form.addEventListener("change", (event) => {
-  if (event.target.name === "endTime" && event.target.dataset.liveStopped !== "true") {
-    resumeLiveWorkdayButton.hidden = true;
-  }
   trackOptionChange(event.target);
   updateDepartmentVisibility();
   updateKilometerVisibility();
@@ -1419,12 +1457,15 @@ form.addEventListener("change", (event) => {
   if (["department", "enableDroneTariff", "enableRonin4dTariff"].includes(event.target.name)) {
     scheduleAccountSettingsSync();
   }
+  scheduleActiveWorkFunctionSync();
   if (event.target.name === "date") updateWorkdaySaveAccess();
   liveWorkdayController?.update();
+  updateResumeLiveAccess();
 });
 settingsForm.addEventListener("input", (event) => {
   markCalculationStale();
   if (["dayRate", "hourlyRate", "normalDayHours", "minimumHours", "kilometerRate"].includes(event.target.name)) scheduleAccountSettingsSync();
+  scheduleActiveWorkFunctionSync();
 });
 settingsForm.addEventListener("change", () => {
   updateNightSettingsVisibility();
@@ -1432,6 +1473,7 @@ settingsForm.addEventListener("change", () => {
   updatePauseVisibility();
   markCalculationStale();
   scheduleAccountSettingsSync();
+  scheduleActiveWorkFunctionSync();
   liveWorkdayController?.update();
 });
 recalculateButton.addEventListener("click", () => stopLiveWorkdayAndCalculate());
@@ -1501,7 +1543,6 @@ saveSettingsButton.addEventListener("click", saveCurrentSettings);
 pdfButton.addEventListener("click", () => {
   globalThis.OveruurtjeFeatureGate.require("pdf_export", currentUserContext, () => window.print());
 });
-shareButton.addEventListener("click", shareSite);
 optionsToggle?.addEventListener("click", () => {
   const expanded = optionsToggle.getAttribute("aria-expanded") === "true";
   optionsToggle.setAttribute("aria-expanded", String(!expanded));

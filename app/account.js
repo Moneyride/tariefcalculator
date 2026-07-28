@@ -56,6 +56,7 @@
   let loadedSettings = settingsService.defaults;
   let workFunctions = [];
   let customEquipment = [];
+  let displayedFunctionId = null;
 
   function setVisible(element, visible) {
     element.hidden = !visible;
@@ -136,12 +137,73 @@
     }));
     if (selected) {
       functionSelect.value = selected.id;
-      settingsForm.elements.namedItem("defaultDayRate").value = String(selected.dayRate);
+      applyFunctionSettings(selected);
     }
     removeFunctionButton.disabled = !selected || functionService.isStandard(selected);
     defaultDayRateLabel.textContent = selected ? `Dagtarief voor ${selected.name}` : "Standaard dagtarief";
     updateDepartmentFields();
     globalThis.OveruurtjeSelectUI?.enhanceAll(settingsForm);
+  }
+
+  function functionCalculationSettings(item) {
+    const values = readSettings();
+    const previous = item?.calculationSettings || {};
+    return {
+      settings: {
+        dayRate: Number(settingsForm.elements.namedItem("defaultDayRate").value) || 0,
+        rateMode: values.defaultRateMode,
+        hourlyRate: values.defaultHourlyRate,
+        enableBreak: values.enableBreak,
+        breakMinutes: values.defaultBreakMinutes,
+        normalDayHours: values.normalDayHours,
+        minimumHours: values.minimumHours,
+        enableHalfDayUnder6Hours: values.enableHalfDayUnder6Hours,
+        enableOvertime10To12: values.enableOvertime10To12,
+        enableOvertimeFrom12: values.enableOvertimeFrom12,
+        enableOvertimeFrom14: values.enableOvertimeFrom14,
+        enableNightTariff: values.enableNightTariff,
+        nightStart: values.nightStart,
+        nightEnd: values.nightEnd,
+        kilometerRate: values.mileageRate,
+        droneTariffAmount: values.droneTariffAmount,
+        ronin4dTariffAmount: values.roninTariffAmount
+      },
+      equipmentVisibility: {
+        drone: values.droneVisible,
+        ronin: values.roninVisible
+      },
+      extras: previous.extras || {}
+    };
+  }
+
+  function applyFunctionSettings(item) {
+    if (!item) return;
+    const preset = item.calculationSettings || {};
+    const settings = preset.settings || {};
+    populateSettings({
+      ...loadedSettings,
+      defaultDepartment: item.department,
+      defaultDayRate: item.dayRate,
+      defaultRateMode: settings.rateMode ?? loadedSettings.defaultRateMode,
+      defaultHourlyRate: settings.hourlyRate ?? loadedSettings.defaultHourlyRate,
+      enableBreak: settings.enableBreak ?? loadedSettings.enableBreak,
+      normalDayHours: settings.normalDayHours ?? loadedSettings.normalDayHours,
+      minimumHours: settings.minimumHours ?? loadedSettings.minimumHours,
+      enableHalfDayUnder6Hours: settings.enableHalfDayUnder6Hours ?? loadedSettings.enableHalfDayUnder6Hours,
+      enableOvertime10To12: settings.enableOvertime10To12 ?? loadedSettings.enableOvertime10To12,
+      enableOvertimeFrom12: settings.enableOvertimeFrom12 ?? loadedSettings.enableOvertimeFrom12,
+      enableOvertimeFrom14: settings.enableOvertimeFrom14 ?? loadedSettings.enableOvertimeFrom14,
+      enableNightTariff: settings.enableNightTariff ?? loadedSettings.enableNightTariff,
+      nightStart: settings.nightStart ?? loadedSettings.nightStart,
+      nightEnd: settings.nightEnd ?? loadedSettings.nightEnd,
+      mileageRate: settings.kilometerRate ?? loadedSettings.mileageRate,
+      droneVisible: preset.equipmentVisibility?.drone ?? loadedSettings.droneVisible,
+      roninVisible: preset.equipmentVisibility?.ronin ?? loadedSettings.roninVisible,
+      droneTariffAmount: settings.droneTariffAmount ?? loadedSettings.droneTariffAmount,
+      roninTariffAmount: settings.ronin4dTariffAmount ?? loadedSettings.roninTariffAmount
+    });
+    settingsForm.elements.namedItem("defaultDayRate").value = String(item.dayRate);
+    displayedFunctionId = item.id;
   }
 
   function selectedWorkFunction() {
@@ -393,7 +455,8 @@
           await functionService.update(userId, selected.id, {
             ...selected,
             dayRate: Number(settingsForm.elements.namedItem("defaultDayRate").value) || 0,
-            isDefault: false
+            isDefault: false,
+            calculationSettings: functionCalculationSettings(selected)
           });
           await functionService.setDefault(userId, selected.id);
         }
@@ -430,10 +493,12 @@
         department: selectedWorkFunction()?.department || loadedSettings.defaultDepartment,
         dayRate: Number(settingsForm.elements.namedItem("defaultDayRate").value) || 0,
         isDefault: false,
-        sortOrder: workFunctions.length
+        sortOrder: workFunctions.length,
+        calculationSettings: functionCalculationSettings(selectedWorkFunction())
       });
       renderFunctions([...workFunctions, createdFunction]);
       functionSelect.value = createdFunction.id;
+      applyFunctionSettings(createdFunction);
       defaultDayRateLabel.textContent = `Dagtarief voor ${createdFunction.name}`;
       addFunctionForm.hidden = true;
       newFunctionName.value = "";
@@ -443,10 +508,23 @@
     }
   });
 
-  functionSelect.addEventListener("change", () => {
+  functionSelect.addEventListener("change", async () => {
     const selected = selectedWorkFunction();
     if (!selected) return;
-    settingsForm.elements.namedItem("defaultDayRate").value = String(selected.dayRate);
+    const previous = workFunctions.find((item) => item.id === displayedFunctionId);
+    if (previous && previous.id !== selected.id && currentContext?.subscription.isPro) {
+      try {
+        const savedPrevious = await functionService.update(currentContext.auth.user.id, previous.id, {
+          ...previous,
+          dayRate: Number(settingsForm.elements.namedItem("defaultDayRate").value) || previous.dayRate,
+          calculationSettings: functionCalculationSettings(previous)
+        });
+        workFunctions = workFunctions.map((item) => item.id === savedPrevious.id ? savedPrevious : item);
+      } catch (error) {
+        settingsStatus.textContent = error.message || "De vorige functie-instellingen konden niet worden opgeslagen.";
+      }
+    }
+    applyFunctionSettings(selected);
     defaultDayRateLabel.textContent = `Dagtarief voor ${selected.name}`;
     removeFunctionButton.disabled = functionService.isStandard(selected);
     updateDepartmentFields();

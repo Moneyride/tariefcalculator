@@ -739,9 +739,9 @@
   border-radius: 14px;
   display: flex;
   gap: 14px;
-  justify-content: center;
-  margin: 14px auto 0;
-  max-width: 720px;
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+  margin: -4px 0 2px;
   padding: 11px 14px;
 }
 
@@ -2503,10 +2503,10 @@ summary:hover {
 }
 
 .footer-actions {
-  display: flex;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: minmax(230px, 0.8fr) minmax(0, 1.7fr);
+  align-items: stretch;
   gap: 14px;
-  flex-wrap: wrap;
   margin-top: 0;
   padding: 24px 30px 30px;
   border: 0;
@@ -2524,7 +2524,27 @@ summary:hover {
 }
 
 .footer-actions button {
-  min-width: 190px;
+  min-width: 0;
+}
+
+.invoice-copy-button {
+  min-height: 64px;
+  font-size: 1rem;
+}
+
+.result-secondary-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.result-secondary-actions > button {
+  width: 100%;
+  height: 100%;
+}
+
+.footer-actions .copy-status {
+  grid-column: 1 / -1;
 }
 
 .site-footer {
@@ -3954,12 +3974,16 @@ summary:hover {
   }
 
   .footer-actions {
-    justify-content: stretch;
+    grid-template-columns: 1fr;
     padding: 20px 12px;
   }
 
   .footer-actions button {
     width: 100%;
+  }
+
+  .result-secondary-actions {
+    grid-template-columns: 1fr;
   }
 
   .site-footer {
@@ -4148,6 +4172,10 @@ summary:hover {
   background: rgba(255, 255, 255, 0.58);
   color: var(--accent-dark);
   box-shadow: none;
+}
+
+.result-secondary-actions .workday-save-button {
+  min-height: 54px;
 }
 
 .workday-save-button:hover {

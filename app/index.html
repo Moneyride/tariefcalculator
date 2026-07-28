@@ -124,6 +124,10 @@
                 <span>Naam werkdag <small>(optioneel)</small></span>
                 <input type="text" name="workdayName" maxlength="100" placeholder="werkdag">
               </label>
+              <aside class="current-workday-participants" id="current-workday-participants" hidden>
+                <strong>Deelnemers</strong>
+                <div class="participant-list" id="current-workday-participant-list"></div>
+              </aside>
               <label class="date-field">
                 <span>Datum</span>
                 <span class="date-control">
@@ -335,24 +339,7 @@
           </p>
           <div class="button-row">
             <button type="button" id="recalculate">Berekenen</button>
-            <div class="workday-action-group">
-              <button class="workday-save-button is-pro-locked" type="button" id="save-workday" disabled>
-                <span class="workday-save-copy">
-                  <strong data-workday-save-label>Werkdag opslaan</strong>
-                  <span data-workday-save-hint>Bewaar je begintijd; vul later je eindtijd in</span>
-                </span>
-                <small data-workday-save-badge>Pro</small>
-              </button>
-              <button class="saas-secondary-button share-current-workday-button" type="button" id="share-current-workday" disabled>
-                <span aria-hidden="true">&#8599;</span>
-                Deel met collega's
-              </button>
-            </div>
           </div>
-          <aside class="current-workday-participants" id="current-workday-participants" hidden>
-            <strong>Deelnemers</strong>
-            <div class="participant-list" id="current-workday-participant-list"></div>
-          </aside>
         </section>
 
         <section class="result-panel" aria-live="polite">
@@ -402,8 +389,21 @@
       </section>
 
       <div class="footer-actions">
-        <button type="button" id="copy-summary">Kopiëren voor factuur</button>
-        <button class="secondary pro-action-button" type="button" id="save-pdf">Pdf opslaan <span data-pro-badge>Pro</span></button>
+        <button class="invoice-copy-button" type="button" id="copy-summary">Kopiëren voor factuur</button>
+        <div class="result-secondary-actions">
+          <button class="secondary pro-action-button" type="button" id="save-pdf">Pdf opslaan <span data-pro-badge>Pro</span></button>
+          <button class="workday-save-button is-pro-locked" type="button" id="save-workday" disabled>
+            <span class="workday-save-copy">
+              <strong data-workday-save-label>Werkdag opslaan</strong>
+              <span data-workday-save-hint>Bewaar je begintijd; vul later je eindtijd in</span>
+            </span>
+            <small data-workday-save-badge>Pro</small>
+          </button>
+          <button class="saas-secondary-button share-current-workday-button" type="button" id="share-current-workday" disabled>
+            <span aria-hidden="true">&#8599;</span>
+            Deel werkdag met collega's
+          </button>
+        </div>
         <p class="copy-status" id="copy-status" aria-live="polite"></p>
       </div>
 
@@ -416,16 +416,6 @@
               <path d="M5 21h14"></path>
             </svg>
             <span>Installeer Overuurtje</span>
-          </button>
-          <button class="share-button" type="button" id="share-site">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="18" cy="5" r="3"></circle>
-              <circle cx="6" cy="12" r="3"></circle>
-              <circle cx="18" cy="19" r="3"></circle>
-              <path d="m8.6 10.5 6.8-4"></path>
-              <path d="m8.6 13.5 6.8 4"></path>
-            </svg>
-            <span>Deel Overuurtje met een collega</span>
           </button>
           <button class="cookie-settings-link" type="button" id="cookie-settings">Cookie settings</button>
         </div>

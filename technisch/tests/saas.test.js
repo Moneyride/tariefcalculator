@@ -77,6 +77,52 @@ test("accountinstellingen gebruiken een stabiel databasecontract", async () => {
   assert.equal(normalized.nightEnd, "07:00");
 });
 
+test("functies bewaren een uitbreidbare calculatorpreset", async () => {
+  const context = await runService("app/saas/functionService.js", {
+    OveruurtjeSupabase: { getClient: async () => null }
+  });
+  const normalized = context.OveruurtjeFunctions.normalize({
+    id: "function-1",
+    user_id: "user-1",
+    name: "Drone Operator",
+    department: "camera",
+    day_rate: 575,
+    is_default: true,
+    sort_order: 2,
+    calculation_settings: {
+      settings: { normalDayHours: 12, enableNightTariff: true },
+      extras: { enableDroneTariff: true }
+    }
+  });
+  assert.equal(normalized.calculationSettings.settings.normalDayHours, 12);
+  assert.equal(normalized.calculationSettings.extras.enableDroneTariff, true);
+
+  const migration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202607280001_work_function_settings.sql"),
+    "utf8"
+  );
+  assert.match(migration, /add column if not exists calculation_settings jsonb/i);
+});
+
+test("delen wacht standaard tot de opgeslagen werkdag is afgerond", async () => {
+  const shareUi = await readFile(path.join(rootDirectory, "app/saas/shareUi.js"), "utf8");
+  const completion = shareUi.indexOf('value="on_completion" checked');
+  const direct = shareUi.indexOf('value="direct"');
+  assert.ok(completion >= 0 && direct > completion);
+  assert.match(shareUi, /eindtijd is ingevuld en de werkdag is opgeslagen/);
+});
+
+test("resultaatacties staan onder het resultaat en de algemene deelknop is verwijderd", async () => {
+  const html = await readFile(path.join(rootDirectory, "app/index.html"), "utf8");
+  const result = html.indexOf('class="result-panel"');
+  const actions = html.indexOf('class="footer-actions"');
+  assert.ok(result >= 0 && actions > result);
+  assert.match(html, /class="invoice-copy-button"[^>]+id="copy-summary"/);
+  assert.match(html, /id="save-workday"/);
+  assert.match(html, /id="share-current-workday"/);
+  assert.doesNotMatch(html, /id="share-site"/);
+});
+
 test("feature gate laat Pro toe en meldt een upgrade voor Free", async () => {
   const events = [];
   class CustomEvent {
@@ -169,7 +215,7 @@ test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", asy
   assert.match(accountHtml, /data-subscription-upgrade/);
   assert.match(calculatorScript, /planningBreakField\.hidden = !enabled/);
   assert.match(calculatorScript, /workFunction: selectedWorkFunction\(\)/);
-  assert.match(calculatorScript, /applyWorkFunction\(snapshotFunction, \{ preserveRate: true \}\)/);
+  assert.match(calculatorScript, /applyWorkFunction\(snapshotFunction, \{ preserveRate: true, preserveSettings: true \}\)/);
   assert.match(calculatorScript, /pdfProBadge\.hidden = context\.isPro/);
   assert.match(calculatorScript, /Werkdag van vandaag opslaan/);
   assert.match(sessionUiScript, /dialog\.id = "signup-confirmation-dialog"/);
@@ -422,7 +468,7 @@ test("Werkdagen bewaren versieerbare calculatorsnapshots met Pro-RLS", async () 
   assert.match(calculatorScript, /function listExistingDateEntries/);
   assert.match(calculatorScript, /projectService\.listDaysByDate/);
   assert.match(calculatorScript, /function projectDayUrl/);
-  assert.match(calculatorScript, /sessionStorage\.getItem\(promptKey\)/);
+  assert.doesNotMatch(calculatorScript, /sessionStorage\.getItem\(promptKey\)/);
   assert.match(workdaysHtml, /<h1>Werkdagen<\/h1>/);
   assert.match(accountHtml, /id="account-workday-list"/);
   assert.doesNotMatch(accountHtml, />Historie</);

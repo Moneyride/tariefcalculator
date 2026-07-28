@@ -2,7 +2,7 @@
   "use strict";
 
   const supabaseService = globalThis.OveruurtjeSupabase;
-  const COLUMNS = "id,user_id,name,department,day_rate,is_default,sort_order,created_at,updated_at";
+  const COLUMNS = "id,user_id,name,department,day_rate,is_default,sort_order,calculation_settings,created_at,updated_at";
   const STANDARD_FUNCTIONS = Object.freeze([
     Object.freeze({ name: "Camera", department: "camera", dayRate: 450, sortOrder: 0 }),
     Object.freeze({ name: "Audio", department: "audio", dayRate: 395, sortOrder: 1 })
@@ -17,6 +17,9 @@
       dayRate: Math.max(0, Number(row.day_rate) || 0),
       isDefault: Boolean(row.is_default),
       sortOrder: Number(row.sort_order) || 0,
+      calculationSettings: row.calculation_settings && typeof row.calculation_settings === "object"
+        ? row.calculation_settings
+        : {},
       createdAt: row.created_at,
       updatedAt: row.updated_at
     };
@@ -51,7 +54,10 @@
         department: values.department === "audio" ? "audio" : "camera",
         day_rate: Math.max(0, Number(values.dayRate) || 0),
         is_default: Boolean(values.isDefault),
-        sort_order: Number(values.sortOrder) || 0
+        sort_order: Number(values.sortOrder) || 0,
+        calculation_settings: values.calculationSettings && typeof values.calculationSettings === "object"
+          ? values.calculationSettings
+          : {}
       })
       .select(COLUMNS)
       .single();
@@ -68,7 +74,10 @@
         department: values.department === "audio" ? "audio" : "camera",
         day_rate: Math.max(0, Number(values.dayRate) || 0),
         is_default: Boolean(values.isDefault),
-        sort_order: Number(values.sortOrder) || 0
+        sort_order: Number(values.sortOrder) || 0,
+        calculation_settings: values.calculationSettings && typeof values.calculationSettings === "object"
+          ? values.calculationSettings
+          : {}
       })
       .eq("id", id)
       .eq("user_id", userId)

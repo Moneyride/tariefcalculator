@@ -62,9 +62,19 @@ test("calculator start vandaag automatisch live zonder aparte liveknop", async (
   assert.match(script, /async function stopLiveWorkdayAndCalculate/);
   assert.match(script, /endTimeField\.dataset\.timePicked = "true"/);
   assert.match(script, /function resumeLiveWorkday/);
+  assert.match(script, /function updateResumeLiveAccess/);
+  assert.match(script, /requestAnimationFrame\(\(\) => \{\s*liveWorkdayController\?\.update\(\)/);
   assert.match(html, /id="resume-live-workday" hidden/);
   assert.match(script, /Werkdag gestopt om/);
   assert.match(script, /endTimeIsFixed \? endTimeField\.value : ""/);
+});
+
+test("een opgeslagen werkdag wordt na terugkeer opnieuw aangeboden en live hervat", async () => {
+  const script = await readFile(new URL("../../app/app.js", import.meta.url), "utf8");
+  assert.doesNotMatch(script, /overuurtjeTodayWorkdayPrompt/);
+  assert.match(script, /if \(requested\) applyWorkdaySnapshot\(requested\)/);
+  assert.match(script, /const existing = await listExistingDateEntries\(localDateValue\(\)\)/);
+  assert.match(script, /updateResumeLiveAccess\(\)/);
 });
 
 test("live controller schakelt na een formulierwijziging direct naar 25 fps", () => {

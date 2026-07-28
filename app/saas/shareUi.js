@@ -58,14 +58,14 @@
       <fieldset class="share-mode-options">
         <legend>Deelmoment</legend>
         <label class="share-mode-toggle">
-          <input type="radio" name="shareMode" value="direct" checked>
-          <span class="share-mode-switch" aria-hidden="true"></span>
-          <span><strong>Direct delen</strong><small>De tijden zijn meteen zichtbaar.</small></span>
-        </label>
-        <label class="share-mode-toggle">
-          <input type="radio" name="shareMode" value="on_completion">
+          <input type="radio" name="shareMode" value="on_completion" checked>
           <span class="share-mode-switch" aria-hidden="true"></span>
           <span><strong>Delen zodra de werkdag is afgerond</strong><small>De melding volgt zodra een eindtijd is ingevuld en de werkdag is opgeslagen.</small></span>
+        </label>
+        <label class="share-mode-toggle">
+          <input type="radio" name="shareMode" value="direct">
+          <span class="share-mode-switch" aria-hidden="true"></span>
+          <span><strong>Direct delen</strong><small>De tijden zijn meteen zichtbaar.</small></span>
         </label>
       </fieldset>
       <p class="share-account-note">De ontvanger kan een gratis of Pro-account gebruiken. Zonder account wordt eerst gevraagd om er een aan te maken.</p>
