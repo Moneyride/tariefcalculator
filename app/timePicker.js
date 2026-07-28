@@ -80,6 +80,7 @@
     const open = (event) => {
       event.preventDefault();
       event.stopPropagation();
+      if (field.dataset.sharedLocked === "true" || trigger.disabled) return;
       if (
         field.hasAttribute("data-time-picker-current")
         && field.dataset.timePicked !== "true"

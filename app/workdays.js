@@ -220,7 +220,8 @@
       result: null,
       importedFromShare: item.id,
       sharedSourceType: item.sourceType || "",
-      sharedSourceId: item.sourceId || ""
+      sharedSourceId: item.sourceId || "",
+      sharedOwnerName: item.ownerName || ""
     };
   }
 

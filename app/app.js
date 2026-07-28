@@ -36,6 +36,8 @@ const privateParticipantPanel = document.querySelector("#private-participant-pan
 const privateParticipantForm = document.querySelector("#private-participant-form");
 const privateParticipantName = document.querySelector("#private-participant-name");
 const addPrivateParticipantButton = document.querySelector("#add-private-participant");
+const sharedReceiverContext = document.querySelector("#shared-receiver-context");
+const sharedReceiverTitle = document.querySelector("#shared-receiver-title");
 const projectDayContextPanel = document.querySelector("#project-day-context");
 const projectDayContextName = document.querySelector("#project-day-context-name");
 const projectDayContextDate = document.querySelector("#project-day-context-date");
@@ -94,6 +96,7 @@ let functionSyncTimer = null;
 let currentWorkdayId = null;
 let currentProjectDayContext = null;
 let currentSharedSource = null;
+let currentSharedOwnerName = "";
 let sharedParticipants = [];
 let privateParticipants = [];
 let pendingDuplicateWorkday = null;
@@ -546,11 +549,13 @@ function clearCalculationDisplay() {
 
 async function refreshCurrentWorkdayParticipants() {
   if (!currentWorkdayParticipants || !currentWorkdayParticipantList) return;
-  const source = currentProjectDayContext?.day?.id
+  const source = currentSharedSource
+    ? currentSharedSource
+    : currentProjectDayContext?.day?.id
     ? { type: "project_day", id: currentProjectDayContext.day.id }
     : currentWorkdayId
     ? { type: "workday", id: currentWorkdayId }
-    : currentSharedSource;
+    : null;
   if (!currentAccountUser || !source?.type || !source?.id || !shareService) {
     sharedParticipants = [];
     renderCurrentWorkdayParticipants();
@@ -558,6 +563,10 @@ async function refreshCurrentWorkdayParticipants() {
   }
   try {
     sharedParticipants = await shareService.listParticipants(source.type, source.id);
+    if (currentSharedSource && !currentSharedOwnerName) {
+      currentSharedOwnerName = sharedParticipants.find((participant) => participant.isOwner)?.firstName || "";
+      updateSharedReceiverMode();
+    }
     renderCurrentWorkdayParticipants();
   } catch {
     sharedParticipants = [];
@@ -568,7 +577,14 @@ async function refreshCurrentWorkdayParticipants() {
 function renderCurrentWorkdayParticipants() {
   if (!currentWorkdayParticipants || !currentWorkdayParticipantList) return;
   const isPro = Boolean(currentUserContext?.isPro);
-  const visibleShared = sharedParticipants.length >= 2 ? sharedParticipants : [];
+  const accountParticipants = sharedParticipants.filter((participant) => participant.hasAccount !== false);
+  const remotePrivateParticipants = sharedParticipants
+    .filter((participant) => participant.hasAccount === false)
+    .map((participant) => participant.firstName)
+    .filter((name) => !privateParticipants.some(
+      (item) => item.toLocaleLowerCase("nl-NL") === name.toLocaleLowerCase("nl-NL")
+    ));
+  const visibleShared = accountParticipants.length >= 2 ? accountParticipants : [];
   const chips = [
     ...visibleShared.map((participant) => {
       const chip = document.createElement("span");
@@ -584,7 +600,7 @@ function renderCurrentWorkdayParticipants() {
       const label = document.createElement("span");
       label.textContent = name;
       const badge = document.createElement("small");
-      badge.textContent = "Niet gedeeld";
+      badge.textContent = "Zonder account";
       const remove = document.createElement("button");
       remove.type = "button";
       remove.setAttribute("aria-label", `${name} verwijderen`);
@@ -596,13 +612,50 @@ function renderCurrentWorkdayParticipants() {
       });
       chip.append(label, badge, remove);
       return chip;
+    }),
+    ...remotePrivateParticipants.map((name) => {
+      const chip = document.createElement("span");
+      chip.className = "participant-chip is-private";
+      const label = document.createElement("span");
+      label.textContent = name;
+      const badge = document.createElement("small");
+      badge.textContent = "Zonder account";
+      chip.append(label, badge);
+      return chip;
     })
   ];
   currentWorkdayParticipantList.replaceChildren(...chips);
   currentWorkdayParticipantList.hidden = chips.length === 0;
   if (privateParticipantPanel) privateParticipantPanel.hidden = !isPro;
   if (privateParticipantForm) privateParticipantForm.hidden = !isPro;
-  currentWorkdayParticipants.hidden = !isPro && visibleShared.length === 0;
+  currentWorkdayParticipants.hidden = !isPro && visibleShared.length === 0 && remotePrivateParticipants.length === 0;
+}
+
+function updateSharedReceiverMode() {
+  const active = Boolean(currentSharedSource);
+  form.classList.toggle("is-shared-receiver", active);
+  if (sharedReceiverContext) sharedReceiverContext.hidden = !active;
+  if (sharedReceiverTitle) {
+    sharedReceiverTitle.textContent = currentSharedOwnerName
+      ? `${currentSharedOwnerName} heeft deze werkdag met je gedeeld.`
+      : "Een collega heeft deze werkdag met je gedeeld.";
+  }
+
+  const dateField = form.elements.namedItem("date");
+  const timeFields = [
+    form.elements.namedItem("startTime"),
+    form.elements.namedItem("endTime")
+  ].filter(Boolean);
+  if (dateField) {
+    dateField.disabled = active;
+    dateField.setAttribute("aria-disabled", String(active));
+  }
+  timeFields.forEach((field) => {
+    field.dataset.sharedLocked = active ? "true" : "false";
+    field.setAttribute("aria-disabled", String(active));
+    const trigger = field.closest(".time-control")?.querySelector(".time-picker-trigger");
+    if (trigger) trigger.disabled = active;
+  });
 }
 
 function applyWorkdaySnapshot(workday, { projectContext = null } = {}) {
@@ -611,7 +664,10 @@ function applyWorkdaySnapshot(workday, { projectContext = null } = {}) {
 
   currentWorkdayId = projectContext ? null : workday.id;
   currentProjectDayContext = projectContext;
-  currentSharedSource = null;
+  currentSharedSource = snapshot.sharedSourceType && snapshot.sharedSourceId
+    ? { type: snapshot.sharedSourceType, id: snapshot.sharedSourceId }
+    : null;
+  currentSharedOwnerName = snapshot.sharedOwnerName || "";
   privateParticipants = Array.isArray(snapshot.privateParticipants)
     ? snapshot.privateParticipants.map((name) => String(name || "").trim()).filter(Boolean)
     : [];
@@ -658,6 +714,7 @@ function applyWorkdaySnapshot(workday, { projectContext = null } = {}) {
   updateNightSettingsVisibility();
   updateRateSettingsVisibility();
   updatePauseVisibility();
+  updateSharedReceiverMode();
   updateWorkdaySaveAccess();
   refreshCurrentWorkdayParticipants();
   const url = new URL(location.href);
@@ -1008,6 +1065,8 @@ function applySharedTimesImport() {
     currentSharedSource = snapshot.sharedSourceType && snapshot.sharedSourceId
       ? { type: snapshot.sharedSourceType, id: snapshot.sharedSourceId }
       : null;
+    currentSharedOwnerName = snapshot.sharedOwnerName || "";
+    updateSharedReceiverMode();
     updateWorkdaySaveAccess();
     refreshCurrentWorkdayParticipants();
     if (snapshot.endTime) updateCalculation();
@@ -1042,7 +1101,9 @@ async function hydrateAccountSettings(context) {
     renderWorkFunctions([]);
     currentWorkdayId = null;
     currentSharedSource = null;
+    currentSharedOwnerName = "";
     workdayContextInitializedFor = null;
+    updateSharedReceiverMode();
     populateSettings(getSavedSettings());
     departmentSwitch.classList.remove("is-account-locked");
     departmentSwitch.hidden = false;
@@ -1588,7 +1649,9 @@ function readLiveWorkdayState() {
   return {
     date: form.elements.namedItem("date").value,
     startTime: form.elements.namedItem("startTime").value,
-    endTime: endTimeIsFixed ? endTimeField.value : "",
+    endTime: currentSharedSource
+      ? (endTimeField.value || "__shared__")
+      : (endTimeIsFixed ? endTimeField.value : ""),
     breakMinutes: settings.breakMinutes,
     normalDayHours: settings.normalDayHours,
     enableNightTariff: settings.enableNightTariff,

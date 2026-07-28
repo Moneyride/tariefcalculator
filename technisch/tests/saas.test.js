@@ -676,6 +676,34 @@ test("Werkdagnamen en deelnemers worden privacyvriendelijk gedeeld", async () =>
   assert.match(styles, /\.participant-chip\.is-private\s*\{\s*order:\s*1/);
 });
 
+test("handmatig toegevoegde deelnemers zijn veilig zichtbaar voor gedeelde ontvangers", async () => {
+  const migration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202607280002_shared_private_participants.sql"),
+    "utf8"
+  );
+  const calculatorHtml = await readFile(path.join(rootDirectory, "app/index.html"), "utf8");
+  const calculatorScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
+  const timePickerScript = await readFile(path.join(rootDirectory, "app/timePicker.js"), "utf8");
+  const workdaysScript = await readFile(path.join(rootDirectory, "app/workdays.js"), "utf8");
+  const shareServiceScript = await readFile(path.join(rootDirectory, "app/saas/shareService.js"), "utf8");
+
+  assert.match(migration, /has_account boolean/i);
+  assert.match(migration, /calculation_data -> 'privateParticipants'/i);
+  assert.match(migration, /jsonb_array_elements_text\(a\.private_participants\)/i);
+  assert.match(migration, /s\.recipient_id = \(select auth\.uid\(\)\)/i);
+  assert.match(migration, /order by vp\.has_account desc, vp\.is_owner desc/i);
+  assert.doesNotMatch(migration, /calculation_data\s*->\s*'(settings|extras|result|dayRate|hourlyRate)'/i);
+  assert.match(calculatorHtml, /id="shared-receiver-context"/);
+  assert.match(calculatorHtml, /id="leave-shared-view"/);
+  assert.match(calculatorScript, /const source = currentSharedSource\s*\?\s*currentSharedSource/);
+  assert.match(calculatorScript, /participant\.hasAccount === false/);
+  assert.match(calculatorScript, /form\.classList\.toggle\("is-shared-receiver", active\)/);
+  assert.match(calculatorScript, /dateField\.disabled = active/);
+  assert.match(timePickerScript, /field\.dataset\.sharedLocked === "true"/);
+  assert.match(workdaysScript, /sharedOwnerName: item\.ownerName \|\| ""/);
+  assert.match(shareServiceScript, /hasAccount: row\.has_account !== false/);
+});
+
 test("ongelezen notificaties krijgen een eenmalige duidelijke openingsmelding", async () => {
   const sessionUi = await readFile(path.join(rootDirectory, "app/saas/sessionUi.js"), "utf8");
   assert.match(sessionUi, /Je hebt een nieuw bericht/);

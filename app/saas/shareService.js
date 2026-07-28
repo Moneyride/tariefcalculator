@@ -109,7 +109,8 @@
       userId: row.user_id,
       firstName: row.first_name || "Collega",
       isOwner: Boolean(row.is_owner),
-      isCurrentUser: Boolean(row.is_current_user)
+      isCurrentUser: Boolean(row.is_current_user),
+      hasAccount: row.has_account !== false
     }));
   }
 
