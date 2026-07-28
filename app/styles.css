@@ -238,31 +238,31 @@
 @media print {
   body:has(.project-print-root:not(:empty)) > *:not(.project-print-root) { display: none !important; }
   .project-print-root:not(:empty) { display: block !important; }
-  .project-print-page { position: relative; box-sizing: border-box; min-height: 274mm; padding: 9mm 10mm 12mm; break-after: page; color: #1f2937; background: #fff; }
+  .project-print-page { position: relative; box-sizing: border-box; min-height: 248mm; padding: 7mm 9mm 9mm; break-after: page; color: #1f2937; background: #fff; }
   .project-print-page:last-child { break-after: auto; }
-  .project-print-page header { display: flex; align-items: center; gap: 7mm; padding-bottom: 4mm; border-bottom: 1px solid #dfe7e3; }
-  .project-print-page header img { width: 28mm; height: auto; }
+  .project-print-page header { display: flex; align-items: center; gap: 6mm; padding-bottom: 3mm; border-bottom: 1px solid #dfe7e3; }
+  .project-print-page header img { width: 25mm; height: auto; }
   .project-print-page header p, .project-print-page header h1 { margin: 0; }
   .project-print-page header p { color: #6b7280; font-size: 8pt; }
-  .project-print-page header h1 { margin-top: 1mm; color: #173f36; font-size: 20pt; }
-  .project-print-meta { margin: 5mm 0; }
-  .project-print-meta > div { display: grid; grid-template-columns: 38mm 1fr; gap: 5mm; padding: 1.5mm 0; border-bottom: 1px solid #edf1ef; }
+  .project-print-page header h1 { margin-top: 1mm; color: #173f36; font-size: 18pt; }
+  .project-print-meta { margin: 4mm 0; }
+  .project-print-meta > div { display: grid; grid-template-columns: 36mm 1fr; gap: 4mm; padding: 1.2mm 0; border-bottom: 1px solid #edf1ef; }
   .project-print-meta dt, .project-print-meta dd { margin: 0; font-size: 9pt; }
   .project-print-meta dt { color: #6b7280; }
   .project-print-meta dd { overflow-wrap: anywhere; }
-  .project-print-totals { display: grid; grid-template-columns: repeat(2, 1fr); gap: 3mm; }
-  .project-print-totals > div { display: grid; gap: 1.5mm; padding: 4mm; border: 1px solid #e0e8e4; }
+  .project-print-totals { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2.5mm; }
+  .project-print-totals > div { display: grid; gap: 1.2mm; padding: 3mm; border: 1px solid #e0e8e4; }
   .project-print-totals span { color: #6b7280; font-size: 8pt; }
   .project-print-totals strong { color: #173f36; font-size: 14pt; }
   .project-print-totals .grand { grid-column: 1 / -1; background: #edf5f1; }
   .project-print-totals .grand strong { font-size: 20pt; }
-  .project-print-lines > div { display: grid; grid-template-columns: 1fr auto; gap: 8mm; padding: 2.2mm 2mm; border-bottom: 1px solid #edf1ef; break-inside: avoid; }
+  .project-print-lines > div { display: grid; grid-template-columns: 1fr auto; gap: 7mm; padding: 1.7mm 2mm; border-bottom: 1px solid #edf1ef; break-inside: avoid; }
   .project-print-lines > div > div { display: grid; gap: 1mm; }
   .project-print-lines strong { font-size: 9pt; }
   .project-print-lines span { color: #6b7280; font-size: 8pt; }
-  .project-print-invoice { display: grid; grid-template-columns: 1fr auto; gap: 2.4mm 8mm; width: 88mm; margin: 5mm 0 0 auto; padding: 4mm; background: #edf5f1; break-inside: avoid; }
+  .project-print-invoice { display: grid; grid-template-columns: 1fr auto; gap: 2mm 7mm; width: 84mm; margin: 4mm 0 0 auto; padding: 3mm; background: #edf5f1; break-inside: avoid; }
   .project-print-invoice strong { text-align: right; }
-  .project-print-page footer { position: absolute; right: 10mm; bottom: 6mm; color: #6b7280; font-size: 6pt; }
+  .project-print-page footer { position: absolute; right: 9mm; bottom: 4mm; color: #6b7280; font-size: 6pt; }
 }
 
 /* Shared workdays and reusable notifications */
@@ -726,6 +726,14 @@
   font-size: 0.75rem;
 }
 
+.participant-chip.is-account {
+  order: 0;
+}
+
+.participant-chip.is-private {
+  order: 1;
+}
+
 .participant-chip .share-avatar {
   width: 28px;
   height: 28px;
@@ -740,7 +748,7 @@
   display: grid;
   gap: 10px 14px;
   grid-column: 1 / -1;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.65fr);
+  grid-template-columns: minmax(0, 1fr);
   margin: -4px 0 2px;
   padding: 14px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
@@ -813,10 +821,67 @@
   min-height: 44px;
 }
 
+.participant-list[hidden] {
+  display: none;
+}
+
+.private-participant-panel {
+  overflow: hidden;
+  border: 1px solid rgba(31, 67, 53, 0.09);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.private-participant-panel[hidden] {
+  display: none;
+}
+
+.private-participant-panel summary {
+  position: relative;
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 38px 9px 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--accent-dark);
+  font-size: 0.7rem;
+  font-weight: 750;
+  list-style: none;
+}
+
+.private-participant-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.private-participant-panel summary::after {
+  position: absolute;
+  right: 14px;
+  color: var(--muted);
+  content: "+";
+  font-size: 1rem;
+  font-weight: 500;
+  transition: transform 150ms ease;
+}
+
+.private-participant-panel[open] summary::after {
+  transform: rotate(45deg);
+}
+
+.private-participant-panel summary small {
+  color: var(--muted);
+  font-size: 0.58rem;
+  font-weight: 550;
+}
+
 .private-participant-form {
+  align-items: end;
   display: flex;
   min-width: 0;
   gap: 8px;
+  padding: 0 10px 10px;
 }
 
 .private-participant-form label {
@@ -842,6 +907,7 @@
 }
 
 .private-participant-form button {
+  align-self: end;
   height: 44px;
   min-height: 44px;
   padding: 0 16px;
@@ -850,6 +916,14 @@
   color: var(--accent-dark);
   font-size: 0.72rem;
   font-weight: 700;
+}
+
+.private-participant-form button:hover,
+.private-participant-form button:active {
+  border: 0;
+  background: rgba(31, 67, 53, 0.1);
+  color: var(--accent-dark);
+  transform: none;
 }
 
 .participant-chip.is-private {
@@ -888,6 +962,15 @@
 
   .private-participant-form {
     width: 100%;
+  }
+}
+
+@media (hover: none) {
+  .private-participant-form button:hover,
+  .private-participant-form button:active {
+    background: rgba(31, 67, 53, 0.1);
+    color: var(--accent-dark);
+    transform: none;
   }
 }
 
@@ -1655,6 +1738,7 @@ h3 {
 .compact-function-setting {
   display: grid;
   gap: 10px;
+  align-self: start;
 }
 
 .compact-function-actions {
@@ -3518,6 +3602,44 @@ summary:hover {
   grid-column: 1 / -1;
 }
 
+.account-credentials-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.account-credentials-grid .account-inline-form {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr auto auto;
+  align-items: stretch;
+  max-width: none;
+  padding: 18px;
+  border: 1px solid rgba(31, 67, 53, 0.09);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.account-credentials-grid .account-inline-form label {
+  align-content: start;
+}
+
+.account-credentials-grid .account-inline-form label small {
+  min-height: 2.8em;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.account-credentials-grid .account-inline-form .saas-secondary-button {
+  width: 100%;
+}
+
+.account-credentials-grid .account-inline-form .saas-form-status {
+  grid-column: 1;
+}
+
 .danger-action {
   margin-top: 10px;
   color: #9a3d2d;
@@ -3616,6 +3738,7 @@ summary:hover {
 
 .two-column-fields {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
 }
 
 .prefixed-input {
@@ -4422,6 +4545,15 @@ summary:hover {
     grid-template-columns: 1fr;
   }
 
+  .account-credentials-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .account-credentials-grid .account-inline-form label small {
+    min-height: 0;
+  }
+
   .account-inline-form .saas-secondary-button,
   .account-save-row .saas-primary-button,
   .subscription-actions,
@@ -4765,7 +4897,7 @@ summary:hover {
 
 .workdays-content {
   display: grid;
-  width: calc(100% - 56px);
+  width: min(820px, calc(100% - 64px));
   gap: 24px;
   margin: 0 auto;
   padding: 28px 0 48px;
@@ -5278,7 +5410,7 @@ summary:hover {
 
 @page {
   size: A4;
-  margin: 10mm;
+  margin: 8mm 10mm 15mm;
 }
 
 @media print {
@@ -5610,14 +5742,15 @@ summary:hover {
   }
 
   .print-footer {
-    position: fixed;
-    right: 0;
-    bottom: 0;
+    position: absolute;
+    right: 4mm;
+    bottom: 3mm;
     display: block;
     margin: 0;
     color: #6b7f89;
     font-size: 6pt;
     letter-spacing: 0;
+    text-align: right;
   }
 
   .calculator-grid,
@@ -5629,17 +5762,20 @@ summary:hover {
   }
 
   .print-breakdown {
+    position: relative;
     display: block;
-    padding: 5mm 5mm 8mm;
+    box-sizing: border-box;
+    min-height: 248mm;
+    padding: 4mm 4mm 12mm;
     color: var(--text);
   }
 
   .print-breakdown-header {
     display: grid;
     grid-template-columns: 0.85fr 1.15fr;
-    gap: 7mm;
+    gap: 5mm;
     align-items: end;
-    padding-bottom: 4mm;
+    padding-bottom: 3mm;
     border-bottom: 1px solid var(--line);
   }
 
@@ -5653,7 +5789,7 @@ summary:hover {
   .print-logo {
     display: block;
     flex: 0 0 auto;
-    width: 25mm;
+    width: 23mm;
     height: auto;
   }
 
@@ -5668,21 +5804,21 @@ summary:hover {
   .print-breakdown h2 {
     margin: 0;
     color: var(--accent-dark);
-    font-size: 17pt;
+    font-size: 15pt;
     line-height: 1.15;
   }
 
   .print-job-meta {
     display: grid;
-    gap: 1.5mm;
+    gap: 1.2mm;
     margin: 0;
   }
 
   .print-job-meta > div {
     display: grid;
     grid-template-columns: 30mm 1fr;
-    gap: 4mm;
-    padding-bottom: 1.5mm;
+    gap: 3mm;
+    padding-bottom: 1.2mm;
     border-bottom: 1px solid #edf2f5;
   }
 
@@ -5692,7 +5828,7 @@ summary:hover {
   }
 
   .print-breakdown-body {
-    margin-top: 5mm;
+    margin-top: 3.5mm;
   }
 
   .print-breakdown-body h3 {
@@ -5710,8 +5846,8 @@ summary:hover {
     grid-template-columns: 1fr auto;
     gap: 8mm;
     align-items: center;
-    min-height: 9.2mm;
-    padding: 1.7mm 2.5mm;
+    min-height: 7.6mm;
+    padding: 1.3mm 2.2mm;
     border-bottom: 1px solid #e5ecef;
     break-inside: avoid;
   }
@@ -5738,8 +5874,8 @@ summary:hover {
   }
 
   .print-totals {
-    width: 88mm;
-    margin: 5mm 0 0 auto;
+    width: 84mm;
+    margin: 3.5mm 0 0 auto;
     border-top: 1px solid var(--line);
   }
 
@@ -5747,7 +5883,7 @@ summary:hover {
     display: flex;
     justify-content: space-between;
     gap: 8mm;
-    padding: 2mm 2.5mm;
+    padding: 1.6mm 2.2mm;
     border-bottom: 1px solid #e5ecef;
   }
 
@@ -5758,8 +5894,8 @@ summary:hover {
   }
 
   .print-totals .print-grand-total {
-    margin-top: 1.5mm;
-    padding: 3mm 2.5mm;
+    margin-top: 1.2mm;
+    padding: 2.4mm 2.2mm;
     border: 1px solid #b9d0c7;
     background: #edf5f1;
   }

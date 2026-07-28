@@ -43,7 +43,7 @@
     <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260727c">
-    <link rel="stylesheet" href="styles.css?v=20260728e">
+    <link rel="stylesheet" href="styles.css?v=20260728h">
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
@@ -65,7 +65,7 @@
     <script src="saas/shareUi.js?v=20260727d" defer></script>
     <script src="selectUi.js?v=20260725a" defer></script>
     <script src="timePicker.js?v=20260727b" defer></script>
-    <script src="app.js?v=20260728d" defer></script>
+    <script src="app.js?v=20260728f" defer></script>
     <script src="pwa.js?v=20260727c" defer></script>
   </head>
   <body>
@@ -86,9 +86,10 @@
             </button>
             <div class="account-dropdown" id="account-dropdown" role="menu" hidden>
                 <a id="today-page-link" href="index.html" role="menuitem">Vandaag</a>
-                <a id="account-page-link" href="account.html" role="menuitem">Account</a>
+                <a id="dashboard-page-link" href="dashboard.html" role="menuitem">Dashboard</a>
                 <a id="workdays-page-link" href="workdays.html" role="menuitem">Werkdagen</a>
                 <a id="projects-page-link" href="projects.html" role="menuitem">Projecten</a>
+                <a id="account-page-link" href="account.html" role="menuitem">Account</a>
               <button type="button" role="menuitem" data-auth-logout>Uitloggen</button>
             </div>
           </div>
@@ -136,7 +137,7 @@
                 <div class="participant-heading">
                   <div>
                     <strong>Deelnemers</strong>
-                    <small>Voeg namen toe voor je administratie of nodig collega's uit.</small>
+                    <small>Nodig collega's uit om samen de tijden te registreren, of voeg namen van collega's toe voor je administratie.</small>
                   </div>
                   <button class="participant-share-button" id="share-from-participants" type="button" aria-label="Deel deze werkdag met collega's" title="Delen met collega's">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -148,13 +149,19 @@
                   </button>
                 </div>
                 <div class="participant-list" id="current-workday-participant-list"></div>
-                <div class="private-participant-form" id="private-participant-form" hidden>
-                  <label>
-                    <span class="sr-only">Naam deelnemer</span>
-                    <input id="private-participant-name" type="text" maxlength="80" placeholder="Naam toevoegen">
-                  </label>
-                  <button type="button" id="add-private-participant">Toevoegen</button>
-                </div>
+                <details class="private-participant-panel" id="private-participant-panel" hidden>
+                  <summary>
+                    <span>Deelnemers zonder Overuurtje</span>
+                    <small>Alleen voor je administratie</small>
+                  </summary>
+                  <div class="private-participant-form" id="private-participant-form">
+                    <label>
+                      <span class="sr-only">Naam deelnemer</span>
+                      <input id="private-participant-name" type="text" maxlength="80" placeholder="Naam toevoegen">
+                    </label>
+                    <button type="button" id="add-private-participant">Toevoegen</button>
+                  </div>
+                </details>
               </aside>
               <label class="date-field">
                 <span>Datum</span>
@@ -476,8 +483,8 @@
           <div><dt>Btw (21%)</dt><dd data-print="vatAmount">-</dd></div>
           <div class="print-grand-total"><dt>Factuurbedrag inclusief btw</dt><dd data-print="totalIncVat">-</dd></div>
         </dl>
+        <p class="print-footer">Powered by Reichgelt Media Group</p>
       </section>
-      <p class="print-footer">Powered by Reichgelt Media Group</p>
       </div>
     </main>
 

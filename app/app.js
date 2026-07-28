@@ -32,6 +32,7 @@ const shareFromParticipantsButton = document.querySelector("#share-from-particip
 const workdayNameField = document.querySelector("#workday-name-field");
 const currentWorkdayParticipants = document.querySelector("#current-workday-participants");
 const currentWorkdayParticipantList = document.querySelector("#current-workday-participant-list");
+const privateParticipantPanel = document.querySelector("#private-participant-panel");
 const privateParticipantForm = document.querySelector("#private-participant-form");
 const privateParticipantName = document.querySelector("#private-participant-name");
 const addPrivateParticipantButton = document.querySelector("#add-private-participant");
@@ -571,7 +572,7 @@ function renderCurrentWorkdayParticipants() {
   const chips = [
     ...visibleShared.map((participant) => {
       const chip = document.createElement("span");
-      chip.className = "participant-chip";
+      chip.className = "participant-chip is-account";
       chip.textContent = participant.isCurrentUser
         ? `${participant.firstName} (jij)`
         : participant.firstName;
@@ -598,6 +599,8 @@ function renderCurrentWorkdayParticipants() {
     })
   ];
   currentWorkdayParticipantList.replaceChildren(...chips);
+  currentWorkdayParticipantList.hidden = chips.length === 0;
+  if (privateParticipantPanel) privateParticipantPanel.hidden = !isPro;
   if (privateParticipantForm) privateParticipantForm.hidden = !isPro;
   currentWorkdayParticipants.hidden = !isPro && visibleShared.length === 0;
 }

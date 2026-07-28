@@ -25,7 +25,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260727c">
-    <link rel="stylesheet" href="styles.css?v=20260728e">
+    <link rel="stylesheet" href="styles.css?v=20260728h">
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
@@ -63,9 +63,10 @@
               </button>
               <div class="account-dropdown" id="account-dropdown" role="menu" hidden>
                 <a id="today-page-link" href="index.html" role="menuitem">Vandaag</a>
-                <a id="account-page-link" href="account.html" role="menuitem">Account</a>
+                <a id="dashboard-page-link" href="dashboard.html" role="menuitem">Dashboard</a>
                 <a id="workdays-page-link" href="workdays.html" role="menuitem">Werkdagen</a>
                 <a id="projects-page-link" href="projects.html" role="menuitem">Projecten</a>
+                <a id="account-page-link" href="account.html" role="menuitem">Account</a>
                 <button type="button" role="menuitem" data-auth-logout>Uitloggen</button>
               </div>
             </div>
@@ -112,23 +113,26 @@
                 <dd id="account-subscription-period-value">Nog niet beschikbaar</dd>
               </div>
             </dl>
-            <form class="account-inline-form profile-name-form" id="profile-name-form">
-              <label>
-                <span>Voornaam</span>
-                <input type="text" name="displayName" maxlength="80" autocomplete="given-name" placeholder="Vul hier jouw naam in">
-                <small>Deze voornaam is zichtbaar voor collega's met wie je werktijden deelt.</small>
-              </label>
-              <button class="saas-secondary-button" type="submit">Voornaam opslaan</button>
-              <p class="saas-form-status" id="profile-name-status" aria-live="polite"></p>
-            </form>
-            <form class="account-inline-form" id="password-form">
-              <label>
-                <span>Nieuw wachtwoord</span>
-                <input type="password" name="password" autocomplete="new-password" minlength="8" required>
-              </label>
-              <button class="saas-secondary-button" type="submit">Wachtwoord wijzigen</button>
-              <p class="saas-form-status" id="password-status" aria-live="polite"></p>
-            </form>
+            <div class="account-credentials-grid">
+              <form class="account-inline-form profile-name-form" id="profile-name-form">
+                <label>
+                  <span>Voornaam</span>
+                  <input type="text" name="displayName" maxlength="80" autocomplete="given-name" placeholder="Vul hier jouw naam in">
+                  <small>Deze voornaam is zichtbaar voor collega's met wie je werktijden deelt.</small>
+                </label>
+                <button class="saas-secondary-button" type="submit">Voornaam opslaan</button>
+                <p class="saas-form-status" id="profile-name-status" aria-live="polite"></p>
+              </form>
+              <form class="account-inline-form" id="password-form">
+                <label>
+                  <span>Nieuw wachtwoord</span>
+                  <input type="password" name="password" autocomplete="new-password" minlength="8" required>
+                  <small>Gebruik minimaal acht tekens.</small>
+                </label>
+                <button class="saas-secondary-button" type="submit">Wachtwoord wijzigen</button>
+                <p class="saas-form-status" id="password-status" aria-live="polite"></p>
+              </form>
+            </div>
             <div class="account-session-actions">
               <button class="text-action danger-action" type="button" data-auth-logout>Uitloggen</button>
               <button class="text-action subscription-stop-action" id="account-subscription-stop" type="button" data-subscription-manage hidden>Abonnement stoppen</button>
@@ -147,7 +151,7 @@
               <div class="account-settings-group">
                 <h3>Tarief en planning</h3>
                 <div class="account-fields two-column-fields">
-                  <label data-function-fallback>
+                  <label class="account-function-fallback" data-function-fallback>
                     <span>Functie</span>
                     <select name="defaultDepartment">
                       <option value="camera">Camera</option>
@@ -175,7 +179,7 @@
                       <option value="hour">Uurtarief</option>
                     </select>
                   </label>
-                  <label>
+                  <label class="account-primary-rate">
                     <span id="default-day-rate-label">Standaard dagtarief</span>
                     <span class="prefixed-input"><span>€</span><input type="number" name="defaultDayRate" min="0" step="0.01" required></span>
                   </label>

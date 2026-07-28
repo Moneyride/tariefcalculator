@@ -484,6 +484,8 @@ test("Werkdagen bewaren versieerbare calculatorsnapshots met Pro-RLS", async () 
   assert.match(calculatorScript, /sourceType = projectDayId \? "project_day" : "workday"/);
   assert.match(calculatorHtml, /id="project-day-context"/);
   assert.match(calculatorHtml, /id="share-from-participants"/);
+  assert.match(calculatorHtml, /id="private-participant-panel"/);
+  assert.match(calculatorHtml, /Deelnemers zonder Overuurtje/);
   assert.doesNotMatch(calculatorScript, /sessionStorage\.getItem\(promptKey\)/);
   assert.match(workdaysHtml, /<h1>Werkdagen<\/h1>/);
   assert.match(accountHtml, /id="account-workday-list"/);
@@ -664,8 +666,14 @@ test("Werkdagnamen en deelnemers worden privacyvriendelijk gedeeld", async () =>
   assert.match(migration, /split_part\(trim\(p\.display_name\), ' ', 1\)/i);
   assert.doesNotMatch(migration, /calculation_data\s*->>\s*'[^']*(rate|amount|parking|kilometer)/i);
   assert.match(calculatorHtml, /name="workdayName"/);
+  assert.match(calculatorHtml, /Nodig collega's uit om samen de tijden te registreren/);
   assert.match(accountHtml, /name="displayName"/);
   assert.match(workdaysHtml, /data-share-participants-list/);
+  const appScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
+  const styles = await readFile(path.join(rootDirectory, "app/styles.css"), "utf8");
+  assert.match(appScript, /chip\.className = "participant-chip is-account"/);
+  assert.match(styles, /\.participant-chip\.is-account\s*\{\s*order:\s*0/);
+  assert.match(styles, /\.participant-chip\.is-private\s*\{\s*order:\s*1/);
 });
 
 test("ongelezen notificaties krijgen een eenmalige duidelijke openingsmelding", async () => {
@@ -786,4 +794,24 @@ test("Auth-mails zijn plakklare templates zonder zichtbare metadata of dubbele b
     (confirmationTemplate.match(/Overuurtje\.nl is een dienst van The GearHarbor\./g) || []).length,
     1
   );
+});
+
+test("Accountmenu en desktop-accountlayouts blijven consequent uitgelijnd", async () => {
+  for (const page of ["index.html", "dashboard.html", "account.html", "workdays.html", "projects.html"]) {
+    const html = await readFile(path.join(rootDirectory, "app", page), "utf8");
+    const menuStart = html.indexOf('class="account-dropdown"');
+    const menuEnd = html.indexOf("</div>", menuStart);
+    const menu = html.slice(menuStart, menuEnd);
+    const labels = ["Vandaag", "Dashboard", "Werkdagen", "Projecten", "Account", "Uitloggen"];
+    const positions = labels.map((label) => menu.indexOf(`>${label}<`));
+    assert.ok(positions.every((position) => position >= 0), `${page} mist een menu-item`);
+    assert.deepEqual(positions, [...positions].sort((a, b) => a - b), `${page} heeft een afwijkende menuvolgorde`);
+  }
+
+  const account = await readFile(path.join(rootDirectory, "app/account.html"), "utf8");
+  const styles = await readFile(path.join(rootDirectory, "app/styles.css"), "utf8");
+  assert.match(account, /class="account-credentials-grid"/);
+  assert.match(account, /id="compact-function-setting"[\s\S]*name="defaultRateMode"[\s\S]*name="defaultDayRate"/);
+  assert.match(styles, /\.account-credentials-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2/);
+  assert.match(styles, /\.workdays-content\s*\{[^}]*width:\s*min\(820px,\s*calc\(100% - 64px\)\)/);
 });
