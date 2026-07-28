@@ -428,21 +428,6 @@
   padding: 8px 12px;
 }
 
-.share-current-workday-button {
-  min-height: 58px;
-  gap: 12px;
-}
-
-.share-current-workday-button:disabled {
-  border-color: rgba(31, 67, 53, 0.1);
-  background: rgba(255, 255, 255, 0.34);
-  box-shadow: none;
-  color: rgba(31, 67, 53, 0.42);
-  cursor: not-allowed;
-  opacity: 1;
-  transform: none;
-}
-
 .share-workday-dialog {
   width: min(620px, calc(100% - 28px));
 }
@@ -870,12 +855,6 @@
   transform: rotate(45deg);
 }
 
-.private-participant-panel summary small {
-  color: var(--muted);
-  font-size: 0.58rem;
-  font-weight: 550;
-}
-
 .private-participant-form {
   align-items: end;
   display: flex;
@@ -963,7 +942,14 @@
     gap: 14px;
   }
 
-  .shared-receiver-context a {
+  .shared-receiver-actions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .shared-receiver-actions a,
+  .shared-receiver-actions button {
     width: 100%;
     text-align: center;
   }
@@ -1369,7 +1355,6 @@
 
 @media print {
   .notification-menu,
-  .share-current-workday-button,
   .workday-share-button,
   .received-workdays {
     display: none !important;
@@ -1687,11 +1672,11 @@ h3 {
 .input-panel.is-shared-receiver {
   border-color: transparent;
   background:
-    linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.2)) padding-box,
-    linear-gradient(135deg, rgba(255, 106, 26, 0.88), rgba(23, 63, 54, 0.88)) border-box;
+    linear-gradient(rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.14)) padding-box,
+    linear-gradient(135deg, rgba(255, 106, 26, 0.44), rgba(23, 63, 54, 0.42)) border-box;
   box-shadow:
-    0 18px 42px rgba(31, 67, 53, 0.12),
-    0 0 0 3px rgba(255, 255, 255, 0.18);
+    0 16px 38px rgba(31, 67, 53, 0.08),
+    0 0 0 2px rgba(255, 255, 255, 0.1);
 }
 
 .shared-receiver-context {
@@ -1703,7 +1688,7 @@ h3 {
   padding: 18px 20px;
   border: 1px solid rgba(255, 255, 255, 0.52);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.32);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.54);
   -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
@@ -1735,7 +1720,15 @@ h3 {
   font-size: 0.78rem;
 }
 
-.shared-receiver-context a {
+.shared-receiver-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.shared-receiver-actions a,
+.shared-receiver-actions button {
   flex: 0 0 auto;
   padding: 10px 14px;
   border: 1px solid rgba(31, 67, 53, 0.14);
@@ -1748,32 +1741,46 @@ h3 {
   transition: background-color 150ms ease, transform 150ms ease;
 }
 
-.shared-receiver-context a:hover {
+.shared-receiver-actions button {
+  color: var(--orange-dark);
+}
+
+.shared-receiver-actions a:hover,
+.shared-receiver-actions button:hover {
   background: rgba(255, 255, 255, 0.76);
+  color: var(--accent-dark);
   transform: translateY(-1px);
 }
 
 .input-panel.is-shared-receiver .date-control,
-.input-panel.is-shared-receiver .time-control {
-  background: rgba(245, 246, 244, 0.58);
-  border-color: rgba(31, 67, 53, 0.08);
+.input-panel.is-shared-receiver .time-control.is-shared-locked {
+  background: rgba(255, 255, 255, 0.34);
+  border-color: rgba(31, 67, 53, 0.06);
+  box-shadow: none;
+  outline: 0;
+}
+
+.input-panel.is-shared-receiver .date-control:focus-within,
+.input-panel.is-shared-receiver .time-control.is-shared-locked:focus-within {
+  border-color: rgba(31, 67, 53, 0.06);
+  box-shadow: none;
 }
 
 .input-panel.is-shared-receiver .date-field,
-.input-panel.is-shared-receiver .time-field {
+.input-panel.is-shared-receiver .time-control.is-shared-locked {
   cursor: default;
 }
 
 .input-panel.is-shared-receiver .date-control input,
-.input-panel.is-shared-receiver .time-control input {
+.input-panel.is-shared-receiver .time-control.is-shared-locked input {
   color: var(--accent-dark);
   cursor: default;
-  opacity: 0.82;
+  opacity: 0.88;
 }
 
-.input-panel.is-shared-receiver .time-picker-trigger:disabled {
+.input-panel.is-shared-receiver .time-control.is-shared-locked .time-picker-trigger:disabled {
   cursor: default;
-  opacity: 0.42;
+  opacity: 0.3;
 }
 
 .form-section {
@@ -2043,6 +2050,71 @@ label {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+}
+
+.time-field-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.shared-time-lock {
+  position: relative;
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.42);
+  color: var(--accent-dark);
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.shared-time-lock[hidden] {
+  display: none;
+}
+
+.shared-time-lock:hover {
+  border-color: rgba(31, 67, 53, 0.22);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--accent-dark);
+}
+
+.shared-time-lock.is-unlocked {
+  border-color: rgba(255, 106, 26, 0.28);
+  background: rgba(255, 106, 26, 0.1);
+  color: var(--orange-dark);
+}
+
+.shared-time-lock-icon {
+  position: relative;
+  width: 11px;
+  height: 9px;
+  margin-top: 4px;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+}
+
+.shared-time-lock-icon::before {
+  position: absolute;
+  left: 1px;
+  top: -8px;
+  width: 5px;
+  height: 6px;
+  border: 2px solid currentColor;
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  content: "";
+  transform-origin: left bottom;
+  transition: transform 150ms ease;
+}
+
+.shared-time-lock.is-unlocked .shared-time-lock-icon::before {
+  transform: translate(3px, 1px) rotate(28deg);
 }
 
 .time-control {
@@ -2427,6 +2499,11 @@ button.secondary:hover {
   min-height: 58px;
   padding: 15px 26px;
   font-size: 1.05rem;
+}
+
+.calculate-action .workday-save-button {
+  width: min(100%, 360px);
+  margin-top: 4px;
 }
 
 .workday-action-group {
@@ -3051,7 +3128,7 @@ summary:hover {
 
 .result-secondary-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 12px;
 }
 
@@ -5399,12 +5476,6 @@ summary:hover {
 
   .workday-save-button {
     width: 100%;
-  }
-
-  .share-current-workday-button {
-    width: 100%;
-    padding-inline: 12px;
-    line-height: 1.25;
   }
 
   .workdays-topbar {

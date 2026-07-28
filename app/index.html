@@ -43,7 +43,7 @@
     <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260727c">
-    <link rel="stylesheet" href="styles.css?v=20260728i">
+    <link rel="stylesheet" href="styles.css?v=20260728k">
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
@@ -61,11 +61,11 @@
     <script src="liveWorkday.js?v=20260728a" defer></script>
     <script src="workdayNotifications.js?v=20260727a" defer></script>
     <script src="analytics.js?v=20260722q" defer></script>
-    <script src="saas/sessionUi.js?v=20260727b" defer></script>
-    <script src="saas/shareUi.js?v=20260727d" defer></script>
+    <script src="saas/sessionUi.js?v=20260728a" defer></script>
+    <script src="saas/shareUi.js?v=20260728a" defer></script>
     <script src="selectUi.js?v=20260725a" defer></script>
     <script src="timePicker.js?v=20260728a" defer></script>
-    <script src="app.js?v=20260728g" defer></script>
+    <script src="app.js?v=20260728k" defer></script>
     <script src="pwa.js?v=20260727c" defer></script>
   </head>
   <body>
@@ -102,9 +102,11 @@
             <div class="shared-receiver-copy">
               <span>Gedeeld met jou</span>
               <strong id="shared-receiver-title">Een collega heeft deze werkdag met je gedeeld.</strong>
-              <small>De datum en tijden komen van je collega en kunnen hier niet worden aangepast.</small>
+              <small>De datum en tijden komen van je collega. Je eigen extra's en berekening blijven van jou.</small>
             </div>
-            <a href="index.html" id="leave-shared-view">Terug naar mijn calculator</a>
+            <div class="shared-receiver-actions">
+              <a href="index.html" id="leave-shared-view">Terug naar mijn calculator</a>
+            </div>
           </aside>
           <section class="form-section department-section">
             <h3>Functie</h3>
@@ -160,7 +162,6 @@
                 <details class="private-participant-panel" id="private-participant-panel" hidden>
                   <summary>
                     <span>Deelnemers zonder Overuurtje</span>
-                    <small>Zichtbaar voor deelnemers, zonder toegang tot de werkdag</small>
                   </summary>
                   <div class="private-participant-form" id="private-participant-form">
                     <label>
@@ -179,7 +180,12 @@
               </label>
 
             <div class="time-field">
-              <label for="startTime">Starttijd</label>
+              <div class="time-field-heading">
+                <label for="startTime">Starttijd</label>
+                <button class="shared-time-lock" type="button" id="lock-shared-start-time" hidden aria-label="Starttijd ontgrendelen" title="Starttijd ontgrendelen">
+                  <span class="shared-time-lock-icon" aria-hidden="true"></span>
+                </button>
+              </div>
               <div class="time-control">
                 <input id="startTime" type="text" name="startTime" value="08:00" data-time-picker data-time-picker-current readonly required>
                 <button class="time-picker-trigger" type="button" aria-label="Starttijd kiezen" title="Tijd kiezen">
@@ -191,10 +197,15 @@
             <div class="time-field end-time-field">
               <div class="time-field-heading">
                 <label for="endTime">Eindtijd</label>
-                <button class="resume-live-button" type="button" id="resume-live-workday" hidden>
-                  <span aria-hidden="true">↺</span>
-                  Terug naar live
-                </button>
+                <div class="time-field-heading-actions">
+                  <button class="resume-live-button" type="button" id="resume-live-workday" hidden>
+                    <span aria-hidden="true">↺</span>
+                    Terug naar live
+                  </button>
+                  <button class="shared-time-lock" type="button" id="lock-shared-end-time" hidden aria-label="Eindtijd ontgrendelen" title="Eindtijd ontgrendelen">
+                    <span class="shared-time-lock-icon" aria-hidden="true"></span>
+                  </button>
+                </div>
               </div>
               <div class="time-control">
                 <input id="endTime" type="text" name="endTime" value="" placeholder="Eindtijd kiezen" data-time-picker data-time-picker-current readonly>
@@ -383,6 +394,13 @@
           <div class="button-row">
             <button type="button" id="recalculate">Berekenen</button>
           </div>
+          <button class="workday-save-button is-pro-locked" type="button" id="save-workday" disabled>
+            <span class="workday-save-copy">
+              <strong data-workday-save-label>Werkdag opslaan</strong>
+              <span data-workday-save-hint>Bewaar je begintijd; vul later je eindtijd in</span>
+            </span>
+            <small data-workday-save-badge>Pro</small>
+          </button>
         </section>
 
         <section class="result-panel" aria-live="polite">
@@ -435,17 +453,6 @@
         <button class="invoice-copy-button" type="button" id="copy-summary">Kopiëren voor factuur</button>
         <div class="result-secondary-actions">
           <button class="secondary pro-action-button" type="button" id="save-pdf">Pdf opslaan <span data-pro-badge>Pro</span></button>
-          <button class="workday-save-button is-pro-locked" type="button" id="save-workday" disabled>
-            <span class="workday-save-copy">
-              <strong data-workday-save-label>Werkdag opslaan</strong>
-              <span data-workday-save-hint>Bewaar je begintijd; vul later je eindtijd in</span>
-            </span>
-            <small data-workday-save-badge>Pro</small>
-          </button>
-          <button class="saas-secondary-button share-current-workday-button" type="button" id="share-current-workday" disabled>
-            <span aria-hidden="true">&#8599;</span>
-            Deel werkdag met collega's
-          </button>
         </div>
         <p class="copy-status" id="copy-status" aria-live="polite"></p>
       </div>

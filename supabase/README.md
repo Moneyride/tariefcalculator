@@ -10,9 +10,14 @@
 8. Run `migrations/202607240002_workdays.sql` to add Pro-only standalone workday snapshots.
 9. Run `migrations/202607250001_work_functions.sql` to add Pro functions with their own department and day rate.
 10. Run `migrations/202607250002_workday_sharing.sql` to add redacted workday sharing and in-app notifications.
-11. In Authentication > URL configuration, set the production Site URL to `https://overuurtje.nl`.
-12. Add `https://overuurtje.nl/account.html` to the allowed redirect URLs.
-13. Add the project URL and publishable/anon key to Netlify as `SUPABASE_URL` and `SUPABASE_ANON_KEY`.
+11. Run `migrations/202607250003_workday_share_invites.sql` to add private invitation links.
+12. Run `migrations/202607270001_workday_names_and_participants.sql` to add workday names and participant display.
+13. Run `migrations/202607280001_work_function_settings.sql` to store settings per function.
+14. Run `migrations/202607280002_shared_private_participants.sql` to share non-account participant names safely.
+15. Run `migrations/202607280003_shared_workday_live_updates.sql` to keep direct shares live and notify participants when the saved end time changes.
+16. In Authentication > URL configuration, set the production Site URL to `https://overuurtje.nl`.
+17. Add `https://overuurtje.nl/account.html` to the allowed redirect URLs.
+18. Add the project URL and publishable/anon key to Netlify as `SUPABASE_URL` and `SUPABASE_ANON_KEY`.
 
 The browser key is public by design. Never put the Supabase service-role key in Netlify build variables or frontend code.
 

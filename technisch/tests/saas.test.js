@@ -116,11 +116,12 @@ test("functies bewaren een uitbreidbare calculatorpreset", async () => {
   assert.match(migration, /add column if not exists calculation_settings jsonb/i);
 });
 
-test("delen wacht standaard tot de opgeslagen werkdag is afgerond", async () => {
+test("delen toont de live werkdag standaard direct", async () => {
   const shareUi = await readFile(path.join(rootDirectory, "app/saas/shareUi.js"), "utf8");
-  const completion = shareUi.indexOf('value="on_completion" checked');
-  const direct = shareUi.indexOf('value="direct"');
-  assert.ok(completion >= 0 && direct > completion);
+  const direct = shareUi.indexOf('value="direct" checked');
+  const completion = shareUi.indexOf('value="on_completion"');
+  assert.ok(direct >= 0 && completion > direct);
+  assert.match(shareUi, /loopt live mee tot je de eindtijd opslaat/);
   assert.match(shareUi, /eindtijd is ingevuld en de werkdag is opgeslagen/);
 });
 
@@ -128,10 +129,13 @@ test("resultaatacties staan onder het resultaat en de algemene deelknop is verwi
   const html = await readFile(path.join(rootDirectory, "app/index.html"), "utf8");
   const result = html.indexOf('class="result-panel"');
   const actions = html.indexOf('class="footer-actions"');
+  const calculate = html.indexOf('id="recalculate"');
+  const saveWorkday = html.indexOf('id="save-workday"');
   assert.ok(result >= 0 && actions > result);
+  assert.ok(calculate >= 0 && saveWorkday > calculate && saveWorkday < result);
   assert.match(html, /class="invoice-copy-button"[^>]+id="copy-summary"/);
   assert.match(html, /id="save-workday"/);
-  assert.match(html, /id="share-current-workday"/);
+  assert.doesNotMatch(html, /id="share-current-workday"/);
   assert.doesNotMatch(html, /id="share-site"/);
 });
 
@@ -201,6 +205,10 @@ test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", asy
   assert.match(calculatorHtml, /data-workday-save-label/);
   assert.match(calculatorHtml, /Werkdag van vandaag opslaan|Bewaar je begintijd/);
   assert.match(calculatorHtml, /data-pro-badge/);
+  assert.match(calculatorScript, /const hasSharedRecipient = !isSharedReceiver/);
+  assert.match(calculatorScript, /Opslaan werkt gedeelde tijden bij voor je collega's/);
+  assert.match(calculatorScript, /Bewaar deze dag met je eigen extra's en berekening/);
+  assert.match(calculatorScript, /Beschikbaar met Overuurtje Pro/);
   assert.match(calculatorHtml, /name="rateMode"/);
   assert.match(calculatorHtml, /name="breakMinutes"/);
   assert.match(calculatorHtml, /name="enableBreak"/);
@@ -630,8 +638,8 @@ test("Werkdagen delen gebruikt verwijzingen, redacted RPCs en ontvanger-RLS", as
   assert.match(workdaysHtml, /id="shared-invite-dialog"/);
   assert.match(workdaysHtml, /id="take-over-shared-times"/);
   assert.match(projectsHtml, /id="share-project-day"/);
-  assert.match(indexHtml, /id="share-current-workday"/);
-  assert.match(indexHtml, /id="share-current-workday" disabled/);
+  assert.match(indexHtml, /id="share-from-participants"/);
+  assert.doesNotMatch(indexHtml, /id="share-current-workday"/);
   assert.ok(indexHtml.indexOf("saas/shareService.js") < indexHtml.indexOf("saas/sessionUi.js"));
 });
 
@@ -676,6 +684,23 @@ test("Werkdagnamen en deelnemers worden privacyvriendelijk gedeeld", async () =>
   assert.match(styles, /\.participant-chip\.is-private\s*\{\s*order:\s*1/);
 });
 
+test("direct gedeelde werkdagen blijven live en melden een opgeslagen eindtijd", async () => {
+  const calculatorScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
+  const sessionUi = await readFile(path.join(rootDirectory, "app/saas/sessionUi.js"), "utf8");
+  const migration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202607280003_shared_workday_live_updates.sql"),
+    "utf8"
+  );
+
+  assert.match(calculatorScript, /endTime: currentSharedSource\s*\?\s*endTimeField\.value/);
+  assert.match(calculatorScript, /refreshSharedReceiverTimes/);
+  assert.match(calculatorScript, /setInterval\([\s\S]*refreshSharedReceiverTimes[\s\S]*15000/);
+  assert.match(migration, /when old_end = '' and new_end <> '' then 'workday_completed'/);
+  assert.doesNotMatch(migration, /accepted_at is null/);
+  assert.match(sessionUi, /workday_completed/);
+  assert.match(sessionUi, /heeft de eindtijd vastgelegd/);
+});
+
 test("handmatig toegevoegde deelnemers zijn veilig zichtbaar voor gedeelde ontvangers", async () => {
   const migration = await readFile(
     path.join(rootDirectory, "supabase/migrations/202607280002_shared_private_participants.sql"),
@@ -698,7 +723,16 @@ test("handmatig toegevoegde deelnemers zijn veilig zichtbaar voor gedeelde ontva
   assert.match(calculatorScript, /const source = currentSharedSource\s*\?\s*currentSharedSource/);
   assert.match(calculatorScript, /participant\.hasAccount === false/);
   assert.match(calculatorScript, /form\.classList\.toggle\("is-shared-receiver", active\)/);
+  assert.match(calculatorScript, /sharedTimeOverrides = new Set\(\)/);
   assert.match(calculatorScript, /dateField\.disabled = active/);
+  assert.match(calculatorScript, /const locked = active && !sharedTimeOverrides\.has\(field\.name\)/);
+  assert.match(calculatorHtml, /id="lock-shared-start-time"/);
+  assert.match(calculatorHtml, /id="lock-shared-end-time"/);
+  assert.doesNotMatch(calculatorHtml, /id="unlock-shared-times"/);
+  assert.match(calculatorScript, /projectCreateLink\.hidden = active/);
+  assert.match(calculatorScript, /shareFromParticipantsButton\.hidden = active/);
+  assert.match(calculatorScript, /privateParticipantPanel\.hidden = active \|\| !currentUserContext\?\.isPro/);
+  assert.match(calculatorScript, /resumeLiveWorkdayButton && active/);
   assert.match(timePickerScript, /field\.dataset\.sharedLocked === "true"/);
   assert.match(workdaysScript, /sharedOwnerName: item\.ownerName \|\| ""/);
   assert.match(shareServiceScript, /hasAccount: row\.has_account !== false/);

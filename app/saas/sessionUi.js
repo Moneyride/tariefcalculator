@@ -117,6 +117,7 @@
   }
 
   function notificationText(item) {
+    if (item.type === "workday_completed") return `${item.actorName} heeft de eindtijd vastgelegd.`;
     if (item.type === "workday_times_updated") return `${item.actorName} heeft de werktijden aangepast.`;
     if (item.type === "workday_share_removed") return "Een gedeelde werkdag is niet langer beschikbaar.";
     return `${item.actorName} heeft een werkdag met je gedeeld.`;
