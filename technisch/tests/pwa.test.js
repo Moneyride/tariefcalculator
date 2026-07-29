@@ -58,6 +58,16 @@ test("installatie-interface ondersteunt browserprompt en iPhone-beginscherm", as
   assert.match(script, /serviceWorker\.register/);
 });
 
+test("eerste PWA-start biedt ingelogde gebruikers eenmalig Web Push aan", async () => {
+  const script = await read("app/pwa.js");
+  const styles = await read("app/styles.css");
+  assert.match(script, /overuurtje-push-onboarding-v1/);
+  assert.match(script, /OveruurtjePush\.subscribe/);
+  assert.match(script, /overuurtje:user-context/);
+  assert.match(script, /Meldingen inschakelen/);
+  assert.match(styles, /\.pwa-push-dialog/);
+});
+
 test("service worker bewaart de app-shell maar nooit API-verkeer", async () => {
   const worker = await read("app/service-worker.js");
   assert.match(worker, /const APP_SHELL/);
