@@ -112,7 +112,7 @@ test("live controller schakelt na een formulierwijziging direct naar 25 fps", ()
   }
 });
 
-test("herinneringen staan exact een kwartier voor overuren en nachtperiode", () => {
+test("live calculator meldt alleen toeslagen een kwartier vooraf", () => {
   const result = reminders.buildReminders({
     date: "2026-07-27",
     startTime: "14:00",
@@ -123,6 +123,7 @@ test("herinneringen staan exact een kwartier voor overuren en nachtperiode", () 
   });
   assert.equal(result[0].at.getTime(), new Date(2026, 6, 28, 0, 15).getTime());
   assert.equal(result[1].at.getTime(), new Date(2026, 6, 27, 23, 45).getTime());
+  assert.equal(result.some((item) => item.type === "workday_start"), false);
 });
 
 test("dashboardstatistieken combineren periodes en persoonlijke records", () => {

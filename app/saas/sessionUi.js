@@ -117,10 +117,21 @@
   }
 
   function notificationText(item) {
+    if (item.type === "workday_start_owner") return "Je vooraf ingestelde werkdag begint nu.";
+    if (item.type === "workday_started") return `${item.actorName} begint nu aan de gedeelde werkdag.`;
     if (item.type === "workday_completed") return `${item.actorName} heeft de eindtijd vastgelegd.`;
     if (item.type === "workday_times_updated") return `${item.actorName} heeft de werktijden aangepast.`;
     if (item.type === "workday_share_removed") return "Een gedeelde werkdag is niet langer beschikbaar.";
     return `${item.actorName} heeft een werkdag met je gedeeld.`;
+  }
+
+  function notificationHref(item) {
+    if (item.shareId) return `${config.workdaysUrl}?shared=${encodeURIComponent(item.shareId)}`;
+    if (item.sourceType === "workday" && item.sourceId) {
+      return `${config.calculatorUrl}?workday=${encodeURIComponent(item.sourceId)}`;
+    }
+    if (item.sourceType === "project_day") return config.projectsUrl;
+    return "";
   }
 
   function ensureNotificationPrompt() {
@@ -154,8 +165,9 @@
     dialog.querySelector("[data-notification-alert-open]")?.addEventListener("click", () => {
       const item = pendingNotificationPrompt;
       closeDialog(dialog);
-      if (item?.shareId) {
-        location.href = `${config.workdaysUrl}?shared=${encodeURIComponent(item.shareId)}`;
+      const href = item ? notificationHref(item) : "";
+      if (href) {
+        location.href = href;
         return;
       }
       notificationUi?.querySelector(".notification-button")?.click();
@@ -249,9 +261,10 @@
         return;
       }
       list.replaceChildren(...items.map((item) => {
-        const link = document.createElement(item.shareId ? "a" : "div");
+        const href = notificationHref(item);
+        const link = document.createElement(href ? "a" : "div");
         link.className = `notification-item${item.readAt ? "" : " is-unread"}`;
-        if (item.shareId) link.href = `${config.workdaysUrl}?shared=${encodeURIComponent(item.shareId)}`;
+        if (href) link.href = href;
         const copy = document.createElement("span");
         copy.textContent = notificationText(item);
         const time = document.createElement("small");

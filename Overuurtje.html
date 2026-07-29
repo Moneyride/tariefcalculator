@@ -308,7 +308,8 @@
   .project-print-lines span { color: #6b7280; font-size: 8pt; }
   .project-print-invoice { display: grid; grid-template-columns: 1fr auto; gap: 2mm 7mm; width: 84mm; margin: 4mm 0 0 auto; padding: 3mm; background: #edf5f1; break-inside: avoid; }
   .project-print-invoice strong { text-align: right; }
-  .project-print-page footer { position: absolute; right: 9mm; bottom: 4mm; color: #6b7280; font-size: 6pt; }
+  .project-print-page header { padding-right: 48mm; }
+  .project-print-page footer { position: absolute; top: 7mm; right: 9mm; color: #6b7280; font-size: 6pt; }
 }
 
 /* Shared workdays and reusable notifications */
@@ -6009,15 +6010,12 @@ summary:hover {
   }
 
   .print-footer {
-    position: absolute;
-    right: 4mm;
-    bottom: 3mm;
     display: block;
-    margin: 0;
+    margin: 1.2mm 0 0;
     color: #6b7f89;
     font-size: 6pt;
     letter-spacing: 0;
-    text-align: right;
+    text-align: left;
   }
 
   .calculator-grid,
@@ -6033,7 +6031,7 @@ summary:hover {
     display: block;
     box-sizing: border-box;
     min-height: 248mm;
-    padding: 4mm 4mm 12mm;
+    padding: 4mm;
     color: var(--text);
   }
 
@@ -6605,6 +6603,7 @@ summary:hover {
             <div>
               <p class="print-kicker">Onderbouwing factuur</p>
               <h2>Berekening van de vergoeding</h2>
+              <p class="print-footer">Powered by Reichgelt Media Group</p>
             </div>
           </div>
           <dl class="print-job-meta">
@@ -6625,7 +6624,6 @@ summary:hover {
           <div><dt>Btw (21%)</dt><dd data-print="vatAmount">-</dd></div>
           <div class="print-grand-total"><dt>Factuurbedrag inclusief btw</dt><dd data-print="totalIncVat">-</dd></div>
         </dl>
-        <p class="print-footer">Powered by Reichgelt Media Group</p>
       </section>
       </div>
     </main>
@@ -7803,6 +7801,8 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     id: row.id,
     type: row.notification_type,
     shareId: row.share_id,
+    sourceType: row.source_type || "",
+    sourceId: row.source_id || "",
     actorName: row.actor_name || "Een collega",
     readAt: row.read_at,
     createdAt: row.created_at
@@ -8962,10 +8962,21 @@ globalThis.TariffCalculator = {
   }
 
   function notificationText(item) {
+    if (item.type === "workday_start_owner") return "Je vooraf ingestelde werkdag begint nu.";
+    if (item.type === "workday_started") return `${item.actorName} begint nu aan de gedeelde werkdag.`;
     if (item.type === "workday_completed") return `${item.actorName} heeft de eindtijd vastgelegd.`;
     if (item.type === "workday_times_updated") return `${item.actorName} heeft de werktijden aangepast.`;
     if (item.type === "workday_share_removed") return "Een gedeelde werkdag is niet langer beschikbaar.";
     return `${item.actorName} heeft een werkdag met je gedeeld.`;
+  }
+
+  function notificationHref(item) {
+    if (item.shareId) return `${config.workdaysUrl}?shared=${encodeURIComponent(item.shareId)}`;
+    if (item.sourceType === "workday" && item.sourceId) {
+      return `${config.calculatorUrl}?workday=${encodeURIComponent(item.sourceId)}`;
+    }
+    if (item.sourceType === "project_day") return config.projectsUrl;
+    return "";
   }
 
   function ensureNotificationPrompt() {
@@ -8999,8 +9010,9 @@ globalThis.TariffCalculator = {
     dialog.querySelector("[data-notification-alert-open]")?.addEventListener("click", () => {
       const item = pendingNotificationPrompt;
       closeDialog(dialog);
-      if (item?.shareId) {
-        location.href = `${config.workdaysUrl}?shared=${encodeURIComponent(item.shareId)}`;
+      const href = item ? notificationHref(item) : "";
+      if (href) {
+        location.href = href;
         return;
       }
       notificationUi?.querySelector(".notification-button")?.click();
@@ -9094,9 +9106,10 @@ globalThis.TariffCalculator = {
         return;
       }
       list.replaceChildren(...items.map((item) => {
-        const link = document.createElement(item.shareId ? "a" : "div");
+        const href = notificationHref(item);
+        const link = document.createElement(href ? "a" : "div");
         link.className = `notification-item${item.readAt ? "" : " is-unread"}`;
-        if (item.shareId) link.href = `${config.workdaysUrl}?shared=${encodeURIComponent(item.shareId)}`;
+        if (href) link.href = href;
         const copy = document.createElement("span");
         copy.textContent = notificationText(item);
         const time = document.createElement("small");

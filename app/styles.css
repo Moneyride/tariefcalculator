@@ -262,7 +262,8 @@
   .project-print-lines span { color: #6b7280; font-size: 8pt; }
   .project-print-invoice { display: grid; grid-template-columns: 1fr auto; gap: 2mm 7mm; width: 84mm; margin: 4mm 0 0 auto; padding: 3mm; background: #edf5f1; break-inside: avoid; }
   .project-print-invoice strong { text-align: right; }
-  .project-print-page footer { position: absolute; right: 9mm; bottom: 4mm; color: #6b7280; font-size: 6pt; }
+  .project-print-page header { padding-right: 48mm; }
+  .project-print-page footer { position: absolute; top: 7mm; right: 9mm; color: #6b7280; font-size: 6pt; }
 }
 
 /* Shared workdays and reusable notifications */
@@ -5963,15 +5964,12 @@ summary:hover {
   }
 
   .print-footer {
-    position: absolute;
-    right: 4mm;
-    bottom: 3mm;
     display: block;
-    margin: 0;
+    margin: 1.2mm 0 0;
     color: #6b7f89;
     font-size: 6pt;
     letter-spacing: 0;
-    text-align: right;
+    text-align: left;
   }
 
   .calculator-grid,
@@ -5987,7 +5985,7 @@ summary:hover {
     display: block;
     box-sizing: border-box;
     min-height: 248mm;
-    padding: 4mm 4mm 12mm;
+    padding: 4mm;
     color: var(--text);
   }
 

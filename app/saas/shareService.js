@@ -49,6 +49,8 @@
     id: row.id,
     type: row.notification_type,
     shareId: row.share_id,
+    sourceType: row.source_type || "",
+    sourceId: row.source_id || "",
     actorName: row.actor_name || "Een collega",
     readAt: row.read_at,
     createdAt: row.created_at

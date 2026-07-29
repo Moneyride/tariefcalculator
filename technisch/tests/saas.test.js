@@ -926,3 +926,21 @@ test("Accountmenu en desktop-accountlayouts blijven consequent uitgelijnd", asyn
     /\.input-panel\.is-shared-receiver \.time-control\.is-shared-locked input\[data-time-picker\]\s*\{[^}]*border-radius:\s*12px;[^}]*background:\s*rgba\(255,\s*255,\s*255,\s*0\.34\);/
   );
 });
+
+test("vooraf opgeslagen werkdagen melden hun start zonder live invoer te notificeren", async () => {
+  const migration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202607290001_workday_start_notifications.sql"),
+    "utf8"
+  );
+  const reminders = await readFile(path.join(rootDirectory, "app/workdayNotifications.js"), "utf8");
+
+  assert.match(migration, /dispatch_workday_start_notifications/i);
+  assert.match(migration, /w\.updated_at as configured_at/i);
+  assert.match(migration, /configured_at <= starts_at - interval '1 minute'/i);
+  assert.match(migration, /'workday_start_owner'::text/i);
+  assert.match(migration, /'workday_started'::text/i);
+  assert.match(migration, /share\.accepted_at is not null/i);
+  assert.match(migration, /share\.delivered_at is not null/i);
+  assert.match(migration, /cron\.schedule\([\s\S]*'\* \* \* \* \*'/i);
+  assert.doesNotMatch(reminders, /type:\s*"workday_start"/i);
+});
