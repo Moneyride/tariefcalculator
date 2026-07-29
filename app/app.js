@@ -29,6 +29,8 @@ const workdaySaveHint = workdaySaveButton?.querySelector("[data-workday-save-hin
 const workdaySaveBadge = workdaySaveButton?.querySelector("[data-workday-save-badge]");
 const shareFromParticipantsButton = document.querySelector("#share-from-participants");
 const workdayNameField = document.querySelector("#workday-name-field");
+const workdayNameSuggestions = document.querySelector("#workday-name-suggestions");
+const clientNameSuggestions = document.querySelector("#client-name-suggestions");
 const currentWorkdayParticipants = document.querySelector("#current-workday-participants");
 const currentWorkdayParticipantList = document.querySelector("#current-workday-participant-list");
 const privateParticipantPanel = document.querySelector("#private-participant-panel");
@@ -112,6 +114,7 @@ let workdayContextInitializedFor = null;
 let liveWorkdayController = null;
 let workdayNotificationController = null;
 let sharedReceiverSyncTimer = null;
+let knownWorkdayNames = [];
 
 function localDateValue(date = new Date()) {
   const year = date.getFullYear();
@@ -224,8 +227,42 @@ function getAccountSettingsSnapshot() {
     roninVisible: currentAccountSettings?.roninVisible ?? false,
     droneTariffAmount: currentAccountSettings?.droneTariffAmount ?? equipmentTariffs.drone,
     roninTariffAmount: currentAccountSettings?.roninTariffAmount ?? equipmentTariffs.ronin,
+    frequentClients: currentAccountSettings?.frequentClients || [],
     preferences: currentAccountSettings?.preferences || {}
   };
+}
+
+function renderTextSuggestions(container, values) {
+  if (!container) return;
+  container.replaceChildren(...values.map((value) => {
+    const option = document.createElement("option");
+    option.value = value;
+    return option;
+  }));
+}
+
+function refreshPlanningSuggestions() {
+  renderTextSuggestions(clientNameSuggestions, currentAccountSettings?.frequentClients || []);
+  renderTextSuggestions(workdayNameSuggestions, knownWorkdayNames);
+}
+
+async function rememberCurrentClient() {
+  const value = String(form.elements.namedItem("clientName")?.value || "").trim();
+  if (!currentAccountUser || !value) return false;
+  const exists = (currentAccountSettings?.frequentClients || [])
+    .some((item) => item.localeCompare(value, "nl-NL", { sensitivity: "base" }) === 0);
+  if (exists) return false;
+  const frequentClients = accountSettingsService.normalizeTextList([
+    ...(currentAccountSettings?.frequentClients || []),
+    value
+  ]);
+  const saved = await accountSettingsService.save(currentAccountUser.id, {
+    ...getAccountSettingsSnapshot(),
+    frequentClients
+  });
+  currentAccountSettings = saved;
+  refreshPlanningSuggestions();
+  return true;
 }
 
 function applyAccountSettings(accountSettings, isPro) {
@@ -415,6 +452,7 @@ function buildWorkdaySnapshot() {
   return {
     schemaVersion: 1,
     workdayName: String(form.elements.namedItem("workdayName")?.value || "").trim(),
+    clientName: String(form.elements.namedItem("clientName")?.value || "").trim(),
     date: form.elements.namedItem("date").value,
     department: formData.get("department") || "camera",
     workFunction: selectedWorkFunction() ? {
@@ -460,6 +498,7 @@ function projectDayToWorkdaySnapshot(project, day) {
   return {
     schemaVersion: 1,
     workdayName: "",
+    clientName: project?.clientName || "",
     date: day.workDate,
     department: data.department || currentAccountSettings?.defaultDepartment || "camera",
     workFunction: data.workFunctionId ? {
@@ -781,6 +820,9 @@ function applyWorkdaySnapshot(workday, { projectContext = null } = {}) {
   if (form.elements.namedItem("workdayName")) {
     form.elements.namedItem("workdayName").value = workday.name || snapshot.workdayName || "";
   }
+  if (form.elements.namedItem("clientName")) {
+    form.elements.namedItem("clientName").value = snapshot.clientName || "";
+  }
   form.elements.namedItem("date").value = snapshot.date;
   form.elements.namedItem("startTime").value = snapshot.startTime || "08:00";
   const restoredEndTime = form.elements.namedItem("endTime");
@@ -910,6 +952,11 @@ async function persistWorkday(snapshot, id = null) {
     workDate: snapshot.date,
     calculationData: snapshot
   }, { mock: currentUserContext?.subscription?.isMock });
+  try {
+    await rememberCurrentClient();
+  } catch (error) {
+    console.warn("Opdrachtgever automatisch opslaan is mislukt.", error);
+  }
   currentWorkdayId = saved.id;
   updateWorkdaySaveAccess();
   refreshCurrentWorkdayParticipants();
@@ -930,6 +977,11 @@ async function persistProjectDay(snapshot) {
     workDate: snapshot.date,
     calculationData: workdaySnapshotToProjectDay(snapshot, day.calculationData)
   }, { mock: currentUserContext?.subscription?.isMock });
+  try {
+    await rememberCurrentClient();
+  } catch (error) {
+    console.warn("Opdrachtgever automatisch opslaan is mislukt.", error);
+  }
   currentProjectDayContext = { project, day: savedDay };
   updateWorkdaySaveAccess();
   refreshCurrentWorkdayParticipants();
@@ -1226,6 +1278,8 @@ async function hydrateAccountSettings(context) {
     workdayContextInitializedFor = null;
     updateSharedReceiverMode();
     populateSettings(getSavedSettings());
+    knownWorkdayNames = [];
+    refreshPlanningSuggestions();
     departmentSwitch.classList.remove("is-account-locked");
     departmentSwitch.hidden = false;
     departmentSwitch.removeAttribute("aria-disabled");
@@ -1243,15 +1297,19 @@ async function hydrateAccountSettings(context) {
   hydratedAccountUserId = currentAccountUser.id;
 
   try {
-    const [savedResult, functionsResult, equipmentResult] = await Promise.allSettled([
+    const [savedResult, functionsResult, equipmentResult, workdaysResult] = await Promise.allSettled([
       accountSettingsService.load(currentAccountUser.id),
       context.isPro ? functionService.list(currentAccountUser.id) : Promise.resolve([]),
-      context.isPro ? equipmentService.list(currentAccountUser.id) : Promise.resolve([])
+      context.isPro ? equipmentService.list(currentAccountUser.id) : Promise.resolve([]),
+      context.isPro ? workdayService.list(currentAccountUser.id, { mock: context.subscription?.isMock }) : Promise.resolve([])
     ]);
     if (savedResult.status === "rejected") throw savedResult.reason;
     const saved = savedResult.value;
     let functions = functionsResult.status === "fulfilled" ? functionsResult.value : [];
     const equipment = equipmentResult.status === "fulfilled" ? equipmentResult.value : [];
+    knownWorkdayNames = accountSettingsService.normalizeTextList(
+      (workdaysResult.status === "fulfilled" ? workdaysResult.value : []).map((item) => item.name)
+    );
     if (saved) {
       applyAccountSettings(saved, context.isPro);
     } else {
@@ -1275,6 +1333,7 @@ async function hydrateAccountSettings(context) {
     }
     renderCustomEquipment(context.isPro ? equipment : []);
     renderWorkFunctions(context.isPro ? functions : []);
+    refreshPlanningSuggestions();
     updateCalculation();
     await initializeWorkdayContext();
   } catch (error) {
@@ -1282,6 +1341,8 @@ async function hydrateAccountSettings(context) {
     applyAccountSettings(accountSettingsService.defaults, context.isPro);
     renderWorkFunctions([]);
     renderCustomEquipment([]);
+    knownWorkdayNames = [];
+    refreshPlanningSuggestions();
     await initializeWorkdayContext();
   }
   updateWorkdaySaveAccess();
@@ -1332,12 +1393,18 @@ function addPrintCalculationLine(container, label, calculation, amount) {
 function renderPrintBreakdown(result) {
   if (!result) return;
 
+  const workdayName = String(form.elements.namedItem("workdayName")?.value || "").trim();
+  const clientName = String(form.elements.namedItem("clientName")?.value || "").trim();
   const date = form.elements.namedItem("date").value;
   const startTime = form.elements.namedItem("startTime").value;
   const endTime = form.elements.namedItem("endTime").value;
   const lines = document.querySelector("#print-calculation-lines");
   const usesHalfDayRate = result.baseAmount < result.settings.dayRate;
 
+  setPrintValue("workdayName", workdayName || "-");
+  document.querySelector('[data-print-row="workdayName"]').hidden = !workdayName;
+  setPrintValue("clientName", clientName || "-");
+  document.querySelector('[data-print-row="clientName"]').hidden = !clientName;
   setPrintValue("date", date || "Niet ingevuld");
   setPrintValue("times", `${startTime} tot ${endTime}${result.endsNextDay ? " (volgende dag)" : ""}`);
   setPrintValue("breakMinutes", result.breakMinutes ? `${result.breakMinutes} minuten` : "-");
@@ -1410,10 +1477,20 @@ function renderPrintBreakdown(result) {
 }
 
 function buildSummary(result) {
+  const workdayName = String(form.elements.namedItem("workdayName")?.value || "").trim();
+  const clientName = String(form.elements.namedItem("clientName")?.value || "").trim();
   const date = form.elements.namedItem("date").value;
   const startTime = form.elements.namedItem("startTime").value;
   const endTime = form.elements.namedItem("endTime").value;
   const lines = [];
+
+  if (workdayName) {
+    lines.push(`Werkdag: ${workdayName}`);
+  }
+
+  if (clientName) {
+    lines.push(`Opdrachtgever: ${clientName}`);
+  }
 
   if (date) {
     lines.push(`Datum: ${date}`);
@@ -1515,6 +1592,9 @@ function updateCalculation(trackCompletion = false) {
   calculationStatus.hidden = true;
 
   if (trackCompletion) {
+    void rememberCurrentClient().catch((error) => {
+      console.warn("Opdrachtgever automatisch opslaan is mislukt.", error);
+    });
     analytics?.track("calculation_completed", {
       department,
       total_hours: Number(result.totalHours.toFixed(2)),

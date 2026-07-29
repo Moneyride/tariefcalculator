@@ -70,6 +70,40 @@ test("service worker bewaart de app-shell maar nooit API-verkeer", async () => {
   assert.match(worker, /networkFirst\(request/);
 });
 
+test("service worker toont algemene Web Push-meldingen en opent de juiste app-route", async () => {
+  const worker = await read("app/service-worker.js");
+  assert.match(worker, /addEventListener\("push"/);
+  assert.match(worker, /registration\.showNotification/);
+  assert.match(worker, /notification\.data\?\.url/);
+  assert.match(worker, /clients\.openWindow/);
+});
+
+test("account biedt meldingen als losse apparaatinstelling aan", async () => {
+  const html = await read("app/account.html");
+  const script = await read("app/account.js");
+  assert.match(html, /id="notification-settings"/);
+  assert.match(html, />Meldingen</);
+  assert.match(html, />Meldingen op dit apparaat</);
+  assert.doesNotMatch(html, />Werkdagmeldingen</);
+  assert.match(html, /saas\/pushService\.js/);
+  assert.match(script, /OveruurtjePush/);
+  assert.match(script, /pushService\.subscribe/);
+  assert.match(script, /pushService\.unsubscribe/);
+});
+
+test("Web Push gebruikt een algemene beveiligde notificatiewachtrij", async () => {
+  const migration = await read("supabase/migrations/202607290003_web_push.sql");
+  const edgeFunction = await read("supabase/functions/send-push-notifications/index.ts");
+  assert.match(migration, /create table if not exists public\.push_subscriptions/);
+  assert.match(migration, /create table if not exists public\.push_deliveries/);
+  assert.match(migration, /notifications_queue_push_deliveries/);
+  assert.match(migration, /grant execute on function public\.claim_push_deliveries\(integer\) to service_role/);
+  assert.match(edgeFunction, /PUSH_CRON_SECRET/);
+  assert.match(edgeFunction, /VAPID_PRIVATE_KEY/);
+  assert.match(edgeFunction, /dispatch_workday_start_notifications/);
+  assert.match(edgeFunction, /webpush\.sendNotification/);
+});
+
 test("Netlify laat browsers de service worker steeds hercontroleren", async () => {
   const config = await read("netlify.toml");
   assert.match(config, /for = "\/service-worker\.js"/);
@@ -91,5 +125,7 @@ test("Printlayouts houden veilige ruimte over voor mobiele browserfooters", asyn
   assert.doesNotMatch(footerRule, /position:\s*(?:absolute|fixed)/);
   assert.match(styles, /\.project-print-page footer\s*\{[^}]*top:\s*7mm/);
   assert.doesNotMatch(styles, /\.project-print-page footer\s*\{[^}]*bottom:/);
-  assert.match(styles, /\.print-breakdown\s*\{[^}]*min-height:\s*248mm/);
+  assert.match(styles, /\.print-breakdown\s*\{[^}]*min-height:\s*0/);
+  assert.match(styles, /body\.calculator-page\s+\.print-breakdown\s*\{[^}]*position:\s*absolute\s*!important/);
+  assert.match(styles, /body\.calculator-page\s*\{[^}]*overflow:\s*hidden\s*!important/);
 });

@@ -108,12 +108,11 @@
         <button class="workday-delete-button" type="button" aria-label="Werkdag verwijderen" title="Werkdag verwijderen">&times;</button>
       </div>
     `;
-    article.querySelector("strong").textContent = workday.name
-      ? `${workday.name} · ${dateFormat.format(parseDate(workday.workDate))}`
-      : dateFormat.format(parseDate(workday.workDate));
+    article.querySelector("strong").textContent = workday.name || "Werkdag";
+    const formattedDate = dateFormat.format(parseDate(workday.workDate));
     article.querySelector("small").textContent = snapshot.endTime
-      ? `${snapshot.startTime || "-"} – ${snapshot.endTime}`
-      : `${snapshot.startTime || "-"} – eindtijd open`;
+      ? `${formattedDate} · ${snapshot.startTime || "-"} – ${snapshot.endTime}`
+      : `${formattedDate} · ${snapshot.startTime || "-"} – eindtijd open`;
     article.querySelector(".timeline-workday-total").textContent = result
       ? euro.format(result.subtotalExVat)
       : "Nog geen totaal";

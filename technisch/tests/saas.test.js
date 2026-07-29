@@ -41,7 +41,8 @@ test("accountinstellingen gebruiken een stabiel databasecontract", async () => {
     droneVisible: true,
     roninVisible: false,
     droneTariffAmount: 65,
-    roninTariffAmount: 80
+    roninTariffAmount: 80,
+    frequentClients: ["KLM", " klm ", "NPO"]
   });
 
   assert.equal(serialized.user_id, "user-1");
@@ -63,6 +64,7 @@ test("accountinstellingen gebruiken een stabiel databasecontract", async () => {
   assert.equal(serialized.ronin_enabled, false);
   assert.equal(serialized.drone_tariff_amount, 65);
   assert.equal(serialized.ronin_tariff_amount, 80);
+  assert.deepEqual(Array.from(serialized.preferences.frequentClients), ["KLM", "NPO"]);
   assert.ok(serialized.updated_at);
 
   const normalized = context.OveruurtjeSettings.normalize(serialized);
@@ -75,6 +77,28 @@ test("accountinstellingen gebruiken een stabiel databasecontract", async () => {
   assert.equal(normalized.enableNightTariff, true);
   assert.equal(normalized.nightStart, "23:00");
   assert.equal(normalized.nightEnd, "07:00");
+  assert.deepEqual(Array.from(normalized.frequentClients), ["KLM", "NPO"]);
+});
+
+test("opdrachtgevers en snelle werkdagnamen zijn op alle relevante schermen beschikbaar", async () => {
+  const [calculatorHtml, projectHtml, accountHtml, calculatorScript] = await Promise.all([
+    readFile(path.join(rootDirectory, "app/index.html"), "utf8"),
+    readFile(path.join(rootDirectory, "app/projects.html"), "utf8"),
+    readFile(path.join(rootDirectory, "app/account.html"), "utf8"),
+    readFile(path.join(rootDirectory, "app/app.js"), "utf8")
+  ]);
+
+  assert.match(calculatorHtml, /name="clientName"/);
+  assert.match(calculatorHtml, /id="client-name-suggestions"/);
+  assert.match(calculatorHtml, /id="workday-name-suggestions"/);
+  assert.match(calculatorHtml, /data-print-row="clientName"/);
+  assert.match(projectHtml, /id="project-client-suggestions"/);
+  assert.doesNotMatch(calculatorHtml, /id="save-client-name"/);
+  assert.doesNotMatch(projectHtml, /id="save-project-client"/);
+  assert.match(accountHtml, /id="account-client-list"/);
+  assert.match(accountHtml, /id="account-enable-notifications"/);
+  assert.match(calculatorScript, /clientName:\s*String\(form\.elements\.namedItem\("clientName"\)/);
+  assert.match(calculatorScript, /rememberCurrentClient\(\)/);
 });
 
 test("accountinstellingen bewaren geen minimale afname als nul", async () => {
@@ -655,6 +679,37 @@ test("Werkdagen delen gebruikt verwijzingen, redacted RPCs en ontvanger-RLS", as
   assert.match(indexHtml, /id="share-from-participants"/);
   assert.doesNotMatch(indexHtml, /id="share-current-workday"/);
   assert.ok(indexHtml.indexOf("saas/shareService.js") < indexHtml.indexOf("saas/sessionUi.js"));
+});
+
+test("Volledige projecten delen blijft beperkt tot projectmetadata en dagtijden", async () => {
+  const migration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202607290002_project_sharing.sql"),
+    "utf8"
+  );
+  const projectsHtml = await readFile(path.join(rootDirectory, "app/projects.html"), "utf8");
+  const projectsScript = await readFile(path.join(rootDirectory, "app/projects.js"), "utf8");
+  const shareService = await readFile(path.join(rootDirectory, "app/saas/shareService.js"), "utf8");
+
+  assert.match(migration, /create table if not exists public\.project_share_invites/i);
+  assert.match(migration, /create table if not exists public\.project_shares/i);
+  assert.match(migration, /alter table public\.project_shares enable row level security/i);
+  assert.match(migration, /Recipients read project shares/i);
+  assert.match(migration, /create or replace function public\.create_project_share_invite/i);
+  assert.match(migration, /create or replace function public\.preview_project_share_invite/i);
+  assert.match(migration, /create or replace function public\.claim_project_share_invite/i);
+  assert.match(migration, /create or replace function public\.get_received_project_shares/i);
+  assert.match(migration, /'workDate', pd\.work_date/i);
+  assert.match(migration, /'startTime', coalesce\(pd\.calculation_data ->> 'startTime'/i);
+  assert.match(migration, /'endTime', coalesce\(pd\.calculation_data ->> 'endTime'/i);
+  assert.doesNotMatch(migration, /'rateAmount'/i);
+  assert.doesNotMatch(migration, /'subtotal'/i);
+  assert.match(projectsHtml, /id="share-project"/);
+  assert.match(projectsHtml, /id="shared-projects-section"/);
+  assert.match(projectsHtml, /id="project-invite-dialog"/);
+  assert.match(projectsScript, /shares\.listReceivedProjects\(\)/);
+  assert.match(projectsScript, /shares\.claimInvite\(token,\s*"project"\)/);
+  assert.match(shareService, /create_project_share_invite/);
+  assert.match(shareService, /get_received_project_shares/);
 });
 
 test("Delen kan een ingevulde werkdag klaarzetten en verstuurt wijzigingen pas na opslaan", async () => {

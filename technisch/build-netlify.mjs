@@ -12,6 +12,7 @@ function publicRuntimeConfig() {
     publicSiteUrl: process.env.PUBLIC_SITE_URL || "https://overuurtje.nl",
     supabaseUrl: process.env.SUPABASE_URL || "",
     supabaseAnonKey: process.env.SUPABASE_ANON_KEY || "",
+    vapidPublicKey: process.env.VAPID_PUBLIC_KEY || "",
     shopifyCheckoutUrl: process.env.SHOPIFY_CHECKOUT_URL || "",
     shopifyManageUrl: process.env.SHOPIFY_MANAGE_URL || "",
     allowMockSubscriptions: process.env.OVERUURTJE_ALLOW_MOCK_SUBSCRIPTIONS === "true"

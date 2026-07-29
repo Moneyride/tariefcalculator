@@ -25,13 +25,14 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260727c">
-    <link rel="stylesheet" href="styles.css?v=20260729a">
+    <link rel="stylesheet" href="styles.css?v=20260729f">
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
+    <script src="saas/pushService.js?v=20260729b" defer></script>
     <script src="saas/authService.js?v=20260727a" defer></script>
     <script src="saas/profileService.js?v=20260727d" defer></script>
-    <script src="saas/settingsService.js?v=20260727b" defer></script>
+    <script src="saas/settingsService.js?v=20260729d" defer></script>
     <script src="saas/functionService.js?v=20260725a" defer></script>
     <script src="saas/equipmentService.js?v=20260722a" defer></script>
     <script src="saas/projectService.js?v=20260727b" defer></script>
@@ -43,7 +44,7 @@
     <script src="saas/sessionUi.js?v=20260729a" defer></script>
     <script src="selectUi.js?v=20260725a" defer></script>
     <script src="timePicker.js?v=20260725a" defer></script>
-    <script src="account.js?v=20260727b" defer></script>
+    <script src="account.js?v=20260729e" defer></script>
     <script src="pwa.js?v=20260727c" defer></script>
   </head>
   <body>
@@ -255,6 +256,27 @@
                   </div>
                 </div>
               </div>
+
+              <div class="account-settings-group" id="client-settings">
+                <div class="account-subsection-heading">
+                  <div>
+                    <h3>Vaste opdrachtgevers</h3>
+                    <p>Gebruik deze namen als snelle keuze in de calculator en bij projecten.</p>
+                  </div>
+                </div>
+                <div class="client-manager">
+                  <div class="client-manager-add">
+                    <label>
+                      <span>Opdrachtgever toevoegen</span>
+                      <input id="account-client-name" type="text" maxlength="120" placeholder="Naam opdrachtgever" autocomplete="organization">
+                    </label>
+                    <button class="saas-secondary-button" id="account-add-client" type="button">Toevoegen</button>
+                  </div>
+                  <div class="client-manager-list" id="account-client-list"></div>
+                  <p class="saas-form-status" id="account-client-status" aria-live="polite"></p>
+                </div>
+              </div>
+
             </section>
 
             <section class="account-section pro-settings-section" id="account-equipment-section">
@@ -298,6 +320,23 @@
               <p class="saas-form-status" id="account-settings-status" aria-live="polite"></p>
             </div>
           </form>
+
+          <section class="account-section account-notifications-section" id="notification-settings">
+            <div class="account-section-heading">
+              <div>
+                <p class="account-section-kicker">Meldingen</p>
+                <h2>Blijf op de hoogte</h2>
+              </div>
+            </div>
+            <div class="notification-setting-row">
+              <div>
+                <h3>Meldingen op dit apparaat</h3>
+                <p>Ontvang berichten over geplande werkdagen, gedeelde tijden en belangrijke wijzigingen. Je stelt dit per apparaat in.</p>
+              </div>
+              <button class="saas-secondary-button" id="account-enable-notifications" type="button">Meldingen inschakelen</button>
+            </div>
+            <p class="saas-form-status" id="account-notification-status" aria-live="polite"></p>
+          </section>
 
           <section class="account-section account-workdays-section">
             <div class="account-section-heading">

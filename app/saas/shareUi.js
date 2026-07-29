@@ -20,16 +20,19 @@
   }
 
   function invitationUrl(token) {
-    const url = new URL("workdays.html", location.href);
+    const url = new URL(activeSource?.type === "project" ? "projects.html" : "workdays.html", location.href);
     url.search = "";
     url.searchParams.set("invite", token);
     return url.href;
   }
 
   async function shareLink(url) {
+    const isProject = activeSource?.type === "project";
     const payload = {
-      title: "Werkdag delen via Overuurtje.nl",
-      text: "Ik wil graag mijn werktijden met je delen via Overuurtje.nl.",
+      title: isProject ? "Project delen via Overuurtje.nl" : "Werkdag delen via Overuurtje.nl",
+      text: isProject
+        ? "Ik wil graag dit project en de werktijden met je delen via Overuurtje.nl."
+        : "Ik wil graag mijn werktijden met je delen via Overuurtje.nl.",
       url
     };
     if (navigator.share) {
@@ -72,7 +75,7 @@
       <p class="saas-form-status" data-share-status aria-live="polite"></p>
       <button class="saas-primary-button share-invite-button" type="button" data-share-submit>
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="m8.6 10.7 6.8-4.1M8.6 13.3l6.8 4.1"></path></svg>
-        Uitnodigingslink delen
+        <span data-share-submit-label>Uitnodigingslink delen</span>
       </button>
       <section class="shared-with-section" data-shared-with hidden>
         <h3>Deelnemers</h3>
@@ -118,7 +121,8 @@
         removeButton.hidden = participant.isOwner || !item;
         if (item) {
           removeButton.addEventListener("click", async () => {
-            await shares.remove(item.id);
+            if (activeSource.type === "project") await shares.removeProjectShare(item.id);
+            else await shares.remove(item.id);
             await renderSent(dialog);
             sessionUi.showToast("Collega verwijderd.");
             document.dispatchEvent(new CustomEvent("overuurtje:shares-changed"));
@@ -141,12 +145,16 @@
         sourceType: activeSource.type,
         sourceId: activeSource.id,
         message: dialog.querySelector("[data-share-message]").value,
-        shareMode: dialog.querySelector('[name="shareMode"]:checked').value
+        shareMode: activeSource.type === "project"
+          ? "direct"
+          : dialog.querySelector('[name="shareMode"]:checked').value
       });
       const message = await shareLink(invitationUrl(token));
       status.textContent = message;
       sessionUi.showToast(message);
-      globalThis.OveruurtjeAnalytics?.track?.("share_clicked", { share_type: "workday_invite" });
+      globalThis.OveruurtjeAnalytics?.track?.("share_clicked", {
+        share_type: activeSource.type === "project" ? "project_invite" : "workday_invite"
+      });
     } catch (error) {
       if (error?.name !== "AbortError") {
         status.textContent = error.message || "Delen is niet gelukt.";
@@ -166,6 +174,18 @@
     }
     activeSource = { type: sourceType, id: sourceId };
     const dialog = ensureDialog();
+    const isProject = sourceType === "project";
+    dialog.querySelector("h2").textContent = isProject ? "Deel project met collega's" : "Deel met collega's";
+    dialog.querySelector(".share-privacy-note").textContent = isProject
+      ? "Deel een persoonlijke uitnodigingslink. Je collega ziet de projectnaam, periode en datum en tijden per projectdag. Financiële gegevens blijven privé."
+      : "Deel een persoonlijke uitnodigingslink via WhatsApp, Berichten, Mail of een andere app. Alleen datum en tijden worden zichtbaar; financiële gegevens blijven privé.";
+    dialog.querySelector(".share-mode-options").hidden = isProject;
+    dialog.querySelector(".share-account-note").textContent = isProject
+      ? "De ontvanger kan het gedeelde project met een gratis of Pro-account bekijken."
+      : "De ontvanger kan een gratis of Pro-account gebruiken. Zonder account wordt eerst gevraagd om er een aan te maken.";
+    dialog.querySelector("[data-share-submit-label]").textContent = isProject
+      ? "Projectlink delen"
+      : "Uitnodigingslink delen";
     dialog.querySelector("[data-share-status]").textContent = "";
     openDialog(dialog);
     await renderSent(dialog);

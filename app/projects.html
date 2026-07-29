@@ -13,14 +13,14 @@
     <link rel="icon" href="favicon.ico" sizes="any">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260727c">
-    <link rel="stylesheet" href="styles.css?v=20260729a">
+    <link rel="stylesheet" href="styles.css?v=20260729f">
     <script>window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};window.gtag("consent","default",{analytics_storage:"denied",ad_storage:"denied",ad_user_data:"denied",ad_personalization:"denied"});</script>
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
     <script src="saas/authService.js?v=20260727a" defer></script>
     <script src="saas/profileService.js?v=20260727d" defer></script>
-    <script src="saas/settingsService.js?v=20260727b" defer></script>
+    <script src="saas/settingsService.js?v=20260729d" defer></script>
     <script src="saas/functionService.js?v=20260725a" defer></script>
     <script src="saas/equipmentService.js?v=20260722a" defer></script>
     <script src="saas/projectService.js?v=20260728a" defer></script>
@@ -30,10 +30,10 @@
     <script src="calculator.js?v=20260727b" defer></script>
     <script src="analytics.js?v=20260722q" defer></script>
     <script src="saas/sessionUi.js?v=20260729a" defer></script>
-    <script src="saas/shareUi.js?v=20260728a" defer></script>
+    <script src="saas/shareUi.js?v=20260729b" defer></script>
     <script src="selectUi.js?v=20260725a" defer></script>
     <script src="timePicker.js?v=20260725a" defer></script>
-    <script src="projects.js?v=20260728a" defer></script>
+    <script src="projects.js?v=20260729e" defer></script>
     <script src="pwa.js?v=20260727c" defer></script>
   </head>
   <body>
@@ -65,6 +65,17 @@
           <button class="saas-primary-button" id="new-project" type="button">Nieuw project</button>
         </div>
 
+        <section class="shared-projects-section account-section" id="shared-projects-section" hidden>
+          <div class="account-section-heading">
+            <div>
+              <p class="account-section-kicker">Met mij gedeeld</p>
+              <h2>Gedeelde projecten</h2>
+            </div>
+            <span class="shared-project-count" id="shared-project-count">0</span>
+          </div>
+          <div class="shared-project-list" id="shared-project-list"></div>
+        </section>
+
         <section class="account-empty-state" id="projects-locked" hidden>
           <h2>Projecten horen bij Overuurtje Pro</h2>
           <p>Bundel meerdere werkdagen, pas dagen afzonderlijk aan en exporteer één helder projectoverzicht.</p>
@@ -83,7 +94,11 @@
             <div class="account-section-heading"><div><p class="account-section-kicker">Project</p><h2 id="project-form-title">Nieuw project</h2></div></div>
             <div class="account-fields two-column-fields">
               <label><span>Projectnaam *</span><input name="name" type="text" maxlength="120" required></label>
-              <label><span>Opdrachtgever (optioneel)</span><input name="clientName" type="text" maxlength="120"></label>
+              <label>
+                <span>Opdrachtgever (optioneel)</span>
+                <input name="clientName" type="text" maxlength="120" list="project-client-suggestions" autocomplete="off">
+                <datalist id="project-client-suggestions"></datalist>
+              </label>
               <label class="wide-field"><span>Notities</span><textarea name="notes" rows="3" maxlength="4000" placeholder="Vul hier bijzonderheden in"></textarea></label>
             </div>
             <input name="startDate" type="hidden">
@@ -127,7 +142,14 @@
               </div>
             </div>
           </section>
-          <div class="project-overview-actions"><button class="saas-primary-button" id="project-pdf" type="button">Project-PDF opslaan</button><button class="saas-secondary-button" id="back-to-projects" type="button">Alle projecten</button></div>
+          <div class="project-overview-actions">
+            <button class="saas-primary-button" id="project-pdf" type="button">Project-PDF opslaan</button>
+            <button class="saas-secondary-button project-share-button" id="share-project" type="button">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="m8.6 10.7 6.8-4.1M8.6 13.3l6.8 4.1"></path></svg>
+              Deel project
+            </button>
+            <button class="saas-secondary-button" id="back-to-projects" type="button">Alle projecten</button>
+          </div>
         </section>
 
         <section id="day-editor-view" hidden>
@@ -224,6 +246,34 @@
     <section class="cookie-banner" id="cookie-banner" hidden><div class="cookie-copy"><h2>Cookies op Overuurtje.nl</h2><p>Met toestemming gebruiken we Analytics om de tool te verbeteren.</p></div><div class="cookie-actions"><button class="cookie-button secondary" id="cookie-decline">Alleen noodzakelijk</button><button class="cookie-button" id="cookie-accept">Analytics toestaan</button></div></section>
     <dialog class="saas-dialog auth-dialog" id="auth-dialog"><button class="dialog-close" type="button" data-dialog-close>&times;</button><div class="dialog-heading"><span class="dialog-mark">O</span><div><h2 id="auth-title">Inloggen</h2><p id="auth-intro"></p></div></div><form class="auth-form" id="auth-form"><label id="auth-name-field" hidden><span>Naam</span><input id="auth-name" type="text" autocomplete="name" maxlength="80" placeholder="Vul hier jouw naam in"></label><label><span>E-mailadres</span><input id="auth-email" type="email" required></label><label id="auth-password-field"><span>Wachtwoord</span><input id="auth-password" type="password" minlength="8" required></label><button class="saas-primary-button" id="auth-submit">Inloggen</button><p id="auth-status"></p></form><div class="auth-secondary-actions"><button type="button" id="auth-switch">Account maken</button><button type="button" id="auth-forgot">Wachtwoord vergeten</button></div></dialog>
     <dialog class="saas-dialog pro-dialog" id="pro-dialog"><button class="dialog-close" type="button" data-dialog-close>&times;</button><p class="dialog-eyebrow" id="pro-eyebrow">Overuurtje Pro</p><h2 id="pro-title">Projecten voor meerdere werkdagen</h2><p id="pro-intro">Maak een account en upgrade naar Pro om projecten op te slaan.</p><ul class="pro-benefits"><li>Meerdere afzonderlijke werkdagen</li><li>Projecttotalen en uitgebreide PDF</li><li>Veilig opgeslagen in je account</li></ul><button class="saas-primary-button" id="pro-checkout">Upgrade naar Pro</button><button class="saas-secondary-button" id="pro-continue-free">Verder met Free</button></dialog>
+    <dialog class="saas-dialog shared-project-dialog" id="shared-project-dialog">
+      <button class="dialog-close" type="button" data-shared-project-close aria-label="Sluiten">&times;</button>
+      <p class="dialog-eyebrow">Gedeeld project</p>
+      <h2 data-shared-project-title></h2>
+      <p class="shared-project-owner" data-shared-project-owner></p>
+      <dl class="shared-project-meta">
+        <div data-shared-project-client-row><dt>Opdrachtgever</dt><dd data-shared-project-client></dd></div>
+        <div><dt>Periode</dt><dd data-shared-project-period></dd></div>
+        <div><dt>Werkdagen</dt><dd data-shared-project-day-count></dd></div>
+      </dl>
+      <p class="shared-project-message" data-shared-project-message hidden></p>
+      <div class="shared-project-days" data-shared-project-days></div>
+      <p class="share-account-note">Tarieven, bedragen en andere financiële gegevens van je collega blijven privé.</p>
+    </dialog>
+    <dialog class="saas-dialog project-invite-dialog" id="project-invite-dialog">
+      <button class="dialog-close" type="button" data-project-invite-close aria-label="Sluiten">&times;</button>
+      <p class="dialog-eyebrow">Uitnodiging</p>
+      <h2 data-project-invite-title>Een collega deelt een project</h2>
+      <p data-project-invite-owner></p>
+      <p data-project-invite-period></p>
+      <p data-project-invite-message hidden></p>
+      <div class="project-invite-actions" data-project-invite-guest hidden>
+        <button class="saas-primary-button" type="button" data-project-invite-register>Account maken</button>
+        <button class="saas-secondary-button" type="button" data-project-invite-login>Inloggen</button>
+      </div>
+      <button class="saas-primary-button" type="button" data-project-invite-accept hidden>Project bekijken</button>
+      <p class="saas-form-status" data-project-invite-status aria-live="polite"></p>
+    </dialog>
     <div class="site-toast" id="site-toast" role="status" aria-live="polite" hidden></div>
   </body>
 </html>

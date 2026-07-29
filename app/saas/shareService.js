@@ -71,7 +71,43 @@
     available: row.available !== false
   });
 
+  const normalizeProjectShare = (row) => ({
+    id: row.id,
+    projectId: row.project_id,
+    ownerId: row.owner_id,
+    ownerName: row.owner_name || "Een collega",
+    projectName: row.project_name || "",
+    clientName: row.client_name || "",
+    startDate: row.start_date,
+    endDate: row.end_date,
+    optionalMessage: row.optional_message || "",
+    days: Array.isArray(row.days) ? row.days : [],
+    acceptedAt: row.accepted_at,
+    sourceUpdatedAt: row.source_updated_at
+  });
+
+  const normalizeProjectInvite = (row) => ({
+    token: row.token,
+    ownerName: row.owner_name || "Een collega",
+    sourceType: "project",
+    sourceId: row.project_id,
+    projectId: row.project_id,
+    projectName: row.project_name || "",
+    clientName: row.client_name || "",
+    startDate: row.start_date,
+    endDate: row.end_date,
+    optionalMessage: row.optional_message || "",
+    days: Array.isArray(row.days) ? row.days : [],
+    available: row.available !== false
+  });
+
   async function createInvite({ sourceType, sourceId, message = "", shareMode = "direct" }) {
+    if (sourceType === "project") {
+      return rpc("create_project_share_invite", {
+        p_project_id: sourceId,
+        p_message: message
+      });
+    }
     return rpc("create_workday_share_invite", {
       p_source_type: sourceType,
       p_source_id: sourceId,
@@ -80,13 +116,21 @@
     });
   }
 
-  async function previewInvite(token) {
+  async function previewInvite(token, sourceType = "workday") {
+    if (sourceType === "project") {
+      const rows = await rpc("preview_project_share_invite", { p_token: token });
+      const row = Array.isArray(rows) ? rows[0] : rows;
+      return row ? normalizeProjectInvite(row) : null;
+    }
     const rows = await rpc("preview_workday_share_invite", { p_token: token });
     const row = Array.isArray(rows) ? rows[0] : rows;
     return row ? normalizeInvite(row) : null;
   }
 
-  async function claimInvite(token) {
+  async function claimInvite(token, sourceType = "workday") {
+    if (sourceType === "project") {
+      return rpc("claim_project_share_invite", { p_token: token });
+    }
     return rpc("claim_workday_share_invite", { p_token: token });
   }
 
@@ -94,7 +138,16 @@
     return (await rpc("get_received_workday_shares") || []).map(normalizeReceived);
   }
 
+  async function listReceivedProjects() {
+    return (await rpc("get_received_project_shares") || []).map(normalizeProjectShare);
+  }
+
   async function listSent(sourceType, sourceId) {
+    if (sourceType === "project") {
+      return (await rpc("get_sent_project_shares", { p_project_id: sourceId }) || [])
+        .map(normalizeSent)
+        .sort((a, b) => a.recipientName.localeCompare(b.recipientName, "nl"));
+    }
     return (await rpc("get_sent_workday_shares", {
       p_source_type: sourceType,
       p_source_id: sourceId
@@ -104,10 +157,13 @@
   }
 
   async function listParticipants(sourceType, sourceId) {
-    return (await rpc("get_workday_share_participants", {
-      p_source_type: sourceType,
-      p_source_id: sourceId
-    }) || []).map((row) => ({
+    const rows = sourceType === "project"
+      ? await rpc("get_project_share_participants", { p_project_id: sourceId })
+      : await rpc("get_workday_share_participants", {
+          p_source_type: sourceType,
+          p_source_id: sourceId
+        });
+    return (rows || []).map((row) => ({
       userId: row.user_id,
       firstName: row.first_name || "Collega",
       isOwner: Boolean(row.is_owner),
@@ -124,6 +180,10 @@
     await rpc("remove_workday_share", { p_share_id: id });
   }
 
+  async function removeProjectShare(id) {
+    await rpc("remove_project_share", { p_share_id: id });
+  }
+
   async function listNotifications() {
     return (await rpc("list_overuurtje_notifications") || []).map(normalizeNotification);
   }
@@ -137,10 +197,12 @@
     previewInvite,
     claimInvite,
     listReceived,
+    listReceivedProjects,
     listSent,
     listParticipants,
     accept,
     remove,
+    removeProjectShare,
     listNotifications,
     markNotificationsRead
   });

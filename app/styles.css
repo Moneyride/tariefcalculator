@@ -1250,6 +1250,144 @@
   font-weight: 700;
 }
 
+.project-share-button,
+.shared-project-list-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.project-share-button {
+  gap: 9px;
+}
+
+.project-share-button svg {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 auto;
+}
+
+.shared-projects-section {
+  margin-bottom: 28px;
+}
+
+.shared-project-count {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 106, 26, 0.12);
+  color: #d94f08;
+  font-weight: 800;
+}
+
+.shared-project-list {
+  display: grid;
+  gap: 12px;
+}
+
+.shared-project-list-item {
+  width: 100%;
+  gap: 14px;
+  padding: 17px 18px;
+  border: 1px solid rgba(31, 67, 53, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.48);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.shared-project-list-item > span:nth-child(2) {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 4px;
+  min-width: 0;
+}
+
+.shared-project-list-item strong {
+  color: var(--accent-dark);
+}
+
+.shared-project-list-item small {
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.shared-project-dialog,
+.project-invite-dialog {
+  width: min(620px, calc(100vw - 32px));
+}
+
+.shared-project-owner,
+.shared-project-message {
+  color: var(--muted);
+}
+
+.shared-project-message {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(255, 106, 26, 0.08);
+}
+
+.shared-project-meta {
+  display: grid;
+  gap: 0;
+  margin: 20px 0;
+}
+
+.shared-project-meta > div,
+.shared-project-day {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.8fr) minmax(0, 1.2fr);
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(31, 67, 53, 0.1);
+}
+
+.shared-project-meta dt,
+.shared-project-day span {
+  color: var(--muted);
+}
+
+.shared-project-meta dd {
+  margin: 0;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.shared-project-days {
+  display: grid;
+  margin: 20px 0;
+}
+
+.shared-project-day strong {
+  color: var(--accent-dark);
+}
+
+.project-invite-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+@media (max-width: 760px) {
+  .shared-project-list-item {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .shared-project-list-item .workday-origin-tag {
+    margin-left: 58px;
+  }
+
+  .shared-project-meta > div,
+  .shared-project-day {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+}
+
 .saas-text-button {
   border: 0;
   background: transparent;
@@ -3920,6 +4058,83 @@ summary:hover {
   margin-top: 18px;
 }
 
+.client-manager {
+  display: grid;
+  gap: 14px;
+}
+
+.client-manager-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.client-manager-list {
+  display: grid;
+  gap: 8px;
+}
+
+.client-manager-list > div {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 12px 9px 16px;
+  border: 1px solid rgba(31, 67, 53, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.42);
+  font-weight: 700;
+}
+
+.client-remove-button {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #a34839;
+  box-shadow: none;
+  font-size: 1.25rem;
+}
+
+.client-remove-button:hover {
+  background: rgba(163, 72, 57, 0.08);
+  color: #8e382d;
+  transform: none;
+}
+
+.notification-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.notification-setting-row h3,
+.notification-setting-row p {
+  margin: 0;
+}
+
+.notification-setting-row p {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.account-notifications-section {
+  display: grid;
+  gap: 22px;
+}
+
+.account-notifications-section .notification-setting-row {
+  padding-top: 20px;
+  border-top: 1px solid rgba(31, 67, 53, 0.1);
+}
+
 .account-settings-toggle-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -5041,6 +5256,37 @@ summary:hover {
     0 10px 25px rgba(255, 106, 26, 0.08);
 }
 
+@media (min-width: 761px) {
+  .time-control.is-live,
+  .time-control.is-live:focus-within {
+    border-color: transparent;
+    box-shadow: 0 10px 25px rgba(255, 106, 26, 0.08);
+    outline: 0;
+  }
+
+  .time-control.is-live input:focus {
+    border-color: transparent;
+    box-shadow: none;
+    outline: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .client-manager-add,
+  .notification-setting-row {
+    grid-template-columns: 1fr;
+  }
+
+  .notification-setting-row {
+    display: grid;
+  }
+
+  .client-manager-add .saas-secondary-button,
+  .notification-setting-row .saas-secondary-button {
+    width: 100%;
+  }
+}
+
 .time-control.is-live input {
   color: transparent;
   caret-color: transparent;
@@ -5984,9 +6230,52 @@ summary:hover {
     position: relative;
     display: block;
     box-sizing: border-box;
-    min-height: 248mm;
-    padding: 4mm;
+    min-height: 0;
+    height: auto;
+    padding: 3mm 4mm;
     color: var(--text);
+  }
+
+  body.calculator-page {
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: #fff !important;
+  }
+
+  body.calculator-page > *:not(.app-shell) {
+    display: none !important;
+  }
+
+  body.calculator-page .app-shell,
+  body.calculator-page .main-glass {
+    display: block !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  body.calculator-page .main-glass > *:not(.print-breakdown) {
+    display: none !important;
+  }
+
+  body.calculator-page .print-breakdown {
+    display: block !important;
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    max-height: 270mm !important;
+    overflow: hidden !important;
+    break-after: avoid-page;
+    page-break-after: avoid;
   }
 
   .print-breakdown-header {

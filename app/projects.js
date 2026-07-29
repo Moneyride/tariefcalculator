@@ -8,6 +8,7 @@
   const equipmentService = globalThis.OveruurtjeEquipment;
   const featureGate = globalThis.OveruurtjeFeatureGate;
   const shareUi = globalThis.OveruurtjeShareUI;
+  const shares = globalThis.OveruurtjeShares;
   const calculator = globalThis.TariffCalculator;
   const euro = new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" });
   const number = new Intl.NumberFormat("nl-NL", { maximumFractionDigits: 2 });
@@ -17,11 +18,19 @@
   const list = document.querySelector("#project-list");
   const form = document.querySelector("#project-form");
   const dayForm = document.querySelector("#day-form");
+  const sharedProjectsSection = document.querySelector("#shared-projects-section");
+  const sharedProjectList = document.querySelector("#shared-project-list");
+  const sharedProjectDialog = document.querySelector("#shared-project-dialog");
+  const projectInviteDialog = document.querySelector("#project-invite-dialog");
+  const projectClientInput = form.elements.namedItem("clientName");
+  const projectClientSuggestions = document.querySelector("#project-client-suggestions");
   let context = null;
   let accountSettings = settingsService.defaults;
   let workFunctions = [];
   let equipment = [];
   let projectList = [];
+  let sharedProjects = [];
+  let activeProjectInvite = null;
   let current = null;
   let currentDayId = null;
   let dirty = false;
@@ -38,6 +47,30 @@
   const options = () => ({ mock: Boolean(context?.subscription.isMock) });
   const show = (id) => views.forEach((view) => { document.querySelector(`#${view}`).hidden = view !== id; });
   const setDirty = (value) => { dirty = value; };
+  const openDialog = (dialog) => typeof dialog.showModal === "function" ? dialog.showModal() : dialog.setAttribute("open", "");
+  const closeDialog = (dialog) => typeof dialog.close === "function" ? dialog.close() : dialog.removeAttribute("open");
+
+  function renderClientSuggestions() {
+    projectClientSuggestions.replaceChildren(...(accountSettings.frequentClients || []).map((name) => {
+      const option = document.createElement("option");
+      option.value = name;
+      return option;
+    }));
+  }
+
+  async function rememberProjectClient() {
+    const value = projectClientInput.value.trim();
+    if (!value || !context?.auth.user) return false;
+    const exists = (accountSettings.frequentClients || [])
+      .some((name) => name.localeCompare(value, "nl-NL", { sensitivity: "base" }) === 0);
+    if (exists) return false;
+    accountSettings = await settingsService.save(context.auth.user.id, {
+      ...accountSettings,
+      frequentClients: settingsService.normalizeTextList([...(accountSettings.frequentClients || []), value])
+    });
+    renderClientSuggestions();
+    return true;
+  }
 
   function defaultDayData() {
     const defaultFunction = workFunctions.find((item) => item.isDefault) || workFunctions[0] || null;
@@ -121,6 +154,107 @@
     if (requested && projectList.some((project) => project.id === requested)) {
       history.replaceState(null, "", location.pathname);
       await openProject(requested, requestedDay);
+    }
+  }
+
+  function renderSharedProjectDays(container, days) {
+    container.replaceChildren(...days.map((day) => {
+      const row = document.createElement("div");
+      row.className = "shared-project-day";
+      row.innerHTML = "<strong></strong><span></span>";
+      row.querySelector("strong").textContent = formatDate(day.workDate);
+      row.querySelector("span").textContent = `${day.startTime || "-"} – ${day.endTime || "eindtijd open"}`;
+      return row;
+    }));
+  }
+
+  function openSharedProject(project) {
+    sharedProjectDialog.querySelector("[data-shared-project-title]").textContent = project.projectName;
+    sharedProjectDialog.querySelector("[data-shared-project-owner]").textContent = `${project.ownerName} heeft dit project met je gedeeld.`;
+    const clientRow = sharedProjectDialog.querySelector("[data-shared-project-client-row]");
+    clientRow.hidden = !project.clientName;
+    sharedProjectDialog.querySelector("[data-shared-project-client]").textContent = project.clientName;
+    sharedProjectDialog.querySelector("[data-shared-project-period]").textContent = `${formatDate(project.startDate)} – ${formatDate(project.endDate)}`;
+    sharedProjectDialog.querySelector("[data-shared-project-day-count]").textContent = String(project.days.length);
+    const message = sharedProjectDialog.querySelector("[data-shared-project-message]");
+    message.textContent = project.optionalMessage;
+    message.hidden = !project.optionalMessage;
+    renderSharedProjectDays(sharedProjectDialog.querySelector("[data-shared-project-days]"), project.days);
+    openDialog(sharedProjectDialog);
+  }
+
+  function renderSharedProjects() {
+    document.querySelector("#shared-project-count").textContent = String(sharedProjects.length);
+    sharedProjectsSection.hidden = sharedProjects.length === 0;
+    sharedProjectList.replaceChildren(...sharedProjects.map((project) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "shared-project-list-item";
+      button.innerHTML = `
+        <span class="share-avatar"></span>
+        <span>
+          <strong></strong>
+          <small></small>
+        </span>
+        <span class="workday-origin-tag">Gedeeld</span>
+        <span aria-hidden="true">→</span>
+      `;
+      button.querySelector(".share-avatar").textContent = project.ownerName.charAt(0).toUpperCase();
+      button.querySelector("strong").textContent = project.projectName;
+      button.querySelector("small").textContent = `${project.ownerName} · ${formatDate(project.startDate)} – ${formatDate(project.endDate)} · ${project.days.length} werkdagen`;
+      button.addEventListener("click", () => openSharedProject(project));
+      return button;
+    }));
+  }
+
+  async function loadSharedProjects() {
+    sharedProjects = context?.auth.user ? await shares.listReceivedProjects() : [];
+    renderSharedProjects();
+  }
+
+  function fillInviteDialog(invite) {
+    projectInviteDialog.querySelector("[data-project-invite-title]").textContent = invite.projectName || "Gedeeld project";
+    projectInviteDialog.querySelector("[data-project-invite-owner]").textContent = `${invite.ownerName} wil dit project met je delen.`;
+    projectInviteDialog.querySelector("[data-project-invite-period]").textContent = `${formatDate(invite.startDate)} – ${formatDate(invite.endDate)} · ${invite.days.length} werkdagen`;
+    const message = projectInviteDialog.querySelector("[data-project-invite-message]");
+    message.textContent = invite.optionalMessage;
+    message.hidden = !invite.optionalMessage;
+    const loggedIn = Boolean(context?.auth.user);
+    projectInviteDialog.querySelector("[data-project-invite-guest]").hidden = loggedIn;
+    projectInviteDialog.querySelector("[data-project-invite-accept]").hidden = !loggedIn;
+    projectInviteDialog.querySelector("[data-project-invite-status]").textContent = "";
+  }
+
+  async function loadProjectInvite() {
+    const token = new URLSearchParams(location.search).get("invite");
+    if (!token) return;
+    try {
+      activeProjectInvite = await shares.previewInvite(token, "project");
+      if (!activeProjectInvite?.available) throw new Error("Deze uitnodiging is niet meer beschikbaar.");
+      fillInviteDialog(activeProjectInvite);
+      if (!projectInviteDialog.open) openDialog(projectInviteDialog);
+    } catch (error) {
+      activeProjectInvite = null;
+      projectInviteDialog.querySelector("[data-project-invite-status]").textContent = error.message;
+      if (!projectInviteDialog.open) openDialog(projectInviteDialog);
+    }
+  }
+
+  async function acceptProjectInvite() {
+    const token = new URLSearchParams(location.search).get("invite");
+    if (!token) return;
+    const status = projectInviteDialog.querySelector("[data-project-invite-status]");
+    try {
+      status.textContent = "Project wordt toegevoegd…";
+      await shares.claimInvite(token, "project");
+      history.replaceState(null, "", location.pathname);
+      closeDialog(projectInviteDialog);
+      await loadSharedProjects();
+      const shared = sharedProjects.find((item) => item.projectId === activeProjectInvite?.projectId);
+      if (shared) openSharedProject(shared);
+      sessionUi.showToast("Project toegevoegd.");
+    } catch (error) {
+      status.textContent = error.message || "Project toevoegen is niet gelukt.";
     }
   }
 
@@ -224,6 +358,11 @@
         workDate,
         calculationData: existing.get(workDate)?.calculationData || defaultDayData()
       })), options());
+      try {
+        await rememberProjectClient();
+      } catch (error) {
+        console.warn("Opdrachtgever automatisch opslaan is mislukt.", error);
+      }
       setDirty(false); await loadList(); await openProject(saved.id);
     } catch (error) { document.querySelector("#project-form-status").textContent = error.message || "Opslaan is niet gelukt."; }
   }
@@ -457,14 +596,23 @@
   }
 
   async function initialize(userContext) {
-    const contextKey = `${userContext.auth.user?.id || "guest"}:${userContext.subscription.status}`;
+    const contextKey = `${userContext.auth.user?.id || "guest"}:${userContext.subscription.status}:${location.search}`;
     if (contextKey === initializedContextKey) return;
     initializedContextKey = contextKey;
     context = userContext;
     const pro = Boolean(context.auth.user && featureGate.canUse("projects", { isPro: context.subscription.isPro }));
     document.querySelector("#projects-locked").hidden = pro;
     document.querySelector("#new-project").hidden = !pro;
-    if (!pro) { views.forEach((id) => { document.querySelector(`#${id}`).hidden = true; }); return; }
+    views.forEach((id) => { document.querySelector(`#${id}`).hidden = true; });
+    if (context.auth.user) {
+      try { await loadSharedProjects(); }
+      catch (error) { document.querySelector("#projects-unavailable").hidden = false; document.querySelector("#projects-error").textContent = error.message; }
+    } else {
+      sharedProjects = [];
+      renderSharedProjects();
+    }
+    await loadProjectInvite();
+    if (!pro) return;
     try {
       const [settingsResult, functionsResult, equipmentResult] = await Promise.allSettled([
         settingsService.load(context.auth.user.id),
@@ -472,6 +620,7 @@
         equipmentService.list(context.auth.user.id)
       ]);
       accountSettings = { ...settingsService.defaults, ...(settingsResult.status === "fulfilled" ? (settingsResult.value || {}) : {}) };
+      renderClientSuggestions();
       workFunctions = functionsResult.status === "fulfilled" ? functionsResult.value : [];
       equipment = equipmentResult.status === "fulfilled" ? equipmentResult.value : [];
       await loadList();
@@ -479,6 +628,9 @@
   }
 
   document.querySelector("#new-project").addEventListener("click", () => openProjectForm());
+  document.querySelector("#share-project").addEventListener("click", () => {
+    if (current?.project.id) shareUi?.open({ sourceType: "project", sourceId: current.project.id });
+  });
   form.addEventListener("submit", saveProject); form.addEventListener("input", () => setDirty(true));
   document.querySelector("#calendar-grid").addEventListener("click", (event) => {
     const day = event.target.closest("[data-calendar-date]");
@@ -525,6 +677,17 @@
     if (currentDayId) shareUi?.open({ sourceType: "project_day", sourceId: currentDayId });
   });
   document.querySelector("#project-pdf").addEventListener("click", () => { buildProjectPrint(); window.print(); });
+  sharedProjectDialog.querySelector("[data-shared-project-close]").addEventListener("click", () => closeDialog(sharedProjectDialog));
+  projectInviteDialog.querySelector("[data-project-invite-close]").addEventListener("click", () => closeDialog(projectInviteDialog));
+  projectInviteDialog.querySelector("[data-project-invite-login]").addEventListener("click", () => {
+    closeDialog(projectInviteDialog);
+    sessionUi.openAuth("login", { purpose: "share" });
+  });
+  projectInviteDialog.querySelector("[data-project-invite-register]").addEventListener("click", () => {
+    closeDialog(projectInviteDialog);
+    sessionUi.openAuth("register", { purpose: "share" });
+  });
+  projectInviteDialog.querySelector("[data-project-invite-accept]").addEventListener("click", acceptProjectInvite);
   addEventListener("beforeunload", (event) => { if (dirty) { event.preventDefault(); event.returnValue = ""; } });
   document.addEventListener("overuurtje:user-context", (event) => initialize(event.detail));
   sessionUi.ready.then(initialize);

@@ -10,6 +10,7 @@ const scriptFiles = [
   "runtime-config.js",
   "saas/config.js",
   "saas/supabaseClient.js",
+  "saas/pushService.js",
   "saas/authService.js",
   "saas/profileService.js",
   "saas/settingsService.js",

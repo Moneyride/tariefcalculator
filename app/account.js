@@ -52,6 +52,13 @@
   const accountWorkdaysSection = document.querySelector(".account-workdays-section");
   const newEquipmentName = document.querySelector("#new-equipment-name");
   const newEquipmentAmount = document.querySelector("#new-equipment-amount");
+  const accountClientName = document.querySelector("#account-client-name");
+  const accountAddClient = document.querySelector("#account-add-client");
+  const accountClientList = document.querySelector("#account-client-list");
+  const accountClientStatus = document.querySelector("#account-client-status");
+  const accountEnableNotifications = document.querySelector("#account-enable-notifications");
+  const accountNotificationStatus = document.querySelector("#account-notification-status");
+  const pushService = globalThis.OveruurtjePush;
   let currentContext = null;
   let loadedSettings = settingsService.defaults;
   let workFunctions = [];
@@ -116,8 +123,63 @@
       roninVisible: canEditEquipment ? data.get("roninVisible") === "on" : loadedSettings.roninVisible,
       droneTariffAmount: canEditEquipment ? Number(data.get("droneTariffAmount")) || 0 : loadedSettings.droneTariffAmount,
       roninTariffAmount: canEditEquipment ? Number(data.get("roninTariffAmount")) || 0 : loadedSettings.roninTariffAmount,
+      frequentClients: loadedSettings.frequentClients || [],
       preferences: loadedSettings.preferences || {}
     };
+  }
+
+  function renderClients() {
+    const clients = loadedSettings.frequentClients || [];
+    accountClientList.replaceChildren(...clients.map((name) => {
+      const row = document.createElement("div");
+      const label = document.createElement("span");
+      const remove = document.createElement("button");
+      label.textContent = name;
+      remove.type = "button";
+      remove.className = "client-remove-button";
+      remove.setAttribute("aria-label", `${name} verwijderen`);
+      remove.title = "Verwijderen";
+      remove.textContent = "×";
+      remove.addEventListener("click", async () => {
+        loadedSettings = await settingsService.save(currentContext.auth.user.id, {
+          ...readSettings(),
+          frequentClients: clients.filter((item) => item !== name)
+        });
+        renderClients();
+        accountClientStatus.textContent = "Opdrachtgever verwijderd.";
+      });
+      row.append(label, remove);
+      return row;
+    }));
+    accountClientList.hidden = clients.length === 0;
+  }
+
+  async function renderNotificationPermission() {
+    if (!accountEnableNotifications) return;
+    const result = pushService
+      ? await pushService.inspect()
+      : { state: "unsupported" };
+    const labels = {
+      subscribed: "Meldingen uitschakelen",
+      ready: "Meldingen inschakelen",
+      prompt: "Meldingen inschakelen",
+      denied: "Geblokkeerd in browser",
+      unsupported: "Niet ondersteund",
+      unconfigured: "Nog niet ingesteld",
+      "ios-install-required": "Installeer eerst de app"
+    };
+    const descriptions = {
+      subscribed: "Meldingen zijn actief op dit apparaat.",
+      ready: "De browser geeft toestemming, maar dit apparaat is nog niet aangemeld voor pushberichten.",
+      denied: "Sta meldingen toe via de instellingen van je browser of iPhone.",
+      unsupported: "Deze browser ondersteunt geen pushmeldingen.",
+      unconfigured: "De technische Web Push-configuratie moet nog worden afgerond.",
+      "ios-install-required": "Open Overuurtje vanaf je iPhone-beginscherm om meldingen in te schakelen."
+    };
+    accountEnableNotifications.dataset.pushState = result.state;
+    accountEnableNotifications.disabled = ["denied", "unsupported", "unconfigured"].includes(result.state);
+    accountEnableNotifications.textContent = labels[result.state] || "Meldingen inschakelen";
+    accountNotificationStatus.textContent = descriptions[result.state] || "";
   }
 
   function renderFunctions(items) {
@@ -341,6 +403,13 @@
     setVisible(content, Boolean(authState.user));
     if (!authState.user) return;
 
+    try {
+      await pushService?.refresh();
+    } catch (error) {
+      console.warn("De pushsubscription kon niet worden ververst.", error);
+    }
+    await renderNotificationPermission();
+
     email.textContent = authState.user.email || "-";
     created.textContent = formatDate(context.profile?.createdAt || authState.user.created_at);
     profileNameForm.elements.namedItem("displayName").value = context.profile?.displayName || "";
@@ -366,6 +435,7 @@
       const savedProjects = projectsResult.status === "fulfilled" ? projectsResult.value : [];
       const savedWorkdays = workdaysResult.status === "fulfilled" ? workdaysResult.value : [];
       populateSettings(saved);
+      renderClients();
       renderFunctions(functions);
       renderEquipment(equipment);
       accountProjectList.replaceChildren(...savedProjects.slice(0, 4).map((project) => {
@@ -390,10 +460,10 @@
         const copy = document.createElement("span");
         const title = document.createElement("strong");
         const detail = document.createElement("small");
-        title.textContent = workday.name || formatWorkDate(workday.workDate);
+        title.textContent = workday.name || "Werkdag";
         detail.textContent = snapshot.endTime
-          ? `${workday.name ? `${formatWorkDate(workday.workDate)} · ` : ""}${snapshot.startTime || "-"} – ${snapshot.endTime} · Afgerond`
-          : `${workday.name ? `${formatWorkDate(workday.workDate)} · ` : ""}${snapshot.startTime || "-"} · Concept`;
+          ? `${formatWorkDate(workday.workDate)} · ${snapshot.startTime || "-"} – ${snapshot.endTime} · Afgerond`
+          : `${formatWorkDate(workday.workDate)} · ${snapshot.startTime || "-"} · Concept`;
         copy.append(title, detail);
         const arrow = document.createElement("span");
         arrow.setAttribute("aria-hidden", "true");
@@ -418,6 +488,40 @@
   }
 
   document.querySelector("#account-login-cta")?.addEventListener("click", () => sessionUi.openAuth("login"));
+  accountAddClient?.addEventListener("click", async () => {
+    const name = accountClientName.value.trim();
+    if (!currentContext?.auth.user || !name) return;
+    const frequentClients = settingsService.normalizeTextList([...(loadedSettings.frequentClients || []), name]);
+    loadedSettings = await settingsService.save(currentContext.auth.user.id, {
+      ...readSettings(),
+      frequentClients
+    });
+    accountClientName.value = "";
+    renderClients();
+    accountClientStatus.textContent = "Opdrachtgever opgeslagen.";
+  });
+  accountClientName?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      accountAddClient.click();
+    }
+  });
+  accountEnableNotifications?.addEventListener("click", async () => {
+    if (!pushService || !currentContext?.auth.user) return renderNotificationPermission();
+    accountEnableNotifications.disabled = true;
+    accountNotificationStatus.textContent = "Bezig…";
+    try {
+      if (accountEnableNotifications.dataset.pushState === "subscribed") {
+        await pushService.unsubscribe();
+      } else {
+        await pushService.subscribe();
+      }
+    } catch (error) {
+      accountNotificationStatus.textContent = error.message || "Meldingen konden niet worden aangepast.";
+    }
+    await renderNotificationPermission();
+  });
+  void renderNotificationPermission();
   profileNameForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!currentContext?.auth.user || !profileNameForm.reportValidity()) return;

@@ -25,8 +25,23 @@
     roninVisible: false,
     droneTariffAmount: 50,
     roninTariffAmount: 50,
+    frequentClients: [],
     preferences: {}
   });
+
+  function normalizeTextList(value) {
+    if (!Array.isArray(value)) return [];
+    const seen = new Set();
+    return value
+      .map((item) => String(item || "").trim())
+      .filter((item) => {
+        const key = item.toLocaleLowerCase("nl-NL");
+        if (!item || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 100);
+  }
 
   function normalizeMinimumHours(value) {
     const parsed = Number(value);
@@ -59,6 +74,7 @@
       roninVisible: Boolean(row.ronin_enabled),
       droneTariffAmount: Number(row.drone_tariff_amount ?? defaults.droneTariffAmount),
       roninTariffAmount: Number(row.ronin_tariff_amount ?? defaults.roninTariffAmount),
+      frequentClients: normalizeTextList(preferences.frequentClients),
       preferences
     };
   }
@@ -89,7 +105,8 @@
         enableOvertimeFrom14: Boolean(settings.enableOvertimeFrom14),
         enableNightTariff: Boolean(settings.enableNightTariff),
         nightStart: /^\d{2}:\d{2}$/.test(settings.nightStart || "") ? settings.nightStart : defaults.nightStart,
-        nightEnd: /^\d{2}:\d{2}$/.test(settings.nightEnd || "") ? settings.nightEnd : defaults.nightEnd
+        nightEnd: /^\d{2}:\d{2}$/.test(settings.nightEnd || "") ? settings.nightEnd : defaults.nightEnd,
+        frequentClients: normalizeTextList(settings.frequentClients)
       },
       updated_at: new Date().toISOString()
     };
@@ -125,5 +142,5 @@
     return normalize(data);
   }
 
-  globalThis.OveruurtjeSettings = Object.freeze({ defaults, normalize, serialize, load, save });
+  globalThis.OveruurtjeSettings = Object.freeze({ defaults, normalize, serialize, load, save, normalizeTextList });
 })();

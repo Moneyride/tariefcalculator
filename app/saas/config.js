@@ -9,6 +9,7 @@
     publicSiteUrl: publicSiteUrl.href.replace(/\/$/, ""),
     supabaseUrl: String(runtime.supabaseUrl || "").replace(/\/$/, ""),
     supabaseAnonKey: String(runtime.supabaseAnonKey || ""),
+    vapidPublicKey: String(runtime.vapidPublicKey || ""),
     shopifyCheckoutUrl: String(runtime.shopifyCheckoutUrl || ""),
     shopifyManageUrl: String(runtime.shopifyManageUrl || ""),
     allowMockSubscriptions: Boolean(runtime.allowMockSubscriptions)
