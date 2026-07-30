@@ -113,6 +113,7 @@ let todayWorkday = null;
 let workdayContextInitializedFor = null;
 let liveWorkdayController = null;
 let workdayNotificationController = null;
+let liveWorkdayArmed = false;
 let sharedReceiverSyncTimer = null;
 let knownWorkdayNames = [];
 
@@ -827,6 +828,7 @@ function applyWorkdaySnapshot(workday, { projectContext = null } = {}) {
   form.elements.namedItem("startTime").value = snapshot.startTime || "08:00";
   const restoredEndTime = form.elements.namedItem("endTime");
   restoredEndTime.value = snapshot.endTime || "";
+  liveWorkdayArmed = !snapshot.endTime;
   delete restoredEndTime.dataset.timePicked;
   delete restoredEndTime.dataset.liveCalculated;
   delete restoredEndTime.dataset.liveStopped;
@@ -1221,6 +1223,7 @@ function applySharedTimesImport() {
     form.elements.namedItem("startTime").value = snapshot.startTime || "08:00";
     const importedEndTime = form.elements.namedItem("endTime");
     importedEndTime.value = snapshot.endTime || "";
+    liveWorkdayArmed = !snapshot.endTime;
     delete importedEndTime.dataset.timePicked;
     delete importedEndTime.dataset.liveCalculated;
     delete importedEndTime.dataset.liveStopped;
@@ -1636,6 +1639,7 @@ async function stopLiveWorkdayAndCalculate() {
   endTimeField.value = roundedEndTime;
   endTimeField.dataset.timePicked = "true";
   endTimeField.dataset.liveStopped = "true";
+  liveWorkdayArmed = false;
   delete endTimeField.dataset.timeRestored;
   delete endTimeField.dataset.liveCalculated;
   liveEndTimecode.textContent = roundedEndTime;
@@ -1660,6 +1664,7 @@ function resumeLiveWorkday() {
   delete endTimeField.dataset.timeRestored;
   delete endTimeField.dataset.liveStopped;
   delete endTimeField.dataset.liveCalculated;
+  liveWorkdayArmed = true;
   resumeLiveWorkdayButton.hidden = true;
   clearCalculationDisplay();
   liveWorkdayController?.update();
@@ -1848,6 +1853,7 @@ function readLiveWorkdayState() {
   const endTimeIsFixed = endTimeField.dataset.timePicked === "true"
     || endTimeField.dataset.timeRestored === "true";
   return {
+    armed: liveWorkdayArmed,
     date: form.elements.namedItem("date").value,
     startTime: form.elements.namedItem("startTime").value,
     endTime: currentSharedSource
@@ -1873,6 +1879,7 @@ function updateResumeLiveAccess() {
       || endTimeField.dataset.liveStopped === "true");
   const liveCandidate = liveWorkday.getState({
     ...readLiveWorkdayState(),
+    armed: true,
     endTime: ""
   });
   resumeLiveWorkdayButton.hidden = !(hasFixedEndTime && liveCandidate.active);
@@ -1946,6 +1953,12 @@ projectCreateLink?.addEventListener("click", (event) => {
   sessionUi?.openUpgrade();
 });
 form.addEventListener("change", (event) => {
+  if (
+    event.target.name === "startTime"
+    && event.target.dataset.timePicked === "true"
+  ) {
+    liveWorkdayArmed = true;
+  }
   trackOptionChange(event.target);
   updateDepartmentVisibility();
   updateKilometerVisibility();

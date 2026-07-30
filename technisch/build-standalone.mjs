@@ -26,6 +26,7 @@ const scriptFiles = [
   "workdayNotifications.js",
   "analytics.js",
   "saas/sessionUi.js",
+  "qrCode.js",
   "saas/shareUi.js",
   "selectUi.js",
   "timePicker.js",

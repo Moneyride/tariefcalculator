@@ -25,6 +25,7 @@ test("live eindtijd gebruikt tijdcode op 25 fps", () => {
 
 test("live werkdag toont verstreken kwartieren en trekt pauze af", () => {
   const state = live.getState({
+    armed: true,
     date: "2026-07-27",
     startTime: "08:00",
     endTime: "",
@@ -40,20 +41,31 @@ test("live werkdag toont verstreken kwartieren en trekt pauze af", () => {
 
 test("live werkdag loopt vandaag en gisteren, maar niet op oudere dagen", () => {
   const yesterday = live.getState({
-    date: "2026-07-27", startTime: "08:00", endTime: "", now: new Date(2026, 6, 28, 0, 51)
+    armed: true, date: "2026-07-27", startTime: "08:00", endTime: "", now: new Date(2026, 6, 28, 0, 51)
   });
   assert.equal(yesterday.active, true);
   assert.equal(yesterday.elapsedMinutes, 1005);
   assert.equal(yesterday.timecode, "00:51:00:00");
   assert.equal(live.getState({
-    date: "2026-07-26", startTime: "08:00", endTime: "", now: new Date(2026, 6, 28, 0, 51)
+    armed: true, date: "2026-07-26", startTime: "08:00", endTime: "", now: new Date(2026, 6, 28, 0, 51)
   }).active, false);
   assert.equal(live.getState({
-    date: "2026-07-28", startTime: "00:00", endTime: "00:45", now: new Date(2026, 6, 28, 0, 51)
+    armed: true, date: "2026-07-28", startTime: "00:00", endTime: "00:45", now: new Date(2026, 6, 28, 0, 51)
   }).active, false);
 });
 
-test("calculator start vandaag automatisch live zonder aparte liveknop", async () => {
+test("een standaardtijd start geen werkdag zonder bewuste tijdkeuze", () => {
+  const state = live.getState({
+    armed: false,
+    date: "2026-07-27",
+    startTime: "08:00",
+    endTime: "",
+    now: new Date(2026, 6, 27, 17, 45)
+  });
+  assert.equal(state.active, false);
+});
+
+test("calculator start pas live na een bewuste tijdkeuze of opgeslagen concept", async () => {
   const html = await readFile(new URL("../../app/index.html", import.meta.url), "utf8");
   const script = await readFile(new URL("../../app/app.js", import.meta.url), "utf8");
 
@@ -63,6 +75,8 @@ test("calculator start vandaag automatisch live zonder aparte liveknop", async (
   assert.match(script, /endTimeField\.dataset\.timePicked = "true"/);
   assert.match(script, /function resumeLiveWorkday/);
   assert.match(script, /function updateResumeLiveAccess/);
+  assert.match(script, /let liveWorkdayArmed = false/);
+  assert.match(script, /event\.target\.dataset\.timePicked === "true"/);
   assert.match(script, /requestAnimationFrame\(\(\) => \{\s*liveWorkdayController\?\.update\(\)/);
   assert.match(html, /id="resume-live-workday" hidden/);
   assert.match(script, /Werkdag gestopt om/);
@@ -83,6 +97,7 @@ test("live controller schakelt na een formulierwijziging direct naar 25 fps", ()
   const originalClearTimeout = globalThis.clearTimeout;
   const delays = [];
   let state = {
+    armed: true,
     date: live.localDateValue(),
     startTime: "00:00",
     endTime: "01:00"

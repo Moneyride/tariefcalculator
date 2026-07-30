@@ -140,13 +140,16 @@ test("functies bewaren een uitbreidbare calculatorpreset", async () => {
   assert.match(migration, /add column if not exists calculation_settings jsonb/i);
 });
 
-test("delen toont de live werkdag standaard direct", async () => {
+test("delen gebruikt alleen een directe uitnodigingslink en ondersteunt QR", async () => {
   const shareUi = await readFile(path.join(rootDirectory, "app/saas/shareUi.js"), "utf8");
-  const direct = shareUi.indexOf('value="direct" checked');
-  const completion = shareUi.indexOf('value="on_completion"');
-  assert.ok(direct >= 0 && completion > direct);
-  assert.match(shareUi, /loopt live mee tot je de eindtijd opslaat/);
-  assert.match(shareUi, /eindtijd is ingevuld en de werkdag is opgeslagen/);
+  assert.match(shareUi, /navigator\.share\(\{ url \}\)/);
+  assert.match(shareUi, /message: ""/);
+  assert.match(shareUi, /shareMode: "direct"/);
+  assert.match(shareUi, /loopt live mee tot de eindtijd is opgeslagen/);
+  assert.match(shareUi, /data-share-qr/);
+  assert.match(shareUi, /globalThis\.qrcode/);
+  assert.doesNotMatch(shareUi, /name="shareMode"/);
+  assert.doesNotMatch(shareUi, /data-share-message/);
 });
 
 test("resultaatacties staan onder het resultaat en de algemene deelknop is verwijderd", async () => {

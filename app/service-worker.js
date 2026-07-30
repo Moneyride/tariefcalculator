@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "overuurtje-app-v25";
+const CACHE_NAME = "overuurtje-app-v26";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -34,6 +34,7 @@ const APP_SHELL = [
   "./saas/projectService.js",
   "./saas/workdayService.js",
   "./saas/shareService.js",
+  "./qrCode.js",
   "./saas/shareUi.js",
   "./saas/subscriptionService.js",
   "./saas/featureGate.js",

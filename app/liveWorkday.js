@@ -56,12 +56,13 @@
     ].map((part) => String(part).padStart(2, "0")).join(":");
   }
 
-  function getState({ date, startTime, endTime, breakMinutes = 0, now = new Date() }) {
+  function getState({ armed = false, date, startTime, endTime, breakMinutes = 0, now = new Date() }) {
     const startMinutes = parseTime(startTime);
     const isToday = date === localDateValue(now);
     const isYesterday = date === previousLocalDateValue(now);
     if (
-      !date
+      !armed
+      || !date
       || (!isToday && !isYesterday)
       || startMinutes === null
       || endTime
