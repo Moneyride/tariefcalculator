@@ -134,6 +134,23 @@
                 <p class="saas-form-status" id="password-status" aria-live="polite"></p>
               </form>
             </div>
+            <div class="account-notification-compact" id="notification-settings">
+              <div>
+                <strong>Meldingen op dit apparaat</strong>
+                <small>Ontvang updates over werkdagen en gedeelde tijden.</small>
+              </div>
+              <button
+                class="account-notification-switch"
+                id="account-enable-notifications"
+                type="button"
+                role="switch"
+                aria-checked="false"
+              >
+                <span class="account-notification-switch-track" aria-hidden="true"></span>
+                <span data-notification-switch-label>Meldingen inschakelen</span>
+              </button>
+              <p class="saas-form-status" id="account-notification-status" aria-live="polite"></p>
+            </div>
             <div class="account-session-actions">
               <button class="text-action danger-action" type="button" data-auth-logout>Uitloggen</button>
               <button class="text-action subscription-stop-action" id="account-subscription-stop" type="button" data-subscription-manage hidden>Abonnement stoppen</button>
@@ -257,27 +274,28 @@
                 </div>
               </div>
 
-              <div class="account-settings-group" id="client-settings">
-                <div class="account-subsection-heading">
-                  <div>
-                    <h3>Vaste opdrachtgevers</h3>
-                    <p>Gebruik deze namen als snelle keuze in de calculator en bij projecten.</p>
-                  </div>
-                </div>
-                <div class="client-manager">
-                  <div class="client-manager-add">
-                    <label>
-                      <span>Opdrachtgever toevoegen</span>
-                      <input id="account-client-name" type="text" maxlength="120" placeholder="Naam opdrachtgever" autocomplete="organization">
-                    </label>
-                    <button class="saas-secondary-button" id="account-add-client" type="button">Toevoegen</button>
-                  </div>
-                  <div class="client-manager-list" id="account-client-list"></div>
-                  <p class="saas-form-status" id="account-client-status" aria-live="polite"></p>
-                </div>
-              </div>
-
             </section>
+
+            <details class="account-section account-client-section" id="client-settings">
+              <summary>
+                <span>
+                  <small class="account-section-kicker">Opdrachtgevers</small>
+                  <strong>Vaste opdrachtgevers</strong>
+                </span>
+              </summary>
+              <p>Gebruik deze namen als snelle keuze in de calculator en bij projecten.</p>
+              <div class="client-manager">
+                <div class="client-manager-add">
+                  <label>
+                    <span>Opdrachtgever toevoegen</span>
+                    <input id="account-client-name" type="text" maxlength="120" placeholder="Naam opdrachtgever" autocomplete="organization">
+                  </label>
+                  <button class="saas-secondary-button" id="account-add-client" type="button">Toevoegen</button>
+                </div>
+                <div class="client-manager-list" id="account-client-list"></div>
+                <p class="saas-form-status" id="account-client-status" aria-live="polite"></p>
+              </div>
+            </details>
 
             <section class="account-section pro-settings-section" id="account-equipment-section">
               <div class="account-section-heading">
@@ -320,23 +338,6 @@
               <p class="saas-form-status" id="account-settings-status" aria-live="polite"></p>
             </div>
           </form>
-
-          <section class="account-section account-notifications-section" id="notification-settings">
-            <div class="account-section-heading">
-              <div>
-                <p class="account-section-kicker">Meldingen</p>
-                <h2>Blijf op de hoogte</h2>
-              </div>
-            </div>
-            <div class="notification-setting-row">
-              <div>
-                <h3>Meldingen op dit apparaat</h3>
-                <p>Ontvang berichten over geplande werkdagen, gedeelde tijden en belangrijke wijzigingen. Je stelt dit per apparaat in.</p>
-              </div>
-              <button class="saas-secondary-button" id="account-enable-notifications" type="button">Meldingen inschakelen</button>
-            </div>
-            <p class="saas-form-status" id="account-notification-status" aria-live="polite"></p>
-          </section>
 
           <section class="account-section account-workdays-section">
             <div class="account-section-heading">

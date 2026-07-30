@@ -431,6 +431,28 @@
 
 .share-workday-dialog {
   width: min(620px, calc(100% - 28px));
+  padding: 34px;
+}
+
+.share-workday-dialog [data-share-main-view],
+.share-workday-dialog [data-share-qr-view] {
+  display: grid;
+  gap: 18px;
+}
+
+.share-workday-dialog [data-share-main-view][hidden],
+.share-workday-dialog [data-share-qr-view][hidden] {
+  display: none;
+}
+
+.share-workday-dialog .dialog-eyebrow,
+.share-workday-dialog h2,
+.share-workday-dialog p {
+  margin-block: 0;
+}
+
+.share-workday-dialog .share-direct-note {
+  padding: 16px;
 }
 
 .share-privacy-note {
@@ -772,7 +794,11 @@
 }
 
 .workday-name-field {
-  grid-column: 1 / -1;
+  grid-column: span 6;
+}
+
+.client-name-field {
+  grid-column: span 6;
 }
 
 .workday-name-field small,
@@ -1183,7 +1209,7 @@
 .timeline-workday-main {
   display: grid;
   min-width: 0;
-  grid-template-columns: minmax(0, 1fr) auto auto 20px;
+  grid-template-columns: minmax(0, 1fr) auto 20px;
   gap: 13px;
   align-items: center;
   padding: 14px 16px;
@@ -1271,6 +1297,58 @@
   background: rgba(255, 106, 26, 0.1);
   color: var(--orange-dark);
   font-weight: 800;
+}
+
+.month-switcher {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px auto 2px;
+  padding: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.month-switcher strong {
+  min-width: 130px;
+  color: var(--accent-dark);
+  font-size: 0.78rem;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.month-switcher button {
+  display: grid;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--accent-dark);
+  box-shadow: none;
+  font-size: 1rem;
+}
+
+.month-switcher button:hover {
+  background: rgba(31, 67, 53, 0.07);
+  color: var(--accent-dark);
+  transform: none;
+}
+
+.month-empty-state {
+  margin: 8px 0 0;
+  padding: 22px;
+  border: 1px dashed rgba(31, 67, 53, 0.14);
+  border-radius: 14px;
+  color: var(--muted);
+  text-align: center;
 }
 
 .received-workdays-list {
@@ -1551,20 +1629,18 @@
   }
 
   .timeline-workday-item.is-owned {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
   }
 
   .timeline-workday-main {
     grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .timeline-workday-main .timeline-workday-total {
-    grid-column: 1;
+    padding: 12px 10px 12px 14px;
   }
 
   .timeline-workday-main .workday-status {
     grid-column: 2;
-    grid-row: 1 / span 2;
+    grid-row: 1;
   }
 
   .timeline-workday-main > span:last-child {
@@ -1572,11 +1648,13 @@
   }
 
   .timeline-workday-actions {
+    grid-column: 2;
+    grid-row: 1;
     grid-template-columns: minmax(96px, 128px) 42px;
     justify-content: end;
-    padding: 8px 12px 12px;
-    border-top: 1px solid rgba(31, 67, 53, 0.08);
-    border-left: 0;
+    padding: 7px;
+    border-top: 0;
+    border-left: 1px solid rgba(31, 67, 53, 0.08);
   }
 
   .timeline-workday-actions .workday-share-button {
@@ -2209,13 +2287,29 @@ h3 {
 
 .planning-grid {
   display: grid;
-  grid-template-columns: 1.15fr 1fr 1fr;
-  gap: 18px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 18px;
+  row-gap: 12px;
   align-items: end;
 }
 
 .planning-grid.has-break {
-  grid-template-columns: 1.15fr repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.planning-grid:has(.workday-name-field[hidden]) .client-name-field {
+  grid-column: 1 / -1;
+}
+
+.planning-grid .date-field,
+.planning-grid > .time-field {
+  grid-column: span 4;
+}
+
+.planning-grid.has-break .date-field,
+.planning-grid.has-break > .time-field,
+.planning-grid.has-break .planning-break-field {
+  grid-column: span 3;
 }
 
 .planning-grid > *,
@@ -4127,6 +4221,100 @@ summary:hover {
   grid-column: 1;
 }
 
+.account-notification-compact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px 18px;
+  align-items: center;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(31, 67, 53, 0.09);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.account-notification-compact > div {
+  display: grid;
+  gap: 3px;
+}
+
+.account-notification-compact small,
+.account-notification-compact .saas-form-status {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.account-notification-switch {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 10px 6px 7px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.34);
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 750;
+  transition: background-color 150ms ease, opacity 150ms ease;
+}
+
+.account-notification-switch:hover {
+  background: rgba(255, 255, 255, 0.52);
+  color: var(--accent);
+  transform: none;
+}
+
+.account-notification-switch:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 4px rgba(255, 106, 26, 0.12);
+}
+
+.account-notification-switch-track {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: rgba(107, 114, 128, 0.24);
+  box-shadow: inset 0 0 0 1px rgba(31, 67, 53, 0.08);
+  transition: background-color 150ms ease;
+}
+
+.account-notification-switch-track::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.16);
+  content: "";
+  transition: transform 150ms ease;
+}
+
+.account-notification-switch[aria-checked="true"] .account-notification-switch-track {
+  background: var(--orange);
+}
+
+.account-notification-switch[aria-checked="true"] .account-notification-switch-track::after {
+  transform: translateX(16px);
+}
+
+.account-notification-switch:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.account-notification-compact .saas-form-status {
+  grid-column: 1 / -1;
+  min-height: 0;
+  margin: 0;
+}
+
 .danger-action {
   margin-top: 10px;
   color: #9a3d2d;
@@ -4205,6 +4393,61 @@ summary:hover {
 .client-manager {
   display: grid;
   gap: 14px;
+}
+
+.account-client-section {
+  padding: 0;
+  overflow: hidden;
+}
+
+.account-client-section > summary {
+  display: flex;
+  min-height: 78px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 24px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.account-client-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.account-client-section > summary::after {
+  color: var(--accent-dark);
+  content: "+";
+  font-size: 1.3rem;
+  font-weight: 500;
+}
+
+.account-client-section[open] > summary::after {
+  content: "−";
+}
+
+.account-client-section > summary span {
+  display: grid;
+  gap: 4px;
+}
+
+.account-client-section > summary strong {
+  color: var(--accent-dark);
+  font-size: 1.08rem;
+}
+
+.account-client-section > p,
+.account-client-section > .client-manager {
+  margin-inline: 24px;
+}
+
+.account-client-section > p {
+  margin-top: 0;
+  color: var(--muted);
+}
+
+.account-client-section > .client-manager {
+  margin-bottom: 24px;
 }
 
 .client-manager-add {
@@ -4847,6 +5090,14 @@ summary:hover {
   .planning-grid.has-break,
   .account-settings-toggle-grid {
     grid-template-columns: 1fr;
+  }
+
+  .planning-grid > .workday-name-field,
+  .planning-grid > .client-name-field,
+  .planning-grid > .date-field,
+  .planning-grid > .time-field,
+  .planning-grid > .planning-break-field {
+    grid-column: 1 / -1;
   }
 
   .department-switch {
@@ -6224,6 +6475,14 @@ summary:hover {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .planning-grid > .workday-name-field,
+  .planning-grid > .client-name-field,
+  .planning-grid > .date-field,
+  .planning-grid > .time-field,
+  .planning-grid > .planning-break-field {
+    grid-column: auto;
+  }
+
   .input-options {
     gap: 1.5mm;
     margin: 1.6mm 3mm 0;
@@ -6595,5 +6854,92 @@ summary:hover {
     color: var(--accent-dark);
     font-size: 13pt;
     font-weight: 800;
+  }
+}
+
+@media screen and (max-width: 760px) {
+  .share-workday-dialog {
+    width: min(100% - 20px, 620px);
+    padding: 26px 22px;
+  }
+
+  .share-workday-dialog [data-share-main-view],
+  .share-workday-dialog [data-share-qr-view] {
+    gap: 15px;
+  }
+
+  .share-workday-dialog .share-direct-note {
+    padding: 14px;
+  }
+
+  .planning-grid {
+    row-gap: 10px;
+  }
+
+  .account-notification-compact {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 13px 14px;
+  }
+
+  .account-notification-compact .saas-secondary-button {
+    width: fit-content;
+  }
+
+  .account-client-section > summary {
+    min-height: 68px;
+    padding: 17px 18px;
+  }
+
+  .account-client-section > p,
+  .account-client-section > .client-manager {
+    margin-inline: 18px;
+  }
+
+  .account-client-section > .client-manager {
+    margin-bottom: 18px;
+  }
+
+  .month-switcher {
+    margin-top: 0;
+  }
+
+  .month-switcher strong {
+    min-width: 112px;
+  }
+
+  .timeline-workday-item.is-owned {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
+  }
+
+  .timeline-workday-main {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 12px 10px 12px 14px;
+  }
+
+  .timeline-workday-actions {
+    grid-column: 2;
+    grid-row: 1;
+    grid-template-columns: auto 38px;
+    gap: 4px;
+    padding: 7px;
+    border-top: 0;
+    border-left: 1px solid rgba(31, 67, 53, 0.08);
+  }
+
+  .timeline-workday-actions .workday-share-button {
+    width: auto;
+    min-width: 0;
+    min-height: 38px;
+    padding-inline: 8px;
+    font-size: 0.68rem;
+  }
+
+  .timeline-workday-actions .workday-delete-button {
+    width: 38px;
+    height: 38px;
+    min-height: 38px;
   }
 }

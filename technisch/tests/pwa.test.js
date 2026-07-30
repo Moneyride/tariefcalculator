@@ -92,7 +92,6 @@ test("account biedt meldingen als losse apparaatinstelling aan", async () => {
   const html = await read("app/account.html");
   const script = await read("app/account.js");
   assert.match(html, /id="notification-settings"/);
-  assert.match(html, />Meldingen</);
   assert.match(html, />Meldingen op dit apparaat</);
   assert.doesNotMatch(html, />Werkdagmeldingen</);
   assert.match(html, /saas\/pushService\.js/);

@@ -87,7 +87,13 @@
 
         <section id="project-list-view" hidden>
           <div class="project-list-heading"><div><h2>Jouw projecten</h2><p>Meest recent gewijzigd staat bovenaan.</p></div></div>
+          <nav class="month-switcher" aria-label="Projecten per maand">
+            <button type="button" id="projects-month-previous" aria-label="Vorige maand">&#8592;</button>
+            <strong id="projects-month-label"></strong>
+            <button type="button" id="projects-month-next" aria-label="Volgende maand">&#8594;</button>
+          </nav>
           <div class="project-list" id="project-list"></div>
+          <p class="month-empty-state" id="projects-month-empty" hidden>Geen projecten in deze maand.</p>
           <div class="account-empty-state compact-empty" id="project-list-empty" hidden><h2>Nog geen projecten</h2><p>Maak je eerste project aan en kies daarna alleen de dagen waarop je werkelijk werkt.</p></div>
         </section>
 

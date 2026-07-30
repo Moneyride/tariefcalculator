@@ -16,6 +16,8 @@
   const receivedSection = document.querySelector("#received-workdays");
   const receivedList = document.querySelector("#received-workdays-list");
   const receivedCount = document.querySelector("#received-workdays-count");
+  const monthLabel = document.querySelector("#workdays-month-label");
+  const monthEmpty = document.querySelector("#workdays-month-empty");
   const sharedDetailDialog = document.querySelector("#shared-workday-detail-dialog");
   const sharedExistingDialog = document.querySelector("#shared-existing-workday-dialog");
   const sharedInviteDialog = document.querySelector("#shared-invite-dialog");
@@ -28,6 +30,8 @@
   let activeReceivedShare = null;
   let existingTakeoverEntry = null;
   let activeInvite = null;
+  let visibleMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12);
+  const monthFormat = new Intl.DateTimeFormat("nl-NL", { month: "long", year: "numeric" });
 
   function parseDate(value) {
     const [year, month, day] = value.split("-").map(Number);
@@ -93,13 +97,11 @@
 
   function createOwnedTimelineItem(workday) {
     const snapshot = workday.calculationData || {};
-    const result = deriveResult(snapshot);
     const article = document.createElement("article");
     article.className = "timeline-workday-item is-owned";
     article.innerHTML = `
       <a class="timeline-workday-main" href="index.html?workday=${encodeURIComponent(workday.id)}">
-        <span class="timeline-workday-copy"><strong></strong><small></small></span>
-        <span class="timeline-workday-total"></span>
+        <span class="timeline-workday-copy"><strong></strong></span>
         <span class="workday-status"></span>
         <span aria-hidden="true">→</span>
       </a>
@@ -108,14 +110,8 @@
         <button class="workday-delete-button" type="button" aria-label="Werkdag verwijderen" title="Werkdag verwijderen">&times;</button>
       </div>
     `;
-    article.querySelector("strong").textContent = workday.name || "Werkdag";
     const formattedDate = dateFormat.format(parseDate(workday.workDate));
-    article.querySelector("small").textContent = snapshot.endTime
-      ? `${formattedDate} · ${snapshot.startTime || "-"} – ${snapshot.endTime}`
-      : `${formattedDate} · ${snapshot.startTime || "-"} – eindtijd open`;
-    article.querySelector(".timeline-workday-total").textContent = result
-      ? euro.format(result.subtotalExVat)
-      : "Nog geen totaal";
+    article.querySelector("strong").textContent = formattedDate;
     const status = article.querySelector(".workday-status");
     status.textContent = snapshot.endTime ? "Afgerond" : "Concept";
     status.classList.toggle("is-complete", Boolean(snapshot.endTime));
@@ -158,17 +154,29 @@
   }
 
   function renderTimeline() {
-    const entries = [
+    const allEntries = [
       ...ownedWorkdays.map((item) => ({ kind: "owned", date: item.workDate, item })),
       ...receivedShares.map((item) => ({ kind: "shared", date: item.workDate, item }))
     ].sort((a, b) => b.date.localeCompare(a.date));
-    receivedSection.hidden = entries.length === 0;
+    const monthKey = `${visibleMonth.getFullYear()}-${String(visibleMonth.getMonth() + 1).padStart(2, "0")}`;
+    const entries = allEntries.filter((entry) => entry.date.startsWith(monthKey));
+    receivedSection.hidden = allEntries.length === 0;
     receivedCount.textContent = String(entries.length);
+    monthLabel.textContent = monthFormat.format(visibleMonth);
+    monthEmpty.hidden = entries.length > 0 || allEntries.length === 0;
     receivedList.replaceChildren(...entries.map((entry) => entry.kind === "owned"
       ? createOwnedTimelineItem(entry.item)
       : createSharedTimelineItem(entry.item)));
-    empty.hidden = entries.length > 0;
+    empty.hidden = allEntries.length > 0;
   }
+
+  function shiftVisibleMonth(offset) {
+    visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + offset, 1, 12);
+    renderTimeline();
+  }
+
+  document.querySelector("#workdays-month-previous")?.addEventListener("click", () => shiftVisibleMonth(-1));
+  document.querySelector("#workdays-month-next")?.addEventListener("click", () => shiftVisibleMonth(1));
 
   function openReceived(item) {
     activeReceivedShare = item;

@@ -173,12 +173,14 @@
       ready: "De browser geeft toestemming, maar dit apparaat is nog niet aangemeld voor pushberichten.",
       denied: "Sta meldingen toe via de instellingen van je browser of iPhone.",
       unsupported: "Deze browser ondersteunt geen pushmeldingen.",
-      unconfigured: "De technische Web Push-configuratie moet nog worden afgerond.",
+      unconfigured: "Voeg Overuurtje toe aan het beginscherm van je telefoon en open de app vanaf daar om meldingen in te schakelen.",
       "ios-install-required": "Open Overuurtje vanaf je iPhone-beginscherm om meldingen in te schakelen."
     };
     accountEnableNotifications.dataset.pushState = result.state;
+    accountEnableNotifications.setAttribute("aria-checked", String(result.state === "subscribed"));
     accountEnableNotifications.disabled = ["denied", "unsupported", "unconfigured"].includes(result.state);
-    accountEnableNotifications.textContent = labels[result.state] || "Meldingen inschakelen";
+    const label = accountEnableNotifications.querySelector("[data-notification-switch-label]");
+    if (label) label.textContent = labels[result.state] || "Meldingen inschakelen";
     accountNotificationStatus.textContent = descriptions[result.state] || "";
   }
 
@@ -389,6 +391,8 @@
     proFeaturesTitle.textContent = "Ontdek Overuurtje Pro";
     accountProjectsSection.classList.toggle("is-locked", !isPro);
     accountWorkdaysSection.classList.toggle("is-locked", !isPro);
+    accountProjectsSection.hidden = isPro;
+    accountWorkdaysSection.hidden = isPro;
     equipmentSection.querySelectorAll("input").forEach((input) => { input.disabled = !isPro; });
     equipmentSection.querySelectorAll("button").forEach((button) => { button.disabled = !isPro; });
     settingsForm.querySelectorAll("[data-function-fallback]").forEach((field) => { field.hidden = isPro; });

@@ -98,7 +98,13 @@
             </div>
             <span id="received-workdays-count">0</span>
           </div>
+          <nav class="month-switcher" aria-label="Werkdagen per maand">
+            <button type="button" id="workdays-month-previous" aria-label="Vorige maand">&#8592;</button>
+            <strong id="workdays-month-label"></strong>
+            <button type="button" id="workdays-month-next" aria-label="Volgende maand">&#8594;</button>
+          </nav>
           <div class="received-workdays-list" id="received-workdays-list"></div>
+          <p class="month-empty-state" id="workdays-month-empty" hidden>Geen werkdagen in deze maand.</p>
         </section>
 
         <section class="account-empty-state workdays-upgrade" id="workdays-upgrade" hidden>

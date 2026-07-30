@@ -39,6 +39,7 @@
   let periodStart = "";
   let periodEnd = "";
   let selectedWorkdays = new Set();
+  let projectListMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12);
 
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
   const localDate = (iso) => new Date(`${iso}T12:00:00`);
@@ -128,8 +129,18 @@
     }, { amount: 0, hours: 0, overtime: 0, night: 0, kilometers: 0, parking: 0, surcharges: 0 });
   }
 
+  function overlapsProjectListMonth(project) {
+    const monthStart = `${projectListMonth.getFullYear()}-${String(projectListMonth.getMonth() + 1).padStart(2, "0")}-01`;
+    const nextMonth = new Date(projectListMonth.getFullYear(), projectListMonth.getMonth() + 1, 1, 12);
+    const nextMonthStart = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}-01`;
+    return Boolean(project.startDate && project.endDate && project.startDate < nextMonthStart && project.endDate >= monthStart);
+  }
+
   function renderProjectList() {
-    list.replaceChildren(...projectList.map((project) => {
+    const visibleProjects = projectList.filter(overlapsProjectListMonth);
+    document.querySelector("#projects-month-label").textContent = monthLong.format(projectListMonth);
+    document.querySelector("#projects-month-empty").hidden = visibleProjects.length > 0 || projectList.length === 0;
+    list.replaceChildren(...visibleProjects.map((project) => {
       const button = document.createElement("button");
       button.type = "button"; button.className = "project-list-item";
       button.innerHTML = `<span><strong>${escapeHtml(project.name)}</strong><small>${project.clientName ? `${escapeHtml(project.clientName)} · ` : ""}${formatDate(project.startDate)} - ${formatDate(project.endDate)}</small></span><span aria-hidden="true">&#8594;</span>`;
@@ -139,6 +150,15 @@
     document.querySelector("#project-list-empty").hidden = projectList.length > 0;
     show("project-list-view");
   }
+
+  function shiftProjectListMonth(offset) {
+    projectListMonth = new Date(projectListMonth.getFullYear(), projectListMonth.getMonth() + offset, 1, 12);
+    renderProjectList();
+    renderSharedProjects();
+  }
+
+  document.querySelector("#projects-month-previous")?.addEventListener("click", () => shiftProjectListMonth(-1));
+  document.querySelector("#projects-month-next")?.addEventListener("click", () => shiftProjectListMonth(1));
 
   async function loadList() {
     projectList = await projects.list(context.auth.user.id, options());
@@ -184,9 +204,10 @@
   }
 
   function renderSharedProjects() {
-    document.querySelector("#shared-project-count").textContent = String(sharedProjects.length);
-    sharedProjectsSection.hidden = sharedProjects.length === 0;
-    sharedProjectList.replaceChildren(...sharedProjects.map((project) => {
+    const visibleSharedProjects = sharedProjects.filter(overlapsProjectListMonth);
+    document.querySelector("#shared-project-count").textContent = String(visibleSharedProjects.length);
+    sharedProjectsSection.hidden = visibleSharedProjects.length === 0;
+    sharedProjectList.replaceChildren(...visibleSharedProjects.map((project) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "shared-project-list-item";

@@ -152,14 +152,14 @@ test("delen gebruikt alleen een directe uitnodigingslink en ondersteunt QR", asy
   assert.doesNotMatch(shareUi, /data-share-message/);
 });
 
-test("resultaatacties staan onder het resultaat en de algemene deelknop is verwijderd", async () => {
+test("werkdag opslaan staat voor berekenen en resultaatacties staan onder het resultaat", async () => {
   const html = await readFile(path.join(rootDirectory, "app/index.html"), "utf8");
   const result = html.indexOf('class="result-panel"');
   const actions = html.indexOf('class="footer-actions"');
   const calculate = html.indexOf('id="recalculate"');
   const saveWorkday = html.indexOf('id="save-workday"');
   assert.ok(result >= 0 && actions > result);
-  assert.ok(calculate >= 0 && saveWorkday > calculate && saveWorkday < result);
+  assert.ok(saveWorkday >= 0 && calculate > saveWorkday && calculate < result);
   assert.match(html, /class="invoice-copy-button"[^>]+id="copy-summary"/);
   assert.match(html, /id="save-workday"/);
   assert.doesNotMatch(html, /id="share-current-workday"/);
