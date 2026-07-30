@@ -99,8 +99,6 @@
     };
     field.addEventListener("click", open);
     trigger.addEventListener("click", open);
-    field.addEventListener("touchend", open);
-    trigger.addEventListener("touchend", open);
   }
 
   function setupAll(root = document) {

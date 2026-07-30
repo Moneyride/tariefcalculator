@@ -28,6 +28,7 @@ const scriptFiles = [
   "saas/sessionUi.js",
   "qrCode.js",
   "saas/shareUi.js",
+  "interactionGuard.js",
   "selectUi.js",
   "timePicker.js",
   "app.js",

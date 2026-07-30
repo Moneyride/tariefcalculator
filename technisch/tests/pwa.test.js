@@ -25,6 +25,7 @@ test("manifest beschrijft een zelfstandig installeerbare Overuurtje-app", async 
   assert.equal(manifest.start_url, "./index.html");
   assert.equal(manifest.scope, "./");
   assert.equal(manifest.display, "standalone");
+  assert.equal(manifest.orientation, "portrait-primary");
   assert.equal(manifest.theme_color, "#073f3d");
   assert.ok(manifest.icons.some((icon) => icon.sizes === "192x192" && icon.purpose === "any"));
   assert.ok(manifest.icons.some((icon) => icon.sizes === "512x512" && icon.purpose === "maskable"));
@@ -44,7 +45,19 @@ test("alle webapp-pagina's registreren dezelfde PWA-laag", async () => {
     assert.match(html, /apple-mobile-web-app-capable/);
     assert.match(html, /site\.webmanifest\?v=/);
     assert.match(html, /pwa\.js\?v=/);
+    assert.match(html, /interactionGuard\.js\?v=/);
   }
+});
+
+test("touchbewegingen openen geen calculatorvelden of tijdkiezer", async () => {
+  const guard = await read("app/interactionGuard.js");
+  const timePicker = await read("app/timePicker.js");
+  const standaloneBuilder = await read("technisch/build-standalone.mjs");
+  assert.match(guard, /MOVE_THRESHOLD_PX = 10/);
+  assert.match(guard, /document\.addEventListener\("touchmove"/);
+  assert.match(guard, /event\.stopImmediatePropagation\(\)/);
+  assert.doesNotMatch(timePicker, /addEventListener\("touchend", open\)/);
+  assert.match(standaloneBuilder, /"interactionGuard\.js",\s*"selectUi\.js",\s*"timePicker\.js"/);
 });
 
 test("installatie-interface ondersteunt browserprompt en iPhone-beginscherm", async () => {
@@ -74,6 +87,7 @@ test("service worker bewaart de app-shell maar nooit API-verkeer", async () => {
   assert.match(worker, /\.\/calculator\.js/);
   assert.match(worker, /\.\/workdays\.html/);
   assert.match(worker, /\.\/dashboard\.html/);
+  assert.match(worker, /\.\/interactionGuard\.js/);
   assert.match(worker, /url\.origin !== self\.location\.origin/);
   assert.match(worker, /url\.pathname\.startsWith\("\/api\/"\)/);
   assert.match(worker, /url\.pathname\.startsWith\("\/\.netlify\/functions\/"\)/);
