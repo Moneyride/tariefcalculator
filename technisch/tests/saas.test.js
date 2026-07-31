@@ -952,6 +952,41 @@ test("ongelezen notificaties krijgen een eenmalige duidelijke openingsmelding", 
   assert.match(sessionUi, /sessionStorage\.setItem\(promptKey, "shown"\)/);
 });
 
+test("een geaccepteerde uitnodiging veroorzaakt niet direct nogmaals een berichtmelding", async () => {
+  const workdaysScript = await readFile(path.join(rootDirectory, "app/workdays.js"), "utf8");
+  const shareService = await readFile(path.join(rootDirectory, "app/saas/shareService.js"), "utf8");
+
+  assert.match(workdaysScript, /claimInvite\(token\)[\s\S]{0,240}markShareNotificationsRead\(shareId\)/);
+  assert.match(shareService, /async function markShareNotificationsRead\(shareId\)/);
+  assert.match(shareService, /item\.shareId === shareId && !item\.readAt/);
+  assert.match(shareService, /markNotificationsRead\(notificationIds\)/);
+});
+
+test("gedeelde bron en metadata blijven behouden en live gesynchroniseerd", async () => {
+  const calculatorScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
+
+  assert.match(calculatorScript, /sharedSourceType: currentSharedSource\?\.type \|\| ""/);
+  assert.match(calculatorScript, /sharedSourceId: currentSharedSource\?\.id \|\| ""/);
+  assert.match(calculatorScript, /sharedOwnerName: currentSharedOwnerName \|\| ""/);
+  assert.match(calculatorScript, /workdayName\.value !== \(shared\.workdayName \|\| ""\)/);
+  assert.match(calculatorScript, /clientName\.value !== \(shared\.clientName \|\| ""\)/);
+  assert.match(calculatorScript, /currentSharedOwnerName !== \(shared\.ownerName \|\| ""\)/);
+  assert.match(calculatorScript, /if \(!changed\) return;\s*updateSharedReceiverMode\(\)/);
+});
+
+test("een gedeelde werkdag herstelt na herladen vanuit de blijvende deel-URL", async () => {
+  const workdaysScript = await readFile(path.join(rootDirectory, "app/workdays.js"), "utf8");
+  const calculatorScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
+
+  assert.match(workdaysScript, /index\.html\?shared=\$\{encodeURIComponent\(item\.id\)\}/);
+  assert.match(calculatorScript, /async function restoreSharedTimesFromUrl\(\)/);
+  assert.match(calculatorScript, /new URLSearchParams\(location\.search\)\.get\("shared"\)/);
+  assert.match(calculatorScript, /const shared = received\.find\(\(item\) => item\.id === shareId\)/);
+  assert.match(calculatorScript, /sharedSourceType: shared\.sourceType \|\| ""/);
+  assert.match(calculatorScript, /sharedSourceId: shared\.sourceId \|\| ""/);
+  assert.match(calculatorScript, /if \(!\(await restoreSharedTimesFromUrl\(\)\)\) applySharedTimesImport\(\)/);
+});
+
 test("Deelservice maakt een uitnodiging zonder gebruikerszoekopdracht of financiële data", async () => {
   const calls = [];
   const context = await runService("app/saas/shareService.js", {
@@ -1034,7 +1069,7 @@ test("Gratis ontvangers nemen gedeelde tijden over in de reguliere calculator", 
   );
   assert.match(workdaysScript, /sharedSourceType: item\.sourceType/);
   assert.match(workdaysScript, /sharedSourceId: item\.sourceId/);
-  assert.match(workdaysScript, /location\.href = "index\.html\?sharedTimes=1"/);
+  assert.match(workdaysScript, /location\.href = `index\.html\?shared=\$\{encodeURIComponent\(item\.id\)\}`/);
   const freeImportStart = workdaysScript.indexOf("async function openSharedTimesInCalculator");
   const freeImportEnd = workdaysScript.indexOf("\n  async function findExistingEntry", freeImportStart);
   const freeImportFunction = workdaysScript.slice(freeImportStart, freeImportEnd);

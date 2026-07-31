@@ -252,7 +252,7 @@
       JSON.stringify(takeoverSnapshot(item))
     );
     await shareService.accept(item.id);
-    location.href = "index.html?sharedTimes=1";
+    location.href = `index.html?shared=${encodeURIComponent(item.id)}`;
   }
 
   async function findExistingEntry(item) {
@@ -385,6 +385,11 @@
     status.textContent = "Uitnodiging accepteren…";
     try {
       const shareId = await shareService.claimInvite(token);
+      try {
+        await shareService.markShareNotificationsRead(shareId);
+      } catch (error) {
+        console.warn("De uitnodigingsmelding kon niet als gelezen worden gemarkeerd.", error);
+      }
       const received = await shareService.listReceived();
       renderReceived(received);
       const shared = received.find((item) => item.id === shareId);

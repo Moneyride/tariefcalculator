@@ -46,7 +46,26 @@ test("alle webapp-pagina's registreren dezelfde PWA-laag", async () => {
     assert.match(html, /site\.webmanifest\?v=/);
     assert.match(html, /pwa\.js\?v=/);
     assert.match(html, /interactionGuard\.js\?v=/);
+    assert.match(html, /vendor\/jsQR\.js\?v=/);
+    assert.match(html, /qrScanner\.js\?v=/);
   }
+});
+
+test("QR-scanner opent uitsluitend Overuurtje-uitnodigingen via camera of foto", async () => {
+  const scanner = await read("app/qrScanner.js");
+  const worker = await read("app/service-worker.js");
+  const standaloneBuilder = await read("technisch/build-standalone.mjs");
+  assert.match(scanner, /navigator\.mediaDevices\?\.getUserMedia/);
+  assert.match(scanner, /facingMode:\s*\{ ideal: "environment" \}/);
+  assert.match(scanner, /globalThis\.jsQR/);
+  assert.match(scanner, /accept="image\/\*"/);
+  assert.match(scanner, /\["workdays\.html", "projects\.html"\]/);
+  assert.match(scanner, /searchParams\.get\("invite"\)/);
+  assert.match(scanner, /OveruurtjeQrScanner/);
+  assert.match(worker, /\.\/vendor\/jsQR\.js/);
+  assert.match(worker, /\.\/qrScanner\.js/);
+  assert.match(standaloneBuilder, /"vendor\/jsQR\.js"/);
+  assert.match(standaloneBuilder, /"qrScanner\.js"/);
 });
 
 test("touchbewegingen openen geen calculatorvelden of tijdkiezer", async () => {

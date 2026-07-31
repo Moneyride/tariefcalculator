@@ -270,7 +270,12 @@
     const status = projectInviteDialog.querySelector("[data-project-invite-status]");
     try {
       status.textContent = "Project wordt toegevoegd…";
-      await shares.claimInvite(token, "project");
+      const shareId = await shares.claimInvite(token, "project");
+      try {
+        await shares.markShareNotificationsRead(shareId);
+      } catch (error) {
+        console.warn("De uitnodigingsmelding kon niet als gelezen worden gemarkeerd.", error);
+      }
       history.replaceState(null, "", location.pathname);
       closeDialog(projectInviteDialog);
       await loadSharedProjects();

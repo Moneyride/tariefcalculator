@@ -477,6 +477,9 @@ function buildWorkdaySnapshot() {
       parkingCosts: readNumber(formData, "parkingCosts"),
       customEquipment: getSelectedCustomEquipment()
     },
+    sharedSourceType: currentSharedSource?.type || "",
+    sharedSourceId: currentSharedSource?.id || "",
+    sharedOwnerName: currentSharedOwnerName || "",
     result: endTime && latestResult && !calculationIsStale ? {
       totalHours: latestResult.totalHours,
       overtimeHours: latestResult.overtimeHours,
@@ -647,9 +650,24 @@ async function refreshSharedReceiverTimes({ announce = false } = {}) {
 
     const startTime = form.elements.namedItem("startTime");
     const endTime = form.elements.namedItem("endTime");
+    const workdayName = form.elements.namedItem("workdayName");
+    const clientName = form.elements.namedItem("clientName");
     const previousEndTime = endTime.value;
     currentSharedSourceEndTime = shared.endTime || "";
     let changed = false;
+
+    if (workdayName && workdayName.value !== (shared.workdayName || "")) {
+      workdayName.value = shared.workdayName || "";
+      changed = true;
+    }
+    if (clientName && clientName.value !== (shared.clientName || "")) {
+      clientName.value = shared.clientName || "";
+      changed = true;
+    }
+    if (currentSharedOwnerName !== (shared.ownerName || "")) {
+      currentSharedOwnerName = shared.ownerName || "";
+      changed = true;
+    }
 
     if (!sharedTimeOverrides.has("startTime") && startTime.value !== shared.startTime) {
       startTime.value = shared.startTime || "";
@@ -670,6 +688,7 @@ async function refreshSharedReceiverTimes({ announce = false } = {}) {
     }
     if (!changed) return;
 
+    updateSharedReceiverMode();
     liveWorkdayController?.update();
     if (endTime.value) updateCalculation();
     else clearCalculationDisplay();
@@ -1352,6 +1371,40 @@ function applySharedTimesImport() {
   }
 }
 
+async function restoreSharedTimesFromUrl() {
+  const shareId = new URLSearchParams(location.search).get("shared");
+  if (
+    !shareId
+    || !currentAccountUser
+    || !shareService
+    || currentUserContext?.subscription?.isMock
+  ) return false;
+
+  try {
+    const received = await shareService.listReceived();
+    const shared = received.find((item) => item.id === shareId);
+    if (!shared) return false;
+    sessionStorage.setItem("overuurtjeSharedTimesImport", JSON.stringify({
+      schemaVersion: 1,
+      workdayName: shared.workdayName || "",
+      clientName: shared.clientName || "",
+      date: shared.workDate,
+      startTime: shared.startTime || "",
+      endTime: shared.endTime || "",
+      result: null,
+      importedFromShare: shared.id,
+      sharedSourceType: shared.sourceType || "",
+      sharedSourceId: shared.sourceId || "",
+      sharedOwnerName: shared.ownerName || ""
+    }));
+    applySharedTimesImport();
+    return true;
+  } catch (error) {
+    console.warn("De gedeelde werkdag kon niet vanuit de link worden hersteld.", error);
+    return false;
+  }
+}
+
 async function hydrateAccountSettings(context) {
   currentUserContext = context;
   currentAccountUser = context.auth.user;
@@ -1392,7 +1445,7 @@ async function hydrateAccountSettings(context) {
     updateDepartmentVisibility();
     updatePauseVisibility();
     updateWorkdaySaveAccess();
-    applySharedTimesImport();
+    if (!(await restoreSharedTimesFromUrl())) applySharedTimesImport();
     return;
   }
   if (hydratedAccountUserId === currentAccountUser.id) return;
@@ -1450,7 +1503,7 @@ async function hydrateAccountSettings(context) {
     await initializeWorkdayContext();
   }
   updateWorkdaySaveAccess();
-  applySharedTimesImport();
+  if (!(await restoreSharedTimesFromUrl())) applySharedTimesImport();
 }
 
 function formatHours(value) {

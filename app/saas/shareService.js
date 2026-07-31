@@ -208,6 +208,14 @@
     await rpc("mark_overuurtje_notifications_read", { p_ids: ids });
   }
 
+  async function markShareNotificationsRead(shareId) {
+    if (!shareId) return;
+    const notificationIds = (await listNotifications())
+      .filter((item) => item.shareId === shareId && !item.readAt)
+      .map((item) => item.id);
+    if (notificationIds.length) await markNotificationsRead(notificationIds);
+  }
+
   globalThis.OveruurtjeShares = Object.freeze({
     prepareWorkdaySource,
     createInvite,
@@ -221,6 +229,7 @@
     remove,
     removeProjectShare,
     listNotifications,
-    markNotificationsRead
+    markNotificationsRead,
+    markShareNotificationsRead
   });
 })();
