@@ -4,8 +4,51 @@
   const supabaseService = globalThis.OveruurtjeSupabase;
   const config = globalThis.OveruurtjeConfig;
   const listeners = new Set();
-  let state = Object.freeze({ available: false, loading: true, user: null, session: null });
+  const recoveryStorageKey = "overuurtjePasswordRecovery";
+  let state = Object.freeze({
+    available: false,
+    loading: true,
+    user: null,
+    session: null,
+    recovery: false
+  });
   let initializationPromise = null;
+
+  function readRecoveryMarker() {
+    try {
+      return globalThis.sessionStorage?.getItem(recoveryStorageKey) === "true";
+    } catch {
+      return false;
+    }
+  }
+
+  function writeRecoveryMarker(active) {
+    try {
+      if (active) globalThis.sessionStorage?.setItem(recoveryStorageKey, "true");
+      else globalThis.sessionStorage?.removeItem(recoveryStorageKey);
+    } catch {
+      // Storage can be unavailable in strict privacy modes; the current URL still protects the initial view.
+    }
+  }
+
+  function recoveryRequestedByUrl() {
+    try {
+      return new URL(globalThis.location?.href || config.authAccountUrl).searchParams.get("mode") === "reset";
+    } catch {
+      return false;
+    }
+  }
+
+  function validatePassword(password) {
+    const value = String(password || "");
+    if (value.length < 8) {
+      return { valid: false, message: "Gebruik minimaal 8 tekens." };
+    }
+    if (!/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(value) || !/\d/.test(value)) {
+      return { valid: false, message: "Gebruik minimaal één letter en één cijfer." };
+    }
+    return { valid: true, message: "" };
+  }
 
   function publish(nextState) {
     state = Object.freeze({ ...state, ...nextState, loading: false });
@@ -19,17 +62,37 @@
 
     initializationPromise = (async () => {
       const client = await supabaseService.getClient();
-      if (!client) return publish({ available: false, user: null, session: null });
+      if (!client) return publish({ available: false, user: null, session: null, recovery: false });
 
       const { data, error } = await client.auth.getSession();
       if (error) throw error;
 
-      client.auth.onAuthStateChange((_event, session) => {
-        publish({ available: true, session, user: session?.user || null });
+      client.auth.onAuthStateChange((event, session) => {
+        if (event === "PASSWORD_RECOVERY") writeRecoveryMarker(true);
+        if (event === "SIGNED_OUT") writeRecoveryMarker(false);
+        publish({
+          available: true,
+          session,
+          user: session?.user || null,
+          recovery: event === "PASSWORD_RECOVERY" || (Boolean(session) && readRecoveryMarker())
+        });
       });
 
-      return publish({ available: true, session: data.session, user: data.session?.user || null });
-    })().catch((error) => publish({ available: false, error, user: null, session: null }));
+      const recovery = Boolean(data.session) && (recoveryRequestedByUrl() || readRecoveryMarker());
+      if (recovery) writeRecoveryMarker(true);
+      return publish({
+        available: true,
+        session: data.session,
+        user: data.session?.user || null,
+        recovery
+      });
+    })().catch((error) => publish({
+      available: false,
+      error,
+      user: null,
+      session: null,
+      recovery: false
+    }));
 
     return initializationPromise;
   }
@@ -66,8 +129,10 @@
     }));
   }
 
-  function signOut() {
-    return withClient((client) => client.auth.signOut());
+  async function signOut() {
+    const response = await withClient((client) => client.auth.signOut());
+    if (!response?.error) writeRecoveryMarker(false);
+    return response;
   }
 
   function requestPasswordReset(email) {
@@ -89,6 +154,7 @@
     signUp,
     signOut,
     requestPasswordReset,
-    updatePassword
+    updatePassword,
+    validatePassword
   });
 })();

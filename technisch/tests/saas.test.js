@@ -180,7 +180,7 @@ test("opslaan en PDF gebruiken consistente lijniconen zonder PDF-lettermerk", as
   assert.match(styles, /\.button-line-icon\s*\{[\s\S]*stroke-width:\s*1\.8/);
 });
 
-test("feature gate laat Pro toe en meldt een upgrade voor Free", async () => {
+test("feature gate houdt premium functies achter Pro en laat werkdag delen toe voor Free", async () => {
   const events = [];
   class CustomEvent {
     constructor(type, options) {
@@ -198,7 +198,7 @@ test("feature gate laat Pro toe en meldt een upgrade voor Free", async () => {
   assert.equal(context.OveruurtjeFeatureGate.canUse("work_functions", { isPro: true }), true);
   assert.equal(context.OveruurtjeFeatureGate.canUse("workday_sharing", { isPro: true }), true);
   assert.equal(context.OveruurtjeFeatureGate.canUse("work_functions", { isPro: false }), false);
-  assert.equal(context.OveruurtjeFeatureGate.canUse("workday_sharing", { isPro: false }), false);
+  assert.equal(context.OveruurtjeFeatureGate.canUse("workday_sharing", { isPro: false }), true);
   assert.equal(context.OveruurtjeFeatureGate.canUse("workdays", { isPro: false }), false);
   assert.equal(context.OveruurtjeFeatureGate.canUse("pdf_export", { isPro: true }), true);
   assert.equal(context.OveruurtjeFeatureGate.canUse("pdf_export", { isPro: false }), false);
@@ -361,15 +361,38 @@ test("Authmails verwijzen ook vanuit localhost altijd terug naar Overuurtje.nl",
     "https://overuurtje.nl/account.html?mode=reset"
   );
   assert.equal(JSON.stringify(calls).includes("localhost"), false);
+
+  assert.equal(authContext.OveruurtjeAuth.validatePassword("kort1").valid, false);
+  assert.equal(authContext.OveruurtjeAuth.validatePassword("alleenletters").valid, false);
+  assert.equal(authContext.OveruurtjeAuth.validatePassword("12345678").valid, false);
+  assert.equal(authContext.OveruurtjeAuth.validatePassword("Overuur8").valid, true);
 });
 
 test("authfouten tonen nooit een leeg object aan de gebruiker", async () => {
   const sessionUi = await readFile(path.join(rootDirectory, "app/saas/sessionUi.js"), "utf8");
+  const authService = await readFile(path.join(rootDirectory, "app/saas/authService.js"), "utf8");
 
   assert.match(sessionUi, /function authErrorText/);
   assert.ok(sessionUi.includes('!["{}", "[object Object]"].includes'));
   assert.match(sessionUi, /De bevestigingsmail kon niet worden verstuurd/);
   assert.ok(sessionUi.includes("authStatus.textContent = authErrorText(error, authMode)"));
+  assert.match(authService, /event === "PASSWORD_RECOVERY"/);
+  assert.match(sessionUi, /id = "password-recovery-dialog"/);
+  assert.match(sessionUi, /await auth\.updatePassword\(password\.value\)/);
+  assert.match(sessionUi, /await auth\.signOut\(\)/);
+  assert.match(sessionUi, /password-reset/);
+});
+
+test("gastnavigatie houdt uitleg links en accountacties rechts", async () => {
+  const indexHtml = await readFile(path.join(rootDirectory, "app/index.html"), "utf8");
+  const styles = await readFile(path.join(rootDirectory, "app/styles.css"), "utf8");
+  const aboutPosition = indexHtml.indexOf('class="guest-about-link guest-about-link--header"');
+  const navigationPosition = indexHtml.indexOf('class="account-navigation"');
+
+  assert.ok(aboutPosition >= 0);
+  assert.ok(navigationPosition > aboutPosition);
+  assert.match(styles, /\.guest-about-link--header\s*\{[^}]*left:\s*30px;/);
+  assert.match(styles, /\.account-navigation\s*\{[^}]*right:\s*30px;/);
 });
 
 test("werkfuncties bewaren afdeling en een eigen dagtarief", async () => {
@@ -495,10 +518,20 @@ test("projectpagina hergebruikt de calculator en projectsservice", async () => {
   assert.match(html, /id="calendar-weekdays-only"/);
   assert.match(html, /id="carousel-previous"/);
   assert.match(html, /id="carousel-next"/);
+  assert.doesNotMatch(html, /Volgende werkdag toevoegen/);
+  assert.doesNotMatch(html, /id="copy-project-times"/);
+  assert.match(html, /id="paste-project-times"/);
+  assert.match(html, /id="cancel-project-times"/);
   assert.match(html, /id="copy-day-invoice"/);
   assert.match(html, /class="day-copy-panel"/);
   assert.match(script, /selectedWorkdays = new Set/);
-  assert.match(script, /scrollBy\(\{ left:/);
+  assert.match(script, /`\$\{carouselIndex \+ 1\} van \$\{cards\.length\}`/);
+  assert.match(script, /matchMedia\("\(max-width: 760px\)"\)\.matches \? 1 : 3/);
+  assert.match(script, /startTime: sourceData\.startTime/);
+  assert.match(script, /endTime: sourceData\.endTime/);
+  assert.match(script, /function pasteProjectTimes/);
+  assert.match(script, /data-copy-project-times/);
+  assert.match(script, /function startCopyTimes\(dayId\)/);
   assert.match(script, /function buildDayInvoiceSummary/);
   assert.match(script, /Factuurtekst gekopieerd/);
   assert.match(script, /parameters\.get\("day"\)/);
@@ -537,7 +570,8 @@ test("Werkdagen bewaren versieerbare calculatorsnapshots met Pro-RLS", async () 
   assert.match(calculatorHtml, /Deelnemers zonder Overuurtje/);
   assert.doesNotMatch(calculatorScript, /sessionStorage\.getItem\(promptKey\)/);
   assert.match(workdaysHtml, /<h1>Werkdagen<\/h1>/);
-  assert.match(accountHtml, /id="account-workday-list"/);
+  assert.doesNotMatch(accountHtml, /id="account-workday-list"/);
+  assert.doesNotMatch(accountHtml, /id="account-project-list"/);
   assert.doesNotMatch(accountHtml, />Historie</);
 });
 
@@ -715,21 +749,47 @@ test("Volledige projecten delen blijft beperkt tot projectmetadata en dagtijden"
   assert.match(shareService, /get_received_project_shares/);
 });
 
-test("Delen kan een ingevulde werkdag klaarzetten en verstuurt wijzigingen pas na opslaan", async () => {
+test("Delen kan voor Free een privacyveilige bron klaarzetten en bij berekenen bijwerken", async () => {
   const appScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
   const inviteMigration = await readFile(
     path.join(rootDirectory, "supabase/migrations/202607250003_workday_share_invites.sql"),
     "utf8"
   );
-
-  assert.match(appScript, /const canShare = isPro && hasDate && hasStartTime/);
-  assert.match(
-    appScript,
-    /if \(!sourceId && sourceType === "workday"\)\s*\{\s*const saved = await persistWorkday\(buildWorkdaySnapshot\(\)\)/
+  const freeSharingMigration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202607310002_free_workday_sharing.sql"),
+    "utf8"
   );
+
+  assert.match(appScript, /sessionUi\?\.openAuth\("register", \{ purpose: "workday-sharing" \}\)/);
+  assert.match(appScript, /shareService\.prepareWorkdaySource/);
+  assert.match(appScript, /async function syncFreeSharedWorkdaySource\(\)/);
+  assert.match(appScript, /void syncFreeSharedWorkdaySource\(\)/);
   assert.match(appScript, /sourceType = projectDayId \? "project_day" : "workday"/);
   assert.match(inviteMigration, /after update of calculation_data on public\.workdays/i);
+  assert.match(freeSharingMigration, /add column if not exists sharing_only boolean/i);
+  assert.match(freeSharingMigration, /create or replace function public\.prepare_shared_workday_source/i);
+  assert.match(freeSharingMigration, /'workdayName'/i);
+  assert.match(freeSharingMigration, /'clientName'/i);
+  assert.match(freeSharingMigration, /'startTime'/i);
+  assert.match(freeSharingMigration, /'endTime'/i);
+  assert.match(freeSharingMigration, /p_source_type = 'project_day' and not public\.current_user_is_pro\(\)/i);
+  assert.doesNotMatch(freeSharingMigration, /p_source_type = 'workday' and not public\.current_user_is_pro\(\)/i);
   assert.doesNotMatch(appScript, /overuurtje:shares-changed[\s\S]{0,200}persistWorkday/);
+});
+
+test("Werkdag delen wordt nergens als Pro-functie gepresenteerd", async () => {
+  const files = await Promise.all([
+    "app/index.html",
+    "app/account.html",
+    "app/workdays.html",
+    "app/wat-is-overuurtje.html",
+    "app/saas/shareUi.js"
+  ].map((file) => readFile(path.join(rootDirectory, file), "utf8")));
+  const combined = files.join("\n");
+
+  assert.doesNotMatch(combined, /Overuurtje Pro[\s\S]{0,180}(werkdag|werktijden) delen/i);
+  assert.doesNotMatch(combined, /(werkdag|werktijden) delen[\s\S]{0,180}Overuurtje Pro/i);
+  assert.doesNotMatch(combined, /Pro[^<\n]{0,80}deel werktijden/i);
 });
 
 test("Werkdagnamen en deelnemers worden privacyvriendelijk gedeeld", async () => {
@@ -861,6 +921,37 @@ test("Deelservice maakt een uitnodiging zonder gebruikerszoekopdracht of financi
   assert.equal(JSON.stringify(calls[0]).includes("amount"), false);
 });
 
+test("Deelservice maakt een beperkte Free-deelbron via de beveiligde RPC", async () => {
+  const calls = [];
+  const context = await runService("app/saas/shareService.js", {
+    OveruurtjeSupabase: {
+      getClient: async () => ({
+        rpc: async (name, values) => {
+          calls.push({ name, values });
+          return { data: "share-source-1", error: null };
+        }
+      })
+    }
+  });
+
+  const sourceId = await context.OveruurtjeShares.prepareWorkdaySource({
+    id: null,
+    name: "Draaidag",
+    workDate: "2026-07-31",
+    calculationData: {
+      workdayName: "Draaidag",
+      clientName: "Opdrachtgever",
+      startTime: "08:00",
+      endTime: "",
+      dayRate: 900
+    }
+  });
+
+  assert.equal(sourceId, "share-source-1");
+  assert.equal(calls[0].name, "prepare_shared_workday_source");
+  assert.equal(calls[0].values.p_work_date, "2026-07-31");
+});
+
 test("Gratis ontvangers nemen gedeelde tijden over in de reguliere calculator", async () => {
   const workdaysScript = await readFile(path.join(rootDirectory, "app/workdays.js"), "utf8");
   const appScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
@@ -887,7 +978,12 @@ test("Gratis ontvangers nemen gedeelde tijden over in de reguliere calculator", 
     appScript,
     /async function refreshCurrentWorkdayParticipants\(\)[\s\S]{0,250}!currentUserContext\?\.isPro/
   );
-  assert.match(appScript, /const canShare = isPro && hasDate && hasStartTime/);
+  assert.match(appScript, /const canShare = !hasAccount \|\| \(hasDate && hasStartTime\)/);
+  assert.match(appScript, /Maak een gratis account om een werkdag te delen/);
+  assert.doesNotMatch(
+    appScript,
+    /const canShare = (?:Boolean\()?currentUserContext\?\.isPro/
+  );
 });
 
 test("Projectdagen behouden hun id zodat deelrelaties niet verdwijnen bij opslaan", async () => {

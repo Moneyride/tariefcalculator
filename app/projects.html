@@ -13,31 +13,31 @@
     <link rel="icon" href="favicon.ico" sizes="any">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260730a">
-    <link rel="stylesheet" href="styles.css?v=20260730a">
+    <link rel="stylesheet" href="styles.css?v=20260731d">
     <script>window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};window.gtag("consent","default",{analytics_storage:"denied",ad_storage:"denied",ad_user_data:"denied",ad_personalization:"denied"});</script>
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
     <script src="saas/pushService.js?v=20260729b" defer></script>
-    <script src="saas/authService.js?v=20260727a" defer></script>
+    <script src="saas/authService.js?v=20260731b" defer></script>
     <script src="saas/profileService.js?v=20260727d" defer></script>
     <script src="saas/settingsService.js?v=20260729d" defer></script>
     <script src="saas/functionService.js?v=20260725a" defer></script>
     <script src="saas/equipmentService.js?v=20260722a" defer></script>
     <script src="saas/projectService.js?v=20260728a" defer></script>
-    <script src="saas/shareService.js?v=20260729a" defer></script>
+    <script src="saas/shareService.js?v=20260731b" defer></script>
     <script src="saas/subscriptionService.js?v=20260722b" defer></script>
-    <script src="saas/featureGate.js?v=20260722a" defer></script>
+    <script src="saas/featureGate.js?v=20260731b" defer></script>
     <script src="calculator.js?v=20260727b" defer></script>
     <script src="analytics.js?v=20260722q" defer></script>
-    <script src="saas/sessionUi.js?v=20260729a" defer></script>
+    <script src="saas/sessionUi.js?v=20260731b" defer></script>
     <script src="qrCode.js?v=20260730a" defer></script>
-    <script src="saas/shareUi.js?v=20260730a" defer></script>
+    <script src="saas/shareUi.js?v=20260731b" defer></script>
     <script src="interactionGuard.js?v=20260730a" defer></script>
     <script src="selectUi.js?v=20260725a" defer></script>
     <script src="timePicker.js?v=20260730a" defer></script>
     <script src="projects.js?v=20260729e" defer></script>
-    <script src="pwa.js?v=20260729a" defer></script>
+    <script src="pwa.js?v=20260731a" defer></script>
   </head>
   <body>
     <main class="app-shell account-shell project-shell">
@@ -88,7 +88,7 @@
 
         <section id="project-list-view" hidden>
           <div class="project-list-heading"><div><h2>Jouw projecten</h2><p>Meest recent gewijzigd staat bovenaan.</p></div></div>
-          <nav class="month-switcher" aria-label="Projecten per maand">
+          <nav class="month-switcher projects-month-switcher" aria-label="Projecten per maand">
             <button type="button" id="projects-month-previous" aria-label="Vorige maand">&#8592;</button>
             <strong id="projects-month-label"></strong>
             <button type="button" id="projects-month-next" aria-label="Volgende maand">&#8594;</button>
@@ -141,13 +141,22 @@
           <div class="project-overview-head account-section"><div><p class="account-section-kicker">Projectoverzicht</p><h2 id="overview-name"></h2><p id="overview-meta"></p></div><div class="project-head-actions"><button class="saas-secondary-button" id="edit-project" type="button">Project wijzigen</button><button class="text-action danger-action" id="delete-project" type="button">Verwijderen</button></div></div>
           <div class="project-metrics" id="project-metrics"></div>
           <section class="account-section project-days-section">
-            <div class="account-section-heading project-days-heading"><div><p class="account-section-kicker">Werkdagen</p><h2>Projectdagen</h2></div><button class="saas-secondary-button" id="add-next-workday" type="button">Volgende werkdag toevoegen</button></div>
+            <div class="account-section-heading project-days-heading">
+              <div><p class="account-section-kicker">Werkdagen</p><h2>Projectdagen</h2></div>
+            </div>
             <div class="project-day-carousel">
               <div class="carousel-controls"><span id="carousel-position"></span></div>
               <div class="carousel-track-row">
                 <button class="carousel-arrow carousel-arrow-previous" type="button" id="carousel-previous" aria-label="Vorige projectdagen" title="Vorige projectdagen">&#8592;</button>
                 <div class="project-day-list" id="project-day-list"></div>
                 <button class="carousel-arrow carousel-arrow-next" type="button" id="carousel-next" aria-label="Volgende projectdagen" title="Volgende projectdagen">&#8594;</button>
+              </div>
+            </div>
+            <div class="project-times-copy-bar" id="project-times-copy-bar" hidden>
+              <p id="project-times-copy-status"></p>
+              <div>
+                <button class="saas-primary-button" id="paste-project-times" type="button" disabled>Plakken</button>
+                <button class="text-action" id="cancel-project-times" type="button">Annuleren</button>
               </div>
             </div>
           </section>

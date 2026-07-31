@@ -25,28 +25,28 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260730a">
-    <link rel="stylesheet" href="styles.css?v=20260729g">
+    <link rel="stylesheet" href="styles.css?v=20260731d">
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
     <script src="saas/pushService.js?v=20260729b" defer></script>
-    <script src="saas/authService.js?v=20260727a" defer></script>
+    <script src="saas/authService.js?v=20260731b" defer></script>
     <script src="saas/profileService.js?v=20260727d" defer></script>
     <script src="saas/settingsService.js?v=20260729d" defer></script>
     <script src="saas/functionService.js?v=20260725a" defer></script>
     <script src="saas/equipmentService.js?v=20260722a" defer></script>
     <script src="saas/projectService.js?v=20260727b" defer></script>
     <script src="saas/workdayService.js?v=20260727d" defer></script>
-    <script src="saas/shareService.js?v=20260729a" defer></script>
+    <script src="saas/shareService.js?v=20260731b" defer></script>
     <script src="saas/subscriptionService.js?v=20260722d" defer></script>
-    <script src="saas/featureGate.js?v=20260722a" defer></script>
+    <script src="saas/featureGate.js?v=20260731b" defer></script>
     <script src="analytics.js?v=20260722q" defer></script>
-    <script src="saas/sessionUi.js?v=20260729a" defer></script>
+    <script src="saas/sessionUi.js?v=20260731b" defer></script>
     <script src="interactionGuard.js?v=20260730a" defer></script>
     <script src="selectUi.js?v=20260725a" defer></script>
     <script src="timePicker.js?v=20260730a" defer></script>
     <script src="account.js?v=20260729e" defer></script>
-    <script src="pwa.js?v=20260729a" defer></script>
+    <script src="pwa.js?v=20260731a" defer></script>
   </head>
   <body>
     <main class="app-shell account-shell">
@@ -129,7 +129,7 @@
                 <label>
                   <span>Nieuw wachtwoord</span>
                   <input type="password" name="password" autocomplete="new-password" minlength="8" required>
-                  <small>Gebruik minimaal acht tekens.</small>
+                  <small>Gebruik minimaal 8 tekens, met minstens één letter en één cijfer.</small>
                 </label>
                 <button class="saas-secondary-button" type="submit">Wachtwoord wijzigen</button>
                 <p class="saas-form-status" id="password-status" aria-live="polite"></p>
@@ -340,22 +340,6 @@
             </div>
           </form>
 
-          <section class="account-section account-workdays-section">
-            <div class="account-section-heading">
-              <div><p class="account-section-kicker">Werkdagen</p><h2>Werktijden tijdens je dag bewaren</h2></div>
-              <a class="saas-secondary-button" href="workdays.html">Werkdagen openen</a>
-            </div>
-            <p class="account-section-description">Sla aan het begin van je draaidag je begintijd en instellingen op. Vul later alleen nog je eindtijd in en je volledige werkdag staat direct geregistreerd.</p>
-            <div class="account-project-list" id="account-workday-list"></div>
-            <p class="locked-feature-note">Werkdagen opslaan en later afronden is beschikbaar met Overuurtje Pro.</p>
-          </section>
-
-          <section class="account-section account-projects-section">
-            <div class="account-section-heading"><div><p class="account-section-kicker">Projecten</p><h2>Meerdere werkdagen bundelen</h2></div><a class="saas-secondary-button" href="projects.html">Projecten openen</a></div>
-            <div class="account-project-list" id="account-project-list"></div>
-            <p class="locked-feature-note">Projecten opslaan en exporteren is beschikbaar met Overuurtje Pro.</p>
-          </section>
-
           <section class="account-section pro-preview-section" aria-labelledby="pro-features-title">
             <div class="account-section-heading">
               <div>
@@ -368,11 +352,6 @@
               <article class="pro-feature-row">
                 <span class="pro-feature-icon" aria-hidden="true">W</span>
                 <div><h3>Werkdagen</h3><p>Sla je begintijd en instellingen tijdens de draaidag op en vul later alleen nog je eindtijd in.</p></div>
-                <span class="feature-status available-status">Beschikbaar</span>
-              </article>
-              <article class="pro-feature-row">
-                <span class="pro-feature-icon" aria-hidden="true">&#8599;</span>
-                <div><h3>Deel met collega's</h3><p>Deel alleen datum en werktijden binnen Overuurtje; tarieven en administratie blijven privé.</p></div>
                 <span class="feature-status available-status">Beschikbaar</span>
               </article>
               <article class="pro-feature-row">
@@ -461,7 +440,7 @@
       <h2 id="pro-title">Meer rust in je administratie</h2>
       <p class="pro-dialog-intro" id="pro-intro">Voor Pro heb je een account nodig. Zo blijven je abonnement en instellingen veilig aan jou gekoppeld.</p>
       <ul class="pro-benefits">
-        <li>Werkdagen tijdens je draaidag opslaan</li><li>Werktijden delen met collega's</li><li>Projecten met meerdere dagen of periodes</li><li>Functies met een eigen afdeling en dagtarief</li><li>Persoonlijke instellingen en synchronisatie</li><li>Eigen apparatuur en toeslagen</li><li>PDF-export en toekomstige Pro-functies</li>
+        <li>Werkdagen tijdens je draaidag opslaan</li><li>Projecten met meerdere dagen of periodes</li><li>Functies met een eigen afdeling en dagtarief</li><li>Persoonlijke instellingen en synchronisatie</li><li>Eigen apparatuur en toeslagen</li><li>PDF-export en toekomstige Pro-functies</li>
       </ul>
       <button class="saas-primary-button" id="pro-checkout" type="button">Upgrade naar Pro</button>
       <button class="saas-secondary-button pro-continue-button" id="pro-continue-free" type="button">Verder met Free</button>

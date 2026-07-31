@@ -3,7 +3,7 @@
 
   const supabaseService = globalThis.OveruurtjeSupabase;
   const STORAGE_KEY = "overuurtjeMockWorkdays";
-  const COLUMNS = "id,user_id,name,work_date,calculation_data,created_at,updated_at";
+  const COLUMNS = "id,user_id,name,work_date,calculation_data,sharing_only,created_at,updated_at";
 
   const normalize = (row) => ({
     id: row.id,
@@ -11,6 +11,7 @@
     name: row.name || "",
     workDate: row.work_date,
     calculationData: row.calculation_data || {},
+    sharingOnly: Boolean(row.sharing_only),
     createdAt: row.created_at,
     updatedAt: row.updated_at
   });
@@ -37,6 +38,7 @@
     const { data, error } = await db.from("workdays")
       .select(COLUMNS)
       .eq("user_id", userId)
+      .eq("sharing_only", false)
       .order("work_date", { ascending: false })
       .order("updated_at", { ascending: false });
     if (error) throw error;
@@ -50,6 +52,7 @@
       .select(COLUMNS)
       .eq("id", id)
       .eq("user_id", userId)
+      .eq("sharing_only", false)
       .maybeSingle();
     if (error) throw error;
     return data ? normalize(data) : null;
@@ -66,6 +69,7 @@
       .select(COLUMNS)
       .eq("user_id", userId)
       .eq("work_date", workDate)
+      .eq("sharing_only", false)
       .order("updated_at", { ascending: false });
     if (error) throw error;
     return (data || []).map(normalize);
@@ -96,7 +100,8 @@
       user_id: userId,
       name: String(values.name || "").trim() || null,
       work_date: values.workDate,
-      calculation_data: values.calculationData || {}
+      calculation_data: values.calculationData || {},
+      sharing_only: false
     };
     const query = values.id
       ? db.from("workdays").update(payload).eq("id", values.id).eq("user_id", userId)

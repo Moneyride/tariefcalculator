@@ -12,6 +12,7 @@
   let hasResolvedReady = false;
 
   const loginButton = document.querySelector("#account-login");
+  const guestAboutLinks = document.querySelectorAll("[data-guest-about]");
   const userMenu = document.querySelector("#account-user-menu");
   const userMenuButton = document.querySelector("#account-user-button");
   const userDropdown = document.querySelector("#account-dropdown");
@@ -50,6 +51,8 @@
   let notificationUi = null;
   let notificationPromptTimer = null;
   let pendingNotificationPrompt = null;
+  let recoveryDialog = null;
+  let passwordResetNoticeHandled = false;
 
   function showToast(message) {
     if (globalThis.OveruurtjeAnalytics?.showToast) {
@@ -89,7 +92,7 @@
       return "Vul een geldig e-mailadres in.";
     }
     if (fingerprint.includes("weak_password") || fingerprint.includes("password should be")) {
-      return "Kies een sterker wachtwoord van minimaal 8 tekens.";
+      return "Gebruik minimaal 8 tekens, met minstens één letter en één cijfer.";
     }
     if (
       fingerprint.includes("error sending confirmation email")
@@ -114,6 +117,99 @@
     if (!dialog) return;
     if (typeof dialog.close === "function") dialog.close();
     else dialog.removeAttribute("open");
+  }
+
+  function ensurePasswordRequirements() {
+    if (!authPasswordField) return null;
+    let help = authPasswordField.querySelector(".password-requirements");
+    if (help) return help;
+    help = document.createElement("small");
+    help.className = "password-requirements";
+    help.textContent = "Gebruik minimaal 8 tekens, met minstens één letter en één cijfer.";
+    authPasswordField.append(help);
+    return help;
+  }
+
+  function ensurePasswordRecoveryDialog() {
+    if (recoveryDialog) return recoveryDialog;
+    recoveryDialog = document.createElement("dialog");
+    recoveryDialog.className = "saas-dialog password-recovery-dialog";
+    recoveryDialog.id = "password-recovery-dialog";
+    recoveryDialog.setAttribute("aria-labelledby", "password-recovery-title");
+    recoveryDialog.innerHTML = `
+      <p class="dialog-eyebrow">Accountbeveiliging</p>
+      <h2 id="password-recovery-title">Nieuw wachtwoord instellen</h2>
+      <p>Je herstel-link is gecontroleerd. Kies nu eerst een nieuw wachtwoord voordat je verdergaat.</p>
+      <form class="password-recovery-form">
+        <label>
+          <span>Nieuw wachtwoord</span>
+          <input name="password" type="password" autocomplete="new-password" minlength="8" required>
+          <small class="password-requirements">Gebruik minimaal 8 tekens, met minstens één letter en één cijfer.</small>
+        </label>
+        <label>
+          <span>Herhaal nieuw wachtwoord</span>
+          <input name="passwordConfirmation" type="password" autocomplete="new-password" minlength="8" required>
+        </label>
+        <p class="password-recovery-status" aria-live="polite"></p>
+        <button class="saas-primary-button" type="submit">Wachtwoord opslaan</button>
+      </form>
+    `;
+    document.body.append(recoveryDialog);
+    recoveryDialog.addEventListener("cancel", (event) => event.preventDefault());
+    recoveryDialog.querySelector("form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      if (!form.reportValidity()) return;
+      const password = form.elements.namedItem("password");
+      const passwordConfirmation = form.elements.namedItem("passwordConfirmation");
+      const status = form.querySelector(".password-recovery-status");
+      const submit = form.querySelector("button[type='submit']");
+      const validation = auth.validatePassword(password.value);
+      if (!validation.valid) {
+        status.textContent = validation.message;
+        password.focus();
+        return;
+      }
+      if (password.value !== passwordConfirmation.value) {
+        status.textContent = "De wachtwoorden zijn niet hetzelfde.";
+        passwordConfirmation.focus();
+        return;
+      }
+
+      submit.disabled = true;
+      status.textContent = "Wachtwoord opslaan…";
+      try {
+        const { error } = await auth.updatePassword(password.value);
+        if (error) throw error;
+        const { error: signOutError } = await auth.signOut();
+        if (signOutError) throw signOutError;
+        const destination = new URL(config.accountUrl);
+        destination.searchParams.set("password-reset", "success");
+        location.replace(destination.href);
+      } catch (error) {
+        status.textContent = authErrorText(error, "reset");
+        submit.disabled = false;
+      }
+    });
+    return recoveryDialog;
+  }
+
+  function handlePasswordRecovery(authState) {
+    if (!authState.recovery || !authState.session) return;
+    const dialog = ensurePasswordRecoveryDialog();
+    if (!dialog.open) openDialog(dialog);
+    dialog.querySelector("input")?.focus();
+  }
+
+  function handlePasswordResetNotice(authState) {
+    if (passwordResetNoticeHandled || authState.loading || authState.user) return;
+    const currentUrl = new URL(location.href);
+    if (currentUrl.searchParams.get("password-reset") !== "success") return;
+    passwordResetNoticeHandled = true;
+    currentUrl.searchParams.delete("password-reset");
+    history.replaceState({}, "", currentUrl.href);
+    showToast("Je wachtwoord is gewijzigd. Log opnieuw in.");
+    openAuth("login");
   }
 
   function notificationText(item) {
@@ -354,6 +450,11 @@
     authPasswordField.hidden = isForgot;
     authPassword.required = !isForgot;
     authPassword.autocomplete = isRegister ? "new-password" : "current-password";
+    authPassword.title = isRegister
+      ? "Gebruik minimaal 8 tekens, met minstens één letter en één cijfer."
+      : "";
+    const passwordRequirements = ensurePasswordRequirements();
+    if (passwordRequirements) passwordRequirements.hidden = !isRegister;
     if (authNameField) authNameField.hidden = !isRegister;
     if (authName) authName.required = isRegister;
     authSubmit.textContent = isForgot
@@ -389,6 +490,9 @@
       userDropdown.insertBefore(dashboardLink, accountLink);
     }
     loginButton.hidden = Boolean(user);
+    guestAboutLinks.forEach((link) => {
+      link.hidden = Boolean(user);
+    });
     document.querySelectorAll(".account-navigation [data-subscription-upgrade]").forEach((button) => {
       button.hidden = Boolean(user);
     });
@@ -406,6 +510,8 @@
   }
 
   async function buildContext(authState) {
+    handlePasswordRecovery(authState);
+    handlePasswordResetNotice(authState);
     let profile = null;
     if (authState.user) {
       try {
@@ -446,6 +552,15 @@
         if (response.error) throw response.error;
         authStatus.textContent = "De herstellink is verstuurd.";
         return;
+      }
+
+      if (authMode === "register") {
+        const validation = auth.validatePassword(authPassword.value);
+        if (!validation.valid) {
+          authStatus.textContent = validation.message;
+          authPassword.focus();
+          return;
+        }
       }
 
       response = authMode === "register"

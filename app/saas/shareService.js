@@ -27,6 +27,7 @@
     endTime: row.end_time || "",
     projectName: row.project_name || "",
     workdayName: row.workday_name || "",
+    clientName: row.client_name || "",
     optionalMessage: row.optional_message || "",
     shareMode: row.share_mode,
     acceptedAt: row.accepted_at,
@@ -66,6 +67,7 @@
     endTime: row.end_time || "",
     projectName: row.project_name || "",
     workdayName: row.workday_name || "",
+    clientName: row.client_name || "",
     optionalMessage: row.optional_message || "",
     shareMode: row.share_mode,
     available: row.available !== false
@@ -113,6 +115,20 @@
       p_source_id: sourceId,
       p_message: message,
       p_share_mode: shareMode
+    });
+  }
+
+  async function prepareWorkdaySource({
+    id = null,
+    name = "",
+    workDate,
+    calculationData = {}
+  }) {
+    return rpc("prepare_shared_workday_source", {
+      p_workday_id: id,
+      p_name: name,
+      p_work_date: workDate,
+      p_calculation_data: calculationData
     });
   }
 
@@ -193,6 +209,7 @@
   }
 
   globalThis.OveruurtjeShares = Object.freeze({
+    prepareWorkdaySource,
     createInvite,
     previewInvite,
     claimInvite,

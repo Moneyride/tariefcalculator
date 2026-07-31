@@ -7,7 +7,7 @@
     custom_equipment: { requiresPro: true },
     equipment_library: { requiresPro: true },
     work_functions: { requiresPro: true },
-    workday_sharing: { requiresPro: true },
+    workday_sharing: { requiresPro: false },
     pdf_export: { requiresPro: true },
     device_sync: { requiresPro: true }
   });

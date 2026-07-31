@@ -43,38 +43,39 @@
     <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260730a">
-    <link rel="stylesheet" href="styles.css?v=20260730a">
+    <link rel="stylesheet" href="styles.css?v=20260731d">
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
     <script src="saas/pushService.js?v=20260729b" defer></script>
-    <script src="saas/authService.js?v=20260727a" defer></script>
+    <script src="saas/authService.js?v=20260731b" defer></script>
     <script src="saas/profileService.js?v=20260727d" defer></script>
     <script src="saas/settingsService.js?v=20260729d" defer></script>
     <script src="saas/functionService.js?v=20260725a" defer></script>
     <script src="saas/equipmentService.js?v=20260722a" defer></script>
     <script src="saas/projectService.js?v=20260728a" defer></script>
     <script src="saas/workdayService.js?v=20260727d" defer></script>
-    <script src="saas/shareService.js?v=20260729a" defer></script>
+    <script src="saas/shareService.js?v=20260731b" defer></script>
     <script src="saas/subscriptionService.js?v=20260722d" defer></script>
-    <script src="saas/featureGate.js?v=20260722a" defer></script>
+    <script src="saas/featureGate.js?v=20260731b" defer></script>
     <script src="calculator.js?v=20260727b" defer></script>
     <script src="liveWorkday.js?v=20260730a" defer></script>
     <script src="workdayNotifications.js?v=20260729a" defer></script>
     <script src="analytics.js?v=20260722q" defer></script>
-    <script src="saas/sessionUi.js?v=20260729a" defer></script>
+    <script src="saas/sessionUi.js?v=20260731b" defer></script>
     <script src="qrCode.js?v=20260730a" defer></script>
-    <script src="saas/shareUi.js?v=20260730a" defer></script>
+    <script src="saas/shareUi.js?v=20260731b" defer></script>
     <script src="interactionGuard.js?v=20260730a" defer></script>
     <script src="selectUi.js?v=20260725a" defer></script>
     <script src="timePicker.js?v=20260730a" defer></script>
-    <script src="app.js?v=20260730a" defer></script>
-    <script src="pwa.js?v=20260729a" defer></script>
+    <script src="app.js?v=20260731b" defer></script>
+    <script src="pwa.js?v=20260731a" defer></script>
   </head>
   <body class="calculator-page">
     <main class="app-shell">
       <div class="main-glass">
       <header class="page-header">
+        <a class="guest-about-link guest-about-link--header" data-guest-about href="wat-is-overuurtje.html">Wat is Overuurtje?</a>
         <div class="header-title">
           <img class="site-logo" src="overuurtje-logo.png?v=20260718e" alt="Overuurtje.nl - Reken. Check. Klaar.">
           <h1 class="visually-hidden">Overuurtje.nl</h1>
@@ -455,7 +456,7 @@
             <section class="result-section result-summary">
               <h3>Factuur</h3>
               <dl class="result-list">
-                <div><dt>Totaal exclusief btw</dt><dd data-result="subtotalExVat">€ 0,00</dd></div>
+                <div class="result-subtotal-row"><dt>Totaal exclusief btw</dt><dd data-result="subtotalExVat">€ 0,00</dd></div>
                 <div><dt>Btw</dt><dd data-result="vatAmount">€ 0,00</dd></div>
                 <div class="total"><dt>Factuurbedrag inclusief btw</dt><dd data-result="totalIncVat">€ 0,00</dd></div>
               </dl>
@@ -500,11 +501,10 @@
           <div class="print-heading">
             <img class="print-logo" src="overuurtje-logo.png?v=20260718e" alt="Overuurtje.nl">
             <div>
-              <p class="print-kicker">Onderbouwing factuur</p>
               <h2>Berekening van de vergoeding</h2>
-              <p class="print-footer">Powered by Reichgelt Media Group</p>
             </div>
           </div>
+          <p class="print-footer">Powered by Reichgelt Media Group</p>
           <dl class="print-job-meta">
             <div data-print-row="workdayName" hidden><dt>Werkdag</dt><dd data-print="workdayName">-</dd></div>
             <div data-print-row="clientName" hidden><dt>Opdrachtgever</dt><dd data-print="clientName">-</dd></div>
@@ -516,7 +516,7 @@
         </header>
 
         <div class="print-breakdown-body">
-          <h3>Opbouw exclusief btw</h3>
+          <h3>Onderbouwing factuur</h3>
           <div class="print-calculation-lines" id="print-calculation-lines"></div>
         </div>
 
@@ -578,7 +578,6 @@
       <p class="pro-dialog-intro" id="pro-intro">Voor Pro heb je een account nodig. Zo blijven je abonnement en instellingen veilig aan jou gekoppeld.</p>
       <ul class="pro-benefits">
         <li><strong>Werkdagen</strong> - bewaar je begintijd en rond je werkdag later af</li>
-        <li>Deel werktijden veilig met collega's binnen Overuurtje</li>
         <li>Projecten met meerdere dagen of periodes</li>
         <li>Functies met een eigen afdeling en dagtarief</li>
         <li>Persoonlijke instellingen opslaan</li>

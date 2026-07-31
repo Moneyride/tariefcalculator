@@ -100,6 +100,7 @@ let hydratedAccountUserId = null;
 let cloudSyncTimer = null;
 let functionSyncTimer = null;
 let currentWorkdayId = null;
+let currentShareWorkdayId = null;
 let currentProjectDayContext = null;
 let currentSharedSource = null;
 let currentSharedOwnerName = "";
@@ -746,7 +747,7 @@ function renderCurrentWorkdayParticipants() {
   currentWorkdayParticipantList.hidden = chips.length === 0;
   if (privateParticipantPanel) privateParticipantPanel.hidden = !isPro || isSharedReceiver;
   if (privateParticipantForm) privateParticipantForm.hidden = !isPro || isSharedReceiver;
-  currentWorkdayParticipants.hidden = !isPro && visibleShared.length === 0 && remotePrivateParticipants.length === 0;
+  currentWorkdayParticipants.hidden = false;
 }
 
 function updateSharedReceiverMode() {
@@ -792,6 +793,12 @@ function updateSharedReceiverMode() {
   if (projectCreateLink) projectCreateLink.hidden = active;
   const workdayName = form.elements.namedItem("workdayName");
   if (workdayName) workdayName.disabled = active;
+  const clientName = form.elements.namedItem("clientName");
+  if (clientName) {
+    clientName.disabled = active;
+    clientName.setAttribute("aria-disabled", String(active));
+    clientName.closest("label")?.classList.toggle("is-shared-readonly", active);
+  }
   if (shareFromParticipantsButton) shareFromParticipantsButton.hidden = active;
   if (privateParticipantPanel) privateParticipantPanel.hidden = active || !currentUserContext?.isPro;
   if (privateParticipantForm) privateParticipantForm.hidden = active || !currentUserContext?.isPro;
@@ -1081,12 +1088,15 @@ function updateWorkdaySaveAccess() {
     ? (isPro ? "Werkdag opslaan" : "Werkdagen zijn beschikbaar met Pro")
     : "Vul eerst een datum in";
   if (shareFromParticipantsButton) {
-    const canShare = isPro && hasDate && hasStartTime;
+    const hasAccount = Boolean(currentAccountUser);
+    const canShare = !hasAccount || (hasDate && hasStartTime);
     shareFromParticipantsButton.hidden = isSharedReceiver;
     shareFromParticipantsButton.disabled = !canShare;
-    shareFromParticipantsButton.title = canShare
-      ? "Deel deze werkdag met collega's"
-      : (isPro ? "Vul eerst een datum en starttijd in" : "Delen met collega's is beschikbaar met Pro");
+    shareFromParticipantsButton.title = !hasAccount
+      ? "Maak een gratis account om een werkdag te delen"
+      : canShare
+        ? "Deel deze werkdag met collega's"
+        : "Vul eerst een datum en starttijd in";
     shareFromParticipantsButton.setAttribute("aria-label", shareFromParticipantsButton.title);
   }
   if (!currentWorkdayId && !currentProjectDayContext && !currentSharedSource) {
@@ -1218,6 +1228,9 @@ function applySharedTimesImport() {
     const snapshot = JSON.parse(raw);
     if (form.elements.namedItem("workdayName")) {
       form.elements.namedItem("workdayName").value = snapshot.workdayName || "";
+    }
+    if (form.elements.namedItem("clientName")) {
+      form.elements.namedItem("clientName").value = snapshot.clientName || "";
     }
     form.elements.namedItem("date").value = snapshot.date || "";
     form.elements.namedItem("startTime").value = snapshot.startTime || "08:00";
@@ -1477,6 +1490,10 @@ function renderPrintBreakdown(result) {
     result.kilometerAmount
   );
   addPrintCalculationLine(lines, "Parkeer/onkosten", "Ingevoerde onkosten", result.parkingAmount);
+  document.querySelector(".print-breakdown")?.classList.toggle(
+    "is-dense",
+    lines.childElementCount > 9
+  );
 }
 
 function buildSummary(result) {
@@ -1533,6 +1550,24 @@ function buildSummary(result) {
   lines.push(`Exclusief btw: ${euroFormatter.format(result.subtotalExVat)}`);
 
   return lines.join("\n");
+}
+
+async function syncFreeSharedWorkdaySource() {
+  if (
+    !currentShareWorkdayId
+    || !currentAccountUser
+    || currentUserContext?.isPro
+    || currentSharedSource
+    || currentProjectDayContext
+  ) return;
+
+  const snapshot = buildWorkdaySnapshot();
+  currentShareWorkdayId = await shareService.prepareWorkdaySource({
+    id: currentShareWorkdayId,
+    name: snapshot.workdayName,
+    workDate: snapshot.date,
+    calculationData: snapshot
+  });
 }
 
 function updateCalculation(trackCompletion = false) {
@@ -1595,6 +1630,9 @@ function updateCalculation(trackCompletion = false) {
   calculationStatus.hidden = true;
 
   if (trackCompletion) {
+    void syncFreeSharedWorkdaySource().catch((error) => {
+      console.warn("Gedeelde Free-werkdag bijwerken is mislukt.", error);
+    });
     void rememberCurrentClient().catch((error) => {
       console.warn("Opdrachtgever automatisch opslaan is mislukt.", error);
     });
@@ -2031,8 +2069,8 @@ document.querySelectorAll("[data-shared-calculation-cancel]").forEach((button) =
 workdaySaveButton?.addEventListener("click", () => saveWorkday());
 
 async function openCurrentWorkdayShare() {
-  if (!currentUserContext?.isPro) {
-    sessionUi?.openUpgrade();
+  if (!currentAccountUser) {
+    sessionUi?.openAuth("register", { purpose: "workday-sharing" });
     return;
   }
   if (shareFromParticipantsButton) shareFromParticipantsButton.disabled = true;
@@ -2040,9 +2078,36 @@ async function openCurrentWorkdayShare() {
     const projectDayId = currentProjectDayContext?.day?.id;
     let sourceType = projectDayId ? "project_day" : "workday";
     let sourceId = projectDayId || currentWorkdayId;
+    if (sourceType === "project_day" && !currentUserContext?.isPro) {
+      sessionUi?.openUpgrade();
+      return;
+    }
     if (!sourceId && sourceType === "workday") {
-      const saved = await persistWorkday(buildWorkdaySnapshot());
-      sourceId = saved?.id;
+      const snapshot = buildWorkdaySnapshot();
+      if (currentUserContext?.isPro) {
+        const saved = await persistWorkday(snapshot);
+        sourceId = saved?.id;
+      } else {
+        sourceId = await shareService.prepareWorkdaySource({
+          id: currentShareWorkdayId,
+          name: snapshot.workdayName,
+          workDate: snapshot.date,
+          calculationData: snapshot
+        });
+        currentShareWorkdayId = sourceId;
+      }
+    } else if (
+      sourceType === "workday"
+      && !currentUserContext?.isPro
+      && currentShareWorkdayId
+    ) {
+      const snapshot = buildWorkdaySnapshot();
+      sourceId = await shareService.prepareWorkdaySource({
+        id: currentShareWorkdayId,
+        name: snapshot.workdayName,
+        workDate: snapshot.date,
+        calculationData: snapshot
+      });
     }
     if (sourceId) await shareUi?.open({ sourceType, sourceId });
   } catch (error) {

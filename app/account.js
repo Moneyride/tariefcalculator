@@ -6,8 +6,6 @@
   const settingsService = globalThis.OveruurtjeSettings;
   const functionService = globalThis.OveruurtjeFunctions;
   const equipmentService = globalThis.OveruurtjeEquipment;
-  const projectService = globalThis.OveruurtjeProjects;
-  const workdayService = globalThis.OveruurtjeWorkdays;
   const profileService = globalThis.OveruurtjeProfiles;
   const subscriptions = globalThis.OveruurtjeSubscriptions;
   const unavailable = document.querySelector("#account-unavailable");
@@ -46,10 +44,6 @@
   const equipmentList = document.querySelector("#custom-equipment-account-list");
   const addEquipmentButton = document.querySelector("#add-equipment-button");
   const addEquipmentForm = document.querySelector("#add-equipment-form");
-  const accountProjectList = document.querySelector("#account-project-list");
-  const accountProjectsSection = document.querySelector(".account-projects-section");
-  const accountWorkdayList = document.querySelector("#account-workday-list");
-  const accountWorkdaysSection = document.querySelector(".account-workdays-section");
   const newEquipmentName = document.querySelector("#new-equipment-name");
   const newEquipmentAmount = document.querySelector("#new-equipment-amount");
   const accountClientName = document.querySelector("#account-client-name");
@@ -72,13 +66,6 @@
   function formatDate(value) {
     if (!value) return "-";
     return new Intl.DateTimeFormat("nl-NL", { dateStyle: "long" }).format(new Date(value));
-  }
-
-  function formatWorkDate(value) {
-    if (!value) return "-";
-    const [year, month, day] = value.split("-").map(Number);
-    return new Intl.DateTimeFormat("nl-NL", { weekday: "short", day: "numeric", month: "short" })
-      .format(new Date(year, month - 1, day));
   }
 
   function populateSettings(settings) {
@@ -389,10 +376,6 @@
     proPreviewSection.hidden = isPro;
     proPreviewSection.classList.remove("is-locked");
     proFeaturesTitle.textContent = "Ontdek Overuurtje Pro";
-    accountProjectsSection.classList.toggle("is-locked", !isPro);
-    accountWorkdaysSection.classList.toggle("is-locked", !isPro);
-    accountProjectsSection.hidden = isPro;
-    accountWorkdaysSection.hidden = isPro;
     equipmentSection.querySelectorAll("input").forEach((input) => { input.disabled = !isPro; });
     equipmentSection.querySelectorAll("button").forEach((button) => { button.disabled = !isPro; });
     settingsForm.querySelectorAll("[data-function-fallback]").forEach((field) => { field.hidden = isPro; });
@@ -420,12 +403,10 @@
     renderSubscription(context.subscription, context.profile);
 
     try {
-      const [savedResult, functionsResult, equipmentResult, projectsResult, workdaysResult] = await Promise.allSettled([
+      const [savedResult, functionsResult, equipmentResult] = await Promise.allSettled([
         settingsService.load(authState.user.id),
         context.subscription.isPro ? functionService.list(authState.user.id) : Promise.resolve([]),
-        equipmentService.list(authState.user.id),
-        context.subscription.isPro ? projectService.list(authState.user.id, { mock: context.subscription.isMock }) : Promise.resolve([]),
-        context.subscription.isPro ? workdayService.list(authState.user.id, { mock: context.subscription.isMock }) : Promise.resolve([])
+        equipmentService.list(authState.user.id)
       ]);
       const saved = savedResult.status === "fulfilled" ? savedResult.value : null;
       const savedSettings = { ...settingsService.defaults, ...(saved || {}) };
@@ -436,46 +417,11 @@
         functions = standardFunctionChoices(savedSettings);
       }
       const equipment = equipmentResult.status === "fulfilled" ? equipmentResult.value : [];
-      const savedProjects = projectsResult.status === "fulfilled" ? projectsResult.value : [];
-      const savedWorkdays = workdaysResult.status === "fulfilled" ? workdaysResult.value : [];
       populateSettings(saved);
       renderClients();
       renderFunctions(functions);
       renderEquipment(equipment);
-      accountProjectList.replaceChildren(...savedProjects.slice(0, 4).map((project) => {
-        const link = document.createElement("a");
-        link.href = `projects.html?project=${encodeURIComponent(project.id)}`;
-        const copy = document.createElement("span");
-        const title = document.createElement("strong");
-        const client = document.createElement("small");
-        title.textContent = project.name;
-        client.textContent = project.clientName || "Project";
-        copy.append(title, client);
-        const arrow = document.createElement("span");
-        arrow.setAttribute("aria-hidden", "true");
-        arrow.textContent = "→";
-        link.append(copy, arrow);
-        return link;
-      }));
-      accountWorkdayList.replaceChildren(...savedWorkdays.slice(0, 4).map((workday) => {
-        const snapshot = workday.calculationData || {};
-        const link = document.createElement("a");
-        link.href = `index.html?workday=${encodeURIComponent(workday.id)}`;
-        const copy = document.createElement("span");
-        const title = document.createElement("strong");
-        const detail = document.createElement("small");
-        title.textContent = workday.name || "Werkdag";
-        detail.textContent = snapshot.endTime
-          ? `${formatWorkDate(workday.workDate)} · ${snapshot.startTime || "-"} – ${snapshot.endTime} · Afgerond`
-          : `${formatWorkDate(workday.workDate)} · ${snapshot.startTime || "-"} · Concept`;
-        copy.append(title, detail);
-        const arrow = document.createElement("span");
-        arrow.setAttribute("aria-hidden", "true");
-        arrow.textContent = "→";
-        link.append(copy, arrow);
-        return link;
-      }));
-      if ([savedResult, functionsResult, equipmentResult, projectsResult, workdaysResult].some((result) => result.status === "rejected")) {
+      if ([savedResult, functionsResult, equipmentResult].some((result) => result.status === "rejected")) {
         settingsStatus.textContent = "Een deel van de cloudgegevens is nog niet beschikbaar. Controleer of alle Supabase-migrations zijn uitgevoerd.";
       }
     } catch (error) {
@@ -693,8 +639,15 @@
   passwordForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!passwordForm.reportValidity()) return;
+    const passwordInput = passwordForm.elements.namedItem("password");
+    const validation = auth.validatePassword(passwordInput.value);
+    if (!validation.valid) {
+      passwordStatus.textContent = validation.message;
+      passwordInput.focus();
+      return;
+    }
     passwordStatus.textContent = "Wijzigen…";
-    const { error } = await auth.updatePassword(passwordForm.elements.namedItem("password").value);
+    const { error } = await auth.updatePassword(passwordInput.value);
     if (error) {
       passwordStatus.textContent = error.message;
       return;

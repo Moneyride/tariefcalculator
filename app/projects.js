@@ -40,6 +40,9 @@
   let periodEnd = "";
   let selectedWorkdays = new Set();
   let projectListMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12);
+  let carouselIndex = 0;
+  let copyTimesSourceId = "";
+  let copyTimesTargetIds = new Set();
 
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
   const localDate = (iso) => new Date(`${iso}T12:00:00`);
@@ -399,8 +402,10 @@
     return parts.join(" · ") || "Geen toeslagen of extra kosten";
   }
 
-  function renderOverview() {
+  function renderOverview({ resetCarousel = true } = {}) {
     const project = current.project; const total = totals(current.days);
+    if (resetCarousel) carouselIndex = 0;
+    carouselIndex = Math.max(0, Math.min(carouselIndex, current.days.length - 1));
     document.querySelector("#overview-name").textContent = project.name;
     document.querySelector("#overview-meta").textContent = `${project.clientName ? `${project.clientName} · ` : ""}${formatDate(project.startDate)} - ${formatDate(project.endDate)} · ${current.days.length} werkdagen`;
     document.querySelector("#project-metrics").innerHTML = [
@@ -411,33 +416,133 @@
     ].map(([label, value, className = ""]) => `<div class="${className}"><span>${label}</span><strong>${value}</strong></div>`).join("");
     document.querySelector("#project-day-list").innerHTML = current.days.map((day) => {
       const data = { ...defaultDayData(), ...day.calculationData }; const result = calculate(data);
-      return `<button type="button" data-day-id="${day.id}"><span><strong>${formatDate(day.workDate)}</strong><small>${data.startTime} - ${data.endTime}${result.endsNextDay ? " (+1 dag)" : ""} · ${summaryText(result)}</small></span><strong>${euro.format(result.subtotalExVat)}</strong></button>`;
+      const isSource = day.id === copyTimesSourceId;
+      const isTarget = copyTimesTargetIds.has(day.id);
+      const copyClass = `${isSource ? " is-copy-source" : ""}${isTarget ? " is-copy-target" : ""}`;
+      const copyBadge = isSource
+        ? `<span class="project-day-copy-badge">Bron</span>`
+        : isTarget ? `<span class="project-day-copy-badge">Geselecteerd</span>` : "";
+      const copyAction = copyTimesSourceId
+        ? ""
+        : `<button type="button" class="project-times-copy-trigger" data-copy-project-times="${day.id}">Tijden kopiëren</button>`;
+      return `<article class="project-day-card ${copyClass.trim()}" data-day-card data-day-id="${day.id}">
+        <button type="button" class="project-day-open" data-open-project-day="${day.id}" ${copyTimesSourceId ? `aria-pressed="${isTarget}"` : ""}>
+          <span><strong>${formatDate(day.workDate)}</strong><small>${data.startTime} - ${data.endTime}${result.endsNextDay ? " (+1 dag)" : ""} · ${summaryText(result)}</small>${copyBadge}</span>
+          <strong>${euro.format(result.subtotalExVat)}</strong>
+        </button>
+        ${copyAction}
+      </article>`;
     }).join("");
-    document.querySelectorAll("[data-day-id]").forEach((button) => button.addEventListener("click", () => openDay(button.dataset.dayId)));
+    document.querySelectorAll("[data-open-project-day]").forEach((button) => button.addEventListener("click", () => {
+      if (copyTimesSourceId) toggleCopyTimesTarget(button.dataset.openProjectDay);
+      else openDay(button.dataset.openProjectDay);
+    }));
+    document.querySelectorAll("[data-copy-project-times]").forEach((button) => button.addEventListener("click", () => {
+      startCopyTimes(button.dataset.copyProjectTimes);
+    }));
+    renderCopyTimesControls();
     show("project-overview-view");
     requestAnimationFrame(() => {
-      document.querySelector("#project-day-list").scrollLeft = 0;
+      scrollCarouselToIndex(carouselIndex, "auto");
       updateCarouselControls();
     });
   }
 
+  function carouselCards() {
+    return Array.from(document.querySelectorAll("#project-day-list [data-day-card]"));
+  }
+
+  function scrollCarouselToIndex(index, behavior = "smooth") {
+    const carousel = document.querySelector("#project-day-list");
+    const cards = carouselCards();
+    const target = cards[Math.max(0, Math.min(index, cards.length - 1))];
+    if (!target) return;
+    const left = target.getBoundingClientRect().left - carousel.getBoundingClientRect().left + carousel.scrollLeft;
+    carousel.scrollTo({ left, behavior });
+  }
+
   function updateCarouselControls() {
     const carousel = document.querySelector("#project-day-list");
-    const cards = carousel.querySelectorAll("[data-day-id]");
+    const cards = carouselCards();
     const firstCard = cards[0];
     const gap = Number.parseFloat(getComputedStyle(carousel).columnGap) || 0;
     const step = firstCard ? firstCard.getBoundingClientRect().width + gap : carousel.clientWidth;
-    const firstIndex = step ? Math.round(carousel.scrollLeft / step) : 0;
-    const visible = innerWidth <= 760 ? 1 : Math.min(3, cards.length);
-    const lastIndex = Math.min(cards.length, firstIndex + visible);
-    document.querySelector("#carousel-position").textContent = cards.length ? `${firstIndex + 1}-${lastIndex} van ${cards.length}` : "";
-    document.querySelector("#carousel-previous").disabled = carousel.scrollLeft <= 2;
-    document.querySelector("#carousel-next").disabled = carousel.scrollLeft + carousel.clientWidth >= carousel.scrollWidth - 2;
+    carouselIndex = step ? Math.max(0, Math.min(Math.round(carousel.scrollLeft / step), cards.length - 1)) : 0;
+    const atStart = !cards.length || carousel.scrollLeft <= 2;
+    const atEnd = !cards.length || carousel.scrollLeft + carousel.clientWidth >= carousel.scrollWidth - 2;
+    document.querySelector("#carousel-position").textContent = cards.length ? `${carouselIndex + 1} van ${cards.length}` : "";
+    document.querySelector("#carousel-previous").disabled = atStart;
+    document.querySelector("#carousel-next").disabled = atEnd;
   }
 
   function moveCarousel(direction) {
-    const carousel = document.querySelector("#project-day-list");
-    carousel.scrollBy({ left: direction * carousel.clientWidth, behavior: "smooth" });
+    const cards = carouselCards();
+    const jump = matchMedia("(max-width: 760px)").matches ? 1 : 3;
+    const nextIndex = Math.max(0, Math.min(carouselIndex + (direction * jump), cards.length - 1));
+    scrollCarouselToIndex(nextIndex);
+  }
+
+  function renderCopyTimesControls() {
+    const active = Boolean(copyTimesSourceId);
+    const source = current?.days.find((day) => day.id === copyTimesSourceId);
+    const bar = document.querySelector("#project-times-copy-bar");
+    bar.hidden = !active;
+    if (!active || !source) return;
+    const count = copyTimesTargetIds.size;
+    document.querySelector("#project-times-copy-status").textContent =
+      `Bron: ${formatDate(source.workDate)}. Selecteer ${count ? `${count} gekozen dag${count === 1 ? "" : "en"}` : "de dagen waarop je deze tijden wilt plakken"}.`;
+    document.querySelector("#paste-project-times").disabled = count === 0;
+  }
+
+  function startCopyTimes(dayId) {
+    const sourceIndex = current?.days.findIndex((day) => day.id === dayId) ?? -1;
+    const source = sourceIndex >= 0 ? current.days[sourceIndex] : null;
+    if (!source) return;
+    carouselIndex = sourceIndex;
+    copyTimesSourceId = source.id;
+    copyTimesTargetIds = new Set();
+    renderOverview({ resetCarousel: false });
+  }
+
+  function toggleCopyTimesTarget(dayId) {
+    if (dayId === copyTimesSourceId) return;
+    if (copyTimesTargetIds.has(dayId)) copyTimesTargetIds.delete(dayId);
+    else copyTimesTargetIds.add(dayId);
+    renderOverview({ resetCarousel: false });
+  }
+
+  function cancelCopyTimes() {
+    copyTimesSourceId = "";
+    copyTimesTargetIds = new Set();
+    renderOverview({ resetCarousel: false });
+  }
+
+  async function pasteProjectTimes() {
+    const source = current?.days.find((day) => day.id === copyTimesSourceId);
+    const targetIds = new Set(copyTimesTargetIds);
+    if (!source || !targetIds.size) return;
+    const count = targetIds.size;
+    if (!confirm(`De start- en eindtijd van ${count} dag${count === 1 ? "" : "en"} worden vervangen. Doorgaan?`)) return;
+    const sourceData = { ...defaultDayData(), ...source.calculationData };
+    current.days = current.days.map((day) => targetIds.has(day.id)
+      ? {
+          ...day,
+          calculationData: {
+            ...(day.calculationData || {}),
+            startTime: sourceData.startTime,
+            endTime: sourceData.endTime
+          }
+        }
+      : day);
+    try {
+      current = await projects.replaceDays(context.auth.user.id, current.project.id, current.days, options());
+      copyTimesSourceId = "";
+      copyTimesTargetIds = new Set();
+      sessionUi.showToast(`Tijden naar ${count} dag${count === 1 ? "" : "en"} geplakt.`);
+      renderOverview({ resetCarousel: false });
+    } catch (error) {
+      sessionUi.showToast(error.message);
+    }
   }
 
   async function openProject(id, dayId = "") {
@@ -575,17 +680,6 @@
     try { await persistDays("Berekening gekopieerd."); sessionUi.showToast("Berekening gekopieerd."); } catch (error) { sessionUi.showToast(error.message); }
   }
 
-  async function addNextWorkday() {
-    const last = localDate(current.days.at(-1)?.workDate || current.project.endDate); do { last.setDate(last.getDate() + 1); } while ([0, 6].includes(last.getDay()));
-    const workDate = isoDate(last);
-    current.project.endDate = workDate > current.project.endDate ? workDate : current.project.endDate;
-    try {
-      await projects.saveProject(context.auth.user.id, current.project, options());
-      current.days.push({ id: null, projectId: current.project.id, workDate, calculationData: defaultDayData() });
-      current = await projects.replaceDays(context.auth.user.id, current.project.id, current.days, options()); renderOverview();
-    } catch (error) { sessionUi.showToast(error.message); }
-  }
-
   function printLine(label, detail, amount) { return amount ? `<div><div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(detail)}</span></div><strong>${euro.format(amount)}</strong></div>` : ""; }
   function buildProjectPrint() {
     const total = totals(current.days); const p = current.project;
@@ -683,7 +777,8 @@
   document.querySelector("#edit-project").addEventListener("click", () => openProjectForm(current.project));
   document.querySelector("#back-to-projects").addEventListener("click", renderProjectList);
   document.querySelector("#delete-project").addEventListener("click", async () => { if (!confirm(`Project “${current.project.name}” en alle werkdagen verwijderen?`)) return; await projects.remove(context.auth.user.id, current.project.id, options()); current = null; await loadList(); });
-  document.querySelector("#add-next-workday").addEventListener("click", addNextWorkday);
+  document.querySelector("#paste-project-times").addEventListener("click", pasteProjectTimes);
+  document.querySelector("#cancel-project-times").addEventListener("click", cancelCopyTimes);
   document.querySelector("#carousel-previous").addEventListener("click", () => moveCarousel(-1));
   document.querySelector("#carousel-next").addEventListener("click", () => moveCarousel(1));
   document.querySelector("#project-day-list").addEventListener("scroll", updateCarouselControls, { passive: true });

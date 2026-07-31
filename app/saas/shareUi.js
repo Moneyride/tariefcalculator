@@ -45,14 +45,14 @@
     dialog.innerHTML = `
       <div data-share-main-view>
         <button class="dialog-close" type="button" data-share-close aria-label="Sluiten">&times;</button>
-        <p class="dialog-eyebrow">Overuurtje Pro</p>
+        <p class="dialog-eyebrow">Samen registreren</p>
         <h2>Deel met collega's</h2>
         <p class="share-privacy-note">Deel een persoonlijke link. Je collega ziet alleen de datum en tijden; je tarieven en administratie blijven privé.</p>
         <div class="share-direct-note">
           <span class="share-live-dot" aria-hidden="true"></span>
           <span><strong>Direct delen</strong><small>De werkdag is meteen zichtbaar en loopt live mee tot de eindtijd is opgeslagen.</small></span>
         </div>
-        <p class="share-account-note">De ontvanger heeft een gratis of Pro-account nodig.</p>
+        <p class="share-account-note">De ontvanger heeft een Overuurtje-account nodig.</p>
         <p class="saas-form-status" data-share-status aria-live="polite"></p>
         <div class="share-action-grid">
           <button class="saas-primary-button share-invite-button" type="button" data-share-submit>
@@ -199,7 +199,11 @@
 
   async function open({ sourceType, sourceId }) {
     const context = sessionUi.getContext();
-    if (!context?.isPro) {
+    if (!context?.auth?.user) {
+      sessionUi.openAuth("register", { purpose: "workday-sharing" });
+      return;
+    }
+    if (sourceType !== "workday" && !context?.isPro) {
       sessionUi.openUpgrade();
       return;
     }
@@ -207,13 +211,16 @@
     activeInvitationUrl = "";
     const dialog = ensureDialog();
     const isProject = sourceType === "project";
+    dialog.querySelector(".dialog-eyebrow").textContent = isProject
+      ? "Overuurtje Pro"
+      : "Samen registreren";
     dialog.querySelector("h2").textContent = isProject ? "Deel project met collega's" : "Deel met collega's";
     dialog.querySelector(".share-privacy-note").textContent = isProject
       ? "Deel een persoonlijke link. Je collega ziet de projectnaam, periode en tijden per projectdag; financiële gegevens blijven privé."
       : "Deel een persoonlijke link. Je collega ziet alleen de datum en tijden; je tarieven en administratie blijven privé.";
     dialog.querySelector(".share-account-note").textContent = isProject
       ? "De ontvanger kan het gedeelde project met een gratis of Pro-account bekijken."
-      : "De ontvanger kan een gratis of Pro-account gebruiken. Zonder account wordt eerst gevraagd om er een aan te maken.";
+      : "De ontvanger heeft een Overuurtje-account nodig. Zonder account wordt eerst gevraagd om er een aan te maken.";
     dialog.querySelector(".share-direct-note small").textContent = isProject
       ? "Het project is meteen zichtbaar en wijzigingen in de werkdagen lopen mee."
       : "De werkdag is meteen zichtbaar en loopt live mee tot de eindtijd is opgeslagen.";

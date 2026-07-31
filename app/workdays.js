@@ -221,6 +221,7 @@
     return {
       schemaVersion: 1,
       workdayName: item.workdayName || "",
+      clientName: item.clientName || "",
       date: item.workDate,
       startTime: item.startTime,
       endTime: item.endTime,

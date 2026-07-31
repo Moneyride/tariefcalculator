@@ -175,6 +175,11 @@
 
   if (isIos && !standalone) setInstallButtonVisible(true);
   document.documentElement.classList.toggle("is-pwa", standalone);
+  if (standalone) {
+    document.addEventListener("dblclick", (event) => {
+      event.preventDefault();
+    }, { passive: false });
+  }
   if (standalone) schedulePushOnboarding();
   document.addEventListener("overuurtje:user-context", (event) => {
     if (event.detail?.auth?.user) schedulePushOnboarding();
