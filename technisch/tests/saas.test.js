@@ -242,6 +242,7 @@ test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", asy
   assert.ok(calculatorHtml.indexOf("saas/authService.js") < calculatorHtml.indexOf("app.js"));
   assert.ok(calculatorHtml.indexOf("saas/functionService.js") < calculatorHtml.indexOf("app.js"));
   assert.ok(calculatorHtml.indexOf("saas/equipmentService.js") < calculatorHtml.indexOf("app.js"));
+  assert.ok(calculatorHtml.indexOf("saas/freeActiveWorkdayService.js") < calculatorHtml.indexOf("app.js"));
   assert.match(calculatorHtml, /id="account-login"/);
   assert.match(calculatorHtml, /data-workday-save-label/);
   assert.match(calculatorHtml, /Werkdag van vandaag opslaan|Bewaar je begintijd/);
@@ -286,7 +287,7 @@ test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", asy
   assert.match(calculatorScript, /workFunction: selectedWorkFunction\(\)/);
   assert.match(calculatorScript, /applyWorkFunction\(snapshotFunction, \{ preserveRate: true, preserveSettings: true \}\)/);
   assert.match(calculatorScript, /pdfProBadge\.hidden = context\.isPro/);
-  assert.match(calculatorScript, /Werkdag van vandaag opslaan/);
+  assert.match(calculatorScript, /Actieve werkdag bewaren/);
   assert.match(sessionUiScript, /dialog\.id = "signup-confirmation-dialog"/);
   assert.match(sessionUiScript, /Controleer je inbox/);
   assert.match(sessionUiScript, /openSignupConfirmation\(email\)/);
@@ -600,6 +601,50 @@ test("Werkdagenservice ondersteunt meerdere werkdagen op dezelfde datum", async 
   assert.equal(sameDate.length, 2);
   assert.equal(sameDate.some((item) => item.calculationData.endTime === ""), true);
   assert.equal(sameDate.some((item) => item.calculationData.endTime === "22:00"), true);
+});
+
+test("Free-account bewaart alleen een actuele of doorlopende nachtwerkdag", async () => {
+  const storage = new Map();
+  const context = await runService("app/saas/freeActiveWorkdayService.js", {
+    localStorage: {
+      getItem: (key) => storage.get(key) || null,
+      setItem: (key, value) => storage.set(key, value)
+    }
+  });
+  const service = context.OveruurtjeFreeActiveWorkday;
+  const now = new Date(2026, 6, 31, 10, 0, 0);
+
+  assert.equal(service.canSaveSnapshot({ date: "2026-07-31", startTime: "08:00", endTime: "" }, now), true);
+  assert.equal(service.canSaveSnapshot({ date: "2026-07-30", startTime: "18:00", endTime: "" }, now), true);
+  assert.equal(service.canSaveSnapshot({ date: "2026-07-30", startTime: "18:00", endTime: "02:00" }, now), true);
+  assert.equal(service.canSaveSnapshot({ date: "2026-07-30", startTime: "08:00", endTime: "18:00" }, now), false);
+  assert.equal(service.canSaveSnapshot({ date: "2026-07-29", startTime: "18:00", endTime: "02:00" }, now), false);
+});
+
+test("Free-account kan zijn actieve werkdag na heropenen hervatten en zelf wissen", async () => {
+  const storage = new Map();
+  const context = await runService("app/saas/freeActiveWorkdayService.js", {
+    localStorage: {
+      getItem: (key) => storage.get(key) || null,
+      setItem: (key, value) => storage.set(key, value)
+    }
+  });
+  const service = context.OveruurtjeFreeActiveWorkday;
+  const calculationData = {
+    date: "2026-07-31",
+    startTime: "08:00",
+    endTime: "",
+    workdayName: "Draaidag"
+  };
+
+  const saved = service.save("free-user", { sourceId: "shared-source", calculationData });
+  const loaded = service.load("free-user", new Date(2026, 6, 31, 12, 0, 0));
+  assert.equal(saved.sourceId, "shared-source");
+  assert.equal(loaded.sourceId, "shared-source");
+  assert.equal(loaded.calculationData.workdayName, "Draaidag");
+
+  service.clear("free-user");
+  assert.equal(service.load("free-user", new Date(2026, 6, 31, 12, 0, 0)), null);
 });
 
 test("Werkdagen bewaren een optionele naam zonder die in financiële data te dupliceren", async () => {
