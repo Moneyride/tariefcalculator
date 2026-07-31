@@ -2063,12 +2063,17 @@ button.account-login:hover {
 .qr-scanner-open {
   display: grid;
   width: 42px;
+  min-width: 42px;
+  max-width: 42px;
   height: 42px;
+  min-height: 42px;
+  max-height: 42px;
+  aspect-ratio: 1;
   flex: 0 0 42px;
   padding: 0;
   place-items: center;
   border: 1px solid rgba(31, 67, 53, 0.14);
-  border-radius: 50%;
+  border-radius: 999px;
   background: rgba(255, 255, 255, 0.5);
   color: var(--accent-dark);
   cursor: pointer;
@@ -2079,6 +2084,19 @@ button.account-login:hover {
   border-color: rgba(31, 67, 53, 0.3);
   background: rgba(255, 255, 255, 0.74);
   transform: translateY(-1px);
+}
+
+.account-navigation .qr-scanner-open {
+  width: 42px;
+  min-width: 42px;
+  max-width: 42px;
+  height: 42px;
+  min-height: 42px;
+  max-height: 42px;
+  aspect-ratio: 1;
+  flex: 0 0 42px;
+  padding: 0;
+  border-radius: 50%;
 }
 
 .qr-scanner-open-icon {
@@ -2167,9 +2185,13 @@ button.account-login:hover {
 }
 
 @media (max-width: 560px) {
-  .qr-scanner-open {
+  .account-navigation .qr-scanner-open {
     width: 40px;
+    min-width: 40px;
+    max-width: 40px;
     height: 40px;
+    min-height: 40px;
+    max-height: 40px;
     flex-basis: 40px;
   }
 
@@ -7489,7 +7511,7 @@ html.is-pwa summary {
         <p class="header-brand">Powered by Reichgelt Media Group</p>
         <nav class="account-navigation" aria-label="Account">
           <button class="account-login" id="account-login" type="button">Inloggen</button>
-          <button class="account-upgrade" type="button" data-subscription-upgrade="signup">Upgrade naar Pro</button>
+          <button class="account-upgrade" type="button" data-subscription-upgrade="signup">Pro</button>
           <div class="account-user-menu" id="account-user-menu" hidden>
             <button class="account-avatar" id="account-user-button" type="button" aria-haspopup="menu" aria-expanded="false">
               <span id="account-user-initial">O</span>
@@ -10669,6 +10691,7 @@ globalThis.TariffCalculator = {
   }
 
   function notificationText(item) {
+    if (item.type === "workday_share_joined") return `${item.actorName} doet mee met je gedeelde werkdag.`;
     if (item.type === "workday_start_owner") return "Je vooraf ingestelde werkdag begint nu.";
     if (item.type === "workday_started") return `${item.actorName} begint nu aan de gedeelde werkdag.`;
     if (item.type === "workday_completed") return `${item.actorName} heeft de eindtijd vastgelegd.`;
@@ -10678,6 +10701,12 @@ globalThis.TariffCalculator = {
   }
 
   function notificationHref(item) {
+    if (item.type === "workday_share_joined" && item.sourceType === "workday" && item.sourceId) {
+      return `${config.calculatorUrl}?workday=${encodeURIComponent(item.sourceId)}`;
+    }
+    if (item.type === "workday_share_joined" && item.sourceType === "project_day") {
+      return config.projectsUrl;
+    }
     if (item.shareId) return `${config.workdaysUrl}?shared=${encodeURIComponent(item.shareId)}`;
     if (item.sourceType === "workday" && item.sourceId) {
       return `${config.calculatorUrl}?workday=${encodeURIComponent(item.sourceId)}`;

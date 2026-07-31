@@ -213,6 +213,7 @@
   }
 
   function notificationText(item) {
+    if (item.type === "workday_share_joined") return `${item.actorName} doet mee met je gedeelde werkdag.`;
     if (item.type === "workday_start_owner") return "Je vooraf ingestelde werkdag begint nu.";
     if (item.type === "workday_started") return `${item.actorName} begint nu aan de gedeelde werkdag.`;
     if (item.type === "workday_completed") return `${item.actorName} heeft de eindtijd vastgelegd.`;
@@ -222,6 +223,12 @@
   }
 
   function notificationHref(item) {
+    if (item.type === "workday_share_joined" && item.sourceType === "workday" && item.sourceId) {
+      return `${config.calculatorUrl}?workday=${encodeURIComponent(item.sourceId)}`;
+    }
+    if (item.type === "workday_share_joined" && item.sourceType === "project_day") {
+      return config.projectsUrl;
+    }
     if (item.shareId) return `${config.workdaysUrl}?shared=${encodeURIComponent(item.shareId)}`;
     if (item.sourceType === "workday" && item.sourceId) {
       return `${config.calculatorUrl}?workday=${encodeURIComponent(item.sourceId)}`;

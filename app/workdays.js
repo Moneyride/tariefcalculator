@@ -167,9 +167,15 @@
   }
 
   function renderTimeline() {
+    const representedShareIds = new Set(
+      ownedWorkdays
+        .map((item) => item.calculationData?.importedFromShare)
+        .filter(Boolean)
+    );
+    const visibleReceivedShares = receivedShares.filter((item) => !representedShareIds.has(item.id));
     const allEntries = [
       ...ownedWorkdays.map((item) => ({ kind: "owned", date: item.workDate, item })),
-      ...receivedShares.map((item) => ({ kind: "shared", date: item.workDate, item }))
+      ...visibleReceivedShares.map((item) => ({ kind: "shared", date: item.workDate, item }))
     ].sort((a, b) => b.date.localeCompare(a.date));
     const monthKey = `${visibleMonth.getFullYear()}-${String(visibleMonth.getMonth() + 1).padStart(2, "0")}`;
     const entries = allEntries.filter((entry) => entry.date.startsWith(monthKey));

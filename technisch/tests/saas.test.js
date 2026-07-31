@@ -1200,3 +1200,36 @@ test("vooraf opgeslagen werkdagen melden hun start zonder live invoer te notific
   assert.match(migration, /cron\.schedule\([\s\S]*'\* \* \* \* \*'/i);
   assert.doesNotMatch(reminders, /type:\s*"workday_start"/i);
 });
+
+test("gastheader, QR-knop en gedeelde werkdagen blijven compact en uniek", async () => {
+  const styles = await readFile(path.join(rootDirectory, "app/styles.css"), "utf8");
+  const workdays = await readFile(path.join(rootDirectory, "app/workdays.js"), "utf8");
+
+  for (const page of ["index.html", "dashboard.html", "account.html", "workdays.html", "projects.html"]) {
+    const html = await readFile(path.join(rootDirectory, "app", page), "utf8");
+    assert.match(html, /data-subscription-upgrade="signup">Pro<\/button>/);
+  }
+
+  assert.match(styles, /\.qr-scanner-open\s*\{[^}]*min-width:\s*42px;[^}]*max-width:\s*42px;[^}]*aspect-ratio:\s*1;/s);
+  assert.match(styles, /\.qr-scanner-open\s*\{[^}]*border-radius:\s*999px;/s);
+  assert.match(workdays, /item\.calculationData\?\.importedFromShare/);
+  assert.match(workdays, /visibleReceivedShares = receivedShares\.filter/);
+});
+
+test("Free en Pro-eigenaren krijgen bericht wanneer een collega aansluit", async () => {
+  const migration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202607310004_workday_share_joined_notifications.sql"),
+    "utf8"
+  );
+  const sessionUi = await readFile(path.join(rootDirectory, "app/saas/sessionUi.js"), "utf8");
+  const participantsMigration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202607280002_shared_private_participants.sql"),
+    "utf8"
+  );
+
+  assert.match(migration, /after insert on public\.workday_shares/i);
+  assert.match(migration, /'workday_share_joined'/i);
+  assert.doesNotMatch(migration, /is_pro|current_user_is_pro/i);
+  assert.match(sessionUi, /item\.type === "workday_share_joined"/);
+  assert.match(participantsMigration, /grant execute on function public\.get_workday_share_participants\(text, uuid\) to authenticated/i);
+});
