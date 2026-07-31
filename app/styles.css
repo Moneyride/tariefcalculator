@@ -5908,28 +5908,21 @@ html.is-pwa summary {
   display: none;
 }
 
-.time-control.is-live {
-  border-color: rgba(255, 106, 26, 0.62);
+.time-control.is-live,
+.time-control.is-live:focus-within {
+  border-color: rgba(255, 106, 26, 0.22);
   background:
     linear-gradient(90deg, rgba(255, 242, 229, 0.94), rgba(255, 255, 255, 0.76));
-  box-shadow:
-    0 0 0 4px rgba(255, 106, 26, 0.1),
-    0 10px 25px rgba(255, 106, 26, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
+  outline: 0;
 }
 
-@media (min-width: 761px) {
-  .time-control.is-live,
-  .time-control.is-live:focus-within {
-    border-color: transparent;
-    box-shadow: 0 10px 25px rgba(255, 106, 26, 0.08);
-    outline: 0;
-  }
-
-  .time-control.is-live input:focus {
-    border-color: transparent;
-    box-shadow: none;
-    outline: 0;
-  }
+.time-control.is-live input,
+.time-control.is-live input:focus {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  outline: 0;
 }
 
 @media (max-width: 760px) {

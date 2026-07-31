@@ -253,6 +253,14 @@ test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", asy
   assert.match(calculatorHtml, /name="rateMode"/);
   assert.match(calculatorHtml, /name="breakMinutes"/);
   assert.match(calculatorHtml, /name="enableBreak"/);
+  const workdayNameTag = calculatorHtml.match(/<label[^>]+id="workday-name-field"[^>]*>/)?.[0] || "";
+  assert.doesNotMatch(workdayNameTag, /\shidden(?:\s|=|>)/);
+  assert.match(calculatorScript, /workdayNameField\.hidden = isProjectDay/);
+  const summaryStart = calculatorScript.indexOf("function buildSummary(result)");
+  const summaryEnd = calculatorScript.indexOf("async function syncFreeSharedWorkdaySource", summaryStart);
+  const invoiceSummarySource = calculatorScript.slice(summaryStart, summaryEnd);
+  assert.match(invoiceSummarySource, /Werkdag:/);
+  assert.doesNotMatch(invoiceSummarySource, /Opdrachtgever:/);
   assert.match(calculatorScript, /details\.hidden = hasAccount/);
   const projectCreateTag = calculatorHtml.match(/<a[^>]+id="project-create-link"[^>]*>/)?.[0] || "";
   assert.match(projectCreateTag, /is-pro-locked/);

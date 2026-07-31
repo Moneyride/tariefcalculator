@@ -1045,7 +1045,7 @@ function updateWorkdaySaveAccess() {
   const hasSharedRecipient = !isSharedReceiver && sharedParticipants.some(
     (participant) => !participant.isOwner && !participant.isCurrentUser && participant.hasAccount !== false
   );
-  if (workdayNameField) workdayNameField.hidden = (!isPro && !isSharedReceiver) || isProjectDay;
+  if (workdayNameField) workdayNameField.hidden = isProjectDay;
   const workdayName = form.elements.namedItem("workdayName");
   if (workdayName) workdayName.disabled = isSharedReceiver;
   if (projectCreateLink) projectCreateLink.hidden = isSharedReceiver;
@@ -1498,7 +1498,6 @@ function renderPrintBreakdown(result) {
 
 function buildSummary(result) {
   const workdayName = String(form.elements.namedItem("workdayName")?.value || "").trim();
-  const clientName = String(form.elements.namedItem("clientName")?.value || "").trim();
   const date = form.elements.namedItem("date").value;
   const startTime = form.elements.namedItem("startTime").value;
   const endTime = form.elements.namedItem("endTime").value;
@@ -1506,10 +1505,6 @@ function buildSummary(result) {
 
   if (workdayName) {
     lines.push(`Werkdag: ${workdayName}`);
-  }
-
-  if (clientName) {
-    lines.push(`Opdrachtgever: ${clientName}`);
   }
 
   if (date) {
