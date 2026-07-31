@@ -795,7 +795,11 @@ function updateSharedReceiverMode() {
   });
   if (projectCreateLink) projectCreateLink.hidden = active;
   const workdayName = form.elements.namedItem("workdayName");
-  if (workdayName) workdayName.disabled = active;
+  if (workdayName) {
+    workdayName.disabled = active;
+    workdayName.setAttribute("aria-disabled", String(active));
+    workdayName.closest("label")?.classList.toggle("is-shared-readonly", active);
+  }
   const clientName = form.elements.namedItem("clientName");
   if (clientName) {
     clientName.disabled = active;
@@ -997,7 +1001,7 @@ async function persistFreeActiveWorkday(snapshot, { showToast = true } = {}) {
   }
   updateWorkdaySaveAccess();
   refreshCurrentWorkdayParticipants();
-  if (showToast) sessionUi?.showToast("Werkdag bewaard. Je kunt deze vandaag of na middernacht hervatten.");
+  if (showToast) sessionUi?.showToast("Werkdag bewaard. Je kunt deze later hervatten.");
   return saved;
 }
 
@@ -1151,7 +1155,7 @@ function updateWorkdaySaveAccess() {
       : hasSharedRecipient
         ? "Opslaan werkt gedeelde tijden bij voor je collega's"
         : canSaveFreeActive
-          ? "Tijdelijk beschikbaar voor vandaag en een dienst na middernacht"
+          ? "Tijdelijk beschikbaar als actieve werkdag"
           : "Bewaar je begintijd; vul later je eindtijd in";
   }
   if (workdaySaveBadge) workdaySaveBadge.hidden = isPro || canSaveFreeActive;

@@ -771,6 +771,20 @@ test("Werkdagen delen gebruikt verwijzingen, redacted RPCs en ontvanger-RLS", as
   assert.ok(indexHtml.indexOf("saas/shareService.js") < indexHtml.indexOf("saas/sessionUi.js"));
 });
 
+test("ontvangers kunnen een gedeelde werkdag uit hun eigen overzicht verwijderen", async () => {
+  const migration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202607310003_recipient_remove_workday_share.sql"),
+    "utf8"
+  );
+  const workdaysScript = await readFile(path.join(rootDirectory, "app/workdays.js"), "utf8");
+
+  assert.match(migration, /s\.recipient_id\s*=\s*auth\.uid\(\)/i);
+  assert.match(migration, /s\.owner_id\s*=\s*auth\.uid\(\)/i);
+  assert.match(migration, /grant execute on function public\.remove_workday_share\(uuid\) to authenticated/i);
+  assert.match(workdaysScript, /shared-workday-delete-button/);
+  assert.match(workdaysScript, /await shareService\.remove\(pendingDeleteShareId\)/);
+});
+
 test("Volledige projecten delen blijft beperkt tot projectmetadata en dagtijden", async () => {
   const migration = await readFile(
     path.join(rootDirectory, "supabase/migrations/202607290002_project_sharing.sql"),

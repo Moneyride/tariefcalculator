@@ -25,6 +25,7 @@
   const dateFormat = new Intl.DateTimeFormat("nl-NL", { weekday: "short", day: "numeric", month: "long", year: "numeric" });
   let currentContext = null;
   let pendingDeleteId = null;
+  let pendingDeleteShareId = null;
   let ownedWorkdays = [];
   let receivedShares = [];
   let activeReceivedShare = null;
@@ -120,37 +121,49 @@
     });
     article.querySelector(".workday-delete-button").addEventListener("click", () => {
       pendingDeleteId = workday.id;
+      pendingDeleteShareId = null;
+      document.querySelector("#delete-workday-eyebrow").textContent = "Werkdag verwijderen";
+      document.querySelector("#delete-workday-copy").textContent = "Deze opgeslagen werkdag kan daarna niet worden teruggehaald.";
       openDialog(deleteDialog);
     });
     return article;
   }
 
   function createSharedTimelineItem(item) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "timeline-workday-item is-shared";
-    button.innerHTML = `
-      <span class="share-avatar"></span>
-      <span class="timeline-workday-copy">
-        <strong></strong>
-        <span class="received-workday-project"></span>
-        <small></small>
-      </span>
-      <span class="workday-origin-tag">Gedeeld</span>
-      <span class="received-workday-status"></span>
-      <span aria-hidden="true">→</span>
+    const article = document.createElement("article");
+    article.className = "timeline-workday-item is-shared";
+    article.innerHTML = `
+      <button class="timeline-shared-main" type="button">
+        <span class="share-avatar"></span>
+        <span class="timeline-workday-copy">
+          <strong></strong>
+          <span class="received-workday-project"></span>
+          <small></small>
+        </span>
+        <span class="workday-origin-tag">Gedeeld</span>
+        <span class="received-workday-status"></span>
+        <span aria-hidden="true">→</span>
+      </button>
+      <button class="workday-delete-button shared-workday-delete-button" type="button" aria-label="Gedeelde werkdag verwijderen" title="Gedeelde werkdag verwijderen">&times;</button>
     `;
-    button.querySelector(".share-avatar").textContent = item.ownerName.charAt(0).toUpperCase();
-    button.querySelector("strong").textContent = `${item.ownerName} · ${dateFormat.format(parseDate(item.workDate))}`;
-    const project = button.querySelector(".received-workday-project");
+    article.querySelector(".share-avatar").textContent = item.ownerName.charAt(0).toUpperCase();
+    article.querySelector("strong").textContent = `${item.ownerName} · ${dateFormat.format(parseDate(item.workDate))}`;
+    const project = article.querySelector(".received-workday-project");
     project.textContent = item.projectName || item.workdayName;
     project.hidden = !item.projectName && !item.workdayName;
-    button.querySelector("small").textContent = `${item.startTime || "-"} – ${item.endTime || "eindtijd open"}`;
-    const status = button.querySelector(".received-workday-status");
+    article.querySelector("small").textContent = `${item.startTime || "-"} – ${item.endTime || "eindtijd open"}`;
+    const status = article.querySelector(".received-workday-status");
     status.textContent = item.acceptedAt ? "Overgenomen" : "Nieuw";
     status.classList.toggle("is-complete", Boolean(item.acceptedAt));
-    button.addEventListener("click", () => openReceived(item));
-    return button;
+    article.querySelector(".timeline-shared-main").addEventListener("click", () => openReceived(item));
+    article.querySelector(".shared-workday-delete-button").addEventListener("click", () => {
+      pendingDeleteId = null;
+      pendingDeleteShareId = item.id;
+      document.querySelector("#delete-workday-eyebrow").textContent = "Gedeelde werkdag verwijderen";
+      document.querySelector("#delete-workday-copy").textContent = "Deze gedeelde werkdag verdwijnt uit jouw overzicht.";
+      openDialog(deleteDialog);
+    });
+    return article;
   }
 
   function renderTimeline() {
@@ -447,15 +460,21 @@
     if (currentContext) load(currentContext);
   });
   document.querySelector("#confirm-workday-delete").addEventListener("click", async () => {
-    if (!pendingDeleteId || !currentContext?.auth.user) return;
+    if ((!pendingDeleteId && !pendingDeleteShareId) || !currentContext?.auth.user) return;
     try {
-      await workdayService.remove(currentContext.auth.user.id, pendingDeleteId, {
-        mock: currentContext.subscription.isMock
-      });
+      if (pendingDeleteShareId) {
+        await shareService.remove(pendingDeleteShareId);
+      } else {
+        await workdayService.remove(currentContext.auth.user.id, pendingDeleteId, {
+          mock: currentContext.subscription.isMock
+        });
+      }
+      const removedShare = Boolean(pendingDeleteShareId);
       pendingDeleteId = null;
+      pendingDeleteShareId = null;
       closeDialog(deleteDialog);
       await load(currentContext);
-      sessionUi.showToast("Werkdag verwijderd.");
+      sessionUi.showToast(removedShare ? "Gedeelde werkdag verwijderd." : "Werkdag verwijderd.");
     } catch (error) {
       sessionUi.showToast(error.message || "Verwijderen is niet gelukt.");
     }
