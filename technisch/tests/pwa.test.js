@@ -170,4 +170,7 @@ test("Printlayouts houden veilige ruimte over voor mobiele browserfooters", asyn
   assert.match(styles, /\.print-breakdown\s*\{[^}]*min-height:\s*0/);
   assert.match(styles, /body\.calculator-page\s+\.print-breakdown\s*\{[^}]*position:\s*absolute\s*!important/);
   assert.match(styles, /body\.calculator-page\s*\{[^}]*overflow:\s*hidden\s*!important/);
+  const headingRule = [...styles.matchAll(/\.print-heading\s*\{[^}]+\}/g)].at(-1)?.[0] || "";
+  assert.match(headingRule, /display:\s*grid/);
+  assert.match(headingRule, /align-items:\s*start/);
 });

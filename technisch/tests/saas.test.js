@@ -1076,6 +1076,10 @@ test("Gratis ontvangers nemen gedeelde tijden over in de reguliere calculator", 
   assert.doesNotMatch(freeImportFunction, /workdayService\.save/);
   assert.match(appScript, /let currentSharedSource = null/);
   assert.match(appScript, /shareService\.listParticipants\(source\.type, source\.id\)/);
+  assert.match(
+    appScript,
+    /!currentWorkdayId\s*&&\s*!currentShareWorkdayId\s*&&\s*!currentProjectDayContext\s*&&\s*!currentSharedSource/
+  );
   assert.doesNotMatch(
     appScript,
     /async function refreshCurrentWorkdayParticipants\(\)[\s\S]{0,250}!currentUserContext\?\.isPro/
@@ -1086,6 +1090,12 @@ test("Gratis ontvangers nemen gedeelde tijden over in de reguliere calculator", 
     appScript,
     /const canShare = (?:Boolean\()?currentUserContext\?\.isPro/
   );
+});
+
+test("Free-account toont Pro-functies zonder misleidende beschikbaarheidslabels", async () => {
+  const accountHtml = await readFile(path.join(rootDirectory, "app/account.html"), "utf8");
+  assert.doesNotMatch(accountHtml, /available-status/);
+  assert.doesNotMatch(accountHtml, />Beschikbaar<\/span>/);
 });
 
 test("Projectdagen behouden hun id zodat deelrelaties niet verdwijnen bij opslaan", async () => {

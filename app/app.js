@@ -1193,7 +1193,12 @@ function updateWorkdaySaveAccess() {
         : "Vul eerst een datum en starttijd in";
     shareFromParticipantsButton.setAttribute("aria-label", shareFromParticipantsButton.title);
   }
-  if (!currentWorkdayId && !currentProjectDayContext && !currentSharedSource) {
+  if (
+    !currentWorkdayId
+    && !currentShareWorkdayId
+    && !currentProjectDayContext
+    && !currentSharedSource
+  ) {
     sharedParticipants = [];
     renderCurrentWorkdayParticipants();
   }

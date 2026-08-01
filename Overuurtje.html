@@ -5288,11 +5288,6 @@ summary:hover {
   color: var(--muted);
 }
 
-.available-status {
-  background: rgba(31, 67, 53, 0.1);
-  color: var(--accent-dark);
-}
-
 .pro-action-button span {
   margin-left: 5px;
   padding: 3px 6px;
@@ -7221,25 +7216,25 @@ html.is-pwa summary {
     display: grid;
     grid-template-columns: 0.95fr 1.05fr;
     gap: 4mm;
-    align-items: end;
+    align-items: start;
     padding-top: 3.5mm;
     padding-bottom: 2.4mm;
     border-bottom: 1px solid var(--line);
   }
 
   .print-heading {
-    display: flex;
+    display: grid;
     grid-column: 1;
     grid-row: 1 / span 2;
-    align-items: center;
-    gap: 3mm;
+    align-content: start;
+    align-items: start;
+    gap: 1mm;
     min-width: 0;
   }
 
   .print-logo {
     display: block;
-    flex: 0 0 auto;
-    width: 20mm;
+    width: 18mm;
     height: auto;
   }
 
@@ -25543,7 +25538,12 @@ function updateWorkdaySaveAccess() {
         : "Vul eerst een datum en starttijd in";
     shareFromParticipantsButton.setAttribute("aria-label", shareFromParticipantsButton.title);
   }
-  if (!currentWorkdayId && !currentProjectDayContext && !currentSharedSource) {
+  if (
+    !currentWorkdayId
+    && !currentShareWorkdayId
+    && !currentProjectDayContext
+    && !currentSharedSource
+  ) {
     sharedParticipants = [];
     renderCurrentWorkdayParticipants();
   }
