@@ -142,7 +142,10 @@ test("functies bewaren een uitbreidbare calculatorpreset", async () => {
 
 test("delen gebruikt alleen een directe uitnodigingslink en ondersteunt QR", async () => {
   const shareUi = await readFile(path.join(rootDirectory, "app/saas/shareUi.js"), "utf8");
+  const shareLanding = await readFile(path.join(rootDirectory, "app/delen.html"), "utf8");
   assert.match(shareUi, /navigator\.share\(\{ url \}\)/);
+  assert.match(shareUi, /new URL\("delen\.html", location\.href\)/);
+  assert.match(shareUi, /searchParams\.set\("type", activeSource\?\.type === "project" \? "project" : "workday"\)/);
   assert.match(shareUi, /message: ""/);
   assert.match(shareUi, /shareMode: "direct"/);
   assert.match(shareUi, /loopt live mee tot de eindtijd is opgeslagen/);
@@ -150,6 +153,9 @@ test("delen gebruikt alleen een directe uitnodigingslink en ondersteunt QR", asy
   assert.match(shareUi, /globalThis\.qrcode/);
   assert.doesNotMatch(shareUi, /name="shareMode"/);
   assert.doesNotMatch(shareUi, /data-share-message/);
+  assert.match(shareLanding, /property="og:image" content="https:\/\/overuurtje\.nl\/overuurtje-logo\.png/);
+  assert.match(shareLanding, /location\.replace\(destination\.href\)/);
+  assert.match(shareLanding, /sourceType === "project" \? "projects\.html" : "workdays\.html"/);
 });
 
 test("werkdag opslaan staat voor berekenen en resultaatacties staan onder het resultaat", async () => {

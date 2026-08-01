@@ -21,9 +21,10 @@
   }
 
   function invitationUrl(token) {
-    const url = new URL(activeSource?.type === "project" ? "projects.html" : "workdays.html", location.href);
+    const url = new URL("delen.html", location.href);
     url.search = "";
     url.searchParams.set("invite", token);
+    url.searchParams.set("type", activeSource?.type === "project" ? "project" : "workday");
     return url.href;
   }
 
