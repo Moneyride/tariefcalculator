@@ -4026,6 +4026,20 @@ summary:hover {
   transform: none;
 }
 
+.footer-legal-links a,
+.account-footer a,
+.site-footer .cookie-settings-link {
+  font-size: 0.78rem;
+  text-decoration: underline;
+  text-decoration-color: rgba(107, 114, 128, 0.38);
+  text-underline-offset: 3px;
+}
+
+.footer-legal-links a:hover,
+.account-footer a:hover {
+  text-decoration-color: currentColor;
+}
+
 .cookie-banner {
   position: fixed;
   right: 20px;
@@ -4559,8 +4573,7 @@ summary:hover {
   box-shadow: 0 10px 30px rgba(8, 31, 25, 0.04);
 }
 
-.account-section-heading,
-.subscription-section {
+.account-section-heading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -4568,7 +4581,7 @@ summary:hover {
 }
 
 .account-section-heading h2,
-.subscription-section h2 {
+.subscription-heading h2 {
   color: var(--accent-dark);
   font-size: 1.22rem;
 }
@@ -5315,8 +5328,7 @@ summary:hover {
   display: none;
 }
 
-.account-content.is-pro .pro-preview-section,
-.account-content.is-pro .subscription-actions [data-subscription-upgrade] {
+.account-content.is-pro .pro-preview-section {
   display: none !important;
 }
 
@@ -5446,8 +5458,16 @@ summary:hover {
   text-transform: uppercase;
 }
 
-.subscription-section > div:first-child {
-  max-width: 500px;
+.subscription-section {
+  display: grid;
+  gap: 22px;
+}
+
+.subscription-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
 }
 
 .subscription-section p:not(.account-section-kicker) {
@@ -5457,10 +5477,204 @@ summary:hover {
   line-height: 1.6;
 }
 
+.subscription-current-summary {
+  padding: 18px 20px;
+  border: 1px solid rgba(31, 67, 53, 0.09);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.subscription-current-summary > p {
+  max-width: 720px;
+}
+
+.subscription-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+  margin: 16px 0 0;
+}
+
+.subscription-facts div {
+  min-width: 0;
+  padding-top: 12px;
+  border-top: 1px solid rgba(31, 67, 53, 0.09);
+}
+
+.subscription-facts dt {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.subscription-facts dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.subscription-plan-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  overflow: hidden;
+  border: 1px solid rgba(31, 67, 53, 0.11);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.subscription-plan-option {
+  min-width: 0;
+  padding: 22px;
+}
+
+.subscription-plan-option + .subscription-plan-option {
+  border-left: 1px solid rgba(31, 67, 53, 0.11);
+}
+
+.subscription-plan-option.is-current {
+  background: rgba(23, 63, 54, 0.055);
+}
+
+.subscription-plan-option-pro.is-trial {
+  background: rgba(255, 106, 26, 0.045);
+}
+
+.subscription-plan-option-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.subscription-plan-option-heading > div {
+  display: grid;
+  gap: 7px;
+}
+
+.subscription-plan-name {
+  color: var(--accent-dark);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.subscription-price,
+.subscription-price-line {
+  color: var(--text);
+}
+
+.subscription-price {
+  font-size: 1.72rem;
+  line-height: 1;
+}
+
+.subscription-price-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: nowrap;
+  gap: 7px;
+  min-height: 1.72rem;
+  margin: 0 !important;
+}
+
+.subscription-price-line .subscription-price {
+  white-space: nowrap;
+}
+
+.subscription-price-line.is-price-fallback {
+  align-items: center;
+}
+
+.subscription-price-line.is-price-fallback .subscription-price {
+  font-size: 0.84rem;
+  line-height: 1.25;
+}
+
+.subscription-price-line span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.subscription-choice-state {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(31, 67, 53, 0.07);
+  color: var(--accent);
+  font-size: 0.64rem;
+  font-weight: 800;
+}
+
+.subscription-choice-state-pro {
+  background: rgba(255, 106, 26, 0.11);
+  color: var(--orange-dark);
+}
+
+.subscription-yearly-price {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 11px 12px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.48);
+  color: var(--accent-dark);
+  font-size: 0.78rem;
+}
+
+.subscription-yearly-price span {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.subscription-benefits {
+  display: grid;
+  gap: 9px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.subscription-benefits li {
+  position: relative;
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.subscription-benefits li::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--orange-dark);
+  content: "\2713";
+  font-weight: 900;
+}
+
 .subscription-actions {
   display: flex;
-  flex: 0 0 auto;
   gap: 10px;
+  margin-top: 20px;
+}
+
+.subscription-actions .saas-primary-button {
+  width: 100%;
+}
+
+.subscription-management {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding-top: 2px;
+}
+
+.subscription-management p {
+  margin: 0 !important;
 }
 
 .mock-plan-control {
@@ -5488,10 +5702,26 @@ summary:hover {
   transition: color 150ms ease;
 }
 
+.site-footer.account-footer a,
+.site-footer .footer-legal-links a,
+.site-footer .cookie-settings-link {
+  font-size: 0.78rem;
+  text-decoration: underline;
+  text-decoration-color: rgba(107, 114, 128, 0.38);
+  text-underline-offset: 3px;
+}
+
 .site-footer a:hover,
 .site-footer a:focus-visible,
 .site-footer a[aria-current="page"] {
   color: var(--accent-dark);
+}
+
+.site-footer.account-footer a:hover,
+.site-footer.account-footer a:focus-visible,
+.site-footer .footer-legal-links a:hover,
+.site-footer .footer-legal-links a:focus-visible {
+  text-decoration-color: currentColor;
 }
 
 .footer-legal-links {
@@ -6150,7 +6380,7 @@ html.is-pwa summary {
   }
 
   .account-section-heading,
-  .subscription-section {
+  .subscription-heading {
     align-items: stretch;
     flex-direction: column;
     gap: 14px;
@@ -6158,8 +6388,32 @@ html.is-pwa summary {
 
   .two-column-fields,
   .account-facts,
+  .subscription-facts,
   .account-inline-form {
     grid-template-columns: 1fr;
+  }
+
+  .subscription-plan-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .subscription-plan-option {
+    padding: 18px;
+  }
+
+  .subscription-plan-option + .subscription-plan-option {
+    border-top: 1px solid rgba(31, 67, 53, 0.11);
+    border-left: 0;
+  }
+
+  .subscription-yearly-price,
+  .subscription-management {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .subscription-management .saas-secondary-button {
+    width: 100%;
   }
 
   .account-credentials-grid {

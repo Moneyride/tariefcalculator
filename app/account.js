@@ -29,7 +29,19 @@
   const planTitle = document.querySelector("#subscription-plan-title");
   const planDescription = document.querySelector("#subscription-plan-description");
   const upgradeButton = document.querySelector(".subscription-actions [data-subscription-upgrade]");
-  const manageButton = document.querySelector(".subscription-actions [data-subscription-manage]");
+  const manageButton = document.querySelector(".subscription-section [data-subscription-manage]");
+  const freePlanOption = document.querySelector('[data-plan-option="free"]');
+  const proPlanOption = document.querySelector('[data-plan-option="pro"]');
+  const freePlanState = document.querySelector("[data-free-plan-state]");
+  const proPlanState = document.querySelector("[data-pro-plan-state]");
+  const monthlyPrice = document.querySelector("#subscription-monthly-price");
+  const monthlyPriceLine = document.querySelector("#subscription-monthly-price-line");
+  const monthlyPriceUnit = document.querySelector("#subscription-monthly-price-unit");
+  const yearlyPrice = document.querySelector("#subscription-yearly-price");
+  const yearlyRegular = document.querySelector("#subscription-yearly-regular");
+  const yearlySaving = document.querySelector("#subscription-yearly-saving");
+  const yearlySavingText = document.querySelector("#subscription-yearly-saving-text");
+  const subscriptionManagementCopy = document.querySelector("#subscription-management-copy");
   const mockControl = document.querySelector("#mock-plan-control");
   const mockPlan = document.querySelector("#mock-plan");
   const roninRow = document.querySelector("#account-ronin-row");
@@ -62,6 +74,42 @@
   let displayedFunctionId = null;
   let verifiedMfaFactor = null;
   let pendingMfaFactorId = null;
+
+  function formatShopifyMoney(cents, currency = "EUR") {
+    return new Intl.NumberFormat("nl-NL", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2
+    }).format(Number(cents || 0) / 100);
+  }
+
+  function renderShopifyPricing(pricing) {
+    const currency = pricing.currency || "EUR";
+    monthlyPrice.textContent = formatShopifyMoney(pricing.monthly.amount, currency);
+    monthlyPriceLine.classList.remove("is-price-fallback");
+    monthlyPriceUnit.hidden = false;
+    yearlyPrice.textContent = `${formatShopifyMoney(pricing.yearly.amount, currency)} per jaar`;
+    yearlyRegular.textContent = formatShopifyMoney(pricing.regularYearAmount, currency);
+    yearlySavingText.textContent = `bespaar ${formatShopifyMoney(pricing.savingsAmount, currency)}`;
+    yearlySaving.hidden = pricing.savingsAmount <= 0;
+  }
+
+  async function loadShopifyPricing() {
+    try {
+      const response = await fetch("/api/shopify/pricing", {
+        headers: { Accept: "application/json" }
+      });
+      if (!response.ok) throw new Error("Prijsservice niet beschikbaar");
+      renderShopifyPricing(await response.json());
+    } catch (error) {
+      console.warn("Actuele Shopify-prijzen konden niet worden geladen.", error);
+      monthlyPrice.textContent = "Bekijk actuele prijs";
+      monthlyPriceLine.classList.add("is-price-fallback");
+      monthlyPriceUnit.hidden = true;
+      yearlyPrice.textContent = "Bekijk jaarprijs";
+      yearlySaving.hidden = true;
+    }
+  }
 
   async function renderMfaStatus() {
     if (!currentContext?.auth.user || !mfaAction) return;
@@ -451,7 +499,12 @@
     upgradeButton.textContent = isTrial ? "Behoud Pro na je proefperiode" : "Upgrade naar Pro";
     manageButton.hidden = !isPaidPro;
     subscriptionStopButton.hidden = !isPaidPro;
-    subscriptionPeriod.hidden = !isPro;
+    subscriptionManagementCopy.textContent = isTrial
+      ? `Je proefperiode blijft gratis actief tot en met ${formatDate(subscription.trialEndsAt)}. Een betaald Shopify-abonnement begint zodra je het afsluit.`
+      : (isPaidPro
+        ? "Je abonnement en betalingen worden veilig beheerd via The GearHarbor."
+        : "Je kiest maand- of jaarbetaling veilig op de abonnementspagina van The GearHarbor.");
+    subscriptionPeriod.hidden = !(isPro || subscription.isExpiredTrial);
     if (isTrial) {
       subscriptionPeriodLabel.textContent = "Pro gratis tot en met";
       subscriptionPeriodValue.textContent = formatDate(subscription.trialEndsAt);
@@ -462,7 +515,17 @@
       subscriptionPeriodValue.textContent = profile?.subscriptionCurrentPeriodEnd
         ? formatDate(profile.subscriptionCurrentPeriodEnd)
         : "Nog niet door Shopify aangeleverd";
+    } else if (subscription.isExpiredTrial) {
+      subscriptionPeriodLabel.textContent = "Pro-proefperiode afgelopen op";
+      subscriptionPeriodValue.textContent = formatDate(subscription.trialEndsAt);
     }
+    freePlanOption.classList.toggle("is-current", !isPro);
+    proPlanOption.classList.toggle("is-current", isPaidPro);
+    proPlanOption.classList.toggle("is-trial", isTrial);
+    freePlanState.textContent = !isPro ? "Huidig abonnement" : "Altijd beschikbaar";
+    proPlanState.textContent = isPaidPro
+      ? "Huidig abonnement"
+      : (isTrial ? "Actief tijdens proefperiode" : "Meest compleet");
     mockControl.hidden = !subscriptions.canMock();
     if (subscriptions.canMock()) mockPlan.value = isPro ? "pro" : "free";
     equipmentSection.classList.toggle("is-locked", !isPro);
@@ -778,5 +841,6 @@
 
   mockPlan.addEventListener("change", () => subscriptions.setMockPlan(mockPlan.value));
   document.addEventListener("overuurtje:user-context", (event) => render(event.detail));
+  loadShopifyPricing();
   sessionUi.ready.then(render);
 })();

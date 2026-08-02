@@ -25,7 +25,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260730a">
-    <link rel="stylesheet" href="styles.css?v=20260802c">
+    <link rel="stylesheet" href="styles.css?v=20260802d">
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
@@ -47,7 +47,7 @@
     <script src="interactionGuard.js?v=20260730a" defer></script>
     <script src="selectUi.js?v=20260725a" defer></script>
     <script src="timePicker.js?v=20260730a" defer></script>
-    <script src="account.js?v=20260802a" defer></script>
+    <script src="account.js?v=20260802b" defer></script>
     <script src="pwa.js?v=20260731a" defer></script>
   </head>
   <body>
@@ -107,15 +107,9 @@
                 <p class="account-section-kicker">Account</p>
                 <h2>Jouw gegevens</h2>
               </div>
-              <span class="plan-pill" id="account-plan-pill">Free</span>
             </div>
-            <dl class="account-facts">
+            <dl class="account-facts account-facts-identity">
               <div><dt>E-mail</dt><dd id="account-email">-</dd></div>
-              <div><dt>Account sinds</dt><dd id="account-created">-</dd></div>
-              <div id="account-subscription-period" hidden>
-                <dt id="account-subscription-period-label">Abonnement loopt tot</dt>
-                <dd id="account-subscription-period-value">Nog niet beschikbaar</dd>
-              </div>
             </dl>
             <div class="account-credentials-grid">
               <form class="account-inline-form profile-name-form" id="profile-name-form">
@@ -382,14 +376,68 @@
             </div>
           </section>
 
-          <section class="account-section subscription-section">
-            <div>
-              <p class="account-section-kicker">Subscription</p>
-              <h2 id="subscription-plan-title">Overuurtje Free</h2>
-              <p id="subscription-plan-description">De calculator blijft gratis beschikbaar. Pro-functies worden hier later aan gekoppeld.</p>
+          <section class="account-section subscription-section" aria-labelledby="subscription-plan-title">
+            <div class="subscription-heading">
+              <div>
+                <p class="account-section-kicker">Abonnement</p>
+                <h2 id="subscription-plan-title">Overuurtje Free</h2>
+              </div>
+              <span class="plan-pill" id="account-plan-pill">Free</span>
             </div>
-            <div class="subscription-actions">
-              <button class="saas-primary-button" type="button" data-subscription-upgrade>Upgrade naar Pro</button>
+
+            <div class="subscription-current-summary">
+              <p id="subscription-plan-description">De calculator blijft gratis beschikbaar. Upgrade wanneer je Pro-functies wilt gebruiken.</p>
+              <dl class="subscription-facts">
+                <div><dt>Account sinds</dt><dd id="account-created">-</dd></div>
+                <div id="account-subscription-period" hidden>
+                  <dt id="account-subscription-period-label">Abonnement loopt tot</dt>
+                  <dd id="account-subscription-period-value">Nog niet beschikbaar</dd>
+                </div>
+              </dl>
+            </div>
+
+            <div class="subscription-plan-grid">
+              <article class="subscription-plan-option" data-plan-option="free">
+                <div class="subscription-plan-option-heading">
+                  <div>
+                    <span class="subscription-plan-name">Free</span>
+                    <strong class="subscription-price">€ 0</strong>
+                  </div>
+                  <span class="subscription-choice-state" data-free-plan-state>Basisplan</span>
+                </div>
+                <ul class="subscription-benefits">
+                  <li>De volledige basiscalculator</li>
+                  <li>Werkdagen delen met collega's</li>
+                  <li>Lokale rekeninstellingen</li>
+                </ul>
+              </article>
+
+              <article class="subscription-plan-option subscription-plan-option-pro" data-plan-option="pro">
+                <div class="subscription-plan-option-heading">
+                  <div>
+                    <span class="subscription-plan-name">Pro</span>
+                    <p class="subscription-price-line" id="subscription-monthly-price-line"><strong class="subscription-price" id="subscription-monthly-price">Prijs laden…</strong><span id="subscription-monthly-price-unit">per maand</span></p>
+                  </div>
+                  <span class="subscription-choice-state subscription-choice-state-pro" data-pro-plan-state>Meest compleet</span>
+                </div>
+                <div class="subscription-yearly-price">
+                  <strong id="subscription-yearly-price">Jaarprijs laden…</strong>
+                  <span id="subscription-yearly-saving" hidden><s id="subscription-yearly-regular"></s> · <span id="subscription-yearly-saving-text"></span></span>
+                </div>
+                <ul class="subscription-benefits">
+                  <li>Werkdagen en projecten bewaren</li>
+                  <li>Instellingen synchroniseren tussen apparaten</li>
+                  <li>Eigen functies en apparatuur toevoegen</li>
+                  <li>Professionele pdf-export</li>
+                </ul>
+                <div class="subscription-actions">
+                  <button class="saas-primary-button" type="button" data-subscription-upgrade>Upgrade naar Pro</button>
+                </div>
+              </article>
+            </div>
+
+            <div class="subscription-management">
+              <p id="subscription-management-copy">Je kiest maand- of jaarbetaling veilig op de abonnementspagina van The GearHarbor.</p>
               <button class="saas-secondary-button" type="button" data-subscription-manage hidden>Abonnement beheren</button>
             </div>
             <label class="mock-plan-control" id="mock-plan-control" hidden>

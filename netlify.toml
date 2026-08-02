@@ -50,3 +50,8 @@
   from = "/terms"
   to = "/terms.html"
   status = 200
+
+[[redirects]]
+  from = "/api/shopify/pricing"
+  to = "/.netlify/functions/shopify-pricing"
+  status = 200

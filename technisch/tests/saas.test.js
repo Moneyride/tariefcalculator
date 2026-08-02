@@ -354,6 +354,10 @@ test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", asy
   assert.match(calculatorHtml, /id="active-function-name"/);
   assert.match(accountHtml, /name="nightStart"/);
   assert.match(accountHtml, /data-subscription-upgrade/);
+  assert.match(accountHtml, /id="subscription-monthly-price"/);
+  assert.match(accountHtml, /id="subscription-yearly-price"/);
+  assert.match(accountHtml, /id="account-created"/);
+  assert.match(accountHtml, /data-plan-option="pro"/);
   assert.match(calculatorScript, /planningBreakField\.hidden = !enabled/);
   assert.match(calculatorScript, /workFunction: selectedWorkFunction\(\)/);
   assert.match(calculatorScript, /applyWorkFunction\(snapshotFunction, \{ preserveRate: true, preserveSettings: true \}\)/);
