@@ -2523,12 +2523,12 @@ h3 {
 
 .department-switch {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  width: min(320px, 100%);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(520px, 100%);
   margin: 0;
   padding: 4px;
   border: 1px solid rgba(31, 67, 53, 0.1);
-  border-radius: 8px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.28);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
@@ -2549,11 +2549,12 @@ h3 {
 
 .department-choice span {
   display: flex;
-  min-height: 42px;
+  height: 54px;
+  min-height: 54px;
   align-items: center;
   justify-content: center;
-  padding: 9px 16px;
-  border-radius: 6px;
+  padding: 9px 12px;
+  border-radius: 12px;
   color: var(--muted);
   font-weight: 750;
   transition: color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
@@ -2570,8 +2571,188 @@ h3 {
   outline-offset: 1px;
 }
 
+.department-choice-pro {
+  cursor: not-allowed;
+}
+
+.department-choice-pro span {
+  flex-direction: row;
+  gap: 7px;
+  background: rgba(226, 229, 227, 0.5);
+  color: rgba(107, 114, 128, 0.78);
+}
+
+.department-choice-pro b {
+  font: inherit;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.department-choice-pro small {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(255, 106, 26, 0.12);
+  color: #c94f0d;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+@media screen and (max-width: 430px) {
+  .department-switch {
+    padding: 3px;
+    border-radius: 14px;
+  }
+
+  .department-choice span {
+    height: 50px;
+    min-height: 50px;
+    padding-inline: 7px;
+    border-radius: 11px;
+    font-size: 0.86rem;
+  }
+
+  .department-choice-pro span {
+    flex-direction: column;
+    gap: 3px;
+  }
+}
+
+@media screen and (max-width: 350px) {
+  .department-choice span {
+    font-size: 0.78rem;
+  }
+}
+
+.auth-social-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.auth-social-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.auth-social-divider::before,
+.auth-social-divider::after {
+  height: 1px;
+  flex: 1;
+  background: rgba(31, 67, 53, 0.12);
+  content: "";
+}
+
+.auth-social-button {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border: 1px solid rgba(31, 67, 53, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--accent-dark);
+  cursor: pointer;
+  font-weight: 700;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.auth-social-button:hover {
+  border-color: rgba(31, 67, 53, 0.25);
+  background: rgba(255, 255, 255, 0.84);
+  transform: translateY(-1px);
+}
+
+.auth-provider-logo {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  overflow: visible;
+}
+
+.mfa-challenge-dialog,
+.mfa-enrollment-dialog {
+  max-width: 430px;
+}
+
+.mfa-code-input {
+  width: 100%;
+  min-height: 54px;
+  margin: 8px 0 14px;
+  border: 1px solid rgba(31, 67, 53, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.74);
+  color: var(--text);
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-align: center;
+}
+
+.mfa-dialog-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.mfa-qr-code {
+  display: block;
+  width: min(220px, 72vw);
+  margin: 18px auto;
+  padding: 10px;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.mfa-secret {
+  display: block;
+  margin: 0 0 14px;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.account-mfa-compact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px 18px;
+  align-items: center;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(31, 67, 53, 0.09);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.account-mfa-compact small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.account-mfa-compact .saas-form-status {
+  grid-column: 1 / -1;
+}
+
+@media screen and (max-width: 560px) {
+  .account-mfa-compact {
+    grid-template-columns: 1fr;
+  }
+
+  .account-mfa-compact .saas-secondary-button {
+    width: 100%;
+  }
+}
+
 .department-switch.is-account-locked {
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   cursor: default;
 }
 
@@ -2586,6 +2767,14 @@ h3 {
   content: "Via account";
   font-size: 0.7rem;
   font-weight: 650;
+}
+
+.department-switch.is-account-locked .department-choice-pro span {
+  justify-content: center;
+}
+
+.department-switch.is-account-locked .department-choice-pro span::after {
+  content: none;
 }
 
 .planning-grid {
@@ -4446,6 +4635,10 @@ summary:hover {
   color: var(--orange-dark);
 }
 
+.plan-pill.trial {
+  box-shadow: inset 0 0 0 1px rgba(255, 106, 26, 0.2);
+}
+
 .account-facts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -5334,6 +5527,25 @@ summary:hover {
   font-size: 0.76rem;
 }
 
+.site-footer a {
+  color: var(--muted);
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.site-footer a:hover,
+.site-footer a:focus-visible,
+.site-footer a[aria-current="page"] {
+  color: var(--accent-dark);
+}
+
+.footer-legal-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .print-footer {
   display: none;
 }
@@ -5484,6 +5696,130 @@ html.is-pwa summary {
 .about-cta p {
   color: var(--muted);
   line-height: 1.75;
+}
+
+.legal-page {
+  display: grid;
+  gap: 26px;
+  width: min(100%, 980px);
+  margin-inline: auto;
+  padding: 38px clamp(22px, 5vw, 64px) 54px;
+}
+
+.legal-hero {
+  display: grid;
+  gap: 14px;
+  padding: 22px 0 26px;
+  border-bottom: 1px solid rgba(31, 67, 53, 0.1);
+}
+
+.legal-hero h1 {
+  margin: 0;
+  color: var(--accent-dark);
+  font-size: clamp(2.25rem, 5vw, 4rem);
+  line-height: 1.04;
+}
+
+.legal-hero > p:not(.dialog-eyebrow) {
+  max-width: 720px;
+  margin: 0;
+  color: var(--muted);
+  font-size: clamp(1rem, 2vw, 1.18rem);
+  line-height: 1.65;
+}
+
+.legal-hero > span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.legal-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.legal-toc a {
+  padding: 9px 12px;
+  border: 1px solid rgba(31, 67, 53, 0.09);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.42);
+  color: var(--accent-dark);
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-decoration: none;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.legal-toc a:hover,
+.legal-toc a:focus-visible {
+  border-color: rgba(255, 106, 26, 0.28);
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.legal-content {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.legal-section {
+  scroll-margin-top: 24px;
+  padding: clamp(24px, 4vw, 38px);
+}
+
+.legal-section + .legal-section {
+  border-top: 1px solid rgba(31, 67, 53, 0.09);
+}
+
+.legal-section h2 {
+  margin: 0 0 14px;
+  color: var(--accent-dark);
+  font-size: clamp(1.15rem, 2vw, 1.4rem);
+}
+
+.legal-section p,
+.legal-section li {
+  color: var(--muted);
+  line-height: 1.72;
+}
+
+.legal-section p {
+  margin: 0;
+}
+
+.legal-section p + p {
+  margin-top: 13px;
+}
+
+.legal-section ul {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 0;
+  padding-left: 21px;
+}
+
+.legal-section strong {
+  color: var(--text);
+}
+
+.legal-section a {
+  color: var(--accent-dark);
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+
+.legal-highlight {
+  background: rgba(255, 240, 231, 0.52);
+  box-shadow: inset 4px 0 0 rgba(255, 106, 26, 0.72);
+}
+
+.legal-footer {
+  flex-wrap: wrap;
 }
 
 .about-story,
@@ -7402,6 +7738,45 @@ html.is-pwa summary {
     padding: 24px 20px;
     border-radius: 18px;
   }
+
+  .legal-header-navigation {
+    position: static;
+    justify-content: center;
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .legal-page {
+    gap: 20px;
+    padding: 24px 18px 38px;
+  }
+
+  .legal-hero {
+    padding-top: 12px;
+  }
+
+  .legal-toc {
+    gap: 6px;
+  }
+
+  .legal-toc a {
+    padding: 8px 10px;
+  }
+
+  .legal-content {
+    border-radius: 18px;
+  }
+
+  .legal-section {
+    padding: 24px 20px;
+  }
+
+  .legal-footer {
+    justify-content: center;
+    gap: 12px 16px;
+    padding-inline: 18px;
+    text-align: center;
+  }
 }
 
 @media screen and (max-width: 760px) {
@@ -7548,6 +7923,10 @@ html.is-pwa summary {
                 <input type="radio" name="department" value="audio">
                 <span>Audio</span>
               </label>
+              <label class="department-choice department-choice-pro" aria-disabled="true">
+                <input type="radio" name="department-pro-preview" value="extra" disabled tabindex="-1">
+                <span><b>Extra functie</b><small>Pro</small></span>
+              </label>
             </fieldset>
           </section>
 
@@ -7569,7 +7948,7 @@ html.is-pwa summary {
             <div class="planning-grid">
               <label class="workday-name-field" id="workday-name-field">
                 <span>Naam werkdag <small>(optioneel)</small></span>
-                <input type="text" name="workdayName" maxlength="100" placeholder="werkdag" list="workday-name-suggestions" autocomplete="off">
+                <input type="text" name="workdayName" maxlength="100" placeholder="Werkdag" list="workday-name-suggestions" autocomplete="off">
                 <datalist id="workday-name-suggestions"></datalist>
               </label>
               <label class="client-name-field">
@@ -7915,6 +8294,10 @@ html.is-pwa summary {
             </svg>
             <span>Installeer Overuurtje</span>
           </button>
+          <div class="footer-legal-links" aria-label="Juridische informatie">
+            <a href="privacy">Privacy</a>
+            <a href="terms">Voorwaarden</a>
+          </div>
           <button class="cookie-settings-link" type="button" id="cookie-settings">Cookie settings</button>
         </div>
       </footer>
@@ -8332,8 +8715,8 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     if (value.length < 8) {
       return { valid: false, message: "Gebruik minimaal 8 tekens." };
     }
-    if (!/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(value) || !/\d/.test(value)) {
-      return { valid: false, message: "Gebruik minimaal één letter en één cijfer." };
+    if (!/[A-ZÀ-ÖØ-Þ]/.test(value) || !/\d/.test(value)) {
+      return { valid: false, message: "Gebruik minimaal één hoofdletter en één cijfer." };
     }
     return { valid: true, message: "" };
   }
@@ -8401,6 +8784,42 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     return withClient((client) => client.auth.signInWithPassword({ email, password }));
   }
 
+  function signInWithProvider(provider) {
+    const redirectTo = new URL(globalThis.location?.href || config.authAccountUrl);
+    redirectTo.searchParams.delete("mode");
+    redirectTo.searchParams.delete("password-reset");
+    return withClient((client) => client.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: redirectTo.href }
+    }));
+  }
+
+  function getMfaAssurance() {
+    return withClient((client) => client.auth.mfa.getAuthenticatorAssuranceLevel());
+  }
+
+  function listMfaFactors() {
+    return withClient((client) => client.auth.mfa.listFactors());
+  }
+
+  function enrollMfa() {
+    return withClient((client) => client.auth.mfa.enroll({
+      factorType: "totp",
+      friendlyName: "Overuurtje"
+    }));
+  }
+
+  function verifyMfa(factorId, code) {
+    return withClient((client) => client.auth.mfa.challengeAndVerify({
+      factorId,
+      code: String(code || "").replace(/\D/g, "")
+    }));
+  }
+
+  function unenrollMfa(factorId) {
+    return withClient((client) => client.auth.mfa.unenroll({ factorId }));
+  }
+
   function signUp(email, password, displayName) {
     const currentUrl = new URL(location.href);
     const inviteToken = currentUrl.searchParams.get("invite");
@@ -8439,10 +8858,16 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     subscribe,
     getState: () => state,
     signIn,
+    signInWithProvider,
     signUp,
     signOut,
     requestPasswordReset,
     updatePassword,
+    getMfaAssurance,
+    listMfaFactors,
+    enrollMfa,
+    verifyMfa,
+    unenrollMfa,
     validatePassword
   });
 })();
@@ -8454,7 +8879,8 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
 
   const supabaseService = globalThis.OveruurtjeSupabase;
   const LEGACY_PROFILE_COLUMNS = "id,email,created_at,updated_at,display_name,is_pro,subscription_status,subscription_provider";
-  const PROFILE_COLUMNS = `${LEGACY_PROFILE_COLUMNS},subscription_current_period_end,subscription_cancel_at_period_end`;
+  const SUBSCRIPTION_PROFILE_COLUMNS = `${LEGACY_PROFILE_COLUMNS},subscription_current_period_end,subscription_cancel_at_period_end`;
+  const PROFILE_COLUMNS = `${SUBSCRIPTION_PROFILE_COLUMNS},trial_started_at,trial_ends_at,trial_reminder_sent_at,trial_expired_at,trial_expired_notice_shown_at,trial_converted_at`;
 
   function normalize(row, user) {
     return {
@@ -8466,16 +8892,21 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
       subscriptionStatus: row?.subscription_status || "free",
       subscriptionProvider: row?.subscription_provider || "shopify",
       subscriptionCurrentPeriodEnd: row?.subscription_current_period_end || null,
-      subscriptionCancelAtPeriodEnd: Boolean(row?.subscription_cancel_at_period_end)
+      subscriptionCancelAtPeriodEnd: Boolean(row?.subscription_cancel_at_period_end),
+      trialStartedAt: row?.trial_started_at || null,
+      trialEndsAt: row?.trial_ends_at || null,
+      trialReminderSentAt: row?.trial_reminder_sent_at || null,
+      trialExpiredAt: row?.trial_expired_at || null,
+      trialExpiredNoticeShownAt: row?.trial_expired_notice_shown_at || null,
+      trialConvertedAt: row?.trial_converted_at || null
     };
   }
 
-  function isMissingSubscriptionColumns(error) {
+  function isMissingColumns(error, columns) {
     const message = `${error?.message || ""} ${error?.details || ""}`;
     return error?.code === "42703"
       || error?.code === "PGRST204"
-      || message.includes("subscription_current_period_end")
-      || message.includes("subscription_cancel_at_period_end");
+      || columns.some((column) => message.includes(column));
   }
 
   async function selectProfile(client, userId, columns) {
@@ -8493,8 +8924,11 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
 
     let { data, error } = await selectProfile(client, user.id, PROFILE_COLUMNS);
 
-    // Keep login working until the new migration has been applied.
-    if (error && isMissingSubscriptionColumns(error)) {
+    // Keep login working while a new deployment and migration roll out.
+    if (error && isMissingColumns(error, ["trial_started_at", "trial_ends_at"])) {
+      ({ data, error } = await selectProfile(client, user.id, SUBSCRIPTION_PROFILE_COLUMNS));
+    }
+    if (error && isMissingColumns(error, ["subscription_current_period_end", "subscription_cancel_at_period_end"])) {
       ({ data, error } = await selectProfile(client, user.id, LEGACY_PROFILE_COLUMNS));
     }
 
@@ -8528,7 +8962,20 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     return normalize(data, user);
   }
 
-  globalThis.OveruurtjeProfiles = Object.freeze({ getForUser, saveDisplayName });
+  async function markTrialExpiredNoticeShown(user) {
+    if (!user) return null;
+    const client = await supabaseService.getClient();
+    if (!client) return null;
+    const { data, error } = await client.rpc("mark_trial_expired_notice_shown");
+    if (error) throw error;
+    return data || null;
+  }
+
+  globalThis.OveruurtjeProfiles = Object.freeze({
+    getForUser,
+    saveDisplayName,
+    markTrialExpiredNoticeShown
+  });
 })();
 
     </script>
@@ -9551,10 +9998,35 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
 
   function resolve(profile) {
     const mockPlan = getMockPlan();
-    const isPro = mockPlan ? mockPlan === "pro" : Boolean(profile?.isPro);
+    const now = Date.now();
+    const trialEndsAt = profile?.trialEndsAt || null;
+    const trialEndTime = trialEndsAt ? new Date(trialEndsAt).getTime() : NaN;
+    const isPaidPro = mockPlan ? mockPlan === "pro" : Boolean(profile?.isPro);
+    const isTrial = !mockPlan
+      && !isPaidPro
+      && Boolean(profile?.trialStartedAt)
+      && Number.isFinite(trialEndTime)
+      && trialEndTime > now
+      && !profile?.trialExpiredAt
+      && !profile?.trialConvertedAt;
+    const isExpiredTrial = !mockPlan
+      && !isPaidPro
+      && Boolean(profile?.trialStartedAt)
+      && Number.isFinite(trialEndTime)
+      && trialEndTime <= now
+      && !profile?.trialConvertedAt;
+    const isPro = isPaidPro || isTrial;
+    const trialDaysRemaining = isTrial
+      ? Math.max(1, Math.ceil((trialEndTime - now) / 86400000))
+      : 0;
     return {
       isPro,
-      plan: isPro ? "pro" : "free",
+      isPaidPro,
+      isTrial,
+      isExpiredTrial,
+      trialEndsAt,
+      trialDaysRemaining,
+      plan: isPaidPro ? "pro" : (isTrial ? "pro_trial" : (isExpiredTrial ? "expired_trial" : "free")),
       status: mockPlan ? `mock_${mockPlan}` : (profile?.subscriptionStatus || "free"),
       provider: profile?.subscriptionProvider || "shopify",
       isMock: Boolean(mockPlan)
@@ -10526,6 +10998,9 @@ globalThis.TariffCalculator = {
   let pendingNotificationPrompt = null;
   let recoveryDialog = null;
   let passwordResetNoticeHandled = false;
+  let expiredTrialNoticeHandled = false;
+  let mfaVerificationPromise = null;
+  let socialAuthActions = null;
 
   function showToast(message) {
     if (globalThis.OveruurtjeAnalytics?.showToast) {
@@ -10565,7 +11040,7 @@ globalThis.TariffCalculator = {
       return "Vul een geldig e-mailadres in.";
     }
     if (fingerprint.includes("weak_password") || fingerprint.includes("password should be")) {
-      return "Gebruik minimaal 8 tekens, met minstens één letter en één cijfer.";
+      return "Gebruik minimaal 8 tekens, met minstens één hoofdletter en één cijfer.";
     }
     if (
       fingerprint.includes("error sending confirmation email")
@@ -10598,7 +11073,7 @@ globalThis.TariffCalculator = {
     if (help) return help;
     help = document.createElement("small");
     help.className = "password-requirements";
-    help.textContent = "Gebruik minimaal 8 tekens, met minstens één letter en één cijfer.";
+    help.textContent = "Gebruik minimaal 8 tekens, met minstens één hoofdletter en één cijfer.";
     authPasswordField.append(help);
     return help;
   }
@@ -10617,7 +11092,7 @@ globalThis.TariffCalculator = {
         <label>
           <span>Nieuw wachtwoord</span>
           <input name="password" type="password" autocomplete="new-password" minlength="8" required>
-          <small class="password-requirements">Gebruik minimaal 8 tekens, met minstens één letter en één cijfer.</small>
+          <small class="password-requirements">Gebruik minimaal 8 tekens, met minstens één hoofdletter en één cijfer.</small>
         </label>
         <label>
           <span>Herhaal nieuw wachtwoord</span>
@@ -10667,6 +11142,122 @@ globalThis.TariffCalculator = {
     return recoveryDialog;
   }
 
+  function ensureSocialAuthActions() {
+    if (socialAuthActions || !authForm) return socialAuthActions;
+    socialAuthActions = document.createElement("div");
+    socialAuthActions.className = "auth-social-actions";
+    socialAuthActions.innerHTML = `
+      <div class="auth-social-divider"><span>of</span></div>
+      <button class="auth-social-button" type="button" data-auth-provider="google">
+        <svg class="auth-provider-logo" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#FFC107" d="M43.611 20H24v8h11.303C33.654 32.657 29.223 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-4z"/>
+          <path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4c-7.682 0-14.344 4.337-17.694 10.691z"/>
+          <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
+          <path fill="#1976D2" d="M43.611 20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-4z"/>
+        </svg>
+        <span>Doorgaan met Google</span>
+      </button>
+      <button class="auth-social-button" type="button" data-auth-provider="facebook">
+        <svg class="auth-provider-logo" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="#1877F2" d="M24 12.073C24 5.446 18.627.073 12 .073S0 5.446 0 12.073c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.008 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953h-1.513c-1.49 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+          <path fill="#FFF" d="m16.671 15.542.532-3.47h-3.328v-2.25c0-.949.466-1.874 1.956-1.874h1.513V4.995s-1.374-.235-2.686-.235c-2.741 0-4.533 1.661-4.533 4.669v2.643H7.078v3.47h3.047v8.385a12.13 12.13 0 0 0 3.75 0v-8.385h2.796z"/>
+        </svg>
+        <span>Doorgaan met Facebook</span>
+      </button>
+    `;
+    authForm.insertAdjacentElement("afterend", socialAuthActions);
+    socialAuthActions.addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-auth-provider]");
+      if (!button) return;
+      button.disabled = true;
+      authStatus.textContent = "Veilige login openen…";
+      const { error } = await auth.signInWithProvider(button.dataset.authProvider);
+      if (error) {
+        authStatus.textContent = authErrorText(error, "login");
+        button.disabled = false;
+      }
+    });
+    return socialAuthActions;
+  }
+
+  function ensureMfaChallengeDialog() {
+    let dialog = document.querySelector("#mfa-challenge-dialog");
+    if (dialog) return dialog;
+    dialog = document.createElement("dialog");
+    dialog.className = "saas-dialog mfa-challenge-dialog";
+    dialog.id = "mfa-challenge-dialog";
+    dialog.innerHTML = `
+      <p class="dialog-eyebrow">Accountbeveiliging</p>
+      <h2>Bevestig dat jij het bent</h2>
+      <p>Vul de zescijferige code uit je authenticator-app in.</p>
+      <form>
+        <input class="mfa-code-input" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" aria-label="Verificatiecode" required>
+        <p class="saas-form-status" aria-live="polite"></p>
+        <div class="mfa-dialog-actions">
+          <button class="saas-primary-button" type="submit">Bevestigen</button>
+          <button class="text-action" type="button" data-mfa-logout>Uitloggen</button>
+        </div>
+      </form>
+    `;
+    document.body.append(dialog);
+    dialog.addEventListener("cancel", (event) => event.preventDefault());
+    return dialog;
+  }
+
+  async function requireMfaVerification() {
+    if (mfaVerificationPromise) return mfaVerificationPromise;
+    mfaVerificationPromise = (async () => {
+      const [assuranceResponse, factorsResponse] = await Promise.all([
+        auth.getMfaAssurance(),
+        auth.listMfaFactors()
+      ]);
+      if (assuranceResponse.error) throw assuranceResponse.error;
+      if (factorsResponse.error) throw factorsResponse.error;
+      const assurance = assuranceResponse.data;
+      const factor = factorsResponse.data?.totp?.find((item) => item.status === "verified");
+      if (!factor || assurance?.currentLevel === "aal2" || assurance?.nextLevel !== "aal2") return true;
+
+      const dialog = ensureMfaChallengeDialog();
+      const form = dialog.querySelector("form");
+      const status = dialog.querySelector(".saas-form-status");
+      const code = form.elements.namedItem("code");
+      code.value = "";
+      status.textContent = "";
+      openDialog(dialog);
+      code.focus();
+
+      return new Promise((resolve) => {
+        const submit = async (event) => {
+          event.preventDefault();
+          if (!form.reportValidity()) return;
+          const button = form.querySelector("button[type='submit']");
+          button.disabled = true;
+          status.textContent = "Controleren…";
+          const response = await auth.verifyMfa(factor.id, code.value);
+          if (response.error) {
+            status.textContent = "De code klopt niet of is verlopen.";
+            button.disabled = false;
+            code.select();
+            return;
+          }
+          form.removeEventListener("submit", submit);
+          closeDialog(dialog);
+          button.disabled = false;
+          resolve(true);
+        };
+        const logout = async () => {
+          form.removeEventListener("submit", submit);
+          await auth.signOut();
+          closeDialog(dialog);
+          resolve(false);
+        };
+        form.addEventListener("submit", submit);
+        dialog.querySelector("[data-mfa-logout]").onclick = logout;
+      });
+    })().finally(() => { mfaVerificationPromise = null; });
+    return mfaVerificationPromise;
+  }
+
   function handlePasswordRecovery(authState) {
     if (!authState.recovery || !authState.session) return;
     const dialog = ensurePasswordRecoveryDialog();
@@ -10686,6 +11277,8 @@ globalThis.TariffCalculator = {
   }
 
   function notificationText(item) {
+    if (item.type === "trial_ending") return "Je gratis Pro-periode eindigt over 7 dagen. Je gegevens blijven bewaard als je teruggaat naar Free.";
+    if (item.type === "trial_expired") return "Je gratis Pro-periode is afgelopen. Je account is teruggezet naar Free en je gegevens zijn bewaard.";
     if (item.type === "workday_share_joined") return `${item.actorName} doet mee met je gedeelde werkdag.`;
     if (item.type === "workday_start_owner") return "Je vooraf ingestelde werkdag begint nu.";
     if (item.type === "workday_started") return `${item.actorName} begint nu aan de gedeelde werkdag.`;
@@ -10696,6 +11289,7 @@ globalThis.TariffCalculator = {
   }
 
   function notificationHref(item) {
+    if (["trial_ending", "trial_expired"].includes(item.type)) return config.accountUrl;
     if (item.type === "workday_share_joined" && item.sourceType === "workday" && item.sourceId) {
       return `${config.calculatorUrl}?workday=${encodeURIComponent(item.sourceId)}`;
     }
@@ -10774,6 +11368,13 @@ globalThis.TariffCalculator = {
       const dialog = ensureNotificationPrompt();
       dialog.querySelector(".notification-alert-copy").textContent = notificationText(newestUnread);
       openDialog(dialog);
+      if (["trial_ending", "trial_expired"].includes(newestUnread.type)) {
+        shares?.markNotificationsRead([newestUnread.id]).catch(() => {});
+        if (newestUnread.type === "trial_expired" && !expiredTrialNoticeHandled) {
+          expiredTrialNoticeHandled = true;
+          profiles.markTrialExpiredNoticeShown(auth.getState().user).catch(() => {});
+        }
+      }
       dialog.querySelector("[data-notification-alert-open]")?.focus();
     }, 700);
   }
@@ -10876,12 +11477,13 @@ globalThis.TariffCalculator = {
     dialog.innerHTML = `
       <button class="dialog-close" type="button" data-signup-confirmation-close aria-label="Sluiten">&times;</button>
       <div class="signup-confirmation-icon" aria-hidden="true">&#9993;</div>
-      <p class="dialog-eyebrow">Account aangemaakt</p>
+      <p class="dialog-eyebrow">30 dagen gratis Pro</p>
       <h2 id="signup-confirmation-title">Controleer je inbox</h2>
       <p class="signup-confirmation-copy">
         We hebben een bevestigingsmail gestuurd naar
         <strong id="signup-confirmation-email"></strong>.
-        Bevestig eerst je e-mailadres en log daarna in.
+        Bevestig eerst je e-mailadres en log daarna in. Je Pro-proefperiode is dan actief;
+        er zijn geen betaalgegevens nodig en er wordt niets automatisch afgeschreven.
       </p>
       <button class="saas-primary-button" id="signup-confirmation-login" type="button">Naar inloggen</button>
     `;
@@ -10919,19 +11521,19 @@ globalThis.TariffCalculator = {
       ? "Wachtwoord herstellen"
       : (isShareInvite
         ? (isRegister ? "Account maken om tijden te ontvangen" : "Inloggen om tijden te ontvangen")
-        : (isRegister && showProChoiceAfterAuth ? "Account maken voor Pro" : (isRegister ? "Account maken" : "Inloggen")));
+        : (isRegister ? "Start 30 dagen gratis Pro" : "Inloggen"));
     authIntro.textContent = isForgot
       ? "We sturen een veilige herstellink naar je e-mailadres."
       : (isShareInvite
         ? "Log in of maak gratis een account. Daarna kun je de gedeelde tijden bekijken en overnemen."
-        : (isRegister && showProChoiceAfterAuth
-        ? "Voor Pro heb je eerst een gratis account nodig. Na het aanmelden kies je direct Pro of ga je verder met Free."
-        : (isRegister ? "Maak een account om Overuurtje straks op al je apparaten te gebruiken." : "Log in bij je Overuurtje-account.")));
+        : (isRegister
+          ? "Maak gratis een account aan en probeer Overuurtje Pro 30 dagen. Geen betaalgegevens nodig; daarna kies je zelf of je wilt upgraden."
+          : "Log in bij je Overuurtje-account."));
     authPasswordField.hidden = isForgot;
     authPassword.required = !isForgot;
     authPassword.autocomplete = isRegister ? "new-password" : "current-password";
     authPassword.title = isRegister
-      ? "Gebruik minimaal 8 tekens, met minstens één letter en één cijfer."
+      ? "Gebruik minimaal 8 tekens, met minstens één hoofdletter en één cijfer."
       : "";
     const passwordRequirements = ensurePasswordRequirements();
     if (passwordRequirements) passwordRequirements.hidden = !isRegister;
@@ -10939,11 +11541,13 @@ globalThis.TariffCalculator = {
     if (authName) authName.required = isRegister;
     authSubmit.textContent = isForgot
       ? "Stuur herstellink"
-      : (isRegister && showProChoiceAfterAuth ? "Account maken en doorgaan" : (isRegister ? "Account maken" : "Inloggen"));
+      : (isRegister ? "Start 30 dagen gratis Pro" : "Inloggen");
     authSwitch.textContent = isRegister ? "Ik heb al een account" : "Nieuw bij Overuurtje? Account maken";
     authSwitch.hidden = isForgot;
     authForgot.hidden = isForgot || isRegister;
     authStatus.textContent = "";
+    const socialActions = ensureSocialAuthActions();
+    if (socialActions) socialActions.hidden = isForgot;
   }
 
   function openAuth(mode = "login", { continueToPro = false, purpose = "" } = {}) {
@@ -10992,6 +11596,14 @@ globalThis.TariffCalculator = {
   async function buildContext(authState) {
     handlePasswordRecovery(authState);
     handlePasswordResetNotice(authState);
+    if (authState.user && !authState.recovery) {
+      try {
+        const verified = await requireMfaVerification();
+        if (!verified) return currentContext;
+      } catch (error) {
+        console.warn("Tweestapsverificatie kon niet worden gecontroleerd.", error);
+      }
+    }
     let profile = null;
     if (authState.user) {
       try {
@@ -11010,6 +11622,19 @@ globalThis.TariffCalculator = {
     });
     renderHeader(currentContext);
     document.dispatchEvent(new CustomEvent("overuurtje:user-context", { detail: currentContext }));
+
+    if (
+      authState.user
+      && subscription.isExpiredTrial
+      && !profile?.trialExpiredNoticeShownAt
+      && !expiredTrialNoticeHandled
+    ) {
+      expiredTrialNoticeHandled = true;
+      setTimeout(() => {
+        showToast("Je gratis Pro-periode is afgelopen. Je account is teruggezet naar Free; je gegevens zijn bewaard.");
+        profiles.markTrialExpiredNoticeShown(authState.user).catch(() => {});
+      }, 500);
+    }
 
     if (!hasResolvedReady && !authState.loading) {
       hasResolvedReady = true;
@@ -11049,7 +11674,6 @@ globalThis.TariffCalculator = {
       if (response.error) throw response.error;
 
       if (authMode === "register" && !response.data?.session) {
-        if (showProChoiceAfterAuth) sessionStorage.setItem("overuurtjePostSignupChoice", "true");
         authForm.reset();
         openSignupConfirmation(email);
         return;
@@ -11058,12 +11682,8 @@ globalThis.TariffCalculator = {
       const completedRegistration = authMode === "register";
       closeDialog(authDialog);
       authForm.reset();
-      showToast(completedRegistration ? "Account aangemaakt." : "Je bent ingelogd.");
-      if (showProChoiceAfterAuth || sessionStorage.getItem("overuurtjePostSignupChoice") === "true") {
-        sessionStorage.removeItem("overuurtjePostSignupChoice");
-        showProChoiceAfterAuth = false;
-        openUpgrade({ accountReady: true });
-      }
+      showToast(completedRegistration ? "Account aangemaakt. Je Pro-proefperiode is gestart." : "Je bent ingelogd.");
+      showProChoiceAfterAuth = false;
     } catch (error) {
       console.error("Supabase Auth-verzoek mislukt.", {
         code: error?.code || "",
@@ -11077,13 +11697,28 @@ globalThis.TariffCalculator = {
   }
 
   function openUpgrade({ accountReady = Boolean(auth.getState().user) } = {}) {
-    proEyebrow.textContent = accountReady ? "Je account is klaar" : "Overuurtje Pro";
-    proTitle.textContent = accountReady ? "Kies hoe je verdergaat" : "Meer rust in je administratie";
-    proIntro.textContent = accountReady
-      ? "Upgrade nu naar Pro of ga verder met het gratis account. Je kunt later altijd nog upgraden."
-      : "Voor Pro heb je een account nodig. Na het aanmelden ga je direct verder met de upgrade.";
-    proCheckout.textContent = accountReady ? "Upgrade naar Pro" : "Account maken en doorgaan";
-    proContinue.hidden = !accountReady;
+    const subscription = currentContext.subscription;
+    if (!accountReady) {
+      proEyebrow.textContent = "30 dagen gratis Pro";
+      proTitle.textContent = "Probeer Overuurtje Pro gratis";
+      proIntro.textContent = "Maak een gratis account aan. Je hebt geen betaalgegevens nodig en na 30 dagen kies je zelf of je wilt upgraden.";
+      proCheckout.textContent = "Start 30 dagen gratis Pro";
+      proContinue.hidden = true;
+    } else if (subscription.isTrial) {
+      proEyebrow.textContent = "Pro-proefperiode actief";
+      proTitle.textContent = "Behoud Pro na je proefperiode";
+      proIntro.textContent = `Je gebruikt Pro gratis tot en met ${new Intl.DateTimeFormat("nl-NL", { dateStyle: "long" }).format(new Date(subscription.trialEndsAt))}. Alleen als je zelf upgradet start een betaald abonnement.`;
+      proCheckout.textContent = "Behoud Pro";
+      proContinue.hidden = false;
+    } else {
+      proEyebrow.textContent = subscription.isExpiredTrial ? "Pro-proefperiode afgelopen" : "Overuurtje Pro";
+      proTitle.textContent = subscription.isExpiredTrial ? "Activeer Pro opnieuw" : "Meer rust in je administratie";
+      proIntro.textContent = subscription.isExpiredTrial
+        ? "Je account is teruggezet naar Free. Je opgeslagen gegevens zijn bewaard en worden weer volledig beschikbaar zodra je upgradet."
+        : "Upgrade naar Pro wanneer je de extra functies wilt gebruiken. Alleen jij start de betaling.";
+      proCheckout.textContent = "Upgrade naar Pro";
+      proContinue.hidden = false;
+    }
     openDialog(proDialog);
   }
 
@@ -11168,7 +11803,8 @@ globalThis.TariffCalculator = {
     openUpgrade,
     getContext: () => currentContext,
     refresh: () => buildContext(auth.getState()),
-    showToast
+    showToast,
+    requireMfaVerification
   });
 })();
 
@@ -23809,9 +24445,10 @@ var qrcode = function() {
   }
 
   function invitationUrl(token) {
-    const url = new URL(activeSource?.type === "project" ? "projects.html" : "workdays.html", location.href);
+    const url = new URL("delen.html", location.href);
     url.search = "";
     url.searchParams.set("invite", token);
+    url.searchParams.set("type", activeSource?.type === "project" ? "project" : "workday");
     return url.href;
   }
 
@@ -24650,6 +25287,11 @@ function applyAccountSettings(accountSettings, isPro) {
   updateProjectCreateAccess(isPro);
   departmentSwitch.querySelectorAll(".department-choice").forEach((choice) => {
     const input = choice.querySelector("input");
+    if (choice.classList.contains("department-choice-pro")) {
+      choice.hidden = isPro;
+      input.disabled = true;
+      return;
+    }
     choice.hidden = !input.checked;
     input.disabled = !input.checked;
   });
@@ -24721,6 +25363,11 @@ function applyWorkFunction(workFunction, { preserveRate = false, preserveSetting
   if (departmentField) departmentField.checked = true;
   departmentSwitch.querySelectorAll(".department-choice").forEach((choice) => {
     const input = choice.querySelector("input");
+    if (choice.classList.contains("department-choice-pro")) {
+      choice.hidden = true;
+      input.disabled = true;
+      return;
+    }
     choice.hidden = !input.checked;
     input.disabled = !input.checked;
   });
@@ -25789,6 +26436,11 @@ async function hydrateAccountSettings(context) {
     departmentSwitch.hidden = false;
     departmentSwitch.removeAttribute("aria-disabled");
     departmentSwitch.querySelectorAll(".department-choice").forEach((choice) => {
+      if (choice.classList.contains("department-choice-pro")) {
+        choice.hidden = false;
+        choice.querySelector("input").disabled = true;
+        return;
+      }
       choice.hidden = false;
       choice.querySelector("input").disabled = false;
     });

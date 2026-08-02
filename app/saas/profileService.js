@@ -3,7 +3,8 @@
 
   const supabaseService = globalThis.OveruurtjeSupabase;
   const LEGACY_PROFILE_COLUMNS = "id,email,created_at,updated_at,display_name,is_pro,subscription_status,subscription_provider";
-  const PROFILE_COLUMNS = `${LEGACY_PROFILE_COLUMNS},subscription_current_period_end,subscription_cancel_at_period_end`;
+  const SUBSCRIPTION_PROFILE_COLUMNS = `${LEGACY_PROFILE_COLUMNS},subscription_current_period_end,subscription_cancel_at_period_end`;
+  const PROFILE_COLUMNS = `${SUBSCRIPTION_PROFILE_COLUMNS},trial_started_at,trial_ends_at,trial_reminder_sent_at,trial_expired_at,trial_expired_notice_shown_at,trial_converted_at`;
 
   function normalize(row, user) {
     return {
@@ -15,16 +16,21 @@
       subscriptionStatus: row?.subscription_status || "free",
       subscriptionProvider: row?.subscription_provider || "shopify",
       subscriptionCurrentPeriodEnd: row?.subscription_current_period_end || null,
-      subscriptionCancelAtPeriodEnd: Boolean(row?.subscription_cancel_at_period_end)
+      subscriptionCancelAtPeriodEnd: Boolean(row?.subscription_cancel_at_period_end),
+      trialStartedAt: row?.trial_started_at || null,
+      trialEndsAt: row?.trial_ends_at || null,
+      trialReminderSentAt: row?.trial_reminder_sent_at || null,
+      trialExpiredAt: row?.trial_expired_at || null,
+      trialExpiredNoticeShownAt: row?.trial_expired_notice_shown_at || null,
+      trialConvertedAt: row?.trial_converted_at || null
     };
   }
 
-  function isMissingSubscriptionColumns(error) {
+  function isMissingColumns(error, columns) {
     const message = `${error?.message || ""} ${error?.details || ""}`;
     return error?.code === "42703"
       || error?.code === "PGRST204"
-      || message.includes("subscription_current_period_end")
-      || message.includes("subscription_cancel_at_period_end");
+      || columns.some((column) => message.includes(column));
   }
 
   async function selectProfile(client, userId, columns) {
@@ -42,8 +48,11 @@
 
     let { data, error } = await selectProfile(client, user.id, PROFILE_COLUMNS);
 
-    // Keep login working until the new migration has been applied.
-    if (error && isMissingSubscriptionColumns(error)) {
+    // Keep login working while a new deployment and migration roll out.
+    if (error && isMissingColumns(error, ["trial_started_at", "trial_ends_at"])) {
+      ({ data, error } = await selectProfile(client, user.id, SUBSCRIPTION_PROFILE_COLUMNS));
+    }
+    if (error && isMissingColumns(error, ["subscription_current_period_end", "subscription_cancel_at_period_end"])) {
       ({ data, error } = await selectProfile(client, user.id, LEGACY_PROFILE_COLUMNS));
     }
 
@@ -77,5 +86,18 @@
     return normalize(data, user);
   }
 
-  globalThis.OveruurtjeProfiles = Object.freeze({ getForUser, saveDisplayName });
+  async function markTrialExpiredNoticeShown(user) {
+    if (!user) return null;
+    const client = await supabaseService.getClient();
+    if (!client) return null;
+    const { data, error } = await client.rpc("mark_trial_expired_notice_shown");
+    if (error) throw error;
+    return data || null;
+  }
+
+  globalThis.OveruurtjeProfiles = Object.freeze({
+    getForUser,
+    saveDisplayName,
+    markTrialExpiredNoticeShown
+  });
 })();

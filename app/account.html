@@ -25,29 +25,29 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260730a">
-    <link rel="stylesheet" href="styles.css?v=20260731f">
+    <link rel="stylesheet" href="styles.css?v=20260802c">
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
     <script src="saas/pushService.js?v=20260729b" defer></script>
-    <script src="saas/authService.js?v=20260731b" defer></script>
-    <script src="saas/profileService.js?v=20260727d" defer></script>
+    <script src="saas/authService.js?v=20260802a" defer></script>
+    <script src="saas/profileService.js?v=20260802trial1" defer></script>
     <script src="saas/settingsService.js?v=20260729d" defer></script>
     <script src="saas/functionService.js?v=20260725a" defer></script>
     <script src="saas/equipmentService.js?v=20260722a" defer></script>
     <script src="saas/projectService.js?v=20260727b" defer></script>
     <script src="saas/workdayService.js?v=20260727d" defer></script>
     <script src="saas/shareService.js?v=20260731b" defer></script>
-    <script src="saas/subscriptionService.js?v=20260722d" defer></script>
+    <script src="saas/subscriptionService.js?v=20260802trial1" defer></script>
     <script src="saas/featureGate.js?v=20260731b" defer></script>
     <script src="analytics.js?v=20260722q" defer></script>
-    <script src="saas/sessionUi.js?v=20260731c" defer></script>
+    <script src="saas/sessionUi.js?v=20260802trial1" defer></script>
     <script src="vendor/jsQR.js?v=20260731a" defer></script>
     <script src="qrScanner.js?v=20260731a" defer></script>
     <script src="interactionGuard.js?v=20260730a" defer></script>
     <script src="selectUi.js?v=20260725a" defer></script>
     <script src="timePicker.js?v=20260730a" defer></script>
-    <script src="account.js?v=20260729e" defer></script>
+    <script src="account.js?v=20260802a" defer></script>
     <script src="pwa.js?v=20260731a" defer></script>
   </head>
   <body>
@@ -93,10 +93,10 @@
 
         <section class="account-empty-state" id="account-logged-out" hidden>
           <h2>Log in om je account te beheren</h2>
-          <p>Je lokale calculatorinstellingen blijven gewoon beschikbaar zonder account.</p>
+          <p>Maak gratis een account aan en probeer Overuurtje Pro 30 dagen gratis. Geen betaalgegevens nodig. Na 30 dagen kies je zelf of je wilt upgraden.</p>
           <div class="logged-out-actions">
             <button class="saas-primary-button" id="account-login-cta" type="button">Inloggen</button>
-            <button class="saas-secondary-button" type="button" data-subscription-upgrade="signup">Account maken voor Pro</button>
+            <button class="saas-secondary-button" type="button" data-subscription-upgrade="signup">Start 30 dagen gratis Pro</button>
           </div>
         </section>
 
@@ -131,11 +131,19 @@
                 <label>
                   <span>Nieuw wachtwoord</span>
                   <input type="password" name="password" autocomplete="new-password" minlength="8" required>
-                  <small>Gebruik minimaal 8 tekens, met minstens één letter en één cijfer.</small>
+                  <small>Gebruik minimaal 8 tekens, met minstens één hoofdletter en één cijfer.</small>
                 </label>
                 <button class="saas-secondary-button" type="submit">Wachtwoord wijzigen</button>
                 <p class="saas-form-status" id="password-status" aria-live="polite"></p>
               </form>
+            </div>
+            <div class="account-mfa-compact" id="account-mfa-settings">
+              <div>
+                <strong>Tweestapsverificatie</strong>
+                <small>Beveilig je account extra met een authenticator-app.</small>
+              </div>
+              <button class="saas-secondary-button" id="account-mfa-action" type="button">Instellen</button>
+              <p class="saas-form-status" id="account-mfa-status" aria-live="polite"></p>
             </div>
             <div class="account-notification-compact" id="notification-settings">
               <div>
@@ -396,6 +404,8 @@
 
         <footer class="site-footer account-footer">
           <span>Overuurtje.nl</span>
+          <a href="privacy">Privacy</a>
+          <a href="terms">Voorwaarden</a>
           <button class="cookie-settings-link" type="button" id="cookie-settings">Cookie settings</button>
         </footer>
       </div>

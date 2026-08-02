@@ -12,6 +12,7 @@ import {
 } from "../../netlify/functions/lib/subscription-utils.mjs";
 import { fetchCustomerTags } from "../../netlify/functions/lib/shopify-admin.mjs";
 import { findProfileForCustomer } from "../../netlify/functions/shopify-webhook.mjs";
+import { sendTrialReminder, trialReminderMessage } from "../../netlify/functions/lib/trial-email.mjs";
 
 const testsDirectory = path.dirname(fileURLToPath(import.meta.url));
 const rootDirectory = path.resolve(testsDirectory, "../..");
@@ -155,9 +156,42 @@ test("Shopify-sync blijft server-only en controleert HMAC en duplicaten", async 
   assert.match(webhook, /findProfileForCustomer/);
   assert.match(expiry, /schedule: "15 3 \* \* \*"/);
   assert.match(expiry, /listExpiredSubscriptions/);
+  assert.match(expiry, /processTrialTransitions/);
+  assert.match(expiry, /listPendingTrialReminderEmails/);
+  assert.match(expiry, /sendTrialReminder/);
   const supabaseAdmin = await readFile(
     path.join(rootDirectory, "netlify/functions/lib/supabase-admin.mjs"),
     "utf8"
   );
   assert.match(supabaseAdmin, /subscription_status:\s*"in\.\(cancelled,past_due\)"/);
+});
+
+test("trialwaarschuwing wordt via de bestaande servertaak eenmaal per profiel verzonden", async () => {
+  const profile = {
+    id: "profile-1",
+    email: "test@overuurtje.nl",
+    display_name: "Chris Reichgelt",
+    trial_ends_at: "2026-08-31T12:00:00.000Z"
+  };
+  const message = trialReminderMessage(profile);
+  assert.equal(message.subject, "Je gratis Pro-periode eindigt over 7 dagen");
+  assert.match(message.html, /automatisch terug naar Free/i);
+  assert.match(message.html, /opgeslagen werkdagen, projecten, apparatuur en instellingen blijven bewaard/i);
+  assert.match(message.html, /Er wordt niets automatisch afgeschreven/i);
+
+  const previousKey = process.env.RESEND_API_KEY;
+  process.env.RESEND_API_KEY = "test-key";
+  const requests = [];
+  try {
+    const result = await sendTrialReminder(profile, async (url, options) => {
+      requests.push({ url, options });
+      return new Response("{}", { status: 200 });
+    });
+    assert.equal(result.sent, true);
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].url, "https://api.resend.com/emails");
+  } finally {
+    if (previousKey === undefined) delete process.env.RESEND_API_KEY;
+    else process.env.RESEND_API_KEY = previousKey;
+  }
 });

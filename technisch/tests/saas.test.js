@@ -239,6 +239,71 @@ test("subscription mock kan lokaal Free en Pro simuleren", async () => {
   assert.equal(context.OveruurtjeSubscriptions.canManage(), false);
 });
 
+test("een actieve trial telt als Pro, verloopt lokaal veilig en betaald Pro heeft voorrang", async () => {
+  const context = await runService("app/saas/subscriptionService.js", {
+    localStorage: { getItem: () => null, setItem: () => {} },
+    document: { dispatchEvent: () => {} },
+    window: { open: () => {} },
+    OveruurtjeConfig: {
+      allowMockSubscriptions: false,
+      shopifyCheckoutUrl: "",
+      shopifyManageUrl: ""
+    }
+  });
+  const future = new Date(Date.now() + (30 * 86400000)).toISOString();
+  const past = new Date(Date.now() - 60000).toISOString();
+
+  const active = context.OveruurtjeSubscriptions.resolve({
+    isPro: false,
+    trialStartedAt: new Date().toISOString(),
+    trialEndsAt: future
+  });
+  assert.equal(active.isPro, true);
+  assert.equal(active.isTrial, true);
+  assert.equal(active.plan, "pro_trial");
+  assert.equal(active.trialDaysRemaining, 30);
+
+  const expired = context.OveruurtjeSubscriptions.resolve({
+    isPro: false,
+    trialStartedAt: "2026-01-01T00:00:00.000Z",
+    trialEndsAt: past
+  });
+  assert.equal(expired.isPro, false);
+  assert.equal(expired.isExpiredTrial, true);
+  assert.equal(expired.plan, "expired_trial");
+
+  const paid = context.OveruurtjeSubscriptions.resolve({
+    isPro: true,
+    trialStartedAt: "2026-01-01T00:00:00.000Z",
+    trialEndsAt: past
+  });
+  assert.equal(paid.isPro, true);
+  assert.equal(paid.isPaidPro, true);
+  assert.equal(paid.isExpiredTrial, false);
+  assert.equal(paid.plan, "pro");
+});
+
+test("trialmigratie geeft alleen nieuwe accounts exact 30 dagen en verwerkt rechten server-side", async () => {
+  const migration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202608020001_pro_trials.sql"),
+    "utf8"
+  );
+
+  assert.match(migration, /add column if not exists trial_started_at timestamptz/i);
+  assert.match(migration, /add column if not exists trial_ends_at timestamptz/i);
+  assert.match(migration, /trial_start \+ interval '30 days'/i);
+  assert.match(migration, /on conflict \(id\) do nothing/i);
+  assert.doesNotMatch(migration, /update public\.profiles[\s\S]{0,300}set[\s\S]{0,200}trial_started_at\s*=/i);
+  assert.match(migration, /create or replace function public\.current_user_is_pro\(\)/i);
+  assert.match(migration, /p\.trial_ends_at > now\(\)/i);
+  assert.match(migration, /p\.is_pro\s+or/i);
+  assert.match(migration, /create or replace function public\.process_pro_trial_transitions\(\)/i);
+  assert.match(migration, /trial_reminder_sent_at is null/i);
+  assert.match(migration, /trial_expired_at = coalesce/i);
+  assert.match(migration, /'0 \* \* \* \*'/i);
+  assert.doesNotMatch(migration, /'account'\s*,\s*id/i);
+});
+
 test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", async () => {
   const calculatorHtml = await readFile(path.join(rootDirectory, "app/index.html"), "utf8");
   const accountHtml = await readFile(path.join(rootDirectory, "app/account.html"), "utf8");
@@ -345,6 +410,10 @@ test("Authmails verwijzen ook vanuit localhost altijd terug naar Overuurtje.nl",
       resetPasswordForEmail: async (email, options) => {
         calls.push({ method: "reset", email, options });
         return { data: {}, error: null };
+      },
+      signInWithOAuth: async (payload) => {
+        calls.push({ method: "oauth", payload });
+        return { data: {}, error: null };
       }
     }
   };
@@ -366,6 +435,8 @@ test("Authmails verwijzen ook vanuit localhost altijd terug naar Overuurtje.nl",
   await authContext.OveruurtjeAuth.ready;
   await authContext.OveruurtjeAuth.signUp("test@example.com", "secret");
   await authContext.OveruurtjeAuth.requestPasswordReset("test@example.com");
+  await authContext.OveruurtjeAuth.signInWithProvider("google");
+  await authContext.OveruurtjeAuth.signInWithProvider("facebook");
 
   assert.equal(
     calls[0].payload.options.emailRedirectTo,
@@ -375,12 +446,28 @@ test("Authmails verwijzen ook vanuit localhost altijd terug naar Overuurtje.nl",
     calls[1].options.redirectTo,
     "https://overuurtje.nl/account.html?mode=reset"
   );
-  assert.equal(JSON.stringify(calls).includes("localhost"), false);
+  assert.equal(JSON.stringify(calls.slice(0, 2)).includes("localhost"), false);
+  assert.equal(calls[2].payload.provider, "google");
+  assert.equal(
+    calls[2].payload.options.redirectTo,
+    "http://localhost:4173/app/workdays.html?invite=invite-token"
+  );
+  assert.equal(calls[3].payload.provider, "facebook");
 
   assert.equal(authContext.OveruurtjeAuth.validatePassword("kort1").valid, false);
   assert.equal(authContext.OveruurtjeAuth.validatePassword("alleenletters").valid, false);
   assert.equal(authContext.OveruurtjeAuth.validatePassword("12345678").valid, false);
+  assert.equal(authContext.OveruurtjeAuth.validatePassword("overuur8").valid, false);
   assert.equal(authContext.OveruurtjeAuth.validatePassword("Overuur8").valid, true);
+});
+
+test("inlogvenster toont Google en Facebook met merklogo's", async () => {
+  const sessionUi = await readFile(path.join(rootDirectory, "app/saas/sessionUi.js"), "utf8");
+
+  assert.match(sessionUi, /data-auth-provider="google"/);
+  assert.match(sessionUi, /data-auth-provider="facebook"/);
+  assert.doesNotMatch(sessionUi, /data-auth-provider="apple"/);
+  assert.match(sessionUi, /class="auth-provider-logo"/);
 });
 
 test("authfouten tonen nooit een leeg object aan de gebruiker", async () => {
@@ -1102,6 +1189,21 @@ test("Free-account toont Pro-functies zonder misleidende beschikbaarheidslabels"
   const accountHtml = await readFile(path.join(rootDirectory, "app/account.html"), "utf8");
   assert.doesNotMatch(accountHtml, /available-status/);
   assert.doesNotMatch(accountHtml, />Beschikbaar<\/span>/);
+});
+
+test("gast en Free zien een niet-klikbare extra functie als Pro-voorbeeld", async () => {
+  const [calculatorHtml, calculatorScript, styles] = await Promise.all([
+    readFile(path.join(rootDirectory, "app/index.html"), "utf8"),
+    readFile(path.join(rootDirectory, "app/app.js"), "utf8"),
+    readFile(path.join(rootDirectory, "app/styles.css"), "utf8")
+  ]);
+
+  assert.match(calculatorHtml, /class="department-choice department-choice-pro" aria-disabled="true"/);
+  assert.match(calculatorHtml, /name="department-pro-preview"[^>]+disabled/);
+  assert.match(calculatorHtml, /<b>Extra functie<\/b><small>Pro<\/small>/);
+  assert.match(calculatorHtml, /name="workdayName"[^>]+placeholder="Werkdag"/);
+  assert.match(calculatorScript, /choice\.classList\.contains\("department-choice-pro"\)/);
+  assert.match(styles, /\.department-choice-pro\s*\{[\s\S]*?cursor:\s*not-allowed/);
 });
 
 test("Projectdagen behouden hun id zodat deelrelaties niet verdwijnen bij opslaan", async () => {

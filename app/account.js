@@ -22,6 +22,8 @@
   const settingsStatus = document.querySelector("#account-settings-status");
   const passwordForm = document.querySelector("#password-form");
   const passwordStatus = document.querySelector("#password-status");
+  const mfaAction = document.querySelector("#account-mfa-action");
+  const mfaStatus = document.querySelector("#account-mfa-status");
   const profileNameForm = document.querySelector("#profile-name-form");
   const profileNameStatus = document.querySelector("#profile-name-status");
   const planTitle = document.querySelector("#subscription-plan-title");
@@ -58,6 +60,89 @@
   let workFunctions = [];
   let customEquipment = [];
   let displayedFunctionId = null;
+  let verifiedMfaFactor = null;
+  let pendingMfaFactorId = null;
+
+  async function renderMfaStatus() {
+    if (!currentContext?.auth.user || !mfaAction) return;
+    try {
+      const { data, error } = await auth.listMfaFactors();
+      if (error) throw error;
+      verifiedMfaFactor = data?.totp?.find((item) => item.status === "verified") || null;
+      mfaAction.textContent = verifiedMfaFactor ? "Uitschakelen" : "Instellen";
+      mfaStatus.textContent = verifiedMfaFactor
+        ? "Tweestapsverificatie is actief."
+        : "Tweestapsverificatie is nog niet actief.";
+    } catch (error) {
+      mfaStatus.textContent = error.message || "De beveiligingsstatus kon niet worden geladen.";
+    }
+  }
+
+  function ensureMfaEnrollmentDialog() {
+    let dialog = document.querySelector("#mfa-enrollment-dialog");
+    if (dialog) return dialog;
+    dialog = document.createElement("dialog");
+    dialog.className = "saas-dialog mfa-enrollment-dialog";
+    dialog.id = "mfa-enrollment-dialog";
+    dialog.innerHTML = `
+      <button class="dialog-close" type="button" aria-label="Sluiten">&times;</button>
+      <p class="dialog-eyebrow">Tweestapsverificatie</p>
+      <h2>Authenticator koppelen</h2>
+      <p>Scan de QR-code met Google Authenticator, Microsoft Authenticator, 1Password of een vergelijkbare app.</p>
+      <img class="mfa-qr-code" alt="QR-code voor authenticator-app">
+      <code class="mfa-secret"></code>
+      <form>
+        <input class="mfa-code-input" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" aria-label="Verificatiecode" required>
+        <p class="saas-form-status" aria-live="polite"></p>
+        <button class="saas-primary-button" type="submit">Activeren</button>
+      </form>
+    `;
+    document.body.append(dialog);
+    const close = async () => {
+      if (pendingMfaFactorId) {
+        await auth.unenrollMfa(pendingMfaFactorId).catch(() => {});
+        pendingMfaFactorId = null;
+      }
+      dialog.close();
+    };
+    dialog.querySelector(".dialog-close").addEventListener("click", close);
+    dialog.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      close();
+    });
+    return dialog;
+  }
+
+  async function startMfaEnrollment() {
+    mfaStatus.textContent = "Authenticator voorbereiden…";
+    const response = await auth.enrollMfa();
+    if (response.error) throw response.error;
+    const factor = response.data;
+    pendingMfaFactorId = factor.id;
+    const dialog = ensureMfaEnrollmentDialog();
+    const form = dialog.querySelector("form");
+    dialog.querySelector(".mfa-qr-code").src = factor.totp.qr_code;
+    dialog.querySelector(".mfa-secret").textContent = `Handmatige code: ${factor.totp.secret}`;
+    form.reset();
+    form.querySelector(".saas-form-status").textContent = "";
+    form.onsubmit = async (event) => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      const status = form.querySelector(".saas-form-status");
+      status.textContent = "Controleren…";
+      const verified = await auth.verifyMfa(factor.id, form.elements.namedItem("code").value);
+      if (verified.error) {
+        status.textContent = "De code klopt niet of is verlopen.";
+        return;
+      }
+      pendingMfaFactorId = null;
+      dialog.close();
+      mfaStatus.textContent = "Tweestapsverificatie is geactiveerd.";
+      await renderMfaStatus();
+    };
+    dialog.showModal();
+    form.elements.namedItem("code").focus();
+  }
 
   function setVisible(element, visible) {
     element.hidden = !visible;
@@ -349,19 +434,28 @@
 
   function renderSubscription(subscription, profile) {
     const isPro = subscription.isPro;
+    const isTrial = subscription.isTrial;
+    const isPaidPro = subscription.isPaidPro;
     content.classList.toggle("is-pro", isPro);
     content.classList.toggle("is-free", !isPro);
-    planPill.textContent = isPro ? "Pro" : "Free";
+    planPill.textContent = isTrial ? "Pro proef" : (isPaidPro ? "Pro" : "Free");
     planPill.classList.toggle("pro", isPro);
-    planTitle.textContent = isPro ? "Overuurtje Pro" : "Overuurtje Free";
-    planDescription.textContent = isPro
-      ? "Je Pro-status is actief. Shopify blijft straks de bron voor abonnementswijzigingen."
-      : "De calculator blijft gratis beschikbaar. Upgrade zodra je de toekomstige Pro-functies wilt gebruiken.";
-    upgradeButton.hidden = isPro;
-    manageButton.hidden = !isPro;
-    subscriptionStopButton.hidden = !isPro;
+    planPill.classList.toggle("trial", isTrial);
+    planTitle.textContent = isTrial ? "Pro-proefperiode actief" : (isPaidPro ? "Overuurtje Pro" : "Overuurtje Free");
+    planDescription.textContent = isTrial
+      ? `Je probeert alle Pro-functies gratis. Nog ${subscription.trialDaysRemaining} ${subscription.trialDaysRemaining === 1 ? "dag" : "dagen"}; er wordt niets automatisch afgeschreven.`
+      : (isPaidPro
+        ? "Je betaalde Pro-status is actief. Shopify beheert je abonnement."
+        : "De calculator blijft gratis beschikbaar. Upgrade wanneer je Pro-functies wilt gebruiken.");
+    upgradeButton.hidden = isPaidPro;
+    upgradeButton.textContent = isTrial ? "Behoud Pro na je proefperiode" : "Upgrade naar Pro";
+    manageButton.hidden = !isPaidPro;
+    subscriptionStopButton.hidden = !isPaidPro;
     subscriptionPeriod.hidden = !isPro;
-    if (isPro) {
+    if (isTrial) {
+      subscriptionPeriodLabel.textContent = "Pro gratis tot en met";
+      subscriptionPeriodValue.textContent = formatDate(subscription.trialEndsAt);
+    } else if (isPaidPro) {
       subscriptionPeriodLabel.textContent = profile?.subscriptionCancelAtPeriodEnd
         ? "Abonnement stopt op"
         : "Abonnement loopt tot";
@@ -401,6 +495,7 @@
     created.textContent = formatDate(context.profile?.createdAt || authState.user.created_at);
     profileNameForm.elements.namedItem("displayName").value = context.profile?.displayName || "";
     renderSubscription(context.subscription, context.profile);
+    await renderMfaStatus();
 
     try {
       const [savedResult, functionsResult, equipmentResult] = await Promise.allSettled([
@@ -654,6 +749,31 @@
     }
     passwordForm.reset();
     passwordStatus.textContent = "Wachtwoord gewijzigd.";
+  });
+
+  mfaAction?.addEventListener("click", async () => {
+    mfaAction.disabled = true;
+    mfaStatus.textContent = verifiedMfaFactor
+      ? "Tweestapsverificatie uitschakelen…"
+      : "Tweestapsverificatie instellen…";
+    try {
+      if (!verifiedMfaFactor) {
+        await startMfaEnrollment();
+        return;
+      }
+
+      const verified = await sessionUi.requireMfaVerification();
+      if (!verified) return;
+      const response = await auth.unenrollMfa(verifiedMfaFactor.id);
+      if (response.error) throw response.error;
+      verifiedMfaFactor = null;
+      mfaStatus.textContent = "Tweestapsverificatie is uitgeschakeld.";
+      await renderMfaStatus();
+    } catch (error) {
+      mfaStatus.textContent = error.message || "De instelling kon niet worden gewijzigd.";
+    } finally {
+      mfaAction.disabled = false;
+    }
   });
 
   mockPlan.addEventListener("change", () => subscriptions.setMockPlan(mockPlan.value));

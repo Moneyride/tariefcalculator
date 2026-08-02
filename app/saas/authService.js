@@ -44,8 +44,8 @@
     if (value.length < 8) {
       return { valid: false, message: "Gebruik minimaal 8 tekens." };
     }
-    if (!/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(value) || !/\d/.test(value)) {
-      return { valid: false, message: "Gebruik minimaal één letter en één cijfer." };
+    if (!/[A-ZÀ-ÖØ-Þ]/.test(value) || !/\d/.test(value)) {
+      return { valid: false, message: "Gebruik minimaal één hoofdletter en één cijfer." };
     }
     return { valid: true, message: "" };
   }
@@ -113,6 +113,42 @@
     return withClient((client) => client.auth.signInWithPassword({ email, password }));
   }
 
+  function signInWithProvider(provider) {
+    const redirectTo = new URL(globalThis.location?.href || config.authAccountUrl);
+    redirectTo.searchParams.delete("mode");
+    redirectTo.searchParams.delete("password-reset");
+    return withClient((client) => client.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: redirectTo.href }
+    }));
+  }
+
+  function getMfaAssurance() {
+    return withClient((client) => client.auth.mfa.getAuthenticatorAssuranceLevel());
+  }
+
+  function listMfaFactors() {
+    return withClient((client) => client.auth.mfa.listFactors());
+  }
+
+  function enrollMfa() {
+    return withClient((client) => client.auth.mfa.enroll({
+      factorType: "totp",
+      friendlyName: "Overuurtje"
+    }));
+  }
+
+  function verifyMfa(factorId, code) {
+    return withClient((client) => client.auth.mfa.challengeAndVerify({
+      factorId,
+      code: String(code || "").replace(/\D/g, "")
+    }));
+  }
+
+  function unenrollMfa(factorId) {
+    return withClient((client) => client.auth.mfa.unenroll({ factorId }));
+  }
+
   function signUp(email, password, displayName) {
     const currentUrl = new URL(location.href);
     const inviteToken = currentUrl.searchParams.get("invite");
@@ -151,10 +187,16 @@
     subscribe,
     getState: () => state,
     signIn,
+    signInWithProvider,
     signUp,
     signOut,
     requestPasswordReset,
     updatePassword,
+    getMfaAssurance,
+    listMfaFactors,
+    enrollMfa,
+    verifyMfa,
+    unenrollMfa,
     validatePassword
   });
 })();

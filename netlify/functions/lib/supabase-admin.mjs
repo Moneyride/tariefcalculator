@@ -89,3 +89,21 @@ export async function listExpiredSubscriptions(nowIso) {
     subscription_current_period_end: `lte.${nowIso}`
   }));
 }
+
+export async function processTrialTransitions() {
+  return request("rpc/process_pro_trial_transitions", {
+    method: "POST",
+    body: {}
+  });
+}
+
+export async function listPendingTrialReminderEmails(nowIso) {
+  return request(queryPath("profiles", {
+    select: "id,email,display_name,trial_ends_at",
+    is_pro: "eq.false",
+    trial_reminder_sent_at: "not.is.null",
+    trial_reminder_email_sent_at: "is.null",
+    trial_converted_at: "is.null",
+    trial_ends_at: `gt.${nowIso}`
+  }));
+}

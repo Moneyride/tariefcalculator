@@ -305,6 +305,11 @@ function applyAccountSettings(accountSettings, isPro) {
   updateProjectCreateAccess(isPro);
   departmentSwitch.querySelectorAll(".department-choice").forEach((choice) => {
     const input = choice.querySelector("input");
+    if (choice.classList.contains("department-choice-pro")) {
+      choice.hidden = isPro;
+      input.disabled = true;
+      return;
+    }
     choice.hidden = !input.checked;
     input.disabled = !input.checked;
   });
@@ -376,6 +381,11 @@ function applyWorkFunction(workFunction, { preserveRate = false, preserveSetting
   if (departmentField) departmentField.checked = true;
   departmentSwitch.querySelectorAll(".department-choice").forEach((choice) => {
     const input = choice.querySelector("input");
+    if (choice.classList.contains("department-choice-pro")) {
+      choice.hidden = true;
+      input.disabled = true;
+      return;
+    }
     choice.hidden = !input.checked;
     input.disabled = !input.checked;
   });
@@ -1444,6 +1454,11 @@ async function hydrateAccountSettings(context) {
     departmentSwitch.hidden = false;
     departmentSwitch.removeAttribute("aria-disabled");
     departmentSwitch.querySelectorAll(".department-choice").forEach((choice) => {
+      if (choice.classList.contains("department-choice-pro")) {
+        choice.hidden = false;
+        choice.querySelector("input").disabled = true;
+        return;
+      }
       choice.hidden = false;
       choice.querySelector("input").disabled = false;
     });

@@ -152,6 +152,23 @@ test("Netlify laat browsers de service worker steeds hercontroleren", async () =
   assert.match(config, /max-age=0, must-revalidate/);
 });
 
+test("publieke privacy- en voorwaardenpagina's zijn direct bereikbaar", async () => {
+  const privacy = await read("app/privacy.html");
+  const terms = await read("app/terms.html");
+  const config = await read("netlify.toml");
+  const worker = await read("app/service-worker.js");
+
+  assert.match(privacy, /rel="canonical" href="https:\/\/overuurtje\.nl\/privacy"/);
+  assert.match(privacy, /id="gegevens-verwijderen"/);
+  assert.match(privacy, /info@thegearharbor\.com/);
+  assert.match(terms, /rel="canonical" href="https:\/\/overuurtje\.nl\/terms"/);
+  assert.match(terms, /Overuurtje Pro/);
+  assert.match(config, /from = "\/privacy"[\s\S]*to = "\/privacy\.html"/);
+  assert.match(config, /from = "\/terms"[\s\S]*to = "\/terms\.html"/);
+  assert.match(worker, /\.\/privacy\.html/);
+  assert.match(worker, /\.\/terms\.html/);
+});
+
 test("Cookie settings behoudt een transparante tekst-hover", async () => {
   const styles = await read("app/styles.css");
   const hoverRule = styles.match(/\.cookie-settings-link:hover\s*\{[^}]+\}/)?.[0] || "";

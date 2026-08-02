@@ -53,6 +53,9 @@
   let pendingNotificationPrompt = null;
   let recoveryDialog = null;
   let passwordResetNoticeHandled = false;
+  let expiredTrialNoticeHandled = false;
+  let mfaVerificationPromise = null;
+  let socialAuthActions = null;
 
   function showToast(message) {
     if (globalThis.OveruurtjeAnalytics?.showToast) {
@@ -92,7 +95,7 @@
       return "Vul een geldig e-mailadres in.";
     }
     if (fingerprint.includes("weak_password") || fingerprint.includes("password should be")) {
-      return "Gebruik minimaal 8 tekens, met minstens één letter en één cijfer.";
+      return "Gebruik minimaal 8 tekens, met minstens één hoofdletter en één cijfer.";
     }
     if (
       fingerprint.includes("error sending confirmation email")
@@ -125,7 +128,7 @@
     if (help) return help;
     help = document.createElement("small");
     help.className = "password-requirements";
-    help.textContent = "Gebruik minimaal 8 tekens, met minstens één letter en één cijfer.";
+    help.textContent = "Gebruik minimaal 8 tekens, met minstens één hoofdletter en één cijfer.";
     authPasswordField.append(help);
     return help;
   }
@@ -144,7 +147,7 @@
         <label>
           <span>Nieuw wachtwoord</span>
           <input name="password" type="password" autocomplete="new-password" minlength="8" required>
-          <small class="password-requirements">Gebruik minimaal 8 tekens, met minstens één letter en één cijfer.</small>
+          <small class="password-requirements">Gebruik minimaal 8 tekens, met minstens één hoofdletter en één cijfer.</small>
         </label>
         <label>
           <span>Herhaal nieuw wachtwoord</span>
@@ -194,6 +197,122 @@
     return recoveryDialog;
   }
 
+  function ensureSocialAuthActions() {
+    if (socialAuthActions || !authForm) return socialAuthActions;
+    socialAuthActions = document.createElement("div");
+    socialAuthActions.className = "auth-social-actions";
+    socialAuthActions.innerHTML = `
+      <div class="auth-social-divider"><span>of</span></div>
+      <button class="auth-social-button" type="button" data-auth-provider="google">
+        <svg class="auth-provider-logo" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#FFC107" d="M43.611 20H24v8h11.303C33.654 32.657 29.223 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-4z"/>
+          <path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4c-7.682 0-14.344 4.337-17.694 10.691z"/>
+          <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
+          <path fill="#1976D2" d="M43.611 20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-4z"/>
+        </svg>
+        <span>Doorgaan met Google</span>
+      </button>
+      <button class="auth-social-button" type="button" data-auth-provider="facebook">
+        <svg class="auth-provider-logo" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="#1877F2" d="M24 12.073C24 5.446 18.627.073 12 .073S0 5.446 0 12.073c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.008 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953h-1.513c-1.49 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+          <path fill="#FFF" d="m16.671 15.542.532-3.47h-3.328v-2.25c0-.949.466-1.874 1.956-1.874h1.513V4.995s-1.374-.235-2.686-.235c-2.741 0-4.533 1.661-4.533 4.669v2.643H7.078v3.47h3.047v8.385a12.13 12.13 0 0 0 3.75 0v-8.385h2.796z"/>
+        </svg>
+        <span>Doorgaan met Facebook</span>
+      </button>
+    `;
+    authForm.insertAdjacentElement("afterend", socialAuthActions);
+    socialAuthActions.addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-auth-provider]");
+      if (!button) return;
+      button.disabled = true;
+      authStatus.textContent = "Veilige login openen…";
+      const { error } = await auth.signInWithProvider(button.dataset.authProvider);
+      if (error) {
+        authStatus.textContent = authErrorText(error, "login");
+        button.disabled = false;
+      }
+    });
+    return socialAuthActions;
+  }
+
+  function ensureMfaChallengeDialog() {
+    let dialog = document.querySelector("#mfa-challenge-dialog");
+    if (dialog) return dialog;
+    dialog = document.createElement("dialog");
+    dialog.className = "saas-dialog mfa-challenge-dialog";
+    dialog.id = "mfa-challenge-dialog";
+    dialog.innerHTML = `
+      <p class="dialog-eyebrow">Accountbeveiliging</p>
+      <h2>Bevestig dat jij het bent</h2>
+      <p>Vul de zescijferige code uit je authenticator-app in.</p>
+      <form>
+        <input class="mfa-code-input" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" aria-label="Verificatiecode" required>
+        <p class="saas-form-status" aria-live="polite"></p>
+        <div class="mfa-dialog-actions">
+          <button class="saas-primary-button" type="submit">Bevestigen</button>
+          <button class="text-action" type="button" data-mfa-logout>Uitloggen</button>
+        </div>
+      </form>
+    `;
+    document.body.append(dialog);
+    dialog.addEventListener("cancel", (event) => event.preventDefault());
+    return dialog;
+  }
+
+  async function requireMfaVerification() {
+    if (mfaVerificationPromise) return mfaVerificationPromise;
+    mfaVerificationPromise = (async () => {
+      const [assuranceResponse, factorsResponse] = await Promise.all([
+        auth.getMfaAssurance(),
+        auth.listMfaFactors()
+      ]);
+      if (assuranceResponse.error) throw assuranceResponse.error;
+      if (factorsResponse.error) throw factorsResponse.error;
+      const assurance = assuranceResponse.data;
+      const factor = factorsResponse.data?.totp?.find((item) => item.status === "verified");
+      if (!factor || assurance?.currentLevel === "aal2" || assurance?.nextLevel !== "aal2") return true;
+
+      const dialog = ensureMfaChallengeDialog();
+      const form = dialog.querySelector("form");
+      const status = dialog.querySelector(".saas-form-status");
+      const code = form.elements.namedItem("code");
+      code.value = "";
+      status.textContent = "";
+      openDialog(dialog);
+      code.focus();
+
+      return new Promise((resolve) => {
+        const submit = async (event) => {
+          event.preventDefault();
+          if (!form.reportValidity()) return;
+          const button = form.querySelector("button[type='submit']");
+          button.disabled = true;
+          status.textContent = "Controleren…";
+          const response = await auth.verifyMfa(factor.id, code.value);
+          if (response.error) {
+            status.textContent = "De code klopt niet of is verlopen.";
+            button.disabled = false;
+            code.select();
+            return;
+          }
+          form.removeEventListener("submit", submit);
+          closeDialog(dialog);
+          button.disabled = false;
+          resolve(true);
+        };
+        const logout = async () => {
+          form.removeEventListener("submit", submit);
+          await auth.signOut();
+          closeDialog(dialog);
+          resolve(false);
+        };
+        form.addEventListener("submit", submit);
+        dialog.querySelector("[data-mfa-logout]").onclick = logout;
+      });
+    })().finally(() => { mfaVerificationPromise = null; });
+    return mfaVerificationPromise;
+  }
+
   function handlePasswordRecovery(authState) {
     if (!authState.recovery || !authState.session) return;
     const dialog = ensurePasswordRecoveryDialog();
@@ -213,6 +332,8 @@
   }
 
   function notificationText(item) {
+    if (item.type === "trial_ending") return "Je gratis Pro-periode eindigt over 7 dagen. Je gegevens blijven bewaard als je teruggaat naar Free.";
+    if (item.type === "trial_expired") return "Je gratis Pro-periode is afgelopen. Je account is teruggezet naar Free en je gegevens zijn bewaard.";
     if (item.type === "workday_share_joined") return `${item.actorName} doet mee met je gedeelde werkdag.`;
     if (item.type === "workday_start_owner") return "Je vooraf ingestelde werkdag begint nu.";
     if (item.type === "workday_started") return `${item.actorName} begint nu aan de gedeelde werkdag.`;
@@ -223,6 +344,7 @@
   }
 
   function notificationHref(item) {
+    if (["trial_ending", "trial_expired"].includes(item.type)) return config.accountUrl;
     if (item.type === "workday_share_joined" && item.sourceType === "workday" && item.sourceId) {
       return `${config.calculatorUrl}?workday=${encodeURIComponent(item.sourceId)}`;
     }
@@ -301,6 +423,13 @@
       const dialog = ensureNotificationPrompt();
       dialog.querySelector(".notification-alert-copy").textContent = notificationText(newestUnread);
       openDialog(dialog);
+      if (["trial_ending", "trial_expired"].includes(newestUnread.type)) {
+        shares?.markNotificationsRead([newestUnread.id]).catch(() => {});
+        if (newestUnread.type === "trial_expired" && !expiredTrialNoticeHandled) {
+          expiredTrialNoticeHandled = true;
+          profiles.markTrialExpiredNoticeShown(auth.getState().user).catch(() => {});
+        }
+      }
       dialog.querySelector("[data-notification-alert-open]")?.focus();
     }, 700);
   }
@@ -403,12 +532,13 @@
     dialog.innerHTML = `
       <button class="dialog-close" type="button" data-signup-confirmation-close aria-label="Sluiten">&times;</button>
       <div class="signup-confirmation-icon" aria-hidden="true">&#9993;</div>
-      <p class="dialog-eyebrow">Account aangemaakt</p>
+      <p class="dialog-eyebrow">30 dagen gratis Pro</p>
       <h2 id="signup-confirmation-title">Controleer je inbox</h2>
       <p class="signup-confirmation-copy">
         We hebben een bevestigingsmail gestuurd naar
         <strong id="signup-confirmation-email"></strong>.
-        Bevestig eerst je e-mailadres en log daarna in.
+        Bevestig eerst je e-mailadres en log daarna in. Je Pro-proefperiode is dan actief;
+        er zijn geen betaalgegevens nodig en er wordt niets automatisch afgeschreven.
       </p>
       <button class="saas-primary-button" id="signup-confirmation-login" type="button">Naar inloggen</button>
     `;
@@ -446,19 +576,19 @@
       ? "Wachtwoord herstellen"
       : (isShareInvite
         ? (isRegister ? "Account maken om tijden te ontvangen" : "Inloggen om tijden te ontvangen")
-        : (isRegister && showProChoiceAfterAuth ? "Account maken voor Pro" : (isRegister ? "Account maken" : "Inloggen")));
+        : (isRegister ? "Start 30 dagen gratis Pro" : "Inloggen"));
     authIntro.textContent = isForgot
       ? "We sturen een veilige herstellink naar je e-mailadres."
       : (isShareInvite
         ? "Log in of maak gratis een account. Daarna kun je de gedeelde tijden bekijken en overnemen."
-        : (isRegister && showProChoiceAfterAuth
-        ? "Voor Pro heb je eerst een gratis account nodig. Na het aanmelden kies je direct Pro of ga je verder met Free."
-        : (isRegister ? "Maak een account om Overuurtje straks op al je apparaten te gebruiken." : "Log in bij je Overuurtje-account.")));
+        : (isRegister
+          ? "Maak gratis een account aan en probeer Overuurtje Pro 30 dagen. Geen betaalgegevens nodig; daarna kies je zelf of je wilt upgraden."
+          : "Log in bij je Overuurtje-account."));
     authPasswordField.hidden = isForgot;
     authPassword.required = !isForgot;
     authPassword.autocomplete = isRegister ? "new-password" : "current-password";
     authPassword.title = isRegister
-      ? "Gebruik minimaal 8 tekens, met minstens één letter en één cijfer."
+      ? "Gebruik minimaal 8 tekens, met minstens één hoofdletter en één cijfer."
       : "";
     const passwordRequirements = ensurePasswordRequirements();
     if (passwordRequirements) passwordRequirements.hidden = !isRegister;
@@ -466,11 +596,13 @@
     if (authName) authName.required = isRegister;
     authSubmit.textContent = isForgot
       ? "Stuur herstellink"
-      : (isRegister && showProChoiceAfterAuth ? "Account maken en doorgaan" : (isRegister ? "Account maken" : "Inloggen"));
+      : (isRegister ? "Start 30 dagen gratis Pro" : "Inloggen");
     authSwitch.textContent = isRegister ? "Ik heb al een account" : "Nieuw bij Overuurtje? Account maken";
     authSwitch.hidden = isForgot;
     authForgot.hidden = isForgot || isRegister;
     authStatus.textContent = "";
+    const socialActions = ensureSocialAuthActions();
+    if (socialActions) socialActions.hidden = isForgot;
   }
 
   function openAuth(mode = "login", { continueToPro = false, purpose = "" } = {}) {
@@ -519,6 +651,14 @@
   async function buildContext(authState) {
     handlePasswordRecovery(authState);
     handlePasswordResetNotice(authState);
+    if (authState.user && !authState.recovery) {
+      try {
+        const verified = await requireMfaVerification();
+        if (!verified) return currentContext;
+      } catch (error) {
+        console.warn("Tweestapsverificatie kon niet worden gecontroleerd.", error);
+      }
+    }
     let profile = null;
     if (authState.user) {
       try {
@@ -537,6 +677,19 @@
     });
     renderHeader(currentContext);
     document.dispatchEvent(new CustomEvent("overuurtje:user-context", { detail: currentContext }));
+
+    if (
+      authState.user
+      && subscription.isExpiredTrial
+      && !profile?.trialExpiredNoticeShownAt
+      && !expiredTrialNoticeHandled
+    ) {
+      expiredTrialNoticeHandled = true;
+      setTimeout(() => {
+        showToast("Je gratis Pro-periode is afgelopen. Je account is teruggezet naar Free; je gegevens zijn bewaard.");
+        profiles.markTrialExpiredNoticeShown(authState.user).catch(() => {});
+      }, 500);
+    }
 
     if (!hasResolvedReady && !authState.loading) {
       hasResolvedReady = true;
@@ -576,7 +729,6 @@
       if (response.error) throw response.error;
 
       if (authMode === "register" && !response.data?.session) {
-        if (showProChoiceAfterAuth) sessionStorage.setItem("overuurtjePostSignupChoice", "true");
         authForm.reset();
         openSignupConfirmation(email);
         return;
@@ -585,12 +737,8 @@
       const completedRegistration = authMode === "register";
       closeDialog(authDialog);
       authForm.reset();
-      showToast(completedRegistration ? "Account aangemaakt." : "Je bent ingelogd.");
-      if (showProChoiceAfterAuth || sessionStorage.getItem("overuurtjePostSignupChoice") === "true") {
-        sessionStorage.removeItem("overuurtjePostSignupChoice");
-        showProChoiceAfterAuth = false;
-        openUpgrade({ accountReady: true });
-      }
+      showToast(completedRegistration ? "Account aangemaakt. Je Pro-proefperiode is gestart." : "Je bent ingelogd.");
+      showProChoiceAfterAuth = false;
     } catch (error) {
       console.error("Supabase Auth-verzoek mislukt.", {
         code: error?.code || "",
@@ -604,13 +752,28 @@
   }
 
   function openUpgrade({ accountReady = Boolean(auth.getState().user) } = {}) {
-    proEyebrow.textContent = accountReady ? "Je account is klaar" : "Overuurtje Pro";
-    proTitle.textContent = accountReady ? "Kies hoe je verdergaat" : "Meer rust in je administratie";
-    proIntro.textContent = accountReady
-      ? "Upgrade nu naar Pro of ga verder met het gratis account. Je kunt later altijd nog upgraden."
-      : "Voor Pro heb je een account nodig. Na het aanmelden ga je direct verder met de upgrade.";
-    proCheckout.textContent = accountReady ? "Upgrade naar Pro" : "Account maken en doorgaan";
-    proContinue.hidden = !accountReady;
+    const subscription = currentContext.subscription;
+    if (!accountReady) {
+      proEyebrow.textContent = "30 dagen gratis Pro";
+      proTitle.textContent = "Probeer Overuurtje Pro gratis";
+      proIntro.textContent = "Maak een gratis account aan. Je hebt geen betaalgegevens nodig en na 30 dagen kies je zelf of je wilt upgraden.";
+      proCheckout.textContent = "Start 30 dagen gratis Pro";
+      proContinue.hidden = true;
+    } else if (subscription.isTrial) {
+      proEyebrow.textContent = "Pro-proefperiode actief";
+      proTitle.textContent = "Behoud Pro na je proefperiode";
+      proIntro.textContent = `Je gebruikt Pro gratis tot en met ${new Intl.DateTimeFormat("nl-NL", { dateStyle: "long" }).format(new Date(subscription.trialEndsAt))}. Alleen als je zelf upgradet start een betaald abonnement.`;
+      proCheckout.textContent = "Behoud Pro";
+      proContinue.hidden = false;
+    } else {
+      proEyebrow.textContent = subscription.isExpiredTrial ? "Pro-proefperiode afgelopen" : "Overuurtje Pro";
+      proTitle.textContent = subscription.isExpiredTrial ? "Activeer Pro opnieuw" : "Meer rust in je administratie";
+      proIntro.textContent = subscription.isExpiredTrial
+        ? "Je account is teruggezet naar Free. Je opgeslagen gegevens zijn bewaard en worden weer volledig beschikbaar zodra je upgradet."
+        : "Upgrade naar Pro wanneer je de extra functies wilt gebruiken. Alleen jij start de betaling.";
+      proCheckout.textContent = "Upgrade naar Pro";
+      proContinue.hidden = false;
+    }
     openDialog(proDialog);
   }
 
@@ -695,6 +858,7 @@
     openUpgrade,
     getContext: () => currentContext,
     refresh: () => buildContext(auth.getState()),
-    showToast
+    showToast,
+    requireMfaVerification
   });
 })();

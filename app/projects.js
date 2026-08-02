@@ -716,7 +716,7 @@
   }
 
   async function initialize(userContext) {
-    const contextKey = `${userContext.auth.user?.id || "guest"}:${userContext.subscription.status}:${location.search}`;
+    const contextKey = `${userContext.auth.user?.id || "guest"}:${userContext.subscription.plan}:${location.search}`;
     if (contextKey === initializedContextKey) return;
     initializedContextKey = contextKey;
     context = userContext;
