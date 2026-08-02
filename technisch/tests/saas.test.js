@@ -320,8 +320,7 @@ test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", asy
   assert.match(calculatorHtml, /data-pro-badge/);
   assert.match(calculatorScript, /const hasSharedRecipient = !isSharedReceiver/);
   assert.match(calculatorScript, /Opslaan werkt gedeelde tijden bij voor je collega's/);
-  assert.match(calculatorScript, /Bewaar deze dag met je eigen extra's en berekening/);
-  assert.match(calculatorScript, /Beschikbaar met Overuurtje Pro/);
+  assert.match(calculatorScript, /Bewaar je eigen extra's en berekening bij deze gedeelde dag/);
   assert.match(calculatorHtml, /name="rateMode"/);
   assert.match(calculatorHtml, /name="breakMinutes"/);
   assert.match(calculatorHtml, /name="enableBreak"/);
@@ -861,7 +860,8 @@ test("Werkdagen delen gebruikt verwijzingen, redacted RPCs en ontvanger-RLS", as
   assert.match(inviteMigration, /workday_times_updated/i);
   assert.match(workdaysHtml, /id="received-workdays"/);
   assert.match(workdaysHtml, /id="shared-invite-dialog"/);
-  assert.match(workdaysHtml, /id="take-over-shared-times"/);
+  assert.doesNotMatch(workdaysHtml, /id="take-over-shared-times"/);
+  assert.doesNotMatch(workdaysHtml, /id="shared-existing-workday-dialog"/);
   assert.match(projectsHtml, /id="share-project-day"/);
   assert.match(indexHtml, /id="share-from-participants"/);
   assert.doesNotMatch(indexHtml, /id="share-current-workday"/);
@@ -972,7 +972,8 @@ test("Werkdagnamen en deelnemers worden privacyvriendelijk gedeeld", async () =>
   assert.match(calculatorHtml, /name="workdayName"/);
   assert.match(calculatorHtml, /Nodig collega's uit om samen de tijden te registreren/);
   assert.match(accountHtml, /name="displayName"/);
-  assert.match(workdaysHtml, /data-share-participants-list/);
+  assert.match(calculatorHtml, /id="current-workday-participant-list"/);
+  assert.doesNotMatch(workdaysHtml, /data-share-participants-list/);
   const appScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
   const styles = await readFile(path.join(rootDirectory, "app/styles.css"), "utf8");
   assert.match(appScript, /chip\.className = "participant-chip is-account"/);
@@ -1037,7 +1038,8 @@ test("handmatig toegevoegde deelnemers zijn veilig zichtbaar voor gedeelde ontva
   assert.match(calculatorScript, /privateParticipantPanel\.hidden = active \|\| !currentUserContext\?\.isPro/);
   assert.match(calculatorScript, /resumeLiveWorkdayButton && active/);
   assert.match(timePickerScript, /field\.dataset\.sharedLocked === "true"/);
-  assert.match(workdaysScript, /sharedOwnerName: item\.ownerName \|\| ""/);
+  assert.match(workdaysScript, /index\.html\?shared=/);
+  assert.doesNotMatch(workdaysScript, /sharedOwnerName: item\.ownerName \|\| ""/);
   assert.match(shareServiceScript, /hasAccount: row\.has_account !== false/);
 });
 
@@ -1151,27 +1153,25 @@ test("Deelservice maakt een beperkte Free-deelbron via de beveiligde RPC", async
   assert.equal(calls[0].values.p_work_date, "2026-07-31");
 });
 
-test("Gratis ontvangers nemen gedeelde tijden over in de reguliere calculator", async () => {
+test("Free en Pro-ontvangers openen één canonieke gedeelde werkdag", async () => {
   const workdaysScript = await readFile(path.join(rootDirectory, "app/workdays.js"), "utf8");
   const appScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
+  const shareService = await readFile(path.join(rootDirectory, "app/saas/shareService.js"), "utf8");
+  const migration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202608020002_canonical_shared_workdays.sql"),
+    "utf8"
+  );
 
-  assert.match(
-    workdaysScript,
-    /if \(!currentContext\.isPro\)\s*\{\s*await openSharedTimesInCalculator\(shared \|\| \{ \.\.\.activeInvite, id: shareId \}\)/
-  );
-  assert.doesNotMatch(workdaysScript, /inviteCanBeImported/);
-  assert.match(
-    workdaysScript,
-    /sessionStorage\.setItem\(\s*"overuurtjeSharedTimesImport"/
-  );
-  assert.match(workdaysScript, /sharedSourceType: item\.sourceType/);
-  assert.match(workdaysScript, /sharedSourceId: item\.sourceId/);
+  assert.doesNotMatch(workdaysScript, /openSharedTimesInCalculator|takeoverSnapshot|activeInvite/);
   assert.match(workdaysScript, /location\.href = `index\.html\?shared=\$\{encodeURIComponent\(item\.id\)\}`/);
-  const freeImportStart = workdaysScript.indexOf("async function openSharedTimesInCalculator");
-  const freeImportEnd = workdaysScript.indexOf("\n  async function findExistingEntry", freeImportStart);
-  const freeImportFunction = workdaysScript.slice(freeImportStart, freeImportEnd);
-  assert.doesNotMatch(freeImportFunction, /workdayService\.save/);
   assert.match(appScript, /let currentSharedSource = null/);
+  assert.match(appScript, /let currentReceivedShareId = null/);
+  assert.match(appScript, /shareService\.saveRecipientCalculation\(currentReceivedShareId, snapshot\)/);
+  assert.match(shareService, /save_received_workday_calculation/);
+  assert.match(migration, /create table if not exists public\.workday_share_recipient_data/i);
+  assert.match(migration, /recipient_id = \(select auth\.uid\(\)\)/i);
+  assert.match(migration, /recipient_calculation_data jsonb/i);
+  assert.doesNotMatch(appScript, /currentSharedSource[\s\S]{0,160}persistWorkday\(snapshot/);
   assert.match(appScript, /shareService\.listParticipants\(source\.type, source\.id\)/);
   assert.match(
     appScript,
@@ -1335,7 +1335,7 @@ test("gastheader, QR-knop en gedeelde werkdagen blijven compact en uniek", async
   assert.match(styles, /\.qr-scanner-open\s*\{[^}]*min-width:\s*42px;[^}]*max-width:\s*42px;[^}]*aspect-ratio:\s*1;/s);
   assert.match(styles, /\.qr-scanner-open\s*\{[^}]*border-radius:\s*999px;/s);
   assert.match(workdays, /item\.calculationData\?\.importedFromShare/);
-  assert.match(workdays, /visibleReceivedShares = receivedShares\.filter/);
+  assert.match(workdays, /\.\.\.receivedShares\.map/);
 });
 
 test("Free en Pro-eigenaren krijgen bericht wanneer een collega aansluit", async () => {

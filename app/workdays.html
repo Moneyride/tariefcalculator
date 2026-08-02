@@ -24,9 +24,8 @@
     <script src="saas/profileService.js?v=20260802trial1" defer></script>
     <script src="saas/subscriptionService.js?v=20260802trial1" defer></script>
     <script src="saas/featureGate.js?v=20260731b" defer></script>
-    <script src="saas/projectService.js?v=20260728a" defer></script>
     <script src="saas/workdayService.js?v=20260727d" defer></script>
-    <script src="saas/shareService.js?v=20260731b" defer></script>
+    <script src="saas/shareService.js?v=20260802a" defer></script>
     <script src="calculator.js?v=20260727b" defer></script>
     <script src="analytics.js?v=20260722q" defer></script>
     <script src="saas/sessionUi.js?v=20260802trial1" defer></script>
@@ -35,7 +34,7 @@
     <script src="qrCode.js?v=20260730a" defer></script>
     <script src="saas/shareUi.js?v=20260731b" defer></script>
     <script src="interactionGuard.js?v=20260730a" defer></script>
-    <script src="workdays.js?v=20260731a" defer></script>
+    <script src="workdays.js?v=20260802a" defer></script>
     <script src="pwa.js?v=20260731a" defer></script>
   </head>
   <body>
@@ -160,33 +159,6 @@
       <h2 id="delete-workday-title">Weet je het zeker?</h2>
       <p id="delete-workday-copy">Deze opgeslagen werkdag kan daarna niet worden teruggehaald.</p>
       <div class="dialog-action-stack"><button class="saas-primary-button danger-button" id="confirm-workday-delete" type="button">Verwijderen</button><button class="saas-secondary-button" id="keep-workday" type="button">Behouden</button></div>
-    </dialog>
-    <dialog class="saas-dialog shared-workday-detail-dialog" id="shared-workday-detail-dialog" aria-labelledby="shared-workday-title">
-      <button class="dialog-close" type="button" data-shared-detail-close aria-label="Sluiten">&times;</button>
-      <p class="dialog-eyebrow">Gedeelde werkdag</p>
-      <h2 id="shared-workday-title">Werkdag van een collega</h2>
-      <p class="shared-project-name" data-shared-project hidden></p>
-      <div class="shared-time-summary">
-        <strong data-shared-date></strong>
-        <span data-shared-times></span>
-      </div>
-      <blockquote data-shared-message hidden></blockquote>
-      <section class="share-participants" data-share-participants hidden>
-        <h3>Deelnemers</h3>
-        <div class="participant-list" data-share-participants-list></div>
-      </section>
-      <p class="share-privacy-note">Alleen deze werktijden worden getoond. De administratie van je collega blijft privé.</p>
-      <button class="saas-primary-button" id="take-over-shared-times" type="button">Neem werktijden over</button>
-    </dialog>
-    <dialog class="saas-dialog confirm-dialog" id="shared-existing-workday-dialog" aria-labelledby="shared-existing-title">
-      <button class="dialog-close" type="button" data-shared-existing-close aria-label="Sluiten">&times;</button>
-      <p class="dialog-eyebrow">Werktijden overnemen</p>
-      <h2 id="shared-existing-title">Voor deze datum bestaat al een werkdag.</h2>
-      <div class="dialog-action-stack">
-        <button class="saas-primary-button" id="update-from-shared-times" type="button">Werkdag bijwerken met gedeelde tijden</button>
-        <button class="saas-secondary-button" id="new-from-shared-times" type="button">Nieuwe werkdag aanmaken</button>
-        <button class="saas-text-button" data-shared-existing-close type="button">Annuleren</button>
-      </div>
     </dialog>
     <dialog class="saas-dialog shared-invite-dialog" id="shared-invite-dialog" aria-labelledby="shared-invite-title">
       <button class="dialog-close" type="button" data-shared-invite-close aria-label="Sluiten">&times;</button>

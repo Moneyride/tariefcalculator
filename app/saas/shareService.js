@@ -32,7 +32,11 @@
     shareMode: row.share_mode,
     acceptedAt: row.accepted_at,
     sourceUpdatedAt: row.source_updated_at,
-    createdAt: row.created_at
+    createdAt: row.created_at,
+    recipientCalculationData: row.recipient_calculation_data
+      && typeof row.recipient_calculation_data === "object"
+      ? row.recipient_calculation_data
+      : {}
   });
 
   const normalizeSent = (row) => ({
@@ -192,6 +196,13 @@
     await rpc("accept_workday_share", { p_share_id: id });
   }
 
+  async function saveRecipientCalculation(id, calculationData) {
+    await rpc("save_received_workday_calculation", {
+      p_share_id: id,
+      p_calculation_data: calculationData || {}
+    });
+  }
+
   async function remove(id) {
     await rpc("remove_workday_share", { p_share_id: id });
   }
@@ -226,6 +237,7 @@
     listSent,
     listParticipants,
     accept,
+    saveRecipientCalculation,
     remove,
     removeProjectShare,
     listNotifications,

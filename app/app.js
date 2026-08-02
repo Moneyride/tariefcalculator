@@ -104,6 +104,7 @@ let currentWorkdayId = null;
 let currentShareWorkdayId = null;
 let currentProjectDayContext = null;
 let currentSharedSource = null;
+let currentReceivedShareId = null;
 let currentSharedOwnerName = "";
 let currentSharedSourceEndTime = "";
 let sharedReceiverCalculatedEarly = false;
@@ -657,6 +658,7 @@ async function refreshSharedReceiverTimes({ announce = false } = {}) {
       && item.sourceId === currentSharedSource.id
     ));
     if (!shared) return;
+    currentReceivedShareId = shared.id;
 
     const startTime = form.elements.namedItem("startTime");
     const endTime = form.elements.namedItem("endTime");
@@ -849,7 +851,8 @@ function applyWorkdaySnapshot(workday, { projectContext = null, freeActive = fal
   const snapshot = workday?.calculationData || {};
   if (!snapshot.date) return;
 
-  currentWorkdayId = projectContext || freeActive ? null : workday.id;
+  currentReceivedShareId = snapshot.importedFromShare || null;
+  currentWorkdayId = projectContext || freeActive || currentReceivedShareId ? null : workday.id;
   currentProjectDayContext = projectContext;
   currentSharedSource = snapshot.sharedSourceType && snapshot.sharedSourceId
     ? { type: snapshot.sharedSourceType, id: snapshot.sharedSourceId }
@@ -915,7 +918,10 @@ function applyWorkdaySnapshot(workday, { projectContext = null, freeActive = fal
   url.searchParams.delete("workday");
   url.searchParams.delete("project");
   url.searchParams.delete("projectDay");
-  if (projectContext) {
+  url.searchParams.delete("shared");
+  if (currentReceivedShareId) {
+    url.searchParams.set("shared", currentReceivedShareId);
+  } else if (projectContext) {
     url.searchParams.set("project", projectContext.project.id);
     url.searchParams.set("projectDay", projectContext.day.id);
   } else if (!freeActive) {
@@ -1081,6 +1087,21 @@ async function persistProjectDay(snapshot) {
 async function saveWorkday({ allowDuplicate = false } = {}) {
   const date = form.elements.namedItem("date").value;
   if (!date) return;
+  if (currentSharedSource && currentReceivedShareId && currentAccountUser) {
+    workdaySaveButton.disabled = true;
+    try {
+      const snapshot = buildWorkdaySnapshot();
+      await shareService.saveRecipientCalculation(currentReceivedShareId, snapshot);
+      sessionUi?.showToast("Jouw instellingen bij deze gedeelde werkdag zijn opgeslagen.");
+      return snapshot;
+    } catch (error) {
+      console.warn("Eigen instellingen bij gedeelde werkdag opslaan is mislukt.", error);
+      sessionUi?.showToast(error.message || "Je instellingen konden niet worden opgeslagen.");
+      return null;
+    } finally {
+      updateWorkdaySaveAccess();
+    }
+  }
   if (!currentUserContext?.isPro) {
     if (!currentAccountUser || currentSharedSource || currentProjectDayContext) {
       sessionUi?.openUpgrade();
@@ -1163,14 +1184,12 @@ function updateWorkdaySaveAccess() {
     projectDayContextLink.href = `projects.html?project=${encodeURIComponent(currentProjectDayContext.project.id)}`;
   }
   workdaySaveButton.disabled = !hasDate;
-  workdaySaveButton.classList.toggle("is-pro-locked", !isPro && !canSaveFreeActive);
+  workdaySaveButton.classList.toggle("is-pro-locked", !isSharedReceiver && !isPro && !canSaveFreeActive);
   if (workdaySaveLabel) {
     workdaySaveLabel.textContent = isProjectDay
       ? "Projectdag bijwerken"
       : isSharedReceiver
-        ? isPro
-          ? (currentWorkdayId ? "Mijn werkdag bijwerken" : "Mijn werkdag opslaan")
-          : "Opslaan bij mijn werkdagen"
+        ? "Mijn instellingen opslaan"
       : currentWorkdayId
         ? "Werkdag bijwerken"
       : (!isPro && canSaveFreeActive ? "Actieve werkdag bewaren" : "Werkdag opslaan");
@@ -1178,18 +1197,16 @@ function updateWorkdaySaveAccess() {
   if (workdaySaveHint) {
     workdaySaveHint.hidden = false;
     workdaySaveHint.textContent = isSharedReceiver
-      ? isPro
-        ? "Bewaar deze dag met je eigen extra's en berekening"
-        : "Beschikbaar met Overuurtje Pro"
+      ? "Bewaar je eigen extra's en berekening bij deze gedeelde dag"
       : hasSharedRecipient
         ? "Opslaan werkt gedeelde tijden bij voor je collega's"
         : canSaveFreeActive
           ? "Tijdelijk beschikbaar als actieve werkdag"
           : "Bewaar je begintijd; vul later je eindtijd in";
   }
-  if (workdaySaveBadge) workdaySaveBadge.hidden = isPro || canSaveFreeActive;
+  if (workdaySaveBadge) workdaySaveBadge.hidden = isSharedReceiver || isPro || canSaveFreeActive;
   workdaySaveButton.title = hasDate
-    ? (isPro || canSaveFreeActive ? "Werkdag bewaren" : "Werkdagen zijn beschikbaar met Pro")
+    ? (isSharedReceiver || isPro || canSaveFreeActive ? "Werkdag bewaren" : "Werkdagen zijn beschikbaar met Pro")
     : "Vul eerst een datum in";
   if (shareFromParticipantsButton) {
     const hasAccount = Boolean(currentAccountUser);
@@ -1345,41 +1362,12 @@ function applySharedTimesImport() {
   sessionStorage.removeItem("overuurtjeSharedTimesImport");
   try {
     const snapshot = JSON.parse(raw);
-    if (form.elements.namedItem("workdayName")) {
-      form.elements.namedItem("workdayName").value = snapshot.workdayName || "";
-    }
-    if (form.elements.namedItem("clientName")) {
-      form.elements.namedItem("clientName").value = snapshot.clientName || "";
-    }
-    form.elements.namedItem("date").value = snapshot.date || "";
-    form.elements.namedItem("startTime").value = snapshot.startTime || "08:00";
-    const importedEndTime = form.elements.namedItem("endTime");
-    importedEndTime.value = snapshot.endTime || "";
-    liveWorkdayArmed = !snapshot.endTime;
-    delete importedEndTime.dataset.timePicked;
-    delete importedEndTime.dataset.liveCalculated;
-    delete importedEndTime.dataset.liveStopped;
-    if (resumeLiveWorkdayButton) resumeLiveWorkdayButton.hidden = true;
-    form.elements.namedItem("startTime").dataset.timeRestored = "true";
-    if (snapshot.endTime) importedEndTime.dataset.timeRestored = "true";
-    else delete importedEndTime.dataset.timeRestored;
-    currentWorkdayId = null;
-    currentSharedSource = snapshot.sharedSourceType && snapshot.sharedSourceId
-      ? { type: snapshot.sharedSourceType, id: snapshot.sharedSourceId }
-      : null;
-    currentSharedSourceEndTime = currentSharedSource ? (snapshot.endTime || "") : "";
-    sharedReceiverCalculatedEarly = false;
-    sharedTimeOverrides = new Set();
-    currentSharedOwnerName = snapshot.sharedOwnerName || "";
-    updateSharedReceiverMode();
-    updateWorkdaySaveAccess();
-    refreshCurrentWorkdayParticipants();
-    if (snapshot.endTime) updateCalculation();
-    else clearCalculationDisplay();
-    requestAnimationFrame(() => {
-      liveWorkdayController?.update();
-      updateResumeLiveAccess();
-    });
+    applyWorkdaySnapshot({
+      id: null,
+      name: snapshot.workdayName || "",
+      workDate: snapshot.date,
+      calculationData: snapshot
+    }, { freeActive: true });
     sessionUi?.showToast("Gedeelde tijden ingevuld. Voeg nu je eigen instellingen toe.");
   } catch {
     sessionUi?.showToast("Gedeelde tijden konden niet worden ingevuld.");
@@ -1399,8 +1387,13 @@ async function restoreSharedTimesFromUrl() {
     const received = await shareService.listReceived();
     const shared = received.find((item) => item.id === shareId);
     if (!shared) return false;
+    const privateSnapshot = shared.recipientCalculationData
+      && typeof shared.recipientCalculationData === "object"
+      ? shared.recipientCalculationData
+      : {};
     sessionStorage.setItem("overuurtjeSharedTimesImport", JSON.stringify({
-      schemaVersion: 1,
+      ...privateSnapshot,
+      schemaVersion: privateSnapshot.schemaVersion || 1,
       workdayName: shared.workdayName || "",
       clientName: shared.clientName || "",
       date: shared.workDate,
@@ -1441,6 +1434,7 @@ async function hydrateAccountSettings(context) {
     currentWorkdayId = null;
     currentShareWorkdayId = null;
     currentSharedSource = null;
+    currentReceivedShareId = null;
     currentSharedOwnerName = "";
     currentSharedSourceEndTime = "";
     sharedReceiverCalculatedEarly = false;

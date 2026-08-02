@@ -3,7 +3,6 @@
 
   const sessionUi = globalThis.OveruurtjeSessionUI;
   const workdayService = globalThis.OveruurtjeWorkdays;
-  const projectService = globalThis.OveruurtjeProjects;
   const shareService = globalThis.OveruurtjeShares;
   const shareUi = globalThis.OveruurtjeShareUI;
   const calculateTariff = globalThis.TariffCalculator.calculateTariff;
@@ -18,8 +17,6 @@
   const receivedCount = document.querySelector("#received-workdays-count");
   const monthLabel = document.querySelector("#workdays-month-label");
   const monthEmpty = document.querySelector("#workdays-month-empty");
-  const sharedDetailDialog = document.querySelector("#shared-workday-detail-dialog");
-  const sharedExistingDialog = document.querySelector("#shared-existing-workday-dialog");
   const sharedInviteDialog = document.querySelector("#shared-invite-dialog");
   const euro = new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" });
   const dateFormat = new Intl.DateTimeFormat("nl-NL", { weekday: "short", day: "numeric", month: "long", year: "numeric" });
@@ -28,9 +25,6 @@
   let pendingDeleteShareId = null;
   let ownedWorkdays = [];
   let receivedShares = [];
-  let activeReceivedShare = null;
-  let existingTakeoverEntry = null;
-  let activeInvite = null;
   let visibleMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12);
   const monthFormat = new Intl.DateTimeFormat("nl-NL", { month: "long", year: "numeric" });
 
@@ -153,9 +147,11 @@
     project.hidden = !item.projectName && !item.workdayName;
     article.querySelector("small").textContent = `${item.startTime || "-"} – ${item.endTime || "eindtijd open"}`;
     const status = article.querySelector(".received-workday-status");
-    status.textContent = item.acceptedAt ? "Overgenomen" : "Nieuw";
+    status.textContent = item.acceptedAt ? "Je doet mee" : "Uitnodiging";
     status.classList.toggle("is-complete", Boolean(item.acceptedAt));
-    article.querySelector(".timeline-shared-main").addEventListener("click", () => openReceived(item));
+    article.querySelector(".timeline-shared-main").addEventListener("click", () => {
+      location.href = `index.html?shared=${encodeURIComponent(item.id)}`;
+    });
     article.querySelector(".shared-workday-delete-button").addEventListener("click", () => {
       pendingDeleteId = null;
       pendingDeleteShareId = item.id;
@@ -167,15 +163,14 @@
   }
 
   function renderTimeline() {
-    const representedShareIds = new Set(
-      ownedWorkdays
-        .map((item) => item.calculationData?.importedFromShare)
-        .filter(Boolean)
+    // Older versions copied a received share into an owned workday. Keep that
+    // data in Supabase, but show only the canonical shared day in this list.
+    const visibleOwnedWorkdays = ownedWorkdays.filter(
+      (item) => !item.calculationData?.importedFromShare
     );
-    const visibleReceivedShares = receivedShares.filter((item) => !representedShareIds.has(item.id));
     const allEntries = [
-      ...ownedWorkdays.map((item) => ({ kind: "owned", date: item.workDate, item })),
-      ...visibleReceivedShares.map((item) => ({ kind: "shared", date: item.workDate, item }))
+      ...visibleOwnedWorkdays.map((item) => ({ kind: "owned", date: item.workDate, item })),
+      ...receivedShares.map((item) => ({ kind: "shared", date: item.workDate, item }))
     ].sort((a, b) => b.date.localeCompare(a.date));
     const monthKey = `${visibleMonth.getFullYear()}-${String(visibleMonth.getMonth() + 1).padStart(2, "0")}`;
     const entries = allEntries.filter((entry) => entry.date.startsWith(monthKey));
@@ -197,157 +192,7 @@
   document.querySelector("#workdays-month-previous")?.addEventListener("click", () => shiftVisibleMonth(-1));
   document.querySelector("#workdays-month-next")?.addEventListener("click", () => shiftVisibleMonth(1));
 
-  function openReceived(item) {
-    activeReceivedShare = item;
-    document.querySelector("#shared-workday-title").textContent = `${item.ownerName} heeft een werkdag gedeeld`;
-    const project = sharedDetailDialog.querySelector("[data-shared-project]");
-    project.textContent = item.projectName
-      ? `Project: ${item.projectName}`
-      : (item.workdayName ? `Werkdag: ${item.workdayName}` : "");
-    project.hidden = !item.projectName && !item.workdayName;
-    sharedDetailDialog.querySelector("[data-shared-date]").textContent = dateFormat.format(parseDate(item.workDate));
-    sharedDetailDialog.querySelector("[data-shared-times]").textContent = `${item.startTime || "-"} – ${item.endTime || "eindtijd nog niet ingevuld"}`;
-    const message = sharedDetailDialog.querySelector("[data-shared-message]");
-    message.textContent = item.optionalMessage;
-    message.hidden = !item.optionalMessage;
-    renderParticipants(sharedDetailDialog, item.sourceType, item.sourceId);
-    openDialog(sharedDetailDialog);
-  }
-
-  async function renderParticipants(dialog, sourceType, sourceId) {
-    const section = dialog.querySelector("[data-share-participants]");
-    const list = dialog.querySelector("[data-share-participants-list]");
-    if (!section || !list) return;
-    try {
-      const participants = await shareService.listParticipants(sourceType, sourceId);
-      section.hidden = participants.length === 0;
-      list.replaceChildren(...participants.map((participant) => {
-        const chip = document.createElement("span");
-        chip.className = "participant-chip";
-        chip.innerHTML = `<span class="share-avatar"></span><strong></strong>`;
-        chip.querySelector(".share-avatar").textContent = participant.firstName.charAt(0).toUpperCase();
-        chip.querySelector("strong").textContent = participant.isCurrentUser
-          ? `${participant.firstName} (jij)`
-          : participant.firstName;
-        return chip;
-      }));
-    } catch {
-      section.hidden = true;
-    }
-  }
-
-  function takeoverSnapshot(item) {
-    return {
-      schemaVersion: 1,
-      workdayName: item.workdayName || "",
-      clientName: item.clientName || "",
-      date: item.workDate,
-      startTime: item.startTime,
-      endTime: item.endTime,
-      result: null,
-      importedFromShare: item.id,
-      sharedSourceType: item.sourceType || "",
-      sharedSourceId: item.sourceId || "",
-      sharedOwnerName: item.ownerName || ""
-    };
-  }
-
-  async function openSharedTimesInCalculator(item) {
-    sessionStorage.setItem(
-      "overuurtjeSharedTimesImport",
-      JSON.stringify(takeoverSnapshot(item))
-    );
-    await shareService.accept(item.id);
-    location.href = `index.html?shared=${encodeURIComponent(item.id)}`;
-  }
-
-  async function findExistingEntry(item) {
-    const opts = { mock: currentContext.subscription.isMock };
-    const [workdays, projectDays] = await Promise.all([
-      workdayService.listByDate(currentContext.auth.user.id, item.workDate, opts),
-      projectService.listDaysByDate(currentContext.auth.user.id, item.workDate, opts)
-    ]);
-    if (projectDays.length) return { kind: "project", ...projectDays[0] };
-    if (workdays.length) return { kind: "workday", workday: workdays[0] };
-    return null;
-  }
-
-  async function createFromShared() {
-    const item = activeReceivedShare;
-    if (!currentContext.isPro) {
-      await openSharedTimesInCalculator(item);
-      return;
-    }
-    const saved = await workdayService.save(currentContext.auth.user.id, {
-      name: item.workdayName,
-      workDate: item.workDate,
-      calculationData: takeoverSnapshot(item)
-    }, { mock: currentContext.subscription.isMock });
-    await shareService.accept(item.id);
-    location.href = `index.html?workday=${encodeURIComponent(saved.id)}`;
-  }
-
-  async function updateFromShared(entry) {
-    const item = activeReceivedShare;
-    if (entry.kind === "project") {
-      const full = await projectService.get(currentContext.auth.user.id, entry.project.id, {
-        mock: currentContext.subscription.isMock
-      });
-      full.days = full.days.map((day) => day.id === entry.day.id
-        ? {
-          ...day,
-          calculationData: {
-            ...day.calculationData,
-            startTime: item.startTime,
-            endTime: item.endTime
-          }
-        }
-        : day);
-      await projectService.replaceDays(currentContext.auth.user.id, entry.project.id, full.days, {
-        mock: currentContext.subscription.isMock
-      });
-      await shareService.accept(item.id);
-      location.href = `index.html?project=${encodeURIComponent(entry.project.id)}&projectDay=${encodeURIComponent(entry.day.id)}`;
-      return;
-    }
-    const snapshot = {
-      ...entry.workday.calculationData,
-      date: item.workDate,
-      startTime: item.startTime,
-      endTime: item.endTime,
-      result: null,
-      importedFromShare: item.id
-    };
-    await workdayService.save(currentContext.auth.user.id, {
-      id: entry.workday.id,
-      name: entry.workday.name || item.workdayName,
-      workDate: item.workDate,
-      calculationData: snapshot
-    }, { mock: currentContext.subscription.isMock });
-    await shareService.accept(item.id);
-    location.href = `index.html?workday=${encodeURIComponent(entry.workday.id)}`;
-  }
-
-  async function beginTakeover() {
-    try {
-      if (!currentContext?.isPro) {
-        await createFromShared();
-        return;
-      }
-      existingTakeoverEntry = await findExistingEntry(activeReceivedShare);
-      if (existingTakeoverEntry) {
-        closeDialog(sharedDetailDialog);
-        openDialog(sharedExistingDialog);
-      } else {
-        await createFromShared();
-      }
-    } catch (error) {
-      sessionUi.showToast(error.message || "Werktijden overnemen is niet gelukt.");
-    }
-  }
-
   function renderInvite(invite, context) {
-    activeInvite = invite;
     document.querySelector("#shared-invite-title").textContent = `${invite.ownerName} wil graag tijden met je delen`;
     const project = sharedInviteDialog.querySelector("[data-invite-project]");
     project.textContent = invite.projectName
@@ -396,20 +241,8 @@
       } catch (error) {
         console.warn("De uitnodigingsmelding kon niet als gelezen worden gemarkeerd.", error);
       }
-      const received = await shareService.listReceived();
-      renderReceived(received);
-      const shared = received.find((item) => item.id === shareId);
-      if (!currentContext.isPro) {
-        await openSharedTimesInCalculator(shared || { ...activeInvite, id: shareId });
-        return;
-      }
-      const url = new URL(location.href);
-      url.searchParams.delete("invite");
-      if (shared) url.searchParams.set("shared", shareId);
-      history.replaceState({}, "", url);
       closeDialog(sharedInviteDialog);
-      if (shared) openReceived(shared);
-      else sessionUi.showToast("Uitnodiging geaccepteerd. Je krijgt een melding zodra de eindtijd bekend is.");
+      location.href = `index.html?shared=${encodeURIComponent(shareId)}`;
     } catch (error) {
       status.textContent = error.message || "Accepteren is niet gelukt.";
       button.disabled = false;
@@ -437,11 +270,6 @@
       if (context.isPro) render(items);
       renderReceived(received);
       await loadInvite(context);
-      const requestedShare = new URLSearchParams(location.search).get("shared");
-      if (requestedShare) {
-        const item = received.find((share) => share.id === requestedShare);
-        if (item) openReceived(item);
-      }
     } catch (error) {
       sessionUi.showToast(error.message || "Werkdagen konden niet worden geladen.");
     }
@@ -460,13 +288,6 @@
   sharedInviteDialog.querySelector("[data-shared-invite-close]").addEventListener("click", () => closeDialog(sharedInviteDialog));
   document.querySelector("#cancel-workday-delete").addEventListener("click", () => closeDialog(deleteDialog));
   document.querySelector("#keep-workday").addEventListener("click", () => closeDialog(deleteDialog));
-  document.querySelector("#take-over-shared-times").addEventListener("click", beginTakeover);
-  document.querySelector("#update-from-shared-times").addEventListener("click", () => {
-    if (existingTakeoverEntry) updateFromShared(existingTakeoverEntry);
-  });
-  document.querySelector("#new-from-shared-times").addEventListener("click", createFromShared);
-  document.querySelectorAll("[data-shared-detail-close]").forEach((button) => button.addEventListener("click", () => closeDialog(sharedDetailDialog)));
-  document.querySelectorAll("[data-shared-existing-close]").forEach((button) => button.addEventListener("click", () => closeDialog(sharedExistingDialog)));
   document.addEventListener("overuurtje:shares-changed", () => {
     if (currentContext) load(currentContext);
   });
