@@ -55,6 +55,14 @@ const duplicateWorkdayDialog = document.querySelector("#duplicate-workday-dialog
 const todayWorkdayDialog = document.querySelector("#today-workday-dialog");
 const unfinishedSharedWorkdayDialog = document.querySelector("#unfinished-shared-workday-dialog");
 const confirmSharedCalculationButton = document.querySelector("#confirm-shared-calculation");
+const activeSharedReminder = document.querySelector("#active-shared-reminder");
+const activeSharedReminderCopy = document.querySelector("#active-shared-reminder-copy");
+const openActiveSharedButton = document.querySelector("#open-active-shared");
+const sharedCompletionDialog = document.querySelector("#shared-completion-dialog");
+const sharedCompletionCopy = document.querySelector("#shared-completion-copy");
+const confirmSharedCompletionButton = document.querySelector("#confirm-shared-completion");
+const sharedResumeDialog = document.querySelector("#shared-resume-dialog");
+const confirmSharedResumeButton = document.querySelector("#confirm-shared-resume");
 const droneOption = document.querySelector("#drone-option");
 const roninOption = document.querySelector("#ronin-option");
 const customEquipmentOptions = document.querySelector("#custom-equipment-options");
@@ -107,12 +115,15 @@ let currentSharedSource = null;
 let currentReceivedShareId = null;
 let currentSharedOwnerName = "";
 let currentSharedSourceEndTime = "";
+let persistedWorkdayEndTime = "";
 let sharedReceiverCalculatedEarly = false;
 let sharedTimeOverrides = new Set();
 let sharedParticipants = [];
 let privateParticipants = [];
 let pendingDuplicateWorkday = null;
 let todayWorkday = null;
+let activeSharedWorkday = null;
+let pendingSharedCompletionSave = null;
 let workdayContextInitializedFor = null;
 let liveWorkdayController = null;
 let workdayNotificationController = null;
@@ -851,6 +862,8 @@ function applyWorkdaySnapshot(workday, { projectContext = null, freeActive = fal
   const snapshot = workday?.calculationData || {};
   if (!snapshot.date) return;
 
+  persistedWorkdayEndTime = snapshot.endTime || "";
+
   currentReceivedShareId = snapshot.importedFromShare || null;
   currentWorkdayId = projectContext || freeActive || currentReceivedShareId ? null : workday.id;
   currentProjectDayContext = projectContext;
@@ -951,6 +964,10 @@ function projectDayUrl(entry) {
 
 function openExistingDateEntry(entry) {
   if (!entry) return;
+  if (entry.kind === "shared") {
+    location.href = `index.html?shared=${encodeURIComponent(entry.share.id)}`;
+    return;
+  }
   if (entry.kind === "free-active") {
     applyFreeActiveWorkday(entry.workday);
     return;
@@ -995,19 +1012,56 @@ function configureDuplicateWorkdayDialog(entry) {
 function configureTodayWorkdayDialog(entry) {
   const projectDay = entry?.kind === "project-day";
   const freeActive = entry?.kind === "free-active";
-  document.querySelector("#today-workday-title").textContent = projectDay
+  const shared = entry?.kind === "shared";
+  document.querySelector("#today-workday-title").textContent = shared
+    ? "Je hebt nog een gedeelde werkdag lopen."
+    : projectDay
     ? `Vandaag staat er een werkdag in project “${entry.project.name}”.`
     : freeActive
       ? "Je hebt nog een actieve werkdag."
       : "Je hebt vandaag al een werkdag opgeslagen.";
-  document.querySelector("#today-workday-copy").textContent = projectDay
+  document.querySelector("#today-workday-copy").textContent = shared
+    ? `Je registreert deze werkdag samen met ${entry.share.ownerName || "een collega"}. Wil je verdergaan of een nieuwe berekening openen?`
+    : projectDay
     ? "Wil je verdergaan met het bewerken van deze projectdag?"
     : freeActive
       ? "Wil je doorgaan met deze werkdag of een nieuwe berekening starten?"
       : "Wil je verdergaan met het bewerken van deze werkdag?";
-  document.querySelector("#continue-today-workday").textContent = projectDay
+  document.querySelector("#continue-today-workday").textContent = shared
+    ? "Verder met gedeelde werkdag"
+    : projectDay
     ? "Verder met deze projectdag"
     : "Verder met deze werkdag";
+}
+
+function showActiveSharedReminder(shared = activeSharedWorkday) {
+  if (!activeSharedReminder || !shared) return;
+  activeSharedWorkday = shared;
+  activeSharedReminder.hidden = false;
+  activeSharedReminderCopy.textContent = `${shared.ownerName || "Een collega"} · ${shared.workDate}`;
+}
+
+function hideActiveSharedReminder() {
+  if (activeSharedReminder) activeSharedReminder.hidden = true;
+}
+
+async function findActiveReceivedShare() {
+  if (!shareService || currentUserContext?.subscription?.isMock) return null;
+  const received = await shareService.listReceived();
+  return received
+    .filter((item) => item.acceptedAt && !item.endTime)
+    .sort((a, b) => String(b.sourceUpdatedAt || b.createdAt || "")
+      .localeCompare(String(a.sourceUpdatedAt || a.createdAt || "")))[0] || null;
+}
+
+async function hasAcceptedSharedRecipients() {
+  if (!currentAccountUser || !shareService || currentSharedSource) return false;
+  const source = currentProjectDayContext
+    ? { type: "project_day", id: currentProjectDayContext.day?.id }
+    : { type: "workday", id: currentWorkdayId || currentShareWorkdayId };
+  if (!source.id) return false;
+  const sent = await shareService.listSent(source.type, source.id);
+  return sent.some((item) => Boolean(item.acceptedAt));
 }
 
 async function persistFreeActiveWorkday(snapshot, { showToast = true } = {}) {
@@ -1029,6 +1083,7 @@ async function persistFreeActiveWorkday(snapshot, { showToast = true } = {}) {
     sourceId,
     calculationData: snapshot
   });
+  persistedWorkdayEndTime = snapshot.endTime || "";
   try {
     await rememberCurrentClient();
   } catch (error) {
@@ -1053,6 +1108,7 @@ async function persistWorkday(snapshot, id = null) {
     console.warn("Opdrachtgever automatisch opslaan is mislukt.", error);
   }
   currentWorkdayId = saved.id;
+  persistedWorkdayEndTime = snapshot.endTime || "";
   updateWorkdaySaveAccess();
   refreshCurrentWorkdayParticipants();
   const url = new URL(location.href);
@@ -1078,13 +1134,14 @@ async function persistProjectDay(snapshot) {
     console.warn("Opdrachtgever automatisch opslaan is mislukt.", error);
   }
   currentProjectDayContext = { project, day: savedDay };
+  persistedWorkdayEndTime = snapshot.endTime || "";
   updateWorkdaySaveAccess();
   refreshCurrentWorkdayParticipants();
   sessionUi?.showToast("Projectdag opgeslagen.");
   return savedDay;
 }
 
-async function saveWorkday({ allowDuplicate = false } = {}) {
+async function saveWorkday({ allowDuplicate = false, skipCompletionConfirmation = false } = {}) {
   const date = form.elements.namedItem("date").value;
   if (!date) return;
   if (currentSharedSource && currentReceivedShareId && currentAccountUser) {
@@ -1102,6 +1159,18 @@ async function saveWorkday({ allowDuplicate = false } = {}) {
       updateWorkdaySaveAccess();
     }
   }
+  const snapshot = buildWorkdaySnapshot();
+  if (
+    !skipCompletionConfirmation
+    && !persistedWorkdayEndTime
+    && snapshot.endTime
+    && await hasAcceptedSharedRecipients()
+  ) {
+    pendingSharedCompletionSave = { allowDuplicate };
+    sharedCompletionCopy.textContent = `De eindtijd is berekend op ${snapshot.endTime}. Na het opslaan krijgen je collega's een melding dat de werkdag is afgerond. Je kunt de tijden later altijd aanpassen.`;
+    openNativeDialog(sharedCompletionDialog);
+    return null;
+  }
   if (!currentUserContext?.isPro) {
     if (!currentAccountUser || currentSharedSource || currentProjectDayContext) {
       sessionUi?.openUpgrade();
@@ -1109,7 +1178,7 @@ async function saveWorkday({ allowDuplicate = false } = {}) {
     }
     workdaySaveButton.disabled = true;
     try {
-      return await persistFreeActiveWorkday(buildWorkdaySnapshot());
+      return await persistFreeActiveWorkday(snapshot);
     } catch (error) {
       console.warn("Free-werkdag bewaren is mislukt.", error);
       sessionUi?.showToast(error.message || "Werkdag bewaren is niet gelukt.");
@@ -1121,7 +1190,6 @@ async function saveWorkday({ allowDuplicate = false } = {}) {
 
   workdaySaveButton.disabled = true;
   try {
-    const snapshot = buildWorkdaySnapshot();
     if (currentProjectDayContext) {
       return await persistProjectDay(snapshot);
     }
@@ -1236,22 +1304,15 @@ async function initializeWorkdayContext() {
     return;
   }
   workdayContextInitializedFor = currentAccountUser.id;
-  if (!currentUserContext?.isPro) {
-    if (sessionStorage.getItem("overuurtjeSharedTimesImport")) return;
-    const active = freeActiveWorkdayService.load(currentAccountUser.id);
-    if (active) {
-      todayWorkday = { kind: "free-active", workday: active };
-      configureTodayWorkdayDialog(todayWorkday);
-      openNativeDialog(todayWorkdayDialog);
-    }
-    return;
-  }
   const search = new URLSearchParams(location.search);
+  const requestedShareId = search.get("shared");
   const requestedId = search.get("workday");
   const requestedProjectId = search.get("project");
   const requestedProjectDayId = search.get("projectDay");
   try {
-    if (requestedProjectId && requestedProjectDayId) {
+    if (requestedShareId || sessionStorage.getItem("overuurtjeSharedTimesImport")) return;
+
+    if (currentUserContext?.isPro && requestedProjectId && requestedProjectDayId) {
       const requestedProject = await projectService.get(
         currentAccountUser.id,
         requestedProjectId,
@@ -1274,7 +1335,7 @@ async function initializeWorkdayContext() {
       });
       return;
     }
-    if (requestedId) {
+    if (currentUserContext?.isPro && requestedId) {
       const requested = await workdayService.get(
         currentAccountUser.id,
         requestedId,
@@ -1282,6 +1343,25 @@ async function initializeWorkdayContext() {
       );
       if (requested) applyWorkdaySnapshot(requested);
       else sessionUi?.showToast("Deze werkdag kon niet worden gevonden.");
+      return;
+    }
+
+    const activeShare = await findActiveReceivedShare();
+    if (activeShare) {
+      activeSharedWorkday = activeShare;
+      todayWorkday = { kind: "shared", share: activeShare };
+      configureTodayWorkdayDialog(todayWorkday);
+      openNativeDialog(todayWorkdayDialog);
+      return;
+    }
+
+    if (!currentUserContext?.isPro) {
+      const active = freeActiveWorkdayService.load(currentAccountUser.id);
+      if (active) {
+        todayWorkday = { kind: "free-active", workday: active };
+        configureTodayWorkdayDialog(todayWorkday);
+        openNativeDialog(todayWorkdayDialog);
+      }
       return;
     }
 
@@ -1406,6 +1486,9 @@ async function restoreSharedTimesFromUrl() {
       sharedOwnerName: shared.ownerName || ""
     }));
     applySharedTimesImport();
+    activeSharedWorkday = shared;
+    hideActiveSharedReminder();
+    await shareService.markShareNotificationsRead(shareId);
     return true;
   } catch (error) {
     console.warn("De gedeelde werkdag kon niet vanuit de link worden hersteld.", error);
@@ -1839,7 +1922,7 @@ async function stopLiveWorkdayAndCalculate() {
   sessionUi?.showToast(`Werkdag gestopt om ${roundedEndTime}.`);
 }
 
-function resumeLiveWorkday() {
+function activateLiveWorkday() {
   const endTimeField = form.elements.namedItem("endTime");
   endTimeField.value = "";
   delete endTimeField.dataset.timePicked;
@@ -1851,6 +1934,14 @@ function resumeLiveWorkday() {
   clearCalculationDisplay();
   liveWorkdayController?.update();
   sessionUi?.showToast("Live tijd hervat.");
+}
+
+async function resumeLiveWorkday() {
+  if (persistedWorkdayEndTime && await hasAcceptedSharedRecipients()) {
+    openNativeDialog(sharedResumeDialog);
+    return;
+  }
+  activateLiveWorkday();
 }
 
 function saveCurrentSettings() {
@@ -2321,10 +2412,14 @@ document.querySelector("#create-duplicate-workday")?.addEventListener("click", a
 });
 document.querySelector("#continue-today-workday")?.addEventListener("click", () => {
   if (todayWorkday) openExistingDateEntry(todayWorkday);
+  hideActiveSharedReminder();
   todayWorkday = null;
   closeNativeDialog(todayWorkdayDialog);
 });
 document.querySelector("#new-today-calculation")?.addEventListener("click", () => {
+  if (todayWorkday?.kind === "shared") {
+    showActiveSharedReminder(todayWorkday.share);
+  }
   if (todayWorkday?.kind === "free-active" && currentAccountUser) {
     freeActiveWorkdayService.clear(currentAccountUser.id);
     currentShareWorkdayId = null;
@@ -2333,7 +2428,38 @@ document.querySelector("#new-today-calculation")?.addEventListener("click", () =
   closeNativeDialog(todayWorkdayDialog);
 });
 document.querySelectorAll("[data-workday-dialog-close]").forEach((button) => {
-  button.addEventListener("click", () => closeNativeDialog(button.closest("dialog")));
+  button.addEventListener("click", () => {
+    const dialog = button.closest("dialog");
+    if (dialog === todayWorkdayDialog && todayWorkday?.kind === "shared") {
+      showActiveSharedReminder(todayWorkday.share);
+    }
+    closeNativeDialog(dialog);
+  });
+});
+openActiveSharedButton?.addEventListener("click", () => {
+  if (!activeSharedWorkday?.id) return;
+  location.href = `index.html?shared=${encodeURIComponent(activeSharedWorkday.id)}`;
+});
+
+confirmSharedCompletionButton?.addEventListener("click", async () => {
+  const pending = pendingSharedCompletionSave;
+  pendingSharedCompletionSave = null;
+  closeNativeDialog(sharedCompletionDialog);
+  if (pending) await saveWorkday({ ...pending, skipCompletionConfirmation: true });
+});
+document.querySelectorAll("[data-shared-completion-cancel]").forEach((button) => {
+  button.addEventListener("click", () => {
+    pendingSharedCompletionSave = null;
+    closeNativeDialog(sharedCompletionDialog);
+  });
+});
+confirmSharedResumeButton?.addEventListener("click", async () => {
+  closeNativeDialog(sharedResumeDialog);
+  activateLiveWorkday();
+  await saveWorkday({ skipCompletionConfirmation: true });
+});
+document.querySelectorAll("[data-shared-resume-cancel]").forEach((button) => {
+  button.addEventListener("click", () => closeNativeDialog(sharedResumeDialog));
 });
 copyButton.addEventListener("click", copySummary);
 saveSettingsButton.addEventListener("click", saveCurrentSettings);

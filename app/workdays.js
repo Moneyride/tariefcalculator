@@ -131,26 +131,33 @@
         <span class="share-avatar"></span>
         <span class="timeline-workday-copy">
           <strong></strong>
-          <span class="received-workday-project"></span>
           <small></small>
         </span>
         <span class="workday-origin-tag">Gedeeld</span>
-        <span class="received-workday-status"></span>
         <span aria-hidden="true">→</span>
       </button>
-      <button class="workday-delete-button shared-workday-delete-button" type="button" aria-label="Gedeelde werkdag verwijderen" title="Gedeelde werkdag verwijderen">&times;</button>
+      <div class="workday-overflow">
+        <button class="workday-more-button" type="button" aria-label="Meer opties" aria-expanded="false">&hellip;</button>
+        <div class="workday-overflow-menu" hidden>
+          <button class="shared-workday-delete-button" type="button">Verwijderen</button>
+        </div>
+      </div>
     `;
     article.querySelector(".share-avatar").textContent = item.ownerName.charAt(0).toUpperCase();
-    article.querySelector("strong").textContent = `${item.ownerName} · ${dateFormat.format(parseDate(item.workDate))}`;
-    const project = article.querySelector(".received-workday-project");
-    project.textContent = item.projectName || item.workdayName;
-    project.hidden = !item.projectName && !item.workdayName;
-    article.querySelector("small").textContent = `${item.startTime || "-"} – ${item.endTime || "eindtijd open"}`;
-    const status = article.querySelector(".received-workday-status");
-    status.textContent = item.acceptedAt ? "Je doet mee" : "Uitnodiging";
-    status.classList.toggle("is-complete", Boolean(item.acceptedAt));
+    article.querySelector("strong").textContent = dateFormat.format(parseDate(item.workDate));
+    article.querySelector("small").textContent = `Gedeeld door ${item.ownerName}`;
     article.querySelector(".timeline-shared-main").addEventListener("click", () => {
       location.href = `index.html?shared=${encodeURIComponent(item.id)}`;
+    });
+    const moreButton = article.querySelector(".workday-more-button");
+    const menu = article.querySelector(".workday-overflow-menu");
+    moreButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const opening = menu.hidden;
+      document.querySelectorAll(".workday-overflow-menu").forEach((other) => { other.hidden = true; });
+      document.querySelectorAll(".workday-more-button").forEach((other) => other.setAttribute("aria-expanded", "false"));
+      menu.hidden = !opening;
+      moreButton.setAttribute("aria-expanded", String(opening));
     });
     article.querySelector(".shared-workday-delete-button").addEventListener("click", () => {
       pendingDeleteId = null;
@@ -161,6 +168,11 @@
     });
     return article;
   }
+
+  document.addEventListener("click", () => {
+    document.querySelectorAll(".workday-overflow-menu").forEach((menu) => { menu.hidden = true; });
+    document.querySelectorAll(".workday-more-button").forEach((button) => button.setAttribute("aria-expanded", "false"));
+  });
 
   function renderTimeline() {
     // Older versions copied a received share into an owned workday. Keep that

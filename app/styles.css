@@ -1251,14 +1251,15 @@
 
 .timeline-workday-item.is-shared {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 48px;
+  grid-template-columns: minmax(0, 1fr) auto;
   min-height: 0;
+  overflow: visible;
 }
 
 .timeline-shared-main {
   display: grid;
   min-width: 0;
-  grid-template-columns: 42px minmax(0, 1fr) auto auto 20px;
+  grid-template-columns: 42px minmax(0, 1fr) auto 20px;
   gap: 13px;
   align-items: center;
   padding: 14px 16px;
@@ -1276,19 +1277,65 @@
   transform: none;
 }
 
-.shared-workday-delete-button {
-  align-self: stretch;
-  width: 48px;
-  min-height: 0;
+.workday-overflow {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding-right: 10px;
+}
+
+.workday-more-button {
+  width: 38px;
+  min-height: 38px;
+  padding: 0 0 7px;
   border: 0;
-  border-left: 1px solid rgba(31, 67, 53, 0.08);
-  border-radius: 0;
-  background: rgba(142, 58, 43, 0.025);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--accent-dark);
   box-shadow: none;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.workday-more-button:hover,
+.workday-more-button[aria-expanded="true"] {
+  background: rgba(31, 67, 53, 0.07);
+  color: var(--accent-dark);
+  transform: none;
+}
+
+.workday-overflow-menu {
+  position: absolute;
+  z-index: 8;
+  top: calc(50% + 22px);
+  right: 10px;
+  min-width: 138px;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 12px;
+  background: rgba(250, 248, 245, 0.94);
+  box-shadow: 0 12px 30px rgba(19, 48, 40, 0.14);
+  backdrop-filter: blur(18px);
+}
+
+.workday-overflow-menu[hidden] {
+  display: none;
+}
+
+.shared-workday-delete-button {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #8e3a2b;
+  box-shadow: none;
+  text-align: left;
 }
 
 .shared-workday-delete-button:hover {
-  background: rgba(142, 58, 43, 0.07);
+  background: rgba(142, 58, 43, 0.08);
   color: #8e3a2b;
   transform: none;
 }
@@ -1703,26 +1750,24 @@
   }
 
   .timeline-workday-item.is-shared {
-    grid-template-columns: minmax(0, 1fr) 46px;
+    grid-template-columns: minmax(0, 1fr) 44px;
   }
 
   .timeline-shared-main {
-    grid-template-columns: 38px minmax(0, 1fr) auto;
+    grid-template-columns: 38px minmax(0, 1fr) auto 14px;
     padding: 12px 10px 12px 14px;
   }
 
   .timeline-shared-main .workday-origin-tag {
-    grid-column: 2;
     width: fit-content;
   }
 
-  .timeline-shared-main .received-workday-status {
-    grid-column: 3;
-    grid-row: 1 / span 2;
+  .workday-overflow {
+    padding-right: 6px;
   }
 
-  .timeline-shared-main > span:last-child {
-    display: none;
+  .workday-overflow-menu {
+    right: 6px;
   }
 
   .timeline-workday-item.is-owned {
@@ -2266,6 +2311,63 @@ h3 {
   display: none;
 }
 
+.active-shared-reminder {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 30px 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 106, 26, 0.2);
+  border-radius: 14px;
+  background: rgba(255, 248, 242, 0.48);
+  color: var(--accent-dark);
+  backdrop-filter: blur(16px);
+}
+
+.active-shared-reminder[hidden] {
+  display: none;
+}
+
+.active-shared-reminder-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--orange);
+  box-shadow: 0 0 0 5px rgba(255, 106, 26, 0.1);
+}
+
+.active-shared-reminder-copy {
+  display: grid;
+  gap: 1px;
+}
+
+.active-shared-reminder-copy strong {
+  font-size: 0.82rem;
+}
+
+.active-shared-reminder-copy small {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.active-shared-reminder button {
+  padding: 8px 11px;
+  border: 0;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.58);
+  color: var(--accent-dark);
+  box-shadow: none;
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.active-shared-reminder button:hover {
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--accent-dark);
+  transform: none;
+}
+
 .shared-receiver-copy {
   display: grid;
   gap: 3px;
@@ -2296,7 +2398,7 @@ h3 {
 }
 
 .shared-receiver-actions a,
-.shared-receiver-actions button {
+  .shared-receiver-actions button {
   flex: 0 0 auto;
   padding: 10px 14px;
   border: 1px solid rgba(31, 67, 53, 0.14);
@@ -2557,6 +2659,10 @@ h3 {
   .department-switch {
     padding: 3px;
     border-radius: 14px;
+  }
+
+  .active-shared-reminder {
+    margin: 12px 18px 0;
   }
 
   .department-choice span {
@@ -3955,6 +4061,13 @@ summary:hover {
   justify-content: flex-end;
   gap: 18px;
   flex-wrap: wrap;
+}
+
+.footer-install-row,
+.footer-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
 }
 
 .share-button,
@@ -6296,8 +6409,20 @@ html.is-pwa summary {
   .footer-utility-actions {
     align-items: center;
     justify-content: center;
-    flex-direction: row;
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+  }
+
+  .footer-install-row,
+  .footer-meta-row {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .footer-meta-row {
     gap: 10px;
+    flex-wrap: wrap;
   }
 
   .install-app-button {

@@ -42,6 +42,10 @@ function notificationCopy(delivery: Delivery) {
       title: "Eindtijd vastgelegd",
       body: `${actor} heeft de eindtijd van de gedeelde werkdag vastgelegd.`
     },
+    workday_resumed: {
+      title: "Werkdag weer live",
+      body: `${actor} heeft de gedeelde werkdag opnieuw live gezet.`
+    },
     workday_times_updated: {
       title: "Werktijden gewijzigd",
       body: `${actor} heeft de gedeelde werktijden aangepast.`
@@ -59,7 +63,7 @@ function notificationCopy(delivery: Delivery) {
 
 function notificationUrl(delivery: Delivery) {
   if (delivery.share_id) {
-    return `${publicSiteUrl}/workdays.html?shared=${encodeURIComponent(delivery.share_id)}`;
+    return `${publicSiteUrl}/index.html?shared=${encodeURIComponent(delivery.share_id)}`;
   }
   if (delivery.source_type === "workday" && delivery.source_id) {
     return `${publicSiteUrl}/index.html?workday=${encodeURIComponent(delivery.source_id)}`;
@@ -115,7 +119,8 @@ Deno.serve(async (request) => {
       url: notificationUrl(delivery),
       tag: `overuurtje-${delivery.notification_id}`,
       notificationId: delivery.notification_id,
-      renotify: delivery.notification_type === "workday_times_updated"
+      renotify: ["workday_completed", "workday_resumed", "workday_times_updated"]
+        .includes(delivery.notification_type)
     });
 
     try {

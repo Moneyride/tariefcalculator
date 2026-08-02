@@ -1355,3 +1355,44 @@ test("Free en Pro-eigenaren krijgen bericht wanneer een collega aansluit", async
   assert.match(sessionUi, /item\.type === "workday_share_joined"/);
   assert.match(participantsMigration, /grant execute on function public\.get_workday_share_participants\(text, uuid\) to authenticated/i);
 });
+
+test("actieve gedeelde werkdagen blijven herkenbaar na navigatie en openen direct vanuit meldingen", async () => {
+  const calculatorHtml = await readFile(path.join(rootDirectory, "app/index.html"), "utf8");
+  const calculatorScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
+  const sessionUi = await readFile(path.join(rootDirectory, "app/saas/sessionUi.js"), "utf8");
+  const pushFunction = await readFile(
+    path.join(rootDirectory, "supabase/functions/send-push-notifications/index.ts"),
+    "utf8"
+  );
+  const resumeMigration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202608030001_shared_workday_reopened.sql"),
+    "utf8"
+  );
+
+  assert.match(calculatorHtml, /id="active-shared-reminder"/);
+  assert.match(calculatorHtml, /id="shared-completion-dialog"/);
+  assert.match(calculatorHtml, /id="shared-resume-dialog"/);
+  assert.match(calculatorScript, /async function findActiveReceivedShare\(\)/);
+  assert.match(calculatorScript, /kind:\s*"shared",\s*share:\s*activeShare/);
+  assert.match(calculatorScript, /!persistedWorkdayEndTime[\s\S]{0,180}hasAcceptedSharedRecipients\(\)/);
+  assert.match(sessionUi, /config\.calculatorUrl\}\?shared=/);
+  assert.match(pushFunction, /if \(delivery\.share_id\)[\s\S]{0,120}\/index\.html\?shared=/);
+  assert.match(resumeMigration, /'workday_resumed'/i);
+});
+
+test("Werkdagen toont gedeelde dagen rustig en houdt installatie boven de juridische footer", async () => {
+  const workdaysScript = await readFile(path.join(rootDirectory, "app/workdays.js"), "utf8");
+  const calculatorHtml = await readFile(path.join(rootDirectory, "app/index.html"), "utf8");
+  const styles = await readFile(path.join(rootDirectory, "app/styles.css"), "utf8");
+  const sharedCard = workdaysScript.slice(
+    workdaysScript.indexOf("function createSharedTimelineItem"),
+    workdaysScript.indexOf("document.addEventListener", workdaysScript.indexOf("function createSharedTimelineItem"))
+  );
+
+  assert.match(sharedCard, /Gedeeld door/);
+  assert.match(sharedCard, /workday-origin-tag">Gedeeld/);
+  assert.match(sharedCard, /workday-more-button/);
+  assert.doesNotMatch(sharedCard, /startTime|endTime|workday-status/);
+  assert.ok(calculatorHtml.indexOf('class="footer-install-row"') < calculatorHtml.indexOf('class="footer-meta-row"'));
+  assert.match(styles, /\.footer-utility-actions\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?\.footer-meta-row\s*\{[\s\S]*?flex-wrap:\s*wrap;/);
+});

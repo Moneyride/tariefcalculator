@@ -63,7 +63,7 @@
     <script src="liveWorkday.js?v=20260730a" defer></script>
     <script src="workdayNotifications.js?v=20260729a" defer></script>
     <script src="analytics.js?v=20260722q" defer></script>
-    <script src="saas/sessionUi.js?v=20260802trial1" defer></script>
+    <script src="saas/sessionUi.js?v=20260803shared1" defer></script>
     <script src="vendor/jsQR.js?v=20260731a" defer></script>
     <script src="qrScanner.js?v=20260731a" defer></script>
     <script src="qrCode.js?v=20260730a" defer></script>
@@ -71,7 +71,7 @@
     <script src="interactionGuard.js?v=20260730a" defer></script>
     <script src="selectUi.js?v=20260725a" defer></script>
     <script src="timePicker.js?v=20260730a" defer></script>
-    <script src="app.js?v=20260802a" defer></script>
+    <script src="app.js?v=20260803a" defer></script>
     <script src="pwa.js?v=20260731a" defer></script>
   </head>
   <body class="calculator-page">
@@ -115,6 +115,14 @@
               <button type="button" id="resume-shared-workday" hidden>Verder met gedeelde werkdag</button>
               <a href="index.html" id="leave-shared-view">Terug naar mijn calculator</a>
             </div>
+          </aside>
+          <aside class="active-shared-reminder" id="active-shared-reminder" hidden>
+            <span class="active-shared-reminder-dot" aria-hidden="true"></span>
+            <span class="active-shared-reminder-copy">
+              <strong>Gedeelde werkdag loopt nog</strong>
+              <small id="active-shared-reminder-copy"></small>
+            </span>
+            <button type="button" id="open-active-shared">Openen</button>
           </aside>
           <section class="form-section department-section">
             <h3>Functie</h3>
@@ -491,19 +499,23 @@
 
       <footer class="site-footer">
         <div class="footer-utility-actions">
-          <button class="install-app-button" type="button" id="install-app" hidden>
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3v12"></path>
-              <path d="m7 10 5 5 5-5"></path>
-              <path d="M5 21h14"></path>
-            </svg>
-            <span>Installeer Overuurtje</span>
-          </button>
-          <div class="footer-legal-links" aria-label="Juridische informatie">
-            <a href="privacy">Privacy</a>
-            <a href="terms">Voorwaarden</a>
+          <div class="footer-install-row">
+            <button class="install-app-button" type="button" id="install-app" hidden>
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3v12"></path>
+                <path d="m7 10 5 5 5-5"></path>
+                <path d="M5 21h14"></path>
+              </svg>
+              <span>Installeer Overuurtje</span>
+            </button>
           </div>
-          <button class="cookie-settings-link" type="button" id="cookie-settings">Cookie settings</button>
+          <div class="footer-meta-row">
+            <div class="footer-legal-links" aria-label="Juridische informatie">
+              <a href="privacy">Privacy</a>
+              <a href="terms">Voorwaarden</a>
+            </div>
+            <button class="cookie-settings-link" type="button" id="cookie-settings">Cookie settings</button>
+          </div>
         </div>
       </footer>
 
@@ -631,6 +643,28 @@
       <div class="dialog-action-stack">
         <button class="saas-primary-button" id="confirm-shared-calculation" type="button">Toch berekenen</button>
         <button class="saas-secondary-button" type="button" data-shared-calculation-cancel>Nog even wachten</button>
+      </div>
+    </dialog>
+
+    <dialog class="saas-dialog workday-dialog" id="shared-completion-dialog" aria-labelledby="shared-completion-title">
+      <button class="dialog-close" type="button" data-shared-completion-cancel aria-label="Sluiten">&times;</button>
+      <p class="dialog-eyebrow">Gedeelde werkdag</p>
+      <h2 id="shared-completion-title">Werkdag afronden?</h2>
+      <p id="shared-completion-copy">Na het opslaan krijgen je collega's een melding dat de werkdag is afgerond. Je kunt de tijden later altijd aanpassen.</p>
+      <div class="dialog-action-stack">
+        <button class="saas-primary-button" id="confirm-shared-completion" type="button">Afronden en delen</button>
+        <button class="saas-secondary-button" type="button" data-shared-completion-cancel>Nog niet</button>
+      </div>
+    </dialog>
+
+    <dialog class="saas-dialog workday-dialog" id="shared-resume-dialog" aria-labelledby="shared-resume-title">
+      <button class="dialog-close" type="button" data-shared-resume-cancel aria-label="Sluiten">&times;</button>
+      <p class="dialog-eyebrow">Gedeelde werkdag</p>
+      <h2 id="shared-resume-title">Werkdag opnieuw live zetten?</h2>
+      <p>De opgeslagen eindtijd wordt verwijderd. Je collega's zien daarna weer de live werkdag.</p>
+      <div class="dialog-action-stack">
+        <button class="saas-primary-button" id="confirm-shared-resume" type="button">Opnieuw live</button>
+        <button class="saas-secondary-button" type="button" data-shared-resume-cancel>Annuleren</button>
       </div>
     </dialog>
 

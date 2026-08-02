@@ -338,6 +338,7 @@
     if (item.type === "workday_start_owner") return "Je vooraf ingestelde werkdag begint nu.";
     if (item.type === "workday_started") return `${item.actorName} begint nu aan de gedeelde werkdag.`;
     if (item.type === "workday_completed") return `${item.actorName} heeft de eindtijd vastgelegd.`;
+    if (item.type === "workday_resumed") return `${item.actorName} heeft de gedeelde werkdag opnieuw live gezet.`;
     if (item.type === "workday_times_updated") return `${item.actorName} heeft de werktijden aangepast.`;
     if (item.type === "workday_share_removed") return "Een gedeelde werkdag is niet langer beschikbaar.";
     return `${item.actorName} heeft een werkdag met je gedeeld.`;
@@ -351,7 +352,7 @@
     if (item.type === "workday_share_joined" && item.sourceType === "project_day") {
       return config.projectsUrl;
     }
-    if (item.shareId) return `${config.workdaysUrl}?shared=${encodeURIComponent(item.shareId)}`;
+    if (item.shareId) return `${config.calculatorUrl}?shared=${encodeURIComponent(item.shareId)}`;
     if (item.sourceType === "workday" && item.sourceId) {
       return `${config.calculatorUrl}?workday=${encodeURIComponent(item.sourceId)}`;
     }
