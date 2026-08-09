@@ -57,10 +57,13 @@
       .select(PROFILE_COLUMNS)
       .single();
 
-    // The avatar column arrives with the Crew Card migration. A login should
-    // still work normally while that migration has not been applied yet.
-    if (error && isMissingColumns(error, ["avatar_url"])) return profile;
-    if (error) throw error;
+    // Importing an OAuth avatar is cosmetic. Missing migrations, storage/RLS
+    // restrictions or a temporary API error must never hide the profile and
+    // therefore accidentally remove Pro access.
+    if (error) {
+      console.warn("Profielfoto van loginprovider kon niet worden overgenomen.", error);
+      return profile;
+    }
     return data || profile;
   }
 
@@ -140,8 +143,7 @@
     if (file.size > 2 * 1024 * 1024) throw new Error("Gebruik een afbeelding kleiner dan 2 MB.");
     const client = await supabaseService.getClient();
     if (!client) throw new Error("Supabase is niet beschikbaar.");
-    const extension = file.type === "image/jpeg" ? "jpg" : file.type.split("/")[1];
-    const path = `${user.id}/avatar-${Date.now()}.${extension}`;
+    const path = `${user.id}/avatar.jpg`;
     const { error: uploadError } = await client.storage.from("crew-avatars").upload(path, file, {
       upsert: true,
       contentType: file.type,
@@ -149,9 +151,10 @@
     });
     if (uploadError) throw uploadError;
     const { data: urlData } = client.storage.from("crew-avatars").getPublicUrl(path);
+    const versionedUrl = `${urlData.publicUrl}?v=${Date.now()}`;
     const { data, error } = await client
       .from("profiles")
-      .update({ avatar_url: urlData.publicUrl })
+      .update({ avatar_url: versionedUrl })
       .eq("id", user.id)
       .select(PROFILE_COLUMNS)
       .single();

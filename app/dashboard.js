@@ -307,9 +307,9 @@
   }
 
   function showNewBadge(awards) {
-    const badge = awards?.[0];
-    if (!badge) return;
-    sessionUi.showToast(`${badge.icon} Badge behaald: ${badge.name}`);
+    if (!awards?.length) return;
+    const labels = awards.map((badge) => `${badge.icon} ${badge.name}`);
+    sessionUi.showToast(`Badge${labels.length === 1 ? "" : "s"} behaald: ${labels.join(" · ")}`);
   }
 
   async function loadCrewCard(profile = currentProfile) {

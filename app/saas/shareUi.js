@@ -112,6 +112,11 @@
           <button type="button" aria-label="Niet meer delen">&times;</button>
         `;
         row.querySelector(".share-avatar").textContent = initials(participant.firstName);
+        if (participant.avatarUrl) {
+          row.querySelector(".share-avatar").style.backgroundImage = `url("${participant.avatarUrl.replace(/["\\]/g, "")}")`;
+          row.querySelector(".share-avatar").classList.add("has-image");
+          row.querySelector(".share-avatar").textContent = "";
+        }
         const name = participant.isCurrentUser
           ? `${participant.firstName} (jij)`
           : participant.firstName;
@@ -126,6 +131,21 @@
             : (item?.deliveredAt ? "Deelnemer" : "Wacht op eindtijd"));
         const removeButton = row.querySelector("button");
         removeButton.hidden = participant.isOwner || !item;
+        const profileTarget = row.querySelector("span:nth-child(2)");
+        if (!participant.isCurrentUser) {
+          profileTarget.classList.add("is-crew-card-link");
+          profileTarget.tabIndex = 0;
+          profileTarget.setAttribute("role", "button");
+          profileTarget.setAttribute("aria-label", `Bekijk de Crew Card van ${participant.firstName}`);
+          const openCrewCard = () => globalThis.OveruurtjeCrewCards?.open?.(participant.userId);
+          profileTarget.addEventListener("click", openCrewCard);
+          profileTarget.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              openCrewCard();
+            }
+          });
+        }
         if (item) {
           removeButton.addEventListener("click", async () => {
             if (activeSource.type === "project") await shares.removeProjectShare(item.id);

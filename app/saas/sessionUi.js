@@ -333,6 +333,7 @@
   }
 
   function notificationText(item) {
+    if (item.type === "badge_earned") return "Je hebt een nieuwe badge behaald. Bekijk hem op je Crew Card.";
     if (item.type === "trial_ending") return "Je gratis Pro-periode eindigt over 7 dagen. Je gegevens blijven bewaard als je teruggaat naar Free.";
     if (item.type === "trial_expired") return "Je gratis Pro-periode is afgelopen. Je account is teruggezet naar Free en je gegevens zijn bewaard.";
     if (item.type === "workday_share_joined") return `${item.actorName} doet mee met je gedeelde werkdag.`;
@@ -349,6 +350,7 @@
   }
 
   function notificationHref(item) {
+    if (item.type === "badge_earned") return config.dashboardUrl;
     if (["trial_ending", "trial_expired"].includes(item.type)) return config.accountUrl;
     if (item.type === "workday_share_joined" && item.sourceType === "workday" && item.sourceId) {
       return `${config.calculatorUrl}?workday=${encodeURIComponent(item.sourceId)}`;

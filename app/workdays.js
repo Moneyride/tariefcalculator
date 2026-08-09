@@ -250,7 +250,9 @@
       const shareId = await shareService.claimInvite(token);
       try {
         const awards = await globalThis.OveruurtjeBadges?.evaluate?.();
-        if (awards?.[0]) sessionUi?.showToast(`${awards[0].icon} Badge behaald: ${awards[0].name}`);
+        if (awards?.length) {
+          sessionUi?.showToast(`Badge${awards.length === 1 ? "" : "s"} behaald: ${awards.map((badge) => `${badge.icon} ${badge.name}`).join(" · ")}`);
+        }
       } catch (error) {
         console.warn("Badgecontrole na accepteren is niet gelukt.", error);
       }

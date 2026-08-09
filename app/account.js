@@ -70,6 +70,13 @@
   const profileAvatarPreview = document.querySelector("#profile-avatar-preview");
   const profileAvatarFallback = document.querySelector("#profile-avatar-fallback");
   const profileAvatarStatus = document.querySelector("#profile-avatar-status");
+  const avatarCropper = globalThis.OveruurtjeAvatarCropper?.create({
+    dialog: document.querySelector("#avatar-crop-dialog"),
+    canvas: document.querySelector("#avatar-crop-canvas"),
+    zoomInput: document.querySelector("#avatar-crop-zoom"),
+    confirmButton: document.querySelector("#avatar-crop-confirm"),
+    closeButtons: document.querySelectorAll("[data-avatar-crop-close]")
+  });
   const pushService = globalThis.OveruurtjePush;
   let currentContext = null;
   let loadedSettings = settingsService.defaults;
@@ -78,6 +85,15 @@
   let displayedFunctionId = null;
   let verifiedMfaFactor = null;
   let pendingMfaFactorId = null;
+  const fallbackShopifyPricing = Object.freeze({
+    currency: "EUR",
+    monthly: { amountCents: 299 },
+    yearly: { amountCents: 2999 },
+    regularYearAmountCents: 3588,
+    savingsAmountCents: 589,
+    savingsMonths: 2,
+    source: "fallback"
+  });
 
   function formatShopifyMoney(cents, currency = "EUR") {
     return new Intl.NumberFormat("nl-NL", {
@@ -93,30 +109,30 @@
     const yearlyCents = pricing.yearly?.amountCents ?? pricing.yearly?.amount;
     const regularYearCents = pricing.regularYearAmountCents ?? pricing.regularYearAmount;
     const savingsCents = pricing.savingsAmountCents ?? pricing.savingsAmount;
+    const savingsMonths = Number(pricing.savingsMonths || 0);
     monthlyPrice.textContent = formatShopifyMoney(monthlyCents, currency);
     monthlyPriceLine.classList.remove("is-price-fallback");
     monthlyPriceUnit.hidden = false;
     monthlyPriceUnit.textContent = "per maand excl. btw";
     yearlyPrice.textContent = `${formatShopifyMoney(yearlyCents, currency)} per jaar excl. btw`;
     yearlyRegular.textContent = formatShopifyMoney(regularYearCents, currency);
-    yearlySavingText.textContent = `bespaar ${formatShopifyMoney(savingsCents, currency)}`;
+    yearlySavingText.textContent = savingsMonths > 0
+      ? `${savingsMonths} maanden gratis`
+      : `bespaar ${formatShopifyMoney(savingsCents, currency)}`;
     yearlySaving.hidden = Number(savingsCents || 0) <= 0;
   }
 
   async function loadShopifyPricing() {
     try {
       const response = await fetch("/api/shopify/pricing", {
+        cache: "no-store",
         headers: { Accept: "application/json" }
       });
       if (!response.ok) throw new Error("Prijsservice niet beschikbaar");
       renderShopifyPricing(await response.json());
     } catch (error) {
       console.warn("Actuele Shopify-prijzen konden niet worden geladen.", error);
-      monthlyPrice.textContent = "Bekijk actuele prijs";
-      monthlyPriceLine.classList.add("is-price-fallback");
-      monthlyPriceUnit.hidden = true;
-      yearlyPrice.textContent = "Bekijk jaarprijs";
-      yearlySaving.hidden = true;
+      renderShopifyPricing(fallbackShopifyPricing);
     }
   }
 
@@ -703,9 +719,14 @@
   profileAvatarInput?.addEventListener("change", async () => {
     const file = profileAvatarInput.files?.[0];
     if (!file || !currentContext?.auth.user) return;
-    profileAvatarStatus.textContent = "Foto opslaan…";
     try {
-      const profile = await profileService.uploadAvatar(currentContext.auth.user, file);
+      const croppedFile = avatarCropper ? await avatarCropper.crop(file) : file;
+      if (!croppedFile) {
+        profileAvatarStatus.textContent = "";
+        return;
+      }
+      profileAvatarStatus.textContent = "Foto opslaan…";
+      const profile = await profileService.uploadAvatar(currentContext.auth.user, croppedFile);
       currentContext = { ...currentContext, profile };
       renderProfileAvatar(profile);
       profileAvatarStatus.textContent = "Profielfoto opgeslagen.";

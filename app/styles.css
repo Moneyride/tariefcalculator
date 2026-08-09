@@ -576,6 +576,22 @@
   font-weight: 800;
 }
 
+.share-avatar.has-image {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.shared-with-row .is-crew-card-link {
+  cursor: pointer;
+}
+
+.shared-with-row .is-crew-card-link:hover strong,
+.shared-with-row .is-crew-card-link:focus-visible strong {
+  color: var(--accent-dark);
+  text-decoration: underline;
+}
+
 .share-selected-users {
   display: flex;
   flex-wrap: wrap;
@@ -8512,6 +8528,52 @@ button.crew-badge:disabled { cursor: default; }
 .profile-avatar-preview { display: grid; flex: 0 0 auto; place-items: center; width: 50px; height: 50px; border-radius: 50%; background: var(--accent-dark); color: #fff; font-weight: 800; object-fit: cover; }
 .profile-avatar-upload { min-height: 38px; cursor: pointer; }
 .profile-avatar-status { margin: 8px 0 0; color: var(--muted); font-size: 0.78rem; }
+
+.avatar-crop-dialog {
+  width: min(92vw, 520px);
+  max-height: calc(100dvh - 24px);
+  max-width: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  overflow: auto;
+}
+.avatar-crop-dialog::backdrop { background: rgba(8, 20, 18, 0.66); backdrop-filter: blur(8px); }
+.avatar-crop-card {
+  position: relative;
+  padding: 30px;
+  border: 1px solid rgba(255,255,255,.76);
+  border-radius: 20px;
+  background: rgba(248,249,247,.96);
+  box-shadow: 0 24px 70px rgba(3,25,22,.28);
+}
+.avatar-crop-card h2 { margin: 2px 56px 6px 0; font-size: clamp(1.55rem, 4vw, 2rem); }
+.avatar-crop-intro { margin: 0 48px 22px 0; color: var(--muted); line-height: 1.45; }
+.avatar-crop-stage {
+  width: min(68vw, 300px);
+  aspect-ratio: 1;
+  margin: 0 auto 20px;
+  overflow: hidden;
+  border: 4px solid #fff;
+  border-radius: 50%;
+  background: #e8ece8;
+  box-shadow: 0 0 0 2px rgba(7,63,61,.16), 0 16px 34px rgba(7,63,61,.16);
+  touch-action: none;
+  cursor: grab;
+}
+.avatar-crop-stage:active { cursor: grabbing; }
+.avatar-crop-stage canvas { display: block; width: 100%; height: 100%; }
+.avatar-crop-zoom { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 14px; margin: 0 0 22px; font-weight: 750; }
+.avatar-crop-zoom input { width: 100%; accent-color: var(--orange); }
+.avatar-crop-actions { display: grid; grid-template-columns: 1fr 1.35fr; gap: 10px; }
+.avatar-crop-actions button { width: 100%; }
+
+@media (max-width: 520px) {
+  .avatar-crop-card { padding: 24px 18px 18px; border-radius: 18px; }
+  .avatar-crop-intro { margin-right: 42px; }
+  .avatar-crop-actions { grid-template-columns: 1fr; }
+}
 
 @media (max-width: 640px) {
   .crew-card,

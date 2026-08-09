@@ -30,6 +30,10 @@ const database = createClient(supabaseUrl, serviceRoleKey, {
 function notificationCopy(delivery: Delivery) {
   const actor = delivery.actor_name || "Een collega";
   const copies: Record<string, { title: string; body: string }> = {
+    badge_earned: {
+      title: "Nieuwe badge behaald",
+      body: "Bekijk je nieuwe badge op je Crew Card."
+    },
     workday_start_owner: {
       title: "Je werkdag begint",
       body: "Je vooraf ingestelde werkdag begint nu."
@@ -74,6 +78,9 @@ function notificationCopy(delivery: Delivery) {
 }
 
 async function notificationUrl(delivery: Delivery) {
+  if (delivery.notification_type === "badge_earned") {
+    return `${publicSiteUrl}/dashboard.html`;
+  }
   if (delivery.share_id) {
     return `${publicSiteUrl}/index.html?shared=${encodeURIComponent(delivery.share_id)}`;
   }

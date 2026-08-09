@@ -1439,3 +1439,95 @@ test("Crew Card gebruikt server-side badges en toont alleen accountdeelnemers", 
   assert.match(badgeService, /record_badge_activity/);
   assert.match(shareService, /selectedBadgeIcon/);
 });
+
+test("nieuwe badges worden gemeld en blijven selecteerbaar op de Crew Card", async () => {
+  const events = [];
+  const calls = [];
+  const earnedBadge = {
+    key: "eerste_draaidag",
+    name: "Eerste Draaidag",
+    description: "Je eerste werkdag is geregistreerd.",
+    icon: "🎬",
+    earned_at: "2026-08-09T12:00:00Z"
+  };
+  const context = await runService("app/saas/badgeService.js", {
+    document: { dispatchEvent: (event) => events.push(event) },
+    CustomEvent: class CustomEvent {
+      constructor(type, options) { this.type = type; this.detail = options.detail; }
+    },
+    OveruurtjeSupabase: {
+      getClient: async () => ({
+        rpc: async (name, values) => {
+          calls.push({ name, values });
+          if (name === "record_badge_activity") return { data: [earnedBadge], error: null };
+          if (name === "list_my_badges") {
+            return { data: [{ ...earnedBadge, hidden: false, is_featured: false, featured_position: null, is_title: false }], error: null };
+          }
+          if (name === "set_my_crew_badges") return { data: null, error: null };
+          return { data: [], error: null };
+        }
+      })
+    }
+  });
+
+  const awards = await context.OveruurtjeBadges.track("workday_saved", "00000000-0000-0000-0000-000000000001");
+  assert.equal(awards.length, 1);
+  assert.equal(events.length, 1);
+  assert.equal(events[0].type, "overuurtje:badges-earned");
+  assert.equal(events[0].detail.awards[0].key, "eerste_draaidag");
+
+  const collection = await context.OveruurtjeBadges.list();
+  assert.equal(collection[0].earnedAt, earnedBadge.earned_at);
+  await context.OveruurtjeBadges.saveSelection([collection[0].key], collection[0].key);
+  const selectionCall = calls.find((call) => call.name === "set_my_crew_badges");
+  assert.equal(selectionCall.values.p_badge_keys[0], "eerste_draaidag");
+  assert.equal(selectionCall.values.p_title_badge_key, "eerste_draaidag");
+
+  const notificationMigration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202608090005_badge_notifications.sql"),
+    "utf8"
+  );
+  const sessionUi = await readFile(path.join(rootDirectory, "app/saas/sessionUi.js"), "utf8");
+  const pushFunction = await readFile(
+    path.join(rootDirectory, "supabase/functions/send-push-notifications/index.ts"),
+    "utf8"
+  );
+  assert.match(notificationMigration, /after insert on public\.user_badges/i);
+  assert.match(notificationMigration, /'badge_earned'/i);
+  assert.match(notificationMigration, /on conflict do nothing/i);
+  assert.match(sessionUi, /badge_earned[\s\S]*Crew Card/i);
+  assert.match(pushFunction, /badge_earned[\s\S]*Nieuwe badge behaald/i);
+});
+
+test("Profielfoto gebruikt een ronde bijsnijder en heeft een eigen profielpermissie", async () => {
+  const accountHtml = await readFile(path.join(rootDirectory, "app/account.html"), "utf8");
+  const accountScript = await readFile(path.join(rootDirectory, "app/account.js"), "utf8");
+  const cropper = await readFile(path.join(rootDirectory, "app/avatarCropper.js"), "utf8");
+  const profileService = await readFile(path.join(rootDirectory, "app/saas/profileService.js"), "utf8");
+  const permissionMigration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202608090003_profile_avatar_permissions.sql"),
+    "utf8"
+  );
+
+  assert.match(accountHtml, /id="avatar-crop-dialog"/);
+  assert.match(accountHtml, /id="avatar-crop-canvas"/);
+  assert.match(accountHtml, /id="avatar-crop-zoom"/);
+  assert.match(accountScript, /avatarCropper\.crop\(file\)/);
+  assert.match(cropper, /OUTPUT_SIZE = 512/);
+  assert.match(cropper, /pointermove/);
+  assert.match(profileService, /avatar\.jpg/);
+  assert.match(profileService, /avatar_url: versionedUrl/);
+  assert.match(permissionMigration, /grant update \(avatar_url\) on table public\.profiles to authenticated/i);
+});
+
+test("gedeelde Crew Cards blijven voor eigenaar en ontvanger wederzijds beschikbaar", async () => {
+  const migration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202608090004_shared_crew_cards.sql"),
+    "utf8"
+  );
+  assert.match(migration, /create or replace function public\.get_crew_member_card/);
+  assert.match(migration, /s\.accepted_at is not null/);
+  assert.match(migration, /s\.owner_id = auth\.uid\(\) and s\.recipient_id = p_user_id/);
+  assert.match(migration, /create function public\.get_workday_share_participants/);
+  assert.match(migration, /pi\.participant_id = auth\.uid\(\)/);
+});

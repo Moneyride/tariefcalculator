@@ -186,20 +186,24 @@ function participantDemoEnabled() {
 }
 
 function announceBadgeAwards(awards) {
-  const badge = awards?.[0];
-  if (!badge) return;
-  sessionUi?.showToast(`${badge.icon} Badge behaald: ${badge.name}`);
+  if (!awards?.length) return;
+  const labels = awards.map((badge) => `${badge.icon} ${badge.name}`);
+  sessionUi?.showToast(`Badge${labels.length === 1 ? "" : "s"} behaald: ${labels.join(" · ")}`);
 }
 
 async function trackBadgeActivity(eventKey, sourceId = null, metadata = {}) {
   if (!currentAccountUser || !badgeService) return;
   try {
-    announceBadgeAwards(await badgeService.track(eventKey, sourceId, metadata));
+    await badgeService.track(eventKey, sourceId, metadata);
   } catch (error) {
     // Badges must never prevent a calculation, save, or PDF export.
     console.warn("Badgecontrole is niet gelukt.", error);
   }
 }
+
+document.addEventListener("overuurtje:badges-earned", (event) => {
+  announceBadgeAwards(event.detail?.awards || []);
+});
 let liveWorkdayController = null;
 let workdayNotificationController = null;
 let liveWorkdayArmed = false;
@@ -772,7 +776,41 @@ async function refreshCurrentWorkdayParticipants() {
     return;
   }
   try {
-    sharedParticipants = await shareService.listParticipants(source.type, source.id);
+    const [participants, sentShares] = await Promise.all([
+      shareService.listParticipants(source.type, source.id),
+      currentSharedSource
+        ? Promise.resolve([])
+        : shareService.listSent(source.type, source.id).catch(() => [])
+    ]);
+    const participantIds = new Set(participants.map((participant) => participant.userId));
+    const acceptedRecipients = sentShares
+      .filter((share) => share.acceptedAt && share.recipientId && !participantIds.has(share.recipientId))
+      .map((share) => ({
+        userId: share.recipientId,
+        firstName: String(share.recipientName || share.recipientEmail || "Collega").trim().split(/\s+/)[0],
+        isOwner: false,
+        isCurrentUser: false,
+        hasAccount: true,
+        avatarUrl: "",
+        selectedBadgeIcon: "",
+        selectedBadgeName: "",
+        jointWorkdays: 0
+      }));
+    sharedParticipants = [...participants, ...acceptedRecipients];
+    if (!currentSharedSource && !sharedParticipants.some((participant) => participant.isCurrentUser)) {
+      const profile = currentUserContext?.profile;
+      sharedParticipants.unshift({
+        userId: currentAccountUser.id,
+        firstName: String(profile?.displayName || currentAccountUser.email || "Jij").trim().split(/\s+/)[0],
+        isOwner: true,
+        isCurrentUser: true,
+        hasAccount: true,
+        avatarUrl: profile?.avatarUrl || "",
+        selectedBadgeIcon: "",
+        selectedBadgeName: "",
+        jointWorkdays: 0
+      });
+    }
     if (currentSharedSource && !currentSharedOwnerName) {
       currentSharedOwnerName = sharedParticipants.find((participant) => participant.isOwner)?.firstName || "";
       updateSharedReceiverMode();

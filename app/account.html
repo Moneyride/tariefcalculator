@@ -25,13 +25,13 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260730a">
-    <link rel="stylesheet" href="styles.css?v=20260809d">
+    <link rel="stylesheet" href="styles.css?v=20260809e">
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
     <script src="saas/pushService.js?v=20260729b" defer></script>
     <script src="saas/authService.js?v=20260802a" defer></script>
-    <script src="saas/profileService.js?v=20260809c" defer></script>
+    <script src="saas/profileService.js?v=20260809d" defer></script>
     <script src="saas/settingsService.js?v=20260729d" defer></script>
     <script src="saas/functionService.js?v=20260725a" defer></script>
     <script src="saas/equipmentService.js?v=20260722a" defer></script>
@@ -41,13 +41,14 @@
     <script src="saas/subscriptionService.js?v=20260802trial1" defer></script>
     <script src="saas/featureGate.js?v=20260731b" defer></script>
     <script src="analytics.js?v=20260722q" defer></script>
-    <script src="saas/sessionUi.js?v=20260809c" defer></script>
+    <script src="saas/sessionUi.js?v=20260809d" defer></script>
     <script src="vendor/jsQR.js?v=20260731a" defer></script>
     <script src="qrScanner.js?v=20260731a" defer></script>
     <script src="interactionGuard.js?v=20260730a" defer></script>
     <script src="selectUi.js?v=20260725a" defer></script>
     <script src="timePicker.js?v=20260730a" defer></script>
-    <script src="account.js?v=20260808a" defer></script>
+    <script src="avatarCropper.js?v=20260809a" defer></script>
+    <script src="account.js?v=20260809a" defer></script>
     <script src="pwa.js?v=20260731a" defer></script>
   </head>
   <body>
@@ -528,6 +529,26 @@
       <button class="saas-primary-button" id="pro-checkout" type="button">Upgrade naar Pro</button>
       <button class="saas-secondary-button pro-continue-button" id="pro-continue-free" type="button">Verder met Free</button>
       <p class="dialog-footnote">Shopify verzorgt straks de veilige betaling en het abonnement.</p>
+    </dialog>
+
+    <dialog class="avatar-crop-dialog" id="avatar-crop-dialog" aria-labelledby="avatar-crop-title">
+      <div class="avatar-crop-card">
+        <button class="dialog-close" type="button" data-avatar-crop-close aria-label="Bijsnijden annuleren">&times;</button>
+        <p class="dialog-eyebrow">Profielfoto</p>
+        <h2 id="avatar-crop-title">Foto bijsnijden</h2>
+        <p class="avatar-crop-intro">Sleep en zoom tot het belangrijkste deel mooi binnen de cirkel valt.</p>
+        <div class="avatar-crop-stage">
+          <canvas id="avatar-crop-canvas" aria-label="Voorbeeld van je bijgesneden profielfoto"></canvas>
+        </div>
+        <label class="avatar-crop-zoom">
+          <span>Zoom</span>
+          <input id="avatar-crop-zoom" type="range" min="1" max="3" value="1" step="0.01">
+        </label>
+        <div class="avatar-crop-actions">
+          <button class="saas-secondary-button" type="button" data-avatar-crop-close>Annuleren</button>
+          <button class="saas-primary-button" id="avatar-crop-confirm" type="button">Foto gebruiken</button>
+        </div>
+      </div>
     </dialog>
 
     <div class="site-toast" id="site-toast" role="status" aria-live="polite" hidden></div>

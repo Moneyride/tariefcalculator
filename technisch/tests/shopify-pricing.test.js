@@ -3,7 +3,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { normalizeShopifyPricing } from "../../netlify/functions/shopify-pricing.mjs";
+import {
+  FALLBACK_SHOPIFY_PRICING,
+  normalizeShopifyPricing
+} from "../../netlify/functions/shopify-pricing.mjs";
 
 const testsDirectory = path.dirname(fileURLToPath(import.meta.url));
 const rootDirectory = path.resolve(testsDirectory, "../..");
@@ -35,6 +38,13 @@ test("Shopify selling plans worden omgerekend naar maand-, jaar- en voordeelprij
   assert.equal(pricing.yearly.interval, "year");
 });
 
+test("Shopify-prijsfallback is exact gelijk aan de gepubliceerde abonnementsprijzen", () => {
+  assert.equal(FALLBACK_SHOPIFY_PRICING.monthly.amountCents, 299);
+  assert.equal(FALLBACK_SHOPIFY_PRICING.yearly.amountCents, 2999);
+  assert.equal(FALLBACK_SHOPIFY_PRICING.regularYearAmountCents, 3588);
+  assert.equal(FALLBACK_SHOPIFY_PRICING.savingsAmountCents, 589);
+});
+
 test("account toont Shopify-prijzen dynamisch en Netlify publiceert het prijs-endpoint", async () => {
   const [accountHtml, accountScript, netlifyConfig] = await Promise.all([
     readFile(path.join(rootDirectory, "app/account.html"), "utf8"),
@@ -44,7 +54,10 @@ test("account toont Shopify-prijzen dynamisch en Netlify publiceert het prijs-en
 
   assert.match(accountHtml, /id="subscription-monthly-price"/);
   assert.match(accountHtml, /id="subscription-yearly-price"/);
-  assert.doesNotMatch(accountHtml, /€ 2,99/);
   assert.match(accountScript, /fetch\("\/api\/shopify\/pricing"/);
+  assert.match(accountScript, /cache: "no-store"/);
+  assert.match(accountScript, /amountCents: 299/);
+  assert.match(accountScript, /amountCents: 2999/);
+  assert.match(accountScript, /maanden gratis/);
   assert.match(netlifyConfig, /from = "\/api\/shopify\/pricing"/);
 });

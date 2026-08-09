@@ -294,7 +294,9 @@
       const shareId = await shares.claimInvite(token, "project");
       try {
         const awards = await globalThis.OveruurtjeBadges?.evaluate?.();
-        if (awards?.[0]) sessionUi?.showToast(`${awards[0].icon} Badge behaald: ${awards[0].name}`);
+        if (awards?.length) {
+          sessionUi?.showToast(`Badge${awards.length === 1 ? "" : "s"} behaald: ${awards.map((badge) => `${badge.icon} ${badge.name}`).join(" · ")}`);
+        }
       } catch (error) {
         console.warn("Badgecontrole na projectacceptatie is niet gelukt.", error);
       }
@@ -859,6 +861,11 @@
   });
   document.querySelector("#project-pdf").addEventListener("click", () => {
     globalThis.OveruurtjeBadges?.track?.("project_pdf_generated", current?.project?.id || null)
+      .then((awards) => {
+        if (awards?.length) {
+          sessionUi?.showToast(`Badge${awards.length === 1 ? "" : "s"} behaald: ${awards.map((badge) => `${badge.icon} ${badge.name}`).join(" · ")}`);
+        }
+      })
       .catch((error) => console.warn("Badgecontrole voor project-pdf is niet gelukt.", error));
     buildProjectPrint();
     window.print();

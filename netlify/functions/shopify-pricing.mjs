@@ -1,6 +1,18 @@
 const DEFAULT_STOREFRONT_DOMAIN = "thegearharbor.com";
 const DEFAULT_PRODUCT_HANDLE = "overuurtje-pro-digitaal-abonnement";
 
+export const FALLBACK_SHOPIFY_PRICING = Object.freeze({
+  productId: "",
+  productUrl: `https://${DEFAULT_STOREFRONT_DOMAIN}/products/${DEFAULT_PRODUCT_HANDLE}`,
+  currency: "EUR",
+  monthly: Object.freeze({ amountCents: 299, planId: "", interval: "month" }),
+  yearly: Object.freeze({ amountCents: 2999, planId: "", interval: "year" }),
+  regularYearAmountCents: 3588,
+  savingsAmountCents: 589,
+  savingsMonths: 2,
+  source: "fallback"
+});
+
 function integerAmount(value) {
   const amount = Number(value);
   return Number.isFinite(amount) ? Math.round(amount) : null;
@@ -84,17 +96,20 @@ export default async function handler(request) {
     });
     if (!response.ok) throw new Error(`Shopify antwoordde met status ${response.status}.`);
     const pricing = normalizeShopifyPricing(await response.json(), productUrl);
-    return Response.json(pricing, {
+    return Response.json({ ...pricing, source: "shopify" }, {
       headers: {
         "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
       }
     });
   } catch (error) {
     console.error("Shopify-prijzen konden niet worden opgehaald.", error);
-    return Response.json(
-      { error: "De actuele abonnementsprijzen zijn tijdelijk niet beschikbaar.", productUrl },
-      { status: 502 }
-    );
+    return Response.json({
+      ...FALLBACK_SHOPIFY_PRICING,
+      productUrl,
+      fetchedAt: new Date().toISOString()
+    }, {
+      headers: { "Cache-Control": "public, max-age=60, s-maxage=300" }
+    });
   }
 }
 

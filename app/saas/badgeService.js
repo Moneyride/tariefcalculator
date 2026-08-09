@@ -26,16 +26,24 @@
     }));
   }
 
+  function publishAwards(awards) {
+    if (!awards.length) return awards;
+    document.dispatchEvent(new CustomEvent("overuurtje:badges-earned", {
+      detail: { awards }
+    }));
+    return awards;
+  }
+
   async function evaluate() {
     return normalizeAwards(await rpc("evaluate_my_badges"));
   }
 
   async function track(eventKey, sourceId = null, metadata = {}) {
-    return normalizeAwards(await rpc("record_badge_activity", {
+    return publishAwards(normalizeAwards(await rpc("record_badge_activity", {
       p_event_key: eventKey,
       p_source_id: sourceId,
       p_metadata: metadata
-    }));
+    })));
   }
 
   async function getCrewCard() {
