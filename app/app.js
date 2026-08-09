@@ -81,6 +81,7 @@ const shareService = globalThis.OveruurtjeShares;
 const badgeService = globalThis.OveruurtjeBadges;
 const liveWorkday = globalThis.OveruurtjeLiveWorkday;
 const workdayNotifications = globalThis.OveruurtjeWorkdayNotifications;
+const participantDevToggle = document.querySelector("#participant-dev-toggle");
 
 const euroFormatter = new Intl.NumberFormat("nl-NL", {
   style: "currency",
@@ -124,6 +125,65 @@ let todayWorkday = null;
 let activeSharedWorkday = null;
 let pendingSharedCompletionSave = null;
 let workdayContextInitializedFor = null;
+const PARTICIPANT_DEMO_KEY = "overuurtjeDevSharedCrew";
+
+const participantDemoProfiles = [
+  {
+    userId: "demo-ivo",
+    firstName: "Ivo",
+    hasAccount: true,
+    isOwner: false,
+    isCurrentUser: false,
+    selectedBadgeIcon: "🌙",
+    selectedBadgeName: "Nachtraaf",
+    crewCard: {
+      displayName: "Ivo",
+      memberSince: "2025-11-14",
+      registeredWorkdays: 86,
+      badgeCount: 12,
+      crewCount: 19,
+      jointWorkdays: 24,
+      selectedBadge: { name: "Nachtraaf", icon: "🌙" },
+      featuredBadges: [
+        { name: "Nachtraaf", icon: "🌙" },
+        { name: "Teamspeler", icon: "🤝" },
+        { name: "First Call", icon: "⏰" }
+      ]
+    }
+  },
+  {
+    userId: "demo-noor",
+    firstName: "Noor",
+    hasAccount: true,
+    isOwner: false,
+    isCurrentUser: false,
+    selectedBadgeIcon: "🎥",
+    selectedBadgeName: "Productieveteraan",
+    crewCard: {
+      displayName: "Noor",
+      memberSince: "2026-02-03",
+      registeredWorkdays: 121,
+      badgeCount: 16,
+      crewCount: 27,
+      jointWorkdays: 8,
+      selectedBadge: { name: "Productieveteraan", icon: "🎥" },
+      featuredBadges: [
+        { name: "Productieveteraan", icon: "🎥" },
+        { name: "Road Warrior", icon: "🚗" },
+        { name: "Drukke Maand", icon: "🔥" }
+      ]
+    }
+  }
+];
+
+function canDemoParticipants() {
+  return ["localhost", "127.0.0.1"].includes(location.hostname)
+    || Boolean(globalThis.OveruurtjeConfig?.subscription?.allowMockSubscriptions);
+}
+
+function participantDemoEnabled() {
+  return canDemoParticipants() && localStorage.getItem(PARTICIPANT_DEMO_KEY) === "1";
+}
 
 function announceBadgeAwards(awards) {
   const badge = awards?.[0];
@@ -810,11 +870,27 @@ function updateSharedReceiverSync() {
 
 function renderCurrentWorkdayParticipants() {
   if (!currentWorkdayParticipants || !currentWorkdayParticipantList) return;
-  const accountParticipants = sharedParticipants.filter((participant) => participant.hasAccount !== false);
-  const visibleShared = accountParticipants.length >= 2 ? accountParticipants : [];
-  const chips = visibleShared.map((participant) => {
-    const chip = document.createElement("span");
+  const accountParticipants = [
+    ...sharedParticipants.filter((participant) => participant.hasAccount !== false),
+    ...(participantDemoEnabled() ? participantDemoProfiles : [])
+  ];
+  const chips = accountParticipants.map((participant) => {
+    const chip = document.createElement(participant.isCurrentUser ? "span" : "button");
     chip.className = "participant-chip is-account";
+    if (!participant.isCurrentUser) {
+      chip.type = "button";
+      if (participant.crewCard) chip.dataset.crewPreviewId = participant.userId;
+      else chip.dataset.crewUserId = participant.userId;
+      chip.title = `Bekijk de Crew Card van ${participant.firstName}`;
+      chip.setAttribute("aria-label", `Bekijk de Crew Card van ${participant.firstName}`);
+    }
+    if (participant.avatarUrl) {
+      const avatar = document.createElement("img");
+      avatar.className = "participant-chip-avatar";
+      avatar.src = participant.avatarUrl;
+      avatar.alt = "";
+      chip.append(avatar);
+    }
     const name = document.createElement("span");
     name.className = "participant-chip-name";
     name.textContent = participant.isCurrentUser
@@ -830,9 +906,16 @@ function renderCurrentWorkdayParticipants() {
     }
     return chip;
   });
+  if (!chips.length) {
+    const empty = document.createElement("small");
+    empty.className = "participant-list-empty";
+    empty.textContent = "Nodig een collega uit om dezelfde tijden te volgen.";
+    chips.push(empty);
+  }
   currentWorkdayParticipantList.replaceChildren(...chips);
-  currentWorkdayParticipantList.hidden = chips.length === 0;
-  currentWorkdayParticipants.hidden = chips.length === 0;
+  currentWorkdayParticipantList.hidden = false;
+  // Keep the invite route available before somebody has accepted it.
+  currentWorkdayParticipants.hidden = false;
 }
 
 function updateSharedReceiverMode() {
@@ -2465,6 +2548,29 @@ async function openCurrentWorkdayShare() {
 }
 
 shareFromParticipantsButton?.addEventListener("click", openCurrentWorkdayShare);
+currentWorkdayParticipantList?.addEventListener("click", (event) => {
+  const preview = event.target.closest("[data-crew-preview-id]");
+  if (preview?.dataset.crewPreviewId) {
+    const profile = participantDemoProfiles.find((item) => item.userId === preview.dataset.crewPreviewId);
+    if (profile) globalThis.OveruurtjeCrewCards?.openPreview?.(profile.crewCard);
+    return;
+  }
+  const participant = event.target.closest("[data-crew-user-id]");
+  if (!participant?.dataset.crewUserId) return;
+  globalThis.OveruurtjeCrewCards?.open?.(participant.dataset.crewUserId);
+});
+if (participantDevToggle) {
+  participantDevToggle.hidden = !canDemoParticipants();
+  participantDevToggle.classList.toggle("is-active", participantDemoEnabled());
+  participantDevToggle.textContent = participantDemoEnabled() ? "Demo aan" : "Demo crew";
+  participantDevToggle.addEventListener("click", () => {
+    const enabled = !participantDemoEnabled();
+    localStorage.setItem(PARTICIPANT_DEMO_KEY, enabled ? "1" : "0");
+    participantDevToggle.classList.toggle("is-active", enabled);
+    participantDevToggle.textContent = enabled ? "Demo aan" : "Demo crew";
+    renderCurrentWorkdayParticipants();
+  });
+}
 function toggleSharedTimeOverride(fieldName) {
   if (!currentSharedSource) return;
   const label = fieldName === "startTime" ? "Starttijd" : "Eindtijd";

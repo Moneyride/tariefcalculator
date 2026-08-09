@@ -4,7 +4,8 @@
   const supabaseService = globalThis.OveruurtjeSupabase;
   const LEGACY_PROFILE_COLUMNS = "id,email,created_at,updated_at,display_name,is_pro,subscription_status,subscription_provider";
   const SUBSCRIPTION_PROFILE_COLUMNS = `${LEGACY_PROFILE_COLUMNS},subscription_current_period_end,subscription_cancel_at_period_end`;
-  const PROFILE_COLUMNS = `${SUBSCRIPTION_PROFILE_COLUMNS},trial_started_at,trial_ends_at,trial_reminder_sent_at,trial_expired_at,trial_expired_notice_shown_at,trial_converted_at`;
+  const TRIAL_PROFILE_COLUMNS = `${SUBSCRIPTION_PROFILE_COLUMNS},trial_started_at,trial_ends_at,trial_reminder_sent_at,trial_expired_at,trial_expired_notice_shown_at,trial_converted_at`;
+  const PROFILE_COLUMNS = `${TRIAL_PROFILE_COLUMNS},avatar_url`;
 
   function normalize(row, user) {
     return {
@@ -22,7 +23,8 @@
       trialReminderSentAt: row?.trial_reminder_sent_at || null,
       trialExpiredAt: row?.trial_expired_at || null,
       trialExpiredNoticeShownAt: row?.trial_expired_notice_shown_at || null,
-      trialConvertedAt: row?.trial_converted_at || null
+      trialConvertedAt: row?.trial_converted_at || null,
+      avatarUrl: row?.avatar_url || ""
     };
   }
 
@@ -31,6 +33,35 @@
     return error?.code === "42703"
       || error?.code === "PGRST204"
       || columns.some((column) => message.includes(column));
+  }
+
+  function providerAvatarUrl(user) {
+    const candidate = String(user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "").trim();
+    if (!candidate) return "";
+    try {
+      const url = new URL(candidate);
+      return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  async function saveProviderAvatarIfMissing(client, user, profile) {
+    const avatarUrl = providerAvatarUrl(user);
+    if (!avatarUrl || profile?.avatar_url) return profile;
+
+    const { data, error } = await client
+      .from("profiles")
+      .update({ avatar_url: avatarUrl })
+      .eq("id", user.id)
+      .select(PROFILE_COLUMNS)
+      .single();
+
+    // The avatar column arrives with the Crew Card migration. A login should
+    // still work normally while that migration has not been applied yet.
+    if (error && isMissingColumns(error, ["avatar_url"])) return profile;
+    if (error) throw error;
+    return data || profile;
   }
 
   async function selectProfile(client, userId, columns) {
@@ -49,6 +80,9 @@
     let { data, error } = await selectProfile(client, user.id, PROFILE_COLUMNS);
 
     // Keep login working while a new deployment and migration roll out.
+    if (error && isMissingColumns(error, ["avatar_url"])) {
+      ({ data, error } = await selectProfile(client, user.id, TRIAL_PROFILE_COLUMNS));
+    }
     if (error && isMissingColumns(error, ["trial_started_at", "trial_ends_at"])) {
       ({ data, error } = await selectProfile(client, user.id, SUBSCRIPTION_PROFILE_COLUMNS));
     }
@@ -57,7 +91,10 @@
     }
 
     if (error) throw error;
-    if (data) return normalize(data, user);
+    if (data) {
+      data = await saveProviderAvatarIfMissing(client, user, data);
+      return normalize(data, user);
+    }
 
     const { data: created, error: insertError } = await client
       .from("profiles")
@@ -66,7 +103,8 @@
       .single();
 
     if (insertError) throw insertError;
-    return normalize(created, user);
+    const profile = await saveProviderAvatarIfMissing(client, user, created);
+    return normalize(profile, user);
   }
 
   async function saveDisplayName(user, displayName) {
@@ -95,9 +133,36 @@
     return data || null;
   }
 
+  async function uploadAvatar(user, file) {
+    if (!user) throw new Error("Log eerst in.");
+    if (!(file instanceof File)) throw new Error("Kies een afbeelding.");
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) throw new Error("Gebruik een JPG, PNG of WebP-afbeelding.");
+    if (file.size > 2 * 1024 * 1024) throw new Error("Gebruik een afbeelding kleiner dan 2 MB.");
+    const client = await supabaseService.getClient();
+    if (!client) throw new Error("Supabase is niet beschikbaar.");
+    const extension = file.type === "image/jpeg" ? "jpg" : file.type.split("/")[1];
+    const path = `${user.id}/avatar-${Date.now()}.${extension}`;
+    const { error: uploadError } = await client.storage.from("crew-avatars").upload(path, file, {
+      upsert: true,
+      contentType: file.type,
+      cacheControl: "3600"
+    });
+    if (uploadError) throw uploadError;
+    const { data: urlData } = client.storage.from("crew-avatars").getPublicUrl(path);
+    const { data, error } = await client
+      .from("profiles")
+      .update({ avatar_url: urlData.publicUrl })
+      .eq("id", user.id)
+      .select(PROFILE_COLUMNS)
+      .single();
+    if (error) throw error;
+    return normalize(data, user);
+  }
+
   globalThis.OveruurtjeProfiles = Object.freeze({
     getForUser,
     saveDisplayName,
+    uploadAvatar,
     markTrialExpiredNoticeShown
   });
 })();

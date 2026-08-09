@@ -1263,7 +1263,7 @@ test("Accountmenu en desktop-accountlayouts blijven consequent uitgelijnd", asyn
     const menuStart = html.indexOf('class="account-dropdown"');
     const menuEnd = html.indexOf("</div>", menuStart);
     const menu = html.slice(menuStart, menuEnd);
-    const labels = ["Vandaag", "Dashboard", "Werkdagen", "Projecten", "Account", "Uitloggen"];
+    const labels = ["Vandaag", "Crew Card", "Werkdagen", "Projecten", "Account", "Uitloggen"];
     const positions = labels.map((label) => menu.indexOf(`>${label}<`));
     assert.ok(positions.every((position) => position >= 0), `${page} mist een menu-item`);
     assert.deepEqual(positions, [...positions].sort((a, b) => a - b), `${page} heeft een afwijkende menuvolgorde`);
@@ -1405,8 +1405,13 @@ test("Crew Card gebruikt server-side badges en toont alleen accountdeelnemers", 
   const calculatorHtml = await readFile(path.join(rootDirectory, "app/index.html"), "utf8");
   const calculatorScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
   const dashboardHtml = await readFile(path.join(rootDirectory, "app/dashboard.html"), "utf8");
+  const dashboardScript = await readFile(path.join(rootDirectory, "app/dashboard.js"), "utf8");
   const badgeService = await readFile(path.join(rootDirectory, "app/saas/badgeService.js"), "utf8");
   const shareService = await readFile(path.join(rootDirectory, "app/saas/shareService.js"), "utf8");
+  const crewCardMigration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202608090002_crew_card_profiles.sql"),
+    "utf8"
+  );
 
   assert.match(migration, /create table if not exists public\.badges/i);
   assert.match(migration, /create table if not exists public\.user_badges/i);
@@ -1424,7 +1429,13 @@ test("Crew Card gebruikt server-side badges en toont alleen accountdeelnemers", 
   assert.doesNotMatch(calculatorScript, /privateParticipants|addPrivateParticipant/);
   assert.match(calculatorScript, /participant\.selectedBadgeIcon/);
   assert.match(dashboardHtml, /id="crew-card"/);
-  assert.match(dashboardHtml, /id="dashboard-badge-list"/);
+  assert.match(dashboardHtml, /id="crew-card-recent-badges"/);
+  assert.match(dashboardHtml, /id="crew-badge-dialog"/);
+  assert.match(dashboardScript, /maximaal drie badges uitlichten/i);
+  assert.match(dashboardScript, /data-badge-action="title"/);
+  assert.match(crewCardMigration, /create table if not exists public\.user_featured_badges/i);
+  assert.match(crewCardMigration, /Kies maximaal drie badges/i);
+  assert.match(crewCardMigration, /'featuredBadges', featured\.items/i);
   assert.match(badgeService, /record_badge_activity/);
   assert.match(shareService, /selectedBadgeIcon/);
 });

@@ -17,6 +17,7 @@
   const userMenuButton = document.querySelector("#account-user-button");
   const userDropdown = document.querySelector("#account-dropdown");
   const userInitial = document.querySelector("#account-user-initial");
+  const userAvatar = document.querySelector("#account-user-avatar");
   let dashboardLink = document.querySelector("#dashboard-page-link");
   const accountLink = document.querySelector("#account-page-link");
   const workdaysLink = document.querySelector("#workdays-page-link");
@@ -629,7 +630,7 @@
       dashboardLink.id = "dashboard-page-link";
       dashboardLink.href = config.dashboardUrl;
       dashboardLink.setAttribute("role", "menuitem");
-      dashboardLink.textContent = "Dashboard";
+      dashboardLink.textContent = "Crew Card";
       userDropdown.insertBefore(dashboardLink, accountLink);
     }
     loginButton.hidden = Boolean(user);
@@ -645,6 +646,18 @@
 
     const label = context.profile?.displayName || user.email || "Account";
     userInitial.textContent = label.trim().charAt(0).toUpperCase() || "O";
+    const avatarUrl = String(context.profile?.avatarUrl || "").trim();
+    if (userAvatar) {
+      userAvatar.hidden = !avatarUrl;
+      userInitial.hidden = Boolean(avatarUrl);
+      if (avatarUrl) {
+        userAvatar.src = avatarUrl;
+        userAvatar.alt = `Profielfoto van ${label}`;
+      } else {
+        userAvatar.removeAttribute("src");
+        userAvatar.alt = "";
+      }
+    }
     userMenuButton.setAttribute("aria-label", `Account van ${label}`);
     if (dashboardLink) dashboardLink.href = config.dashboardUrl;
     accountLink.href = config.accountUrl;

@@ -30,8 +30,8 @@
       "url": "./index.html?calculator=1"
     },
     {
-      "name": "Dashboard",
-      "short_name": "Dashboard",
+      "name": "Crew Card",
+      "short_name": "Crew Card",
       "url": "./dashboard.html"
     },
     {

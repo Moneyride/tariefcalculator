@@ -66,8 +66,10 @@
   const accountClientStatus = document.querySelector("#account-client-status");
   const accountEnableNotifications = document.querySelector("#account-enable-notifications");
   const accountNotificationStatus = document.querySelector("#account-notification-status");
-  const pushDiagnostics = document.querySelector("#push-diagnostics");
-  const testNotificationButton = document.querySelector("#account-test-notification");
+  const profileAvatarInput = document.querySelector("#profile-avatar-input");
+  const profileAvatarPreview = document.querySelector("#profile-avatar-preview");
+  const profileAvatarFallback = document.querySelector("#profile-avatar-fallback");
+  const profileAvatarStatus = document.querySelector("#profile-avatar-status");
   const pushService = globalThis.OveruurtjePush;
   let currentContext = null;
   let loadedSettings = settingsService.defaults;
@@ -87,13 +89,18 @@
 
   function renderShopifyPricing(pricing) {
     const currency = pricing.currency || "EUR";
-    monthlyPrice.textContent = formatShopifyMoney(pricing.monthly.amount, currency);
+    const monthlyCents = pricing.monthly?.amountCents ?? pricing.monthly?.amount;
+    const yearlyCents = pricing.yearly?.amountCents ?? pricing.yearly?.amount;
+    const regularYearCents = pricing.regularYearAmountCents ?? pricing.regularYearAmount;
+    const savingsCents = pricing.savingsAmountCents ?? pricing.savingsAmount;
+    monthlyPrice.textContent = formatShopifyMoney(monthlyCents, currency);
     monthlyPriceLine.classList.remove("is-price-fallback");
     monthlyPriceUnit.hidden = false;
-    yearlyPrice.textContent = `${formatShopifyMoney(pricing.yearly.amount, currency)} per jaar`;
-    yearlyRegular.textContent = formatShopifyMoney(pricing.regularYearAmount, currency);
-    yearlySavingText.textContent = `bespaar ${formatShopifyMoney(pricing.savingsAmount, currency)}`;
-    yearlySaving.hidden = pricing.savingsAmount <= 0;
+    monthlyPriceUnit.textContent = "per maand excl. btw";
+    yearlyPrice.textContent = `${formatShopifyMoney(yearlyCents, currency)} per jaar excl. btw`;
+    yearlyRegular.textContent = formatShopifyMoney(regularYearCents, currency);
+    yearlySavingText.textContent = `bespaar ${formatShopifyMoney(savingsCents, currency)}`;
+    yearlySaving.hidden = Number(savingsCents || 0) <= 0;
   }
 
   async function loadShopifyPricing() {
@@ -330,18 +337,16 @@
     const label = accountEnableNotifications.querySelector("[data-notification-switch-label]");
     if (label) label.textContent = labels[result.state] || "Meldingen inschakelen";
     accountNotificationStatus.textContent = descriptions[result.state] || "";
-    if (pushDiagnostics) {
-      const registration = "serviceWorker" in navigator
-        ? await navigator.serviceWorker.getRegistration("./")
-        : null;
-      pushDiagnostics.hidden = false;
-      pushDiagnostics.querySelector("[data-push-permission]").textContent = "Notification" in window
-        ? ({ granted: "Toegestaan", denied: "Geblokkeerd", default: "Nog niet gevraagd" }[Notification.permission] || Notification.permission)
-        : "Niet ondersteund";
-      pushDiagnostics.querySelector("[data-push-worker]").textContent = registration?.active ? "Actief" : "Niet actief";
-      pushDiagnostics.querySelector("[data-push-subscription]").textContent = result.subscription ? "Actief" : "Niet actief";
-    }
-    if (testNotificationButton) testNotificationButton.disabled = result.state !== "subscribed";
+  }
+
+  function renderProfileAvatar(profile) {
+    const name = profile?.displayName || "O";
+    if (profileAvatarFallback) profileAvatarFallback.textContent = name.slice(0, 1).toUpperCase();
+    if (!profileAvatarPreview || !profileAvatarFallback) return;
+    const url = String(profile?.avatarUrl || "").trim();
+    profileAvatarPreview.hidden = !url;
+    profileAvatarFallback.hidden = Boolean(url);
+    if (url) profileAvatarPreview.src = url;
   }
 
   function renderFunctions(items) {
@@ -571,7 +576,7 @@
     freePlanState.textContent = !isPro ? "Huidig abonnement" : "Altijd beschikbaar";
     proPlanState.textContent = isPaidPro
       ? "Huidig abonnement"
-      : (isTrial ? "Actief tijdens proefperiode" : "Meest compleet");
+      : (isTrial ? "Proefperiode actief" : "Meest compleet");
     mockControl.hidden = !subscriptions.canMock();
     if (subscriptions.canMock()) mockPlan.value = isPro ? "pro" : "free";
     equipmentSection.classList.toggle("is-locked", !isPro);
@@ -603,6 +608,7 @@
     email.textContent = authState.user.email || "-";
     created.textContent = formatDate(context.profile?.createdAt || authState.user.created_at);
     profileNameForm.elements.namedItem("displayName").value = context.profile?.displayName || "";
+    renderProfileAvatar(context.profile);
     renderSubscription(context.subscription, context.profile);
     await renderMfaStatus();
 
@@ -675,18 +681,6 @@
     }
     await renderNotificationPermission();
   });
-  testNotificationButton?.addEventListener("click", async () => {
-    if (!pushService || !currentContext?.auth.user) return;
-    testNotificationButton.disabled = true;
-    accountNotificationStatus.textContent = "Testmelding klaarzetten…";
-    try {
-      await pushService.test();
-      accountNotificationStatus.textContent = "Testmelding staat klaar en wordt door de pushservice verstuurd.";
-    } catch (error) {
-      accountNotificationStatus.textContent = error.message || "De testmelding kon niet worden klaargezet.";
-    }
-    setTimeout(renderNotificationPermission, 1500);
-  });
   void renderNotificationPermission();
   profileNameForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -699,10 +693,27 @@
       );
       currentContext = { ...currentContext, profile };
       profileNameForm.elements.namedItem("displayName").value = profile.displayName;
+      renderProfileAvatar(profile);
       profileNameStatus.textContent = "Voornaam opgeslagen.";
       document.dispatchEvent(new CustomEvent("overuurtje:profile-updated", { detail: profile }));
     } catch (error) {
       profileNameStatus.textContent = error.message || "Voornaam opslaan is niet gelukt.";
+    }
+  });
+  profileAvatarInput?.addEventListener("change", async () => {
+    const file = profileAvatarInput.files?.[0];
+    if (!file || !currentContext?.auth.user) return;
+    profileAvatarStatus.textContent = "Foto opslaan…";
+    try {
+      const profile = await profileService.uploadAvatar(currentContext.auth.user, file);
+      currentContext = { ...currentContext, profile };
+      renderProfileAvatar(profile);
+      profileAvatarStatus.textContent = "Profielfoto opgeslagen.";
+      document.dispatchEvent(new CustomEvent("overuurtje:profile-updated", { detail: profile }));
+    } catch (error) {
+      profileAvatarStatus.textContent = error.message || "Profielfoto opslaan is niet gelukt.";
+    } finally {
+      profileAvatarInput.value = "";
     }
   });
   settingsForm.addEventListener("input", () => updateExplanationLink(readSettings()));

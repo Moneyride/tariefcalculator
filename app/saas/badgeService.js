@@ -50,13 +50,22 @@
       icon: item.icon,
       hidden: Boolean(item.hidden),
       earnedAt: item.earned_at,
-      selected: Boolean(item.is_selected)
+      featured: Boolean(item.is_featured ?? item.is_selected),
+      featuredPosition: Number(item.featured_position) || null,
+      title: Boolean(item.is_title ?? item.is_selected)
     }));
   }
 
-  async function select(key) {
-    await rpc("select_my_crew_badge", { p_badge_key: key });
+  async function saveSelection(keys, titleKey) {
+    await rpc("set_my_crew_badges", {
+      p_badge_keys: Array.from(new Set(keys || [])).slice(0, 3),
+      p_title_badge_key: titleKey || null
+    });
   }
 
-  globalThis.OveruurtjeBadges = Object.freeze({ evaluate, track, getCrewCard, list, select });
+  async function getCrewMember(userId) {
+    return await rpc("get_crew_member_card", { p_user_id: userId });
+  }
+
+  globalThis.OveruurtjeBadges = Object.freeze({ evaluate, track, getCrewCard, getCrewMember, list, saveSelection });
 })();

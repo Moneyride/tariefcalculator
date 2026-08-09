@@ -189,6 +189,7 @@
       isOwner: Boolean(row.is_owner),
       isCurrentUser: Boolean(row.is_current_user),
       hasAccount: row.has_account !== false,
+      avatarUrl: row.avatar_url || "",
       selectedBadgeIcon: row.selected_badge_icon || "",
       selectedBadgeName: row.selected_badge_name || "",
       jointWorkdays: Number(row.joint_workdays) || 0

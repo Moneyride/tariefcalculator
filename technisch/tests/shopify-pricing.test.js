@@ -27,10 +27,10 @@ test("Shopify selling plans worden omgerekend naar maand-, jaar- en voordeelprij
     }]
   }, "https://thegearharbor.com/products/overuurtje-pro-digitaal-abonnement");
 
-  assert.equal(pricing.monthly.amount, 299);
-  assert.equal(pricing.yearly.amount, 2999);
-  assert.equal(pricing.regularYearAmount, 3588);
-  assert.equal(pricing.savingsAmount, 589);
+  assert.equal(pricing.monthly.amountCents, 299);
+  assert.equal(pricing.yearly.amountCents, 2999);
+  assert.equal(pricing.regularYearAmountCents, 3588);
+  assert.equal(pricing.savingsAmountCents, 589);
   assert.equal(pricing.monthly.interval, "month");
   assert.equal(pricing.yearly.interval, "year");
 });

@@ -51,17 +51,17 @@ export function normalizeShopifyPricing(product, productUrl) {
     productUrl,
     currency: String(product?.currency || "EUR").toUpperCase(),
     monthly: {
-      amount: monthlyAmount,
+      amountCents: monthlyAmount,
       planId: String(monthlyPlan.id),
       interval: "month"
     },
     yearly: {
-      amount: yearlyAmount,
+      amountCents: yearlyAmount,
       planId: String(yearlyPlan.id),
       interval: "year"
     },
-    regularYearAmount,
-    savingsAmount,
+    regularYearAmountCents: regularYearAmount,
+    savingsAmountCents: savingsAmount,
     savingsMonths: monthlyAmount > 0 ? Number((savingsAmount / monthlyAmount).toFixed(1)) : 0,
     fetchedAt: new Date().toISOString()
   };

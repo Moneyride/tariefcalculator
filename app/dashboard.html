@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#073f3d">
-    <title>Dashboard | Overuurtje.nl</title>
+    <title>Crew Card | Overuurtje.nl</title>
     <meta name="description" content="Je persoonlijke werkoverzicht in Overuurtje.nl.">
     <meta name="application-name" content="Overuurtje.nl">
     <meta name="mobile-web-app-capable" content="yes">
@@ -15,34 +15,35 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260730a">
-    <link rel="stylesheet" href="styles.css?v=20260809a">
+    <link rel="stylesheet" href="styles.css?v=20260809e">
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
     <script src="saas/pushService.js?v=20260729b" defer></script>
     <script src="saas/authService.js?v=20260802a" defer></script>
-    <script src="saas/profileService.js?v=20260802trial1" defer></script>
+    <script src="saas/profileService.js?v=20260809c" defer></script>
     <script src="saas/settingsService.js?v=20260729d" defer></script>
     <script src="saas/subscriptionService.js?v=20260802trial1" defer></script>
     <script src="saas/workdayService.js?v=20260727d" defer></script>
     <script src="saas/projectService.js?v=20260728a" defer></script>
     <script src="saas/shareService.js?v=20260802a" defer></script>
-    <script src="saas/badgeService.js?v=20260809a" defer></script>
+    <script src="saas/badgeService.js?v=20260809d" defer></script>
+    <script src="saas/crewCardUi.js?v=20260809d" defer></script>
     <script src="calculator.js?v=20260727b" defer></script>
     <script src="statsEngine.js?v=20260727a" defer></script>
     <script src="analytics.js?v=20260722q" defer></script>
-    <script src="saas/sessionUi.js?v=20260803shared1" defer></script>
+    <script src="saas/sessionUi.js?v=20260809c" defer></script>
     <script src="vendor/jsQR.js?v=20260731a" defer></script>
     <script src="qrScanner.js?v=20260731a" defer></script>
     <script src="interactionGuard.js?v=20260730a" defer></script>
-    <script src="dashboard.js?v=20260809a" defer></script>
+    <script src="dashboard.js?v=20260809h" defer></script>
     <script src="pwa.js?v=20260731a" defer></script>
   </head>
   <body>
     <main class="app-shell account-shell dashboard-shell">
       <div class="main-glass account-glass dashboard-glass">
         <header class="page-header account-page-header">
-          <a class="header-title" href="dashboard.html" aria-label="Dashboard van Overuurtje.nl">
+          <a class="header-title" href="dashboard.html" aria-label="Crew Card van Overuurtje.nl">
             <img class="site-logo" src="overuurtje-logo.png?v=20260718e" alt="Overuurtje.nl - Reken. Check. Klaar.">
           </a>
           <p class="header-brand">Powered by Reichgelt Media Group</p>
@@ -52,10 +53,11 @@
             <div class="account-user-menu" id="account-user-menu" hidden>
               <button class="account-avatar" id="account-user-button" type="button" aria-haspopup="menu" aria-expanded="false">
                 <span id="account-user-initial">O</span>
+                <img id="account-user-avatar" alt="" hidden>
               </button>
               <div class="account-dropdown" id="account-dropdown" role="menu" hidden>
                 <a id="today-page-link" href="index.html" role="menuitem">Vandaag</a>
-                <a id="dashboard-page-link" href="dashboard.html" role="menuitem">Dashboard</a>
+                <a id="dashboard-page-link" href="dashboard.html" role="menuitem">Crew Card</a>
                 <a id="workdays-page-link" href="workdays.html" role="menuitem">Werkdagen</a>
                 <a id="projects-page-link" href="projects.html" role="menuitem">Projecten</a>
                 <a id="account-page-link" href="account.html" role="menuitem">Account</a>
@@ -68,7 +70,7 @@
         <section class="dashboard-guest" id="dashboard-guest" hidden>
           <p class="account-section-kicker">Dagelijkse werkassistent</p>
           <h1>Je werkdag begint bij Overuurtje</h1>
-          <p>Log in voor je persoonlijke dashboard, of open direct de gratis calculator.</p>
+          <p>Log in voor je persoonlijke Crew Card, of open direct de gratis calculator.</p>
           <div class="dashboard-actions">
             <button class="saas-primary-button" id="dashboard-login" type="button">Inloggen</button>
             <a class="saas-secondary-button" href="index.html?calculator=1">Naar calculator</a>
@@ -84,16 +86,16 @@
 
           <section class="crew-card" id="crew-card" aria-labelledby="crew-card-title">
             <div class="crew-card-heading">
-              <div><p class="account-section-kicker">Crew Card</p><h2 id="crew-card-title">Jouw crewprofiel</h2></div>
+              <div><p class="account-section-kicker">Crew Card</p><h2 id="crew-card-title">Jouw Crew Card</h2></div>
               <button class="crew-card-collection-button" id="crew-card-collection" type="button">Badges bekijken</button>
             </div>
-            <div class="crew-card-identity"><span class="crew-card-avatar" id="crew-card-initial">O</span><div><strong id="crew-card-name">Crewlid</strong><small id="crew-card-member-since">Lid sinds -</small></div></div>
+            <div class="crew-card-identity"><span class="crew-card-avatar" id="crew-card-initial">O</span><img class="crew-card-avatar" id="crew-card-avatar-image" alt="" hidden><div><strong id="crew-card-name">Jij</strong><small id="crew-card-status">Crewlid</small><small id="crew-card-member-since">Lid sinds -</small></div></div>
             <dl class="crew-card-metrics">
-              <div><dt>Werkdagen</dt><dd id="crew-card-workdays">0</dd></div>
-              <div><dt>Badges</dt><dd id="crew-card-badges">0</dd></div>
+              <div><dt>Geregistreerde werkdagen</dt><dd id="crew-card-workdays">0</dd></div>
+              <div><dt>Behaalde badges</dt><dd id="crew-card-badges">0</dd></div>
               <div><dt>Crewleden</dt><dd id="crew-card-crew">0</dd></div>
             </dl>
-            <div class="crew-card-badge-row" id="crew-card-recent-badges" aria-label="Recent behaalde badges"></div>
+            <div class="crew-card-badge-row" id="crew-card-recent-badges" aria-label="Uitgelichte badges"></div>
           </section>
 
           <section class="dashboard-period-grid" aria-label="Werkoverzicht">
@@ -136,13 +138,8 @@
             </div>
           </section>
 
-          <section class="dashboard-badges" aria-labelledby="dashboard-badges-title">
-            <div class="dashboard-section-heading"><div><p class="account-section-kicker">Jouw collectie</p><h2 id="dashboard-badges-title">Badges</h2></div><button class="text-button" id="dashboard-badges-all" type="button">Bekijk alles</button></div>
-            <div class="dashboard-badge-list" id="dashboard-badge-list"></div>
-          </section>
-
           <section class="dashboard-free-note" id="dashboard-free-note" hidden>
-            <div><p class="account-section-kicker">Overuurtje Pro</p><h2>Maak van je dashboard jouw werkarchief</h2><p>Met Pro bewaar je werkdagen en projecten, zodat je statistieken automatisch groeien.</p></div>
+            <div><p class="account-section-kicker">Overuurtje Pro</p><h2>Maak van je Crew Card jouw werkarchief</h2><p>Met Pro bewaar je werkdagen en projecten, zodat je statistieken automatisch groeien.</p></div>
             <button class="saas-secondary-button" type="button" data-subscription-upgrade>Bekijk Pro</button>
           </section>
         </section>
@@ -189,7 +186,11 @@
       <button class="dialog-close" type="button" data-crew-badge-close aria-label="Sluiten">&times;</button>
       <p class="dialog-eyebrow">Crew Card</p>
       <h2 id="crew-badge-dialog-title">Jouw badges</h2>
-      <p class="crew-badge-dialog-intro">Kies een behaalde badge die collega's bij gedeelde werkdagen zien.</p>
+      <p class="crew-badge-dialog-intro">Kies maximaal drie badges voor je Crew Card. Eén daarvan bepaalt je titel.</p>
+      <label class="crew-badge-dev-toggle" id="crew-badge-dev-toggle" hidden>
+        <input type="checkbox" id="crew-badge-simulation">
+        <span><strong>Alle badges vrijspelen</strong><small>Alleen zichtbaar in de lokale ontwikkelmodus.</small></span>
+      </label>
       <div class="crew-badge-collection" id="crew-badge-collection"></div>
     </dialog>
   </body>

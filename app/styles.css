@@ -912,9 +912,10 @@
   border-radius: 16px;
   display: grid;
   gap: 10px 14px;
-  grid-column: 1 / -1;
+  box-sizing: border-box;
+  width: min(440px, 100%);
   grid-template-columns: minmax(0, 1fr);
-  margin: 10px 0 2px;
+  margin: 16px 0 2px;
   padding: 16px;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.45),
@@ -1863,6 +1864,7 @@ select {
 
 .account-avatar {
   display: grid;
+  overflow: hidden;
   width: 42px;
   height: 42px;
   padding: 0;
@@ -1870,6 +1872,12 @@ select {
   border-radius: 50%;
   background: var(--accent);
   color: #fff;
+}
+
+.account-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .account-login:hover,
@@ -2671,7 +2679,7 @@ h3 {
 }
 
 .account-mfa-compact .saas-form-status {
-  grid-column: 1 / -1;
+  width: min(520px, 100%);
 }
 
 @media screen and (max-width: 560px) {
@@ -8343,6 +8351,7 @@ html.is-pwa summary {
 .crew-card-identity small { display: block; }
 .crew-card-identity strong { color: var(--accent-dark); font-size: 1.1rem; }
 .crew-card-identity small { margin-top: 2px; color: var(--muted); }
+#crew-card-status { color: var(--orange-dark); font-weight: 800; }
 
 .crew-card-avatar {
   display: grid;
@@ -8354,6 +8363,10 @@ html.is-pwa summary {
   background: var(--accent-dark);
   color: white;
   font-weight: 800;
+}
+
+img.crew-card-avatar {
+  object-fit: cover;
 }
 
 .crew-card-metrics {
@@ -8382,6 +8395,10 @@ html.is-pwa summary {
   margin-top: 18px;
 }
 
+.crew-card-badge-row {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .crew-badge {
   display: flex;
   align-items: flex-start;
@@ -8395,22 +8412,106 @@ html.is-pwa summary {
   color: var(--accent-dark);
   text-align: left;
   font: inherit;
+  flex-wrap: wrap;
 }
 
 button.crew-badge { cursor: pointer; }
 button.crew-badge:disabled { cursor: default; }
 .crew-badge.is-locked { opacity: 0.56; }
-.crew-badge.is-selected { border-color: rgba(255, 106, 26, 0.68); box-shadow: inset 0 0 0 1px rgba(255, 106, 26, 0.28); }
+.crew-badge.is-featured { border-color: rgba(255, 106, 26, 0.54); box-shadow: inset 0 0 0 1px rgba(255, 106, 26, 0.18); }
+.crew-badge.is-title { background: rgba(255, 106, 26, 0.1); border-color: rgba(255, 106, 26, 0.8); }
 .crew-badge-icon { display: grid; flex: 0 0 auto; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: rgba(255, 106, 26, 0.12); font-size: 1rem; }
+.crew-badge-copy { flex: 1 1 110px; min-width: 0; }
 .crew-badge strong,
 .crew-badge small { display: block; }
 .crew-badge strong { font-size: 0.84rem; }
 .crew-badge small { margin-top: 3px; color: var(--muted); font-size: 0.74rem; line-height: 1.35; }
 .crew-badge.is-compact { padding: 9px; }
 .crew-badge.is-compact .crew-badge-icon { width: 23px; height: 23px; }
+.crew-badge-actions { display: flex; width: 100%; gap: 7px; padding-top: 3px; }
+.crew-badge-actions button { min-height: 32px; padding: 6px 10px; border: 1px solid rgba(31, 67, 53, 0.14); border-radius: 8px; background: rgba(255,255,255,.58); color: var(--accent-dark); font: inherit; font-size: .7rem; font-weight: 750; cursor: pointer; }
+.crew-badge-actions button[aria-pressed="true"] { border-color: rgba(255,106,26,.55); background: rgba(255,106,26,.13); color: var(--orange-dark); }
+.crew-badge-actions button:disabled { opacity: .45; cursor: default; }
+.crew-badge.is-title .crew-badge-actions [data-badge-action="title"]::before { content: "★ "; }
 
-.crew-badge-dialog { width: min(760px, calc(100vw - 32px)); }
-.crew-badge-dialog .dialog-content { max-height: min(68vh, 620px); overflow: auto; }
+.crew-badge-dialog {
+  width: min(760px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: hidden;
+}
+
+.crew-badge-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.crew-badge-dev-toggle {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-top: 14px;
+  padding: 11px 13px;
+  border: 1px solid rgba(255, 106, 26, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 106, 26, 0.07);
+  color: var(--accent-dark);
+  cursor: pointer;
+}
+
+.crew-badge-dev-toggle[hidden] { display: none; }
+.crew-badge-dev-toggle input { width: 18px; height: 18px; margin: 0; accent-color: var(--orange); }
+.crew-badge-dev-toggle strong,
+.crew-badge-dev-toggle small { display: block; }
+.crew-badge-dev-toggle strong { font-size: 0.83rem; }
+.crew-badge-dev-toggle small { margin-top: 2px; color: var(--muted); font-size: 0.72rem; }
+
+.crew-badge-collection {
+  min-height: 0;
+  max-height: min(62dvh, 620px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px 5px 5px 1px;
+}
+
+.crew-badge-empty {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.43);
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.crew-member-dialog { width: min(470px, calc(100vw - 32px)); }
+.crew-member-identity { display: flex; align-items: center; gap: 14px; }
+.crew-member-identity h2 { margin: 0; color: var(--accent-dark); }
+.crew-member-identity strong,
+.crew-member-identity small { display: block; }
+.crew-member-identity strong { margin-top: 3px; color: var(--orange-dark); }
+.crew-member-identity small { margin-top: 3px; color: var(--muted); }
+.crew-member-avatar { display: grid; flex: 0 0 auto; place-items: center; width: 58px; height: 58px; border-radius: 50%; background: var(--accent-dark); color: white; font-size: 1.2rem; font-weight: 800; object-fit: cover; }
+.crew-member-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 20px 0 0; }
+.crew-member-metrics > div { min-width: 0; padding: 11px; border-radius: 12px; background: rgba(255, 255, 255, 0.44); }
+.crew-member-metrics dt { color: var(--muted); font-size: 0.7rem; font-weight: 700; }
+.crew-member-metrics dd { margin: 5px 0 0; color: var(--accent-dark); font-size: 1rem; font-weight: 800; }
+.crew-member-joint { margin: 16px 0 0; color: var(--accent-dark); font-weight: 750; }
+.crew-member-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.crew-member-badge { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: rgba(255, 106, 26, 0.1); }
+
+.participant-chip.is-account:not(span) { cursor: pointer; }
+.participant-chip.is-account:not(span):hover,
+.participant-chip.is-account:not(span):focus-visible { border-color: rgba(255, 106, 26, 0.46); color: var(--accent-dark); }
+.participant-chip-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
+.participant-list-empty { display: block; color: var(--muted); font-weight: 650; }
+.participant-heading-actions { display: flex; align-items: center; gap: 8px; }
+.participant-dev-toggle { min-height: 32px; padding: 6px 9px; border: 1px dashed rgba(255,106,26,.4); border-radius: 8px; background: rgba(255,255,255,.38); color: var(--orange-dark); font: inherit; font-size: .68rem; font-weight: 750; cursor: pointer; }
+.participant-dev-toggle.is-active { border-style: solid; background: rgba(255,106,26,.12); }
+
+.profile-avatar-control { display: flex; align-items: center; gap: 12px; }
+.profile-avatar-preview { display: grid; flex: 0 0 auto; place-items: center; width: 50px; height: 50px; border-radius: 50%; background: var(--accent-dark); color: #fff; font-weight: 800; object-fit: cover; }
+.profile-avatar-upload { min-height: 38px; cursor: pointer; }
+.profile-avatar-status { margin: 8px 0 0; color: var(--muted); font-size: 0.78rem; }
 
 @media (max-width: 640px) {
   .crew-card,
@@ -8421,15 +8522,27 @@ button.crew-badge:disabled { cursor: default; }
   .crew-card-metrics { grid-template-columns: 1fr; gap: 6px; }
   .crew-card-metrics > div { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
   .crew-card-metrics dd { margin: 0; }
-  .crew-card-badge-row,
   .dashboard-badge-list,
   .crew-badge-collection { grid-template-columns: 1fr; }
+  .crew-card-badge-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .crew-card-badge-row .crew-badge { display: grid; justify-items: center; padding: 9px 5px; text-align: center; }
+  .crew-card-badge-row .crew-badge-copy { flex: none; width: 100%; }
+  .crew-card-badge-row .crew-badge strong { font-size: .68rem; line-height: 1.15; }
+  .crew-badge-dialog { max-height: calc(100dvh - 18px); }
+  .crew-badge-collection { max-height: 62dvh; }
+  .crew-member-metrics { grid-template-columns: 1fr; gap: 6px; }
+  .crew-member-metrics > div { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .crew-member-metrics dd { margin: 0; }
 }
 
 @media (max-width: 680px) {
   .account-heading-actions {
     gap: 8px;
+    width: 100%;
+    justify-content: flex-start;
   }
+  .account-heading-actions .sync-state { font-size: 0.72rem; white-space: nowrap; }
+  .subscription-choice-state { max-width: 112px; line-height: 1.2; text-align: right; white-space: normal; }
 }
 
 @media (max-width: 760px) {
