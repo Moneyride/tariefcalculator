@@ -337,3 +337,62 @@ test("uurtarief kan zonder minimale afname worden berekend", () => {
   assertMoney(result.baseAmount, 90);
   assertMoney(result.subtotalExVat, 90);
 });
+
+test("instelbare nachttoeslag gebruikt het gekozen percentage voor normale nachturen", () => {
+  const result = calculate("16:00", "02:00", { nightSurchargePercent: 50 });
+
+  assert.equal(result.pureNightHours, 2);
+  assert.equal(result.settings.nightSurchargePercent, 50);
+  assertMoney(result.nightAmount, 45);
+  assertMoney(result.subtotalExVat, 495);
+});
+
+test("instelbare nachttoeslag volgt ook het tarief van een overlappend overuur", () => {
+  const result = calculate("16:00", "03:00", { nightSurchargePercent: 50 });
+
+  assert.equal(result.nightOvertimeHours, 1);
+  assertMoney(result.overtimeAmount, 67.5);
+  assertMoney(result.pureNightAmount, 45);
+  assertMoney(result.overlapNightAmount, 33.75);
+  assertMoney(result.subtotalExVat, 596.25);
+});
+
+test("reisdag binnen Europa rekent 75 procent van het dagtarief zonder overuren of nachttoeslag", () => {
+  const result = calculateTariff(
+    {
+      startTime: "08:00",
+      endTime: "23:00",
+      enableTravelDay: true,
+      travelRegion: "within_europe"
+    },
+    DEFAULT_SETTINGS
+  );
+
+  assert.equal(result.isTravelDay, true);
+  assert.equal(result.travelPercent, 75);
+  assert.equal(result.overtimeHours, 0);
+  assert.equal(result.nightHours, 0);
+  assertMoney(result.travelDayAmount, 337.5);
+  assertMoney(result.subtotalExVat, 337.5);
+});
+
+test("reisdag buiten Europa gebruikt het ingestelde percentage en behoudt losse kosten", () => {
+  const result = calculateTariff(
+    {
+      enableTravelDay: true,
+      travelRegion: "outside_europe",
+      enableKilometers: true,
+      kilometers: 100,
+      enableParkingCosts: true,
+      parkingCosts: 20
+    },
+    { ...DEFAULT_SETTINGS, travelOutsideEuropePercent: 110, kilometerRate: 0.5 }
+  );
+
+  assert.equal(result.totalHours, 0);
+  assert.equal(result.travelPercent, 110);
+  assertMoney(result.travelDayAmount, 495);
+  assertMoney(result.kilometerAmount, 50);
+  assertMoney(result.parkingAmount, 20);
+  assertMoney(result.subtotalExVat, 565);
+});

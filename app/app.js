@@ -33,10 +33,6 @@ const workdayNameSuggestions = document.querySelector("#workday-name-suggestions
 const clientNameSuggestions = document.querySelector("#client-name-suggestions");
 const currentWorkdayParticipants = document.querySelector("#current-workday-participants");
 const currentWorkdayParticipantList = document.querySelector("#current-workday-participant-list");
-const privateParticipantPanel = document.querySelector("#private-participant-panel");
-const privateParticipantForm = document.querySelector("#private-participant-form");
-const privateParticipantName = document.querySelector("#private-participant-name");
-const addPrivateParticipantButton = document.querySelector("#add-private-participant");
 const sharedReceiverContext = document.querySelector("#shared-receiver-context");
 const sharedReceiverTitle = document.querySelector("#shared-receiver-title");
 const resumeSharedWorkdayButton = document.querySelector("#resume-shared-workday");
@@ -65,6 +61,9 @@ const sharedResumeDialog = document.querySelector("#shared-resume-dialog");
 const confirmSharedResumeButton = document.querySelector("#confirm-shared-resume");
 const droneOption = document.querySelector("#drone-option");
 const roninOption = document.querySelector("#ronin-option");
+const travelOption = document.querySelector("#travel-option");
+const travelRegionInput = document.querySelector("#travel-region-input");
+const travelResultRow = document.querySelector("[data-travel-result]");
 const customEquipmentOptions = document.querySelector("#custom-equipment-options");
 const customEquipmentResults = document.querySelector("#custom-equipment-results");
 const droneResultRow = document.querySelector('[data-result="droneTariffAmount"]').closest("div");
@@ -79,6 +78,7 @@ const freeActiveWorkdayService = globalThis.OveruurtjeFreeActiveWorkday;
 const sessionUi = globalThis.OveruurtjeSessionUI;
 const shareUi = globalThis.OveruurtjeShareUI;
 const shareService = globalThis.OveruurtjeShares;
+const badgeService = globalThis.OveruurtjeBadges;
 const liveWorkday = globalThis.OveruurtjeLiveWorkday;
 const workdayNotifications = globalThis.OveruurtjeWorkdayNotifications;
 
@@ -119,12 +119,27 @@ let persistedWorkdayEndTime = "";
 let sharedReceiverCalculatedEarly = false;
 let sharedTimeOverrides = new Set();
 let sharedParticipants = [];
-let privateParticipants = [];
 let pendingDuplicateWorkday = null;
 let todayWorkday = null;
 let activeSharedWorkday = null;
 let pendingSharedCompletionSave = null;
 let workdayContextInitializedFor = null;
+
+function announceBadgeAwards(awards) {
+  const badge = awards?.[0];
+  if (!badge) return;
+  sessionUi?.showToast(`${badge.icon} Badge behaald: ${badge.name}`);
+}
+
+async function trackBadgeActivity(eventKey, sourceId = null, metadata = {}) {
+  if (!currentAccountUser || !badgeService) return;
+  try {
+    announceBadgeAwards(await badgeService.track(eventKey, sourceId, metadata));
+  } catch (error) {
+    // Badges must never prevent a calculation, save, or PDF export.
+    console.warn("Badgecontrole is niet gelukt.", error);
+  }
+}
 let liveWorkdayController = null;
 let workdayNotificationController = null;
 let liveWorkdayArmed = false;
@@ -170,6 +185,28 @@ function readCheckbox(formData, name) {
   return formData.get(name) === "on";
 }
 
+function nightSurchargeToTotalPercent(value) {
+  return 100 + Math.max(0, Number(value) || 0);
+}
+
+function nightTotalToSurchargePercent(value) {
+  return Math.max(0, (Number(value) || 100) - 100);
+}
+
+function updateGuestExplanationLink(settings) {
+  const link = document.querySelector("#guest-settings-explanation");
+  if (!link || !settings) return;
+  const params = new URLSearchParams({
+    source: "guest",
+    dayRate: String(Number(settings.dayRate) || DEFAULT_SETTINGS.dayRate),
+    normalDayHours: String(Number(settings.normalDayHours) || DEFAULT_SETTINGS.normalDayHours),
+    nightTotalPercent: String(nightSurchargeToTotalPercent(settings.nightSurchargePercent)),
+    travelWithinEuropePercent: String(Number(settings.travelWithinEuropePercent) || DEFAULT_SETTINGS.travelWithinEuropePercent),
+    travelOutsideEuropePercent: String(Number(settings.travelOutsideEuropePercent) || DEFAULT_SETTINGS.travelOutsideEuropePercent)
+  });
+  link.href = `uitleg-werkregels.html?${params}`;
+}
+
 function getSettingsFromForm() {
   const formData = new FormData(settingsForm);
   const calculatorData = new FormData(form);
@@ -188,14 +225,15 @@ function getSettingsFromForm() {
     enableOvertimeFrom12: readCheckbox(formData, "enableOvertimeFrom12"),
     enableOvertimeFrom14: readCheckbox(formData, "enableOvertimeFrom14"),
     enableNightTariff: readCheckbox(formData, "enableNightTariff"),
-    pureNightSurchargeFactor: DEFAULT_SETTINGS.pureNightSurchargeFactor,
-    nightOverlapSurchargeFactor: DEFAULT_SETTINGS.nightOverlapSurchargeFactor,
+    nightSurchargePercent: nightTotalToSurchargePercent(readNumber(formData, "nightSurchargePercent")),
     nightStart: formData.get("nightStart"),
     nightEnd: formData.get("nightEnd"),
     nightRoundingMinutes: DEFAULT_SETTINGS.nightRoundingMinutes,
     droneTariffAmount: equipmentTariffs.drone,
     ronin4dTariffAmount: equipmentTariffs.ronin,
-    kilometerRate: readNumber(formData, "kilometerRate")
+    kilometerRate: readNumber(formData, "kilometerRate"),
+    travelWithinEuropePercent: currentAccountSettings?.travelWithinEuropePercent ?? DEFAULT_SETTINGS.travelWithinEuropePercent,
+    travelOutsideEuropePercent: currentAccountSettings?.travelOutsideEuropePercent ?? DEFAULT_SETTINGS.travelOutsideEuropePercent
   };
 }
 
@@ -206,7 +244,7 @@ function populateSettings(settings) {
     if (field.type === "checkbox") {
       field.checked = Boolean(value);
     } else {
-      field.value = value;
+      field.value = key === "nightSurchargePercent" ? nightSurchargeToTotalPercent(value) : value;
     }
   });
   const breakField = form.elements.namedItem("breakMinutes");
@@ -215,6 +253,7 @@ function populateSettings(settings) {
   }
   globalThis.OveruurtjeSelectUI?.enhanceAll(settingsForm);
   globalThis.OveruurtjeSelectUI?.enhanceAll(form);
+  updateGuestExplanationLink(settings);
 }
 
 function getAccountSettingsSnapshot() {
@@ -234,9 +273,12 @@ function getAccountSettingsSnapshot() {
     enableOvertimeFrom12: settings.enableOvertimeFrom12,
     enableOvertimeFrom14: settings.enableOvertimeFrom14,
     enableNightTariff: settings.enableNightTariff,
+    nightSurchargePercent: settings.nightSurchargePercent,
     nightStart: settings.nightStart,
     nightEnd: settings.nightEnd,
     mileageRate: settings.kilometerRate,
+    travelWithinEuropePercent: settings.travelWithinEuropePercent,
+    travelOutsideEuropePercent: settings.travelOutsideEuropePercent,
     parkingDefaultAmount: currentAccountSettings?.parkingDefaultAmount || 0,
     droneVisible: currentAccountSettings?.droneVisible ?? false,
     roninVisible: currentAccountSettings?.roninVisible ?? false,
@@ -305,9 +347,12 @@ function applyAccountSettings(accountSettings, isPro) {
     enableOvertimeFrom12: accountSettings.enableOvertimeFrom12,
     enableOvertimeFrom14: accountSettings.enableOvertimeFrom14,
     enableNightTariff: accountSettings.enableNightTariff,
+    nightSurchargePercent: accountSettings.nightSurchargePercent,
     nightStart: accountSettings.nightStart,
     nightEnd: accountSettings.nightEnd,
-    kilometerRate: accountSettings.mileageRate
+    kilometerRate: accountSettings.mileageRate,
+    travelWithinEuropePercent: accountSettings.travelWithinEuropePercent,
+    travelOutsideEuropePercent: accountSettings.travelOutsideEuropePercent
   });
 
   const departmentField = form.querySelector(`input[name="department"][value="${accountSettings.defaultDepartment}"]`);
@@ -318,7 +363,7 @@ function applyAccountSettings(accountSettings, isPro) {
   departmentSwitch.querySelectorAll(".department-choice").forEach((choice) => {
     const input = choice.querySelector("input");
     if (choice.classList.contains("department-choice-pro")) {
-      choice.hidden = isPro;
+      choice.hidden = true;
       input.disabled = true;
       return;
     }
@@ -352,6 +397,8 @@ function getWorkFunctionPreset() {
       enableRonin4dTariff: readCheckbox(formData, "enableRonin4dTariff"),
       enableKilometers: readCheckbox(formData, "enableKilometers"),
       enableParkingCosts: readCheckbox(formData, "enableParkingCosts"),
+      enableTravelDay: readCheckbox(formData, "enableTravelDay"),
+      travelRegion: formData.get("travelRegion") || "within_europe",
       customEquipmentIds: getSelectedCustomEquipment()
         .filter((item) => item.enabled)
         .map((item) => item.id)
@@ -360,10 +407,13 @@ function getWorkFunctionPreset() {
 }
 
 function applyWorkFunctionExtras(extras = {}) {
-  ["enableDroneTariff", "enableRonin4dTariff", "enableKilometers", "enableParkingCosts"].forEach((name) => {
+  ["enableDroneTariff", "enableRonin4dTariff", "enableKilometers", "enableParkingCosts", "enableTravelDay"].forEach((name) => {
     const field = form.elements.namedItem(name);
     if (field && !field.disabled && Object.hasOwn(extras, name)) field.checked = Boolean(extras[name]);
   });
+  if (extras.travelRegion && form.elements.namedItem("travelRegion")) {
+    form.elements.namedItem("travelRegion").value = extras.travelRegion;
+  }
   const selectedEquipment = new Set(extras.customEquipmentIds || []);
   customEquipmentOptions.querySelectorAll("[data-custom-equipment-id]").forEach((field) => {
     field.checked = selectedEquipment.has(field.dataset.customEquipmentId);
@@ -488,7 +538,6 @@ function buildWorkdaySnapshot() {
     startTime: form.elements.namedItem("startTime").value,
     endTime,
     breakMinutes: settings.breakMinutes,
-    privateParticipants: [...privateParticipants],
     settings,
     extras: {
       enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
@@ -497,6 +546,13 @@ function buildWorkdaySnapshot() {
       kilometers: readNumber(formData, "kilometers"),
       enableParkingCosts: readCheckbox(formData, "enableParkingCosts"),
       parkingCosts: readNumber(formData, "parkingCosts"),
+      enableTravelDay: readCheckbox(formData, "enableTravelDay"),
+      travelRegion: formData.get("travelRegion") || "within_europe",
+      travelPercent: readCheckbox(formData, "enableTravelDay")
+        ? (formData.get("travelRegion") === "outside_europe"
+          ? settings.travelOutsideEuropePercent
+          : settings.travelWithinEuropePercent)
+        : 0,
       customEquipment: getSelectedCustomEquipment()
     },
     sharedSourceType: currentSharedSource?.type || "",
@@ -537,7 +593,6 @@ function projectDayToWorkdaySnapshot(project, day) {
     startTime: data.startTime || "08:00",
     endTime: data.endTime || "",
     breakMinutes: Number(data.breakMinutes) || 0,
-    privateParticipants: Array.isArray(data.privateParticipants) ? data.privateParticipants : [],
     settings: {
       ...currentSettings,
       rateMode,
@@ -552,9 +607,18 @@ function projectDayToWorkdaySnapshot(project, day) {
       enableOvertimeFrom12: Boolean(data.enableOvertimeFrom12),
       enableOvertimeFrom14: Boolean(data.enableOvertimeFrom14),
       enableNightTariff: Boolean(data.enableNightTariff),
+      nightSurchargePercent: Number.isFinite(Number(data.nightSurchargePercent))
+        ? Number(data.nightSurchargePercent)
+        : 100,
       nightStart: data.nightStart || currentSettings.nightStart,
       nightEnd: data.nightEnd || currentSettings.nightEnd,
-      kilometerRate: Number(data.kilometerRate) || currentSettings.kilometerRate
+      kilometerRate: Number(data.kilometerRate) || currentSettings.kilometerRate,
+      travelWithinEuropePercent: data.enableTravelDay && data.travelRegion !== "outside_europe"
+        ? Number(data.travelPercent) || currentSettings.travelWithinEuropePercent
+        : currentSettings.travelWithinEuropePercent,
+      travelOutsideEuropePercent: data.enableTravelDay && data.travelRegion === "outside_europe"
+        ? Number(data.travelPercent) || currentSettings.travelOutsideEuropePercent
+        : currentSettings.travelOutsideEuropePercent
     },
     extras: {
       enableDroneTariff: Boolean(data.enableDroneTariff),
@@ -563,6 +627,9 @@ function projectDayToWorkdaySnapshot(project, day) {
       kilometers: Number(data.kilometers) || 0,
       enableParkingCosts: Boolean(data.enableParkingCosts),
       parkingCosts: Number(data.parkingCosts) || 0,
+      enableTravelDay: Boolean(data.enableTravelDay),
+      travelRegion: data.travelRegion === "outside_europe" ? "outside_europe" : "within_europe",
+      travelPercent: Number(data.travelPercent) || 0,
       customEquipment: Array.isArray(data.customEquipment) ? data.customEquipment : []
     },
     result: null,
@@ -590,8 +657,14 @@ function workdaySnapshotToProjectDay(snapshot, existing = {}) {
     enableOvertimeFrom12: Boolean(settings.enableOvertimeFrom12),
     enableOvertimeFrom14: Boolean(settings.enableOvertimeFrom14),
     enableNightTariff: Boolean(settings.enableNightTariff),
+    nightSurchargePercent: Number(settings.nightSurchargePercent) || 0,
     nightStart: settings.nightStart,
     nightEnd: settings.nightEnd,
+    enableTravelDay: Boolean(extras.enableTravelDay),
+    travelRegion: extras.travelRegion === "outside_europe" ? "outside_europe" : "within_europe",
+    travelPercent: Number(extras.travelPercent) || (extras.travelRegion === "outside_europe"
+      ? Number(settings.travelOutsideEuropePercent) || 0
+      : Number(settings.travelWithinEuropePercent) || 0),
     enableKilometers: Boolean(extras.enableKilometers),
     kilometers: Number(extras.kilometers) || 0,
     kilometerRate: Number(settings.kilometerRate) || 0,
@@ -600,7 +673,6 @@ function workdaySnapshotToProjectDay(snapshot, existing = {}) {
     enableDroneTariff: Boolean(extras.enableDroneTariff),
     enableRonin4dTariff: Boolean(extras.enableRonin4dTariff),
     customEquipment: Array.isArray(extras.customEquipment) ? extras.customEquipment : [],
-    privateParticipants: Array.isArray(snapshot.privateParticipants) ? snapshot.privateParticipants : []
   };
 }
 
@@ -610,7 +682,7 @@ function clearCalculationDisplay() {
     "overtimeFrom14Hours", "nightHours", "nightOvertimeHours", "pureNightHours"
   ].forEach((name) => setResult(name, 0));
   [
-    "baseAmount", "overtimeAmount", "nightAmount", "droneTariffAmount",
+    "baseAmount", "travelDayAmount", "overtimeAmount", "nightAmount", "droneTariffAmount",
     "ronin4dTariffAmount", "kilometerAmount", "parkingAmount", "subtotalExVat",
     "vatAmount", "totalIncVat"
   ].forEach((name) => setResult(name, 0, formatEuro));
@@ -738,61 +810,29 @@ function updateSharedReceiverSync() {
 
 function renderCurrentWorkdayParticipants() {
   if (!currentWorkdayParticipants || !currentWorkdayParticipantList) return;
-  const isPro = Boolean(currentUserContext?.isPro);
-  const isSharedReceiver = Boolean(currentSharedSource);
   const accountParticipants = sharedParticipants.filter((participant) => participant.hasAccount !== false);
-  const remotePrivateParticipants = sharedParticipants
-    .filter((participant) => participant.hasAccount === false)
-    .map((participant) => participant.firstName)
-    .filter((name) => !privateParticipants.some(
-      (item) => item.toLocaleLowerCase("nl-NL") === name.toLocaleLowerCase("nl-NL")
-    ));
   const visibleShared = accountParticipants.length >= 2 ? accountParticipants : [];
-  const chips = [
-    ...visibleShared.map((participant) => {
-      const chip = document.createElement("span");
-      chip.className = "participant-chip is-account";
-      chip.textContent = participant.isCurrentUser
-        ? `${participant.firstName} (jij)`
-        : participant.firstName;
-      return chip;
-    }),
-    ...privateParticipants.map((name, index) => {
-      const chip = document.createElement("span");
-      chip.className = "participant-chip is-private";
-      const label = document.createElement("span");
-      label.textContent = name;
-      const badge = document.createElement("small");
-      badge.textContent = "Zonder account";
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.setAttribute("aria-label", `${name} verwijderen`);
-      remove.textContent = "×";
-      remove.addEventListener("click", () => {
-        privateParticipants.splice(index, 1);
-        renderCurrentWorkdayParticipants();
-        markCalculationStale();
-      });
-      chip.append(label, badge);
-      if (!isSharedReceiver) chip.append(remove);
-      return chip;
-    }),
-    ...remotePrivateParticipants.map((name) => {
-      const chip = document.createElement("span");
-      chip.className = "participant-chip is-private";
-      const label = document.createElement("span");
-      label.textContent = name;
-      const badge = document.createElement("small");
-      badge.textContent = "Zonder account";
-      chip.append(label, badge);
-      return chip;
-    })
-  ];
+  const chips = visibleShared.map((participant) => {
+    const chip = document.createElement("span");
+    chip.className = "participant-chip is-account";
+    const name = document.createElement("span");
+    name.className = "participant-chip-name";
+    name.textContent = participant.isCurrentUser
+      ? `${participant.firstName} (jij)`
+      : participant.firstName;
+    chip.append(name);
+    if (participant.selectedBadgeIcon) {
+      const badge = document.createElement("span");
+      badge.className = "participant-chip-badge";
+      badge.textContent = participant.selectedBadgeIcon;
+      badge.title = participant.selectedBadgeName || "Geselecteerde badge";
+      chip.append(badge);
+    }
+    return chip;
+  });
   currentWorkdayParticipantList.replaceChildren(...chips);
   currentWorkdayParticipantList.hidden = chips.length === 0;
-  if (privateParticipantPanel) privateParticipantPanel.hidden = !isPro || isSharedReceiver;
-  if (privateParticipantForm) privateParticipantForm.hidden = !isPro || isSharedReceiver;
-  currentWorkdayParticipants.hidden = false;
+  currentWorkdayParticipants.hidden = chips.length === 0;
 }
 
 function updateSharedReceiverMode() {
@@ -849,8 +889,6 @@ function updateSharedReceiverMode() {
     clientName.closest("label")?.classList.toggle("is-shared-readonly", active);
   }
   if (shareFromParticipantsButton) shareFromParticipantsButton.hidden = active;
-  if (privateParticipantPanel) privateParticipantPanel.hidden = active || !currentUserContext?.isPro;
-  if (privateParticipantForm) privateParticipantForm.hidden = active || !currentUserContext?.isPro;
   if (resumeLiveWorkdayButton && active) resumeLiveWorkdayButton.hidden = true;
   if (resumeSharedWorkdayButton) {
     resumeSharedWorkdayButton.hidden = !active || !sharedReceiverCalculatedEarly;
@@ -874,9 +912,6 @@ function applyWorkdaySnapshot(workday, { projectContext = null, freeActive = fal
   sharedReceiverCalculatedEarly = false;
   sharedTimeOverrides = new Set();
   currentSharedOwnerName = snapshot.sharedOwnerName || "";
-  privateParticipants = Array.isArray(snapshot.privateParticipants)
-    ? snapshot.privateParticipants.map((name) => String(name || "").trim()).filter(Boolean)
-    : [];
   if (form.elements.namedItem("workdayName")) {
     form.elements.namedItem("workdayName").value = workday.name || snapshot.workdayName || "";
   }
@@ -895,7 +930,15 @@ function applyWorkdaySnapshot(workday, { projectContext = null, freeActive = fal
   form.elements.namedItem("startTime").dataset.timeRestored = "true";
   if (snapshot.endTime) restoredEndTime.dataset.timeRestored = "true";
   else delete restoredEndTime.dataset.timeRestored;
-  if (snapshot.settings) populateSettings({ ...getSettingsFromForm(), ...snapshot.settings });
+  if (snapshot.settings) {
+    const storedSettings = {
+      ...snapshot.settings,
+      nightSurchargePercent: Object.hasOwn(snapshot.settings, "nightSurchargePercent")
+        ? snapshot.settings.nightSurchargePercent
+        : 100
+    };
+    populateSettings({ ...getSettingsFromForm(), ...storedSettings });
+  }
   if (snapshot.department) {
     const department = form.querySelector(`input[name="department"][value="${snapshot.department}"]`);
     if (department) department.checked = true;
@@ -906,13 +949,18 @@ function applyWorkdaySnapshot(workday, { projectContext = null, freeActive = fal
 
   const extras = snapshot.extras || {};
   [
-    "enableDroneTariff", "enableRonin4dTariff", "enableKilometers", "enableParkingCosts"
+    "enableDroneTariff", "enableRonin4dTariff", "enableKilometers", "enableParkingCosts", "enableTravelDay"
   ].forEach((name) => {
     const field = form.elements.namedItem(name);
     if (field && !field.disabled) field.checked = Boolean(extras[name]);
   });
   form.elements.namedItem("kilometers").value = String(extras.kilometers || 0);
   form.elements.namedItem("parkingCosts").value = String(extras.parkingCosts || 0);
+  if (form.elements.namedItem("travelRegion")) {
+    form.elements.namedItem("travelRegion").value = extras.travelRegion === "outside_europe"
+      ? "outside_europe"
+      : "within_europe";
+  }
   (extras.customEquipment || []).forEach((item) => {
     const field = customEquipmentOptions.querySelector(`[data-custom-equipment-id="${item.id}"]`);
     if (field) field.checked = Boolean(item.enabled);
@@ -921,6 +969,7 @@ function applyWorkdaySnapshot(workday, { projectContext = null, freeActive = fal
   updateDepartmentVisibility();
   updateKilometerVisibility();
   updateParkingVisibility();
+  updateTravelVisibility();
   updateNightSettingsVisibility();
   updateRateSettingsVisibility();
   updatePauseVisibility();
@@ -993,6 +1042,13 @@ async function listExistingDateEntries(date) {
   ];
 }
 
+async function listOwnEntriesForSharedDate(date) {
+  if (currentUserContext?.isPro) return listExistingDateEntries(date);
+  const localWorkday = freeActiveWorkdayService.load(currentAccountUser.id);
+  if (!localWorkday || localWorkday.workDate !== date) return [];
+  return [{ kind: "free-active", workday: localWorkday }];
+}
+
 function configureDuplicateWorkdayDialog(entry) {
   const projectDay = entry?.kind === "project-day";
   document.querySelector("#duplicate-workday-title").textContent = projectDay
@@ -1048,10 +1104,25 @@ function hideActiveSharedReminder() {
 async function findActiveReceivedShare() {
   if (!shareService || currentUserContext?.subscription?.isMock) return null;
   const received = await shareService.listReceived();
-  return received
+  const active = received
     .filter((item) => item.acceptedAt && !item.endTime)
     .sort((a, b) => String(b.sourceUpdatedAt || b.createdAt || "")
-      .localeCompare(String(a.sourceUpdatedAt || a.createdAt || "")))[0] || null;
+      .localeCompare(String(a.sourceUpdatedAt || a.createdAt || "")));
+  return { selected: active[0] || null, all: active };
+}
+
+function activeContextDismissalKey() {
+  return currentAccountUser ? `overuurtjeNewCalculation:${currentAccountUser.id}` : "";
+}
+
+function suppressActiveContextForSession() {
+  const key = activeContextDismissalKey();
+  if (key) sessionStorage.setItem(key, localDateValue());
+}
+
+function activeContextIsSuppressed() {
+  const key = activeContextDismissalKey();
+  return Boolean(key && sessionStorage.getItem(key) === localDateValue());
 }
 
 async function hasAcceptedSharedRecipients() {
@@ -1115,6 +1186,7 @@ async function persistWorkday(snapshot, id = null) {
   url.searchParams.set("workday", saved.id);
   history.replaceState({}, "", url);
   sessionUi?.showToast("Werkdag opgeslagen.");
+  void trackBadgeActivity("workday_saved", saved.id);
   return saved;
 }
 
@@ -1138,6 +1210,7 @@ async function persistProjectDay(snapshot) {
   updateWorkdaySaveAccess();
   refreshCurrentWorkdayParticipants();
   sessionUi?.showToast("Projectdag opgeslagen.");
+  void trackBadgeActivity("project_day_saved", savedDay.id);
   return savedDay;
 }
 
@@ -1260,7 +1333,7 @@ function updateWorkdaySaveAccess() {
         ? "Mijn instellingen opslaan"
       : currentWorkdayId
         ? "Werkdag bijwerken"
-      : (!isPro && canSaveFreeActive ? "Actieve werkdag bewaren" : "Werkdag opslaan");
+      : "Bewaar voor later";
   }
   if (workdaySaveHint) {
     workdaySaveHint.hidden = false;
@@ -1269,8 +1342,8 @@ function updateWorkdaySaveAccess() {
       : hasSharedRecipient
         ? "Opslaan werkt gedeelde tijden bij voor je collega's"
         : canSaveFreeActive
-          ? "Tijdelijk beschikbaar als actieve werkdag"
-          : "Bewaar je begintijd; vul later je eindtijd in";
+          ? "Blijf later verdergaan met deze actieve werkdag"
+          : "Bewaar datum, begintijd en instellingen";
   }
   if (workdaySaveBadge) workdaySaveBadge.hidden = isSharedReceiver || isPro || canSaveFreeActive;
   workdaySaveButton.title = hasDate
@@ -1310,6 +1383,12 @@ async function initializeWorkdayContext() {
   const requestedProjectId = search.get("project");
   const requestedProjectDayId = search.get("projectDay");
   try {
+    if (search.get("new") === "1") {
+      suppressActiveContextForSession();
+      search.delete("new");
+      history.replaceState({}, "", `${location.pathname}${search.toString() ? `?${search}` : ""}`);
+      return;
+    }
     if (requestedShareId || sessionStorage.getItem("overuurtjeSharedTimesImport")) return;
 
     if (currentUserContext?.isPro && requestedProjectId && requestedProjectDayId) {
@@ -1346,10 +1425,15 @@ async function initializeWorkdayContext() {
       return;
     }
 
-    const activeShare = await findActiveReceivedShare();
-    if (activeShare) {
-      activeSharedWorkday = activeShare;
-      todayWorkday = { kind: "shared", share: activeShare };
+    const activeShares = await findActiveReceivedShare();
+    if (activeShares.selected && !activeContextIsSuppressed()) {
+      activeSharedWorkday = activeShares.selected;
+      const ownEntries = await listOwnEntriesForSharedDate(activeShares.selected.workDate);
+      if (activeShares.all.length === 1 && ownEntries.length === 0) {
+        location.replace(`index.html?shared=${encodeURIComponent(activeShares.selected.id)}`);
+        return;
+      }
+      todayWorkday = { kind: "shared", share: activeShares.selected };
       configureTodayWorkdayDialog(todayWorkday);
       openNativeDialog(todayWorkdayDialog);
       return;
@@ -1653,14 +1737,16 @@ function renderPrintBreakdown(result) {
   const startTime = form.elements.namedItem("startTime").value;
   const endTime = form.elements.namedItem("endTime").value;
   const lines = document.querySelector("#print-calculation-lines");
-  const usesHalfDayRate = result.baseAmount < result.settings.dayRate;
+  const usesHalfDayRate = !result.isTravelDay && result.baseAmount < result.settings.dayRate;
 
   setPrintValue("workdayName", workdayName || "-");
   document.querySelector('[data-print-row="workdayName"]').hidden = !workdayName;
   setPrintValue("clientName", clientName || "-");
   document.querySelector('[data-print-row="clientName"]').hidden = !clientName;
   setPrintValue("date", date || "Niet ingevuld");
-  setPrintValue("times", `${startTime} tot ${endTime}${result.endsNextDay ? " (volgende dag)" : ""}`);
+  setPrintValue("times", startTime && endTime
+    ? `${startTime} tot ${endTime}${result.endsNextDay ? " (volgende dag)" : ""}`
+    : "Niet ingevuld");
   setPrintValue("breakMinutes", result.breakMinutes ? `${result.breakMinutes} minuten` : "-");
   document.querySelector('[data-print-row="break"]').hidden = !result.breakMinutes;
   setPrintValue("totalHours", formatHours(result.totalHours));
@@ -1670,10 +1756,14 @@ function renderPrintBreakdown(result) {
 
   lines.replaceChildren();
   addPrintCalculationLine(lines,
-    result.rateMode === "hour"
+    result.isTravelDay
+      ? `Reisdag · ${result.travelRegion === "outside_europe" ? "Buiten Europa" : "Binnen Europa"}`
+      : result.rateMode === "hour"
       ? (result.minimumChargeApplied ? "Minimale afname" : "Gewerkte uren")
       : (usesHalfDayRate ? "Halve dagvergoeding" : "Minimale dagvergoeding"),
-    result.rateMode === "hour"
+    result.isTravelDay
+      ? `${numberFormatter.format(result.travelPercent)}% van ${euroFormatter.format(result.settings.dayRate)}`
+      : result.rateMode === "hour"
       ? `${numberFormatter.format(result.regularHours)} uur × ${euroFormatter.format(result.hourlyRate)}${result.minimumChargeApplied ? ` + ${euroFormatter.format(result.minimumAdjustmentAmount)} minimumcorrectie tot ${numberFormatter.format(result.minimumHours)} uur` : ""}`
       : (usesHalfDayRate ? `75% van ${euroFormatter.format(result.settings.dayRate)}` : `Dagtarief voor maximaal ${numberFormatter.format(result.settings.normalDayHours)} uur`),
     result.baseAmount
@@ -1704,15 +1794,15 @@ function renderPrintBreakdown(result) {
   );
   addPrintCalculationLine(
     lines,
-    "Pure nachturen (100% toeslag)",
-    `${formatCalculation(result.pureNightHours, result.hourlyRate, 1)} (uur is inclusief dagtarief 200% waard)`,
+    `Pure nachturen tegen ${numberFormatter.format(nightSurchargeToTotalPercent(result.settings.nightSurchargePercent))}%`,
+    `${formatCalculation(result.pureNightHours, result.hourlyRate, result.settings.pureNightSurchargeFactor)} extra (totaal ${numberFormatter.format(nightSurchargeToTotalPercent(result.settings.nightSurchargePercent))}% per nachtuur)`,
     result.pureNightAmount
   );
   result.nightOvertimeSurchargeBreakdown.forEach((item) => {
     addPrintCalculationLine(
       lines,
-      `Nachttoeslag over overuren tegen ${numberFormatter.format(item.surchargeFactor * 100)}%`,
-      `${formatCalculation(item.hours, result.hourlyRate, item.surchargeFactor)} (overuurvergoeding staat hierboven)`,
+      `Nachturen tijdens overuren tegen ${numberFormatter.format((item.surchargeFactor + (item.surchargeFactor / (result.settings.nightOverlapSurchargeFactor || 1))) * 100)}% totaal`,
+      `${formatCalculation(item.hours, result.hourlyRate, item.surchargeFactor)} extra (overuurvergoeding staat hierboven)`,
       item.amount
     );
   });
@@ -1799,16 +1889,17 @@ async function syncFreeSharedWorkdaySource() {
 
 function updateCalculation(trackCompletion = false) {
   const endTimeField = form.elements.namedItem("endTime");
+  const settings = getSettingsFromForm();
+  const formData = new FormData(form);
+  const isTravelDay = readCheckbox(formData, "enableTravelDay");
 
   if (!form.reportValidity() || !settingsForm.reportValidity()) return;
-  if (!endTimeField.value) {
+  if (!endTimeField.value && !isTravelDay) {
     clearCalculationDisplay();
     if (trackCompletion) sessionUi?.showToast("Vul eerst de eindtijd in om te berekenen.");
     return;
   }
 
-  const settings = getSettingsFromForm();
-  const formData = new FormData(form);
   const department = formData.get("department");
 
   const result = calculateTariff(
@@ -1824,7 +1915,12 @@ function updateCalculation(trackCompletion = false) {
       enableKilometers: readCheckbox(formData, "enableKilometers"),
       kilometers: readNumber(formData, "kilometers"),
       enableParkingCosts: readCheckbox(formData, "enableParkingCosts"),
-      parkingCosts: readNumber(formData, "parkingCosts")
+      parkingCosts: readNumber(formData, "parkingCosts"),
+      enableTravelDay: readCheckbox(formData, "enableTravelDay"),
+      travelRegion: formData.get("travelRegion") || "within_europe",
+      travelPercent: formData.get("travelRegion") === "outside_europe"
+        ? settings.travelOutsideEuropePercent
+        : settings.travelWithinEuropePercent
     },
     settings
   );
@@ -1838,6 +1934,8 @@ function updateCalculation(trackCompletion = false) {
   setResult("nightOvertimeHours", result.nightOvertimeHours);
   setResult("pureNightHours", result.pureNightHours);
   setResult("baseAmount", result.baseAmount, formatEuro);
+  document.querySelector("[data-base-result]").hidden = Boolean(result.isTravelDay);
+  setResult("travelDayAmount", result.travelDayAmount, formatEuro);
   setResult("overtimeAmount", result.overtimeAmount, formatEuro);
   setResult("nightAmount", result.nightAmount, formatEuro);
   setResult("droneTariffAmount", result.droneTariffAmount, formatEuro);
@@ -1848,6 +1946,7 @@ function updateCalculation(trackCompletion = false) {
   setResult("subtotalExVat", result.subtotalExVat, formatEuro);
   setResult("vatAmount", result.vatAmount, formatEuro);
   setResult("totalIncVat", result.totalIncVat, formatEuro);
+  if (travelResultRow) travelResultRow.hidden = !result.isTravelDay;
 
   nextDayNotice.hidden = !result.endsNextDay;
   form.dataset.summary = buildSummary(result);
@@ -1857,6 +1956,10 @@ function updateCalculation(trackCompletion = false) {
   calculationStatus.hidden = true;
 
   if (trackCompletion) {
+    void trackBadgeActivity("calculator_calculated", currentWorkdayId || currentProjectDayContext?.day?.id || null, {
+      shared: Boolean(currentSharedSource),
+      travelDay: result.isTravelDay
+    });
     void syncFreeSharedWorkdaySource().catch((error) => {
       console.warn("Gedeelde Free-werkdag bijwerken is mislukt.", error);
     });
@@ -1999,6 +2102,16 @@ function updateParkingVisibility() {
   parkingInput.hidden = !parkingEnabled;
 }
 
+function updateTravelVisibility() {
+  const enabled = Boolean(form.elements.namedItem("enableTravelDay")?.checked);
+  if (travelRegionInput) travelRegionInput.hidden = !enabled;
+  if (travelResultRow) travelResultRow.hidden = !enabled;
+  const startTime = form.elements.namedItem("startTime");
+  const endTime = form.elements.namedItem("endTime");
+  if (startTime) startTime.required = !enabled;
+  if (endTime) endTime.required = !enabled;
+}
+
 function updateDepartmentVisibility() {
   const department = form.elements.namedItem("department").value || "camera";
   const isPro = Boolean(currentUserContext?.isPro);
@@ -2006,14 +2119,15 @@ function updateDepartmentVisibility() {
   const showRonin = department === "camera" && (isPro ? Boolean(accountEquipmentVisibility?.ronin) : true);
   const droneCheckbox = form.elements.namedItem("enableDroneTariff");
   const roninCheckbox = form.elements.namedItem("enableRonin4dTariff");
+  const travelCheckbox = form.elements.namedItem("enableTravelDay");
 
   inputOptions.dataset.department = department;
   droneOption.hidden = !showDrone;
   droneResultRow.hidden = !showDrone;
   roninOption.hidden = !showRonin;
   roninResultRow.hidden = !showRonin;
-  [droneOption, roninOption].forEach((option) => option.classList.toggle("is-pro-locked", !isPro));
-  [droneOption, roninOption].forEach((option) => {
+  [droneOption, roninOption, travelOption].filter(Boolean).forEach((option) => option.classList.toggle("is-pro-locked", !isPro));
+  [droneOption, roninOption, travelOption].filter(Boolean).forEach((option) => {
     if (!isPro) {
       option.setAttribute("role", "button");
       option.setAttribute("tabindex", "0");
@@ -2024,11 +2138,12 @@ function updateDepartmentVisibility() {
       option.removeAttribute("aria-label");
     }
   });
-  [droneCheckbox, roninCheckbox].filter(Boolean).forEach((checkbox) => { checkbox.disabled = !isPro; });
+  [droneCheckbox, roninCheckbox, travelCheckbox].filter(Boolean).forEach((checkbox) => { checkbox.disabled = !isPro; });
   document.querySelectorAll(".pro-option-badge").forEach((badge) => { badge.hidden = isPro; });
   if (!isPro) {
     if (droneCheckbox) droneCheckbox.checked = false;
     if (roninCheckbox) roninCheckbox.checked = false;
+    if (travelCheckbox) travelCheckbox.checked = false;
   }
 
   if (!showDrone && droneCheckbox) {
@@ -2040,6 +2155,7 @@ function updateDepartmentVisibility() {
     roninCheckbox.checked = false;
     setResult("ronin4dTariffAmount", 0, formatEuro);
   }
+  updateTravelVisibility();
 }
 
 function markCalculationStale() {
@@ -2114,7 +2230,8 @@ function trackOptionChange(target) {
     enableDroneTariff: "drone_enabled",
     enableRonin4dTariff: "ronin4d_enabled",
     enableKilometers: "mileage_enabled",
-    enableParkingCosts: "parking_enabled"
+    enableParkingCosts: "parking_enabled",
+    enableTravelDay: "travel_day_enabled"
   };
   const eventName = eventByField[target.name];
   if (eventName) analytics?.track(eventName, { department });
@@ -2199,6 +2316,7 @@ updateRateSettingsVisibility();
 updatePauseVisibility();
 updateKilometerVisibility();
 updateParkingVisibility();
+updateTravelVisibility();
 initializeLiveWorkday();
 
 form.addEventListener("input", () => {
@@ -2208,14 +2326,14 @@ form.addEventListener("input", () => {
 });
 form.addEventListener("click", (event) => {
   if (currentUserContext?.isPro) return;
-  if (event.target.closest("#drone-option, #ronin-option")) {
+  if (event.target.closest("#drone-option, #ronin-option, #travel-option")) {
     event.preventDefault();
     sessionUi?.openUpgrade();
   }
 });
 form.addEventListener("keydown", (event) => {
   if (currentUserContext?.isPro || !["Enter", " "].includes(event.key)) return;
-  if (event.target.closest("#drone-option, #ronin-option")) {
+  if (event.target.closest("#drone-option, #ronin-option, #travel-option")) {
     event.preventDefault();
     sessionUi?.openUpgrade();
   }
@@ -2247,6 +2365,7 @@ form.addEventListener("change", (event) => {
 });
 settingsForm.addEventListener("input", (event) => {
   markCalculationStale();
+  updateGuestExplanationLink(getSettingsFromForm());
   if (["dayRate", "hourlyRate", "normalDayHours", "minimumHours", "kilometerRate"].includes(event.target.name)) scheduleAccountSettingsSync();
   scheduleActiveWorkFunctionSync();
 });
@@ -2255,6 +2374,7 @@ settingsForm.addEventListener("change", () => {
   updateRateSettingsVisibility();
   updatePauseVisibility();
   markCalculationStale();
+  updateGuestExplanationLink(getSettingsFromForm());
   scheduleAccountSettingsSync();
   scheduleActiveWorkFunctionSync();
   liveWorkdayController?.update();
@@ -2359,27 +2479,6 @@ function toggleSharedTimeOverride(fieldName) {
 }
 sharedStartTimeLockButton?.addEventListener("click", () => toggleSharedTimeOverride("startTime"));
 sharedEndTimeLockButton?.addEventListener("click", () => toggleSharedTimeOverride("endTime"));
-function addPrivateParticipant() {
-  if (!currentUserContext?.isPro) {
-    sessionUi?.openUpgrade();
-    return;
-  }
-  const name = String(privateParticipantName?.value || "").trim();
-  if (!name) return;
-  if (!privateParticipants.some((item) => item.toLocaleLowerCase("nl-NL") === name.toLocaleLowerCase("nl-NL"))) {
-    privateParticipants.push(name);
-  }
-  privateParticipantName.value = "";
-  renderCurrentWorkdayParticipants();
-  markCalculationStale();
-}
-
-addPrivateParticipantButton?.addEventListener("click", addPrivateParticipant);
-privateParticipantName?.addEventListener("keydown", (event) => {
-  if (event.key !== "Enter") return;
-  event.preventDefault();
-  addPrivateParticipant();
-});
 document.addEventListener("overuurtje:shares-changed", refreshCurrentWorkdayParticipants);
 window.addEventListener("focus", () => {
   refreshCurrentWorkdayParticipants();
@@ -2417,6 +2516,7 @@ document.querySelector("#continue-today-workday")?.addEventListener("click", () 
   closeNativeDialog(todayWorkdayDialog);
 });
 document.querySelector("#new-today-calculation")?.addEventListener("click", () => {
+  suppressActiveContextForSession();
   if (todayWorkday?.kind === "shared") {
     showActiveSharedReminder(todayWorkday.share);
   }
@@ -2426,6 +2526,9 @@ document.querySelector("#new-today-calculation")?.addEventListener("click", () =
   }
   todayWorkday = null;
   closeNativeDialog(todayWorkdayDialog);
+});
+document.querySelector("#new-calculation")?.addEventListener("click", () => {
+  suppressActiveContextForSession();
 });
 document.querySelectorAll("[data-workday-dialog-close]").forEach((button) => {
   button.addEventListener("click", () => {
@@ -2464,7 +2567,10 @@ document.querySelectorAll("[data-shared-resume-cancel]").forEach((button) => {
 copyButton.addEventListener("click", copySummary);
 saveSettingsButton.addEventListener("click", saveCurrentSettings);
 pdfButton.addEventListener("click", () => {
-  globalThis.OveruurtjeFeatureGate.require("pdf_export", currentUserContext, () => window.print());
+  globalThis.OveruurtjeFeatureGate.require("pdf_export", currentUserContext, () => {
+    void trackBadgeActivity("pdf_generated", currentWorkdayId || currentProjectDayContext?.day?.id || null);
+    window.print();
+  });
 });
 optionsToggle?.addEventListener("click", () => {
   const expanded = optionsToggle.getAttribute("aria-expanded") === "true";

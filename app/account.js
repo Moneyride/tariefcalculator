@@ -66,6 +66,8 @@
   const accountClientStatus = document.querySelector("#account-client-status");
   const accountEnableNotifications = document.querySelector("#account-enable-notifications");
   const accountNotificationStatus = document.querySelector("#account-notification-status");
+  const pushDiagnostics = document.querySelector("#push-diagnostics");
+  const testNotificationButton = document.querySelector("#account-test-notification");
   const pushService = globalThis.OveruurtjePush;
   let currentContext = null;
   let loadedSettings = settingsService.defaults;
@@ -201,6 +203,28 @@
     return new Intl.DateTimeFormat("nl-NL", { dateStyle: "long" }).format(new Date(value));
   }
 
+  function nightSurchargeToTotalPercent(value) {
+    return 100 + Math.max(0, Number(value) || 0);
+  }
+
+  function nightTotalToSurchargePercent(value) {
+    return Math.max(0, (Number(value) || 100) - 100);
+  }
+
+  function updateExplanationLink(settings) {
+    const link = document.querySelector(".account-explanation-link");
+    if (!link || !settings) return;
+    const params = new URLSearchParams({
+      source: "account",
+      dayRate: String(Number(settings.defaultDayRate) || settingsService.defaults.defaultDayRate),
+      normalDayHours: String(Number(settings.normalDayHours) || settingsService.defaults.normalDayHours),
+      nightTotalPercent: String(nightSurchargeToTotalPercent(settings.nightSurchargePercent)),
+      travelWithinEuropePercent: String(Number(settings.travelWithinEuropePercent) || settingsService.defaults.travelWithinEuropePercent),
+      travelOutsideEuropePercent: String(Number(settings.travelOutsideEuropePercent) || settingsService.defaults.travelOutsideEuropePercent)
+    });
+    link.href = `uitleg-werkregels.html?${params}`;
+  }
+
   function populateSettings(settings) {
     const values = settings || settingsService.defaults;
     loadedSettings = { ...settingsService.defaults, ...values };
@@ -208,12 +232,13 @@
       const field = settingsForm.elements.namedItem(name);
       if (!field) return;
       if (field.type === "checkbox") field.checked = Boolean(value);
-      else field.value = value;
+      else field.value = name === "nightSurchargePercent" ? nightSurchargeToTotalPercent(value) : value;
     });
     updateDepartmentFields();
     updateRateFields();
     updateNightFields();
     globalThis.OveruurtjeSelectUI?.enhanceAll(settingsForm);
+    updateExplanationLink(loadedSettings);
   }
 
   function readSettings() {
@@ -237,6 +262,9 @@
       enableNightTariff: checked("enableNightTariff"),
       nightStart: data.get("nightStart") || "00:00",
       nightEnd: data.get("nightEnd") || "06:00",
+      nightSurchargePercent: Math.min(500, nightTotalToSurchargePercent(data.get("nightSurchargePercent"))),
+      travelWithinEuropePercent: Math.min(500, Math.max(0, Number(data.get("travelWithinEuropePercent")) || 0)),
+      travelOutsideEuropePercent: Math.min(500, Math.max(0, Number(data.get("travelOutsideEuropePercent")) || 0)),
       mileageRate: Number(data.get("mileageRate")) || 0,
       parkingDefaultAmount: loadedSettings.parkingDefaultAmount || 0,
       droneVisible: canEditEquipment ? data.get("droneVisible") === "on" : loadedSettings.droneVisible,
@@ -302,6 +330,18 @@
     const label = accountEnableNotifications.querySelector("[data-notification-switch-label]");
     if (label) label.textContent = labels[result.state] || "Meldingen inschakelen";
     accountNotificationStatus.textContent = descriptions[result.state] || "";
+    if (pushDiagnostics) {
+      const registration = "serviceWorker" in navigator
+        ? await navigator.serviceWorker.getRegistration("./")
+        : null;
+      pushDiagnostics.hidden = false;
+      pushDiagnostics.querySelector("[data-push-permission]").textContent = "Notification" in window
+        ? ({ granted: "Toegestaan", denied: "Geblokkeerd", default: "Nog niet gevraagd" }[Notification.permission] || Notification.permission)
+        : "Niet ondersteund";
+      pushDiagnostics.querySelector("[data-push-worker]").textContent = registration?.active ? "Actief" : "Niet actief";
+      pushDiagnostics.querySelector("[data-push-subscription]").textContent = result.subscription ? "Actief" : "Niet actief";
+    }
+    if (testNotificationButton) testNotificationButton.disabled = result.state !== "subscribed";
   }
 
   function renderFunctions(items) {
@@ -348,6 +388,9 @@
         enableNightTariff: values.enableNightTariff,
         nightStart: values.nightStart,
         nightEnd: values.nightEnd,
+        nightSurchargePercent: values.nightSurchargePercent,
+        travelWithinEuropePercent: values.travelWithinEuropePercent,
+        travelOutsideEuropePercent: values.travelOutsideEuropePercent,
         kilometerRate: values.mileageRate,
         droneTariffAmount: values.droneTariffAmount,
         ronin4dTariffAmount: values.roninTariffAmount
@@ -380,6 +423,9 @@
       enableNightTariff: settings.enableNightTariff ?? loadedSettings.enableNightTariff,
       nightStart: settings.nightStart ?? loadedSettings.nightStart,
       nightEnd: settings.nightEnd ?? loadedSettings.nightEnd,
+      nightSurchargePercent: settings.nightSurchargePercent ?? loadedSettings.nightSurchargePercent,
+      travelWithinEuropePercent: settings.travelWithinEuropePercent ?? loadedSettings.travelWithinEuropePercent,
+      travelOutsideEuropePercent: settings.travelOutsideEuropePercent ?? loadedSettings.travelOutsideEuropePercent,
       mileageRate: settings.kilometerRate ?? loadedSettings.mileageRate,
       droneVisible: preset.equipmentVisibility?.drone ?? loadedSettings.droneVisible,
       roninVisible: preset.equipmentVisibility?.ronin ?? loadedSettings.roninVisible,
@@ -629,6 +675,18 @@
     }
     await renderNotificationPermission();
   });
+  testNotificationButton?.addEventListener("click", async () => {
+    if (!pushService || !currentContext?.auth.user) return;
+    testNotificationButton.disabled = true;
+    accountNotificationStatus.textContent = "Testmelding klaarzetten…";
+    try {
+      await pushService.test();
+      accountNotificationStatus.textContent = "Testmelding staat klaar en wordt door de pushservice verstuurd.";
+    } catch (error) {
+      accountNotificationStatus.textContent = error.message || "De testmelding kon niet worden klaargezet.";
+    }
+    setTimeout(renderNotificationPermission, 1500);
+  });
   void renderNotificationPermission();
   profileNameForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -647,7 +705,13 @@
       profileNameStatus.textContent = error.message || "Voornaam opslaan is niet gelukt.";
     }
   });
-  settingsForm.addEventListener("change", () => { updateDepartmentFields(); updateRateFields(); updateNightFields(); });
+  settingsForm.addEventListener("input", () => updateExplanationLink(readSettings()));
+  settingsForm.addEventListener("change", () => {
+    updateDepartmentFields();
+    updateRateFields();
+    updateNightFields();
+    updateExplanationLink(readSettings());
+  });
   settingsForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!settingsForm.reportValidity() || !currentContext?.auth.user) return;

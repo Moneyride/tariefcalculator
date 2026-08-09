@@ -138,6 +138,7 @@
   .project-day-list { display: grid; grid-auto-columns: calc((100% - 24px) / 3); grid-auto-flow: column; gap: 12px; min-width: 0; overflow-x: auto; padding: 2px 2px 14px; scroll-behavior: smooth; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-inline: contain; touch-action: pan-x; }
   .project-day-list::-webkit-scrollbar { display: none; }
   .project-day-card { display: grid; grid-template-rows: 1fr auto; min-height: 145px; padding: 0; overflow: hidden; scroll-snap-align: start; scroll-snap-stop: always; }
+  .project-day-sharing { color: #d94f00; font-weight: 700; }
   .project-day-open { display: flex; width: 100%; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 17px 17px 10px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
   .project-day-open span:first-child { align-self: stretch; }
   .project-day-open small { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
@@ -898,10 +899,6 @@
   order: 0;
 }
 
-.participant-chip.is-private {
-  order: 1;
-}
-
 .participant-chip .share-avatar {
   width: 28px;
   height: 28px;
@@ -995,119 +992,6 @@
   display: none;
 }
 
-.private-participant-panel {
-  overflow: hidden;
-  border: 1px solid rgba(31, 67, 53, 0.09);
-  border-radius: 13px;
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.private-participant-panel[hidden] {
-  display: none;
-}
-
-.private-participant-panel summary {
-  position: relative;
-  display: flex;
-  min-height: 42px;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 38px 9px 12px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--accent-dark);
-  font-size: 0.7rem;
-  font-weight: 750;
-  list-style: none;
-}
-
-.private-participant-panel summary::-webkit-details-marker {
-  display: none;
-}
-
-.private-participant-panel summary::after {
-  position: absolute;
-  right: 14px;
-  color: var(--muted);
-  content: "+";
-  font-size: 1rem;
-  font-weight: 500;
-  transition: transform 150ms ease;
-}
-
-.private-participant-panel[open] summary::after {
-  transform: rotate(45deg);
-}
-
-.private-participant-form {
-  align-items: end;
-  display: flex;
-  min-width: 0;
-  gap: 8px;
-  padding: 0 10px 10px;
-}
-
-.private-participant-form label {
-  min-width: 0;
-  flex: 1;
-}
-
-.private-participant-form input {
-  width: 100%;
-  height: 44px;
-  min-height: 44px;
-  padding: 9px 12px;
-  border: 1px solid rgba(31, 67, 53, 0.1);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.58);
-}
-
-.private-participant-form button,
-.participant-chip.is-private button {
-  min-height: auto;
-  border: 0;
-  box-shadow: none;
-}
-
-.private-participant-form button {
-  align-self: end;
-  height: 44px;
-  min-height: 44px;
-  padding: 0 16px;
-  border-radius: 12px;
-  background: rgba(31, 67, 53, 0.1);
-  color: var(--accent-dark);
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-.private-participant-form button:hover,
-.private-participant-form button:active {
-  border: 0;
-  background: rgba(31, 67, 53, 0.1);
-  color: var(--accent-dark);
-  transform: none;
-}
-
-.participant-chip.is-private {
-  padding-left: 10px;
-  border-style: dashed;
-}
-
-.participant-chip.is-private small {
-  color: var(--orange-dark);
-  font-size: 0.56rem;
-  font-weight: 750;
-}
-
-.participant-chip.is-private button {
-  padding: 0 1px;
-  background: transparent;
-  color: var(--muted);
-  font-size: 1rem;
-}
-
 .current-workday-participants[hidden] {
   display: none;
 }
@@ -1144,18 +1028,6 @@
     gap: 9px;
   }
 
-  .private-participant-form {
-    width: 100%;
-  }
-}
-
-@media (hover: none) {
-  .private-participant-form button:hover,
-  .private-participant-form button:active {
-    background: rgba(31, 67, 53, 0.1);
-    color: var(--accent-dark);
-    transform: none;
-  }
 }
 
 .project-day-context {
@@ -2275,6 +2147,7 @@ h3 {
 }
 
 .input-panel {
+  position: relative;
   overflow: visible;
   background: rgba(255, 255, 255, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.28);
@@ -3377,9 +3250,11 @@ button.secondary:hover {
 .calculate-action {
   display: grid;
   justify-items: center;
-  gap: 8px;
+  gap: 12px;
   min-height: 0;
-  padding: 8px 0;
+  margin: 24px 30px 0;
+  padding: 24px 0 0;
+  border-top: 1px solid rgba(31, 67, 53, 0.1);
 }
 
 .calculate-action .notice {
@@ -3393,23 +3268,25 @@ button.secondary:hover {
 }
 
 .calculate-action .button-row {
-  display: flex;
+  display: grid;
+  width: min(100%, 360px);
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  justify-items: stretch;
+  gap: 10px;
   padding: 0;
 }
 
 .calculate-action #recalculate {
-  min-width: 255px;
+  width: 100%;
+  min-width: 0;
   min-height: 58px;
   padding: 15px 26px;
   font-size: 1.05rem;
 }
 
 .calculate-action .workday-save-button {
-  width: min(100%, 360px);
-  margin-top: 4px;
+  width: 100%;
+  margin-top: 0;
 }
 
 .workday-action-group {
@@ -3584,6 +3461,7 @@ dd {
 }
 
 .settings-panel {
+  position: relative;
   overflow: visible;
   background: rgba(255, 255, 255, 0.14);
   border: 1px solid rgba(255, 255, 255, 0.28);
@@ -3599,6 +3477,89 @@ dd {
   align-items: center;
   justify-content: flex-end;
   padding: 0;
+}
+
+.calculator-settings-shortcut {
+  position: absolute;
+  z-index: 8;
+  top: 22px;
+  right: 26px;
+}
+
+.account-settings-entry.calculator-settings-shortcut a {
+  width: auto;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  justify-content: center;
+  padding: 7px;
+  border-radius: 0;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.account-settings-entry.calculator-settings-shortcut a:hover,
+.account-settings-entry.calculator-settings-shortcut a:focus-visible {
+  background: transparent;
+  color: var(--orange);
+  box-shadow: none;
+}
+
+.account-settings-entry.calculator-settings-shortcut .settings-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+/* A settings shortcut should read as a lone tool icon, not as a fourth action button. */
+.calculator-glass .account-settings-entry.calculator-settings-shortcut,
+.main-glass .account-settings-entry.calculator-settings-shortcut {
+  top: 13px;
+}
+
+.calculator-glass .account-settings-entry.calculator-settings-shortcut a,
+.main-glass .account-settings-entry.calculator-settings-shortcut a,
+.calculator-glass .account-settings-entry.calculator-settings-shortcut a:hover,
+.calculator-glass .account-settings-entry.calculator-settings-shortcut a:focus-visible,
+.main-glass .account-settings-entry.calculator-settings-shortcut a:hover,
+.main-glass .account-settings-entry.calculator-settings-shortcut a:focus-visible {
+  display: inline-flex;
+  width: 28px;
+  min-width: 0;
+  height: 28px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.participant-chip.is-account {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid rgba(31, 67, 53, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--accent-dark);
+}
+
+.participant-chip-name { font-weight: 760; }
+
+.participant-chip-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  background: rgba(255, 106, 26, 0.11);
+  font-size: 0.86rem;
+  line-height: 1;
 }
 
 .account-settings-entry[hidden] {
@@ -3661,6 +3622,18 @@ summary {
   font-size: 1.05rem;
   font-weight: 750;
   transition: color 150ms ease, background-color 150ms ease;
+}
+
+.settings-explanation-link {
+  position: absolute;
+  z-index: 2;
+  top: 19px;
+  right: 24px;
+  color: var(--accent-dark);
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 summary:hover {
@@ -7326,6 +7299,24 @@ html.is-pwa summary {
     flex-direction: column;
   }
 
+  .calculate-action {
+    margin: 22px 18px 0;
+    padding-top: 20px;
+  }
+
+  .calculator-settings-shortcut {
+    top: 17px;
+    right: 18px;
+  }
+
+  .account-settings-entry.calculator-settings-shortcut a {
+    width: auto;
+    min-width: 0;
+    height: auto;
+    min-height: 0;
+    padding: 7px;
+  }
+
   .workday-action-group {
     display: grid;
     width: 100%;
@@ -8196,5 +8187,268 @@ html.is-pwa summary {
     width: 38px;
     height: 38px;
     min-height: 38px;
+  }
+}
+.account-heading-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.account-explanation-link {
+  color: var(--green, #173f36);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.suffixed-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(31, 67, 53, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.suffixed-input input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.suffixed-input > span {
+  padding-right: 16px;
+  color: #6b7280;
+  font-weight: 700;
+}
+
+.account-travel-rules {
+  margin-top: 18px;
+}
+
+.push-diagnostics {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+}
+
+.push-diagnostics div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.push-diagnostics dt { color: var(--text-muted, #6b7280); }
+.push-diagnostics dd { margin: 0; color: #173f36; font-weight: 700; }
+
+.workrules-explanation details {
+  margin: 12px 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(31, 67, 53, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.workrules-explanation summary { color: #173f36; font-weight: 700; cursor: pointer; }
+.workrules-explanation details p { margin: 10px 0 0; }
+.workrules-disclaimer {
+  padding: 18px;
+  border-left: 3px solid #ff6a1a;
+  color: #173f36;
+  background: rgba(255, 255, 255, 0.46);
+}
+
+.new-calculation-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 18px;
+  border: 1px solid rgba(31, 67, 53, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--accent-dark);
+  font-size: 0.8rem;
+  font-weight: 750;
+  text-decoration: none;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.new-calculation-link:hover {
+  border-color: rgba(255, 106, 26, 0.28);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--accent-dark);
+  transform: translateY(-1px);
+}
+
+/* Crew Card and badge collection */
+.crew-card,
+.dashboard-badges {
+  margin-top: 18px;
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.31);
+  box-shadow: 0 16px 35px rgba(39, 49, 44, 0.07);
+}
+
+.crew-card-heading,
+.dashboard-badges .dashboard-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.crew-card-heading h2,
+.dashboard-badges h2 { margin: 3px 0 0; }
+
+.crew-card-collection-button {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid rgba(31, 67, 53, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.48);
+  color: var(--accent-dark);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.crew-card-collection-button:hover,
+.crew-card-collection-button:focus-visible {
+  border-color: rgba(255, 106, 26, 0.36);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--accent-dark);
+}
+
+.crew-card-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.crew-card-identity strong,
+.crew-card-identity small { display: block; }
+.crew-card-identity strong { color: var(--accent-dark); font-size: 1.1rem; }
+.crew-card-identity small { margin-top: 2px; color: var(--muted); }
+
+.crew-card-avatar {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--accent-dark);
+  color: white;
+  font-weight: 800;
+}
+
+.crew-card-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 20px 0 0;
+}
+
+.crew-card-metrics > div {
+  min-width: 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.crew-card-metrics dt { color: var(--muted); font-size: 0.72rem; font-weight: 700; }
+.crew-card-metrics dd { margin: 5px 0 0; color: var(--accent-dark); font-size: 0.94rem; font-weight: 800; }
+
+.crew-card-badge-row,
+.dashboard-badge-list,
+.crew-badge-collection {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(154px, 1fr));
+  gap: 9px;
+  margin-top: 18px;
+}
+
+.crew-badge {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.43);
+  color: var(--accent-dark);
+  text-align: left;
+  font: inherit;
+}
+
+button.crew-badge { cursor: pointer; }
+button.crew-badge:disabled { cursor: default; }
+.crew-badge.is-locked { opacity: 0.56; }
+.crew-badge.is-selected { border-color: rgba(255, 106, 26, 0.68); box-shadow: inset 0 0 0 1px rgba(255, 106, 26, 0.28); }
+.crew-badge-icon { display: grid; flex: 0 0 auto; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: rgba(255, 106, 26, 0.12); font-size: 1rem; }
+.crew-badge strong,
+.crew-badge small { display: block; }
+.crew-badge strong { font-size: 0.84rem; }
+.crew-badge small { margin-top: 3px; color: var(--muted); font-size: 0.74rem; line-height: 1.35; }
+.crew-badge.is-compact { padding: 9px; }
+.crew-badge.is-compact .crew-badge-icon { width: 23px; height: 23px; }
+
+.crew-badge-dialog { width: min(760px, calc(100vw - 32px)); }
+.crew-badge-dialog .dialog-content { max-height: min(68vh, 620px); overflow: auto; }
+
+@media (max-width: 640px) {
+  .crew-card,
+  .dashboard-badges { padding: 18px; border-radius: 16px; }
+  .crew-card-heading { align-items: center; }
+  .crew-card-heading h2 { font-size: 1.3rem; }
+  .crew-card-collection-button { font-size: 0.76rem; }
+  .crew-card-metrics { grid-template-columns: 1fr; gap: 6px; }
+  .crew-card-metrics > div { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .crew-card-metrics dd { margin: 0; }
+  .crew-card-badge-row,
+  .dashboard-badge-list,
+  .crew-badge-collection { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 680px) {
+  .account-heading-actions {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 760px) {
+  .calculator-glass .account-settings-entry.calculator-settings-shortcut,
+  .main-glass .account-settings-entry.calculator-settings-shortcut {
+    top: 10px;
+    right: 16px;
+  }
+
+  .calculator-glass .account-settings-entry.calculator-settings-shortcut a,
+  .main-glass .account-settings-entry.calculator-settings-shortcut a {
+    width: 28px;
+    min-width: 0;
+    height: 28px;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 }

@@ -59,7 +59,7 @@ test("QR-scanner opent uitsluitend Overuurtje-uitnodigingen via camera of foto",
   assert.match(scanner, /facingMode:\s*\{ ideal: "environment" \}/);
   assert.match(scanner, /globalThis\.jsQR/);
   assert.match(scanner, /accept="image\/\*"/);
-  assert.match(scanner, /\["workdays\.html", "projects\.html"\]/);
+  assert.match(scanner, /\["delen\.html", "workdays\.html", "projects\.html"\]/);
   assert.match(scanner, /searchParams\.get\("invite"\)/);
   assert.match(scanner, /OveruurtjeQrScanner/);
   assert.match(worker, /\.\/vendor\/jsQR\.js/);

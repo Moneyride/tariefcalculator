@@ -4,6 +4,7 @@
   const sessionUi = globalThis.OveruurtjeSessionUI;
   const workdays = globalThis.OveruurtjeWorkdays;
   const projects = globalThis.OveruurtjeProjects;
+  const badges = globalThis.OveruurtjeBadges;
   const statsEngine = globalThis.OveruurtjeStats;
   const calculator = globalThis.TariffCalculator;
   const guest = document.querySelector("#dashboard-guest");
@@ -130,6 +131,68 @@
     }
   }
 
+  function openDialog(dialog) {
+    if (typeof dialog?.showModal === "function") dialog.showModal();
+    else dialog?.setAttribute("open", "");
+  }
+
+  function closeDialog(dialog) {
+    if (typeof dialog?.close === "function") dialog.close();
+    else dialog?.removeAttribute("open");
+  }
+
+  function renderBadgeItem(item, { compact = false, selectable = false } = {}) {
+    const element = document.createElement(selectable ? "button" : "article");
+    element.className = `crew-badge ${item.earnedAt ? "is-earned" : "is-locked"}${item.selected ? " is-selected" : ""}${compact ? " is-compact" : ""}`;
+    if (selectable) {
+      element.type = "button";
+      element.disabled = !item.earnedAt;
+      element.dataset.badgeKey = item.key;
+    }
+    const title = item.hidden && !item.earnedAt ? "Verborgen badge" : item.name;
+    const description = item.hidden && !item.earnedAt ? "Blijf registreren om deze te ontdekken." : item.description;
+    element.innerHTML = `<span class="crew-badge-icon">${item.earnedAt ? item.icon : "?"}</span><span><strong>${title}</strong>${compact ? "" : `<small>${description}</small>`}</span>`;
+    return element;
+  }
+
+  function renderCrewCard(card, collection) {
+    if (!card) return;
+    const displayName = card.displayName || "Crewlid";
+    document.querySelector("#crew-card-name").textContent = displayName;
+    document.querySelector("#crew-card-initial").textContent = displayName.slice(0, 1).toUpperCase();
+    document.querySelector("#crew-card-member-since").textContent = `Lid sinds ${card.memberSince || "-"}`;
+    document.querySelector("#crew-card-workdays").textContent = number.format(card.registeredWorkdays || 0);
+    document.querySelector("#crew-card-badges").textContent = `${number.format(card.badgeCount || 0)} badges behaald`;
+    document.querySelector("#crew-card-crew").textContent = number.format(card.crewCount || 0);
+    const recent = document.querySelector("#crew-card-recent-badges");
+    const recentKeys = new Set((card.recentBadges || []).map((badge) => badge.key));
+    const items = collection.filter((badge) => recentKeys.has(badge.key)).slice(0, 4);
+    recent.replaceChildren(...items.map((badge) => renderBadgeItem(badge, { compact: true })));
+    recent.hidden = items.length === 0;
+
+    const overview = document.querySelector("#dashboard-badge-list");
+    const visible = collection.filter((badge) => !badge.hidden).slice(0, 5);
+    overview.replaceChildren(...visible.map((badge) => renderBadgeItem(badge)));
+  }
+
+  function showNewBadge(awards) {
+    const badge = awards?.[0];
+    if (!badge) return;
+    sessionUi.showToast(`${badge.icon} Badge behaald: ${badge.name}`);
+  }
+
+  async function loadCrewCard() {
+    if (!badges) return;
+    try {
+      const awards = await badges.evaluate();
+      const [card, collection] = await Promise.all([badges.getCrewCard(), badges.list()]);
+      renderCrewCard(card, collection);
+      showNewBadge(awards);
+    } catch (error) {
+      console.warn("Crew Card kon niet worden geladen.", error);
+    }
+  }
+
   async function render(context) {
     const user = context.auth.user;
     guest.hidden = Boolean(user);
@@ -144,6 +207,7 @@
     loadedContextKey = key;
     freeNote.hidden = context.isPro;
     renderPeriodLabels();
+    await loadCrewCard();
 
     if (!context.isPro) {
       renderStats([]);
@@ -170,6 +234,33 @@
   }
 
   document.querySelector("#dashboard-login")?.addEventListener("click", () => sessionUi.openAuth("login"));
+  const badgeDialog = document.querySelector("#crew-badge-dialog");
+  async function openBadgeCollection() {
+    if (!badges) return;
+    try {
+      const collection = await badges.list();
+      const list = document.querySelector("#crew-badge-collection");
+      list.replaceChildren(...collection.map((badge) => renderBadgeItem(badge, { selectable: true })));
+      openDialog(badgeDialog);
+    } catch (error) {
+      sessionUi.showToast(error.message || "Badges konden niet worden geladen.");
+    }
+  }
+  document.querySelector("#crew-card-collection")?.addEventListener("click", openBadgeCollection);
+  document.querySelector("#dashboard-badges-all")?.addEventListener("click", openBadgeCollection);
+  document.querySelector("[data-crew-badge-close]")?.addEventListener("click", () => closeDialog(badgeDialog));
+  document.querySelector("#crew-badge-collection")?.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-badge-key]");
+    if (!button || button.disabled) return;
+    try {
+      await badges.select(button.dataset.badgeKey);
+      await loadCrewCard();
+      await openBadgeCollection();
+      sessionUi.showToast("Badge gekozen voor je Crew Card.");
+    } catch (error) {
+      sessionUi.showToast(error.message || "Badge kiezen is niet gelukt.");
+    }
+  });
   document.addEventListener("overuurtje:user-context", (event) => render(event.detail));
   sessionUi.ready.then(render);
 })();

@@ -107,6 +107,23 @@
     await subscription.unsubscribe();
   }
 
+  async function detach() {
+    const subscription = await currentSubscription();
+    if (!subscription) return;
+    const db = await database();
+    const { error } = await db.rpc("remove_push_subscription", {
+      p_endpoint: subscription.endpoint
+    });
+    if (error) throw error;
+  }
+
+  async function test() {
+    const db = await database();
+    const { data, error } = await db.rpc("create_push_test_notification");
+    if (error) throw error;
+    return data;
+  }
+
   async function refresh() {
     const subscription = await currentSubscription();
     if (subscription) await saveSubscription(subscription);
@@ -117,7 +134,9 @@
     inspect,
     subscribe,
     unsubscribe,
+    detach,
     refresh,
+    test,
     isSupported
   });
 })();

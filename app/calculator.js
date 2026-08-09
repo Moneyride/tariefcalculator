@@ -9,6 +9,7 @@ const DEFAULT_SETTINGS = {
   enableOvertimeFrom12: true,
   enableOvertimeFrom14: false,
   enableNightTariff: true,
+  nightSurchargePercent: 100,
   pureNightSurchargeFactor: 1,
   nightOverlapSurchargeFactor: 1,
   nightStart: "00:00",
@@ -16,7 +17,9 @@ const DEFAULT_SETTINGS = {
   nightRoundingMinutes: 15,
   droneTariffAmount: 50,
   ronin4dTariffAmount: 50,
-  kilometerRate: 0.55
+  kilometerRate: 0.55,
+  travelWithinEuropePercent: 75,
+  travelOutsideEuropePercent: 100
 };
 
 const MINUTES_PER_DAY = 24 * 60;
@@ -229,7 +232,22 @@ function calculateNightOvertimeSurcharge(
 
 function calculateTariff(input, customSettings = {}) {
   const settings = { ...DEFAULT_SETTINGS, ...customSettings };
-  const interval = getWorkInterval(input.startTime, input.endTime);
+  if (Object.prototype.hasOwnProperty.call(customSettings, "nightSurchargePercent")) {
+    const nightSurchargeFactor = Math.max(0, Number(customSettings.nightSurchargePercent) || 0) / 100;
+    settings.pureNightSurchargeFactor = nightSurchargeFactor;
+    settings.nightOverlapSurchargeFactor = nightSurchargeFactor;
+  } else {
+    settings.nightSurchargePercent = Math.max(
+      0,
+      Number(settings.pureNightSurchargeFactor) || 0
+    ) * 100;
+  }
+  const isTravelDay = Boolean(input.enableTravelDay);
+  const hasTimes = Boolean(input.startTime && input.endTime);
+  if (!isTravelDay && !hasTimes) throw new Error("Vul een start- en eindtijd in.");
+  const interval = hasTimes
+    ? getWorkInterval(input.startTime, input.endTime)
+    : { start: 0, end: 0, totalMinutes: 0, endsNextDay: false };
   const breakMinutes = Math.min(interval.totalMinutes, Math.max(0, Number(input.breakMinutes) || 0));
   const workedMinutes = interval.totalMinutes - breakMinutes;
   const totalHours = minutesToHours(workedMinutes);
@@ -244,7 +262,7 @@ function calculateTariff(input, customSettings = {}) {
   const overtimeMinutes = Math.max(0, workedMinutes - normalMinutes);
   const overtimeHours = minutesToHours(overtimeMinutes);
 
-  const nightWindows = getNightWindows(interval, settings);
+  const nightWindows = hasTimes ? getNightWindows(interval, settings) : [];
   const rawNightMinutes = getTotalOverlapWithWindows(interval.start, interval.end, nightWindows);
   const roundedNightMinutes = roundUpToInterval(rawNightMinutes, settings.nightRoundingMinutes);
 
@@ -277,15 +295,24 @@ function calculateTariff(input, customSettings = {}) {
     regularHours * hourlyRate,
     hourlyMinimumAmount - overtimeAmount
   );
-  const baseAmount = rateMode === "hour"
+  const standardBaseAmount = rateMode === "hour"
     ? hourlyBaseAmount
     : (settings.enableHalfDayUnder6Hours && totalHours <= 6
       ? settings.dayRate * HALF_DAY_FACTOR
       : settings.dayRate);
-  const minimumAdjustmentAmount = rateMode === "hour"
+  const travelRegion = input.travelRegion === "outside_europe" ? "outside_europe" : "within_europe";
+  const storedTravelPercent = Number(input.travelPercent);
+  const travelPercent = Number.isFinite(storedTravelPercent)
+    ? Math.max(0, storedTravelPercent)
+    : travelRegion === "outside_europe"
+      ? Math.max(0, Number(settings.travelOutsideEuropePercent) || 0)
+      : Math.max(0, Number(settings.travelWithinEuropePercent) || 0);
+  const travelDayAmount = isTravelDay ? settings.dayRate * (travelPercent / 100) : 0;
+  const baseAmount = isTravelDay ? travelDayAmount : standardBaseAmount;
+  const minimumAdjustmentAmount = !isTravelDay && rateMode === "hour"
     ? Math.max(0, baseAmount - regularHours * hourlyRate)
     : 0;
-  const nightTariffEnabled = Boolean(settings.enableNightTariff);
+  const nightTariffEnabled = Boolean(settings.enableNightTariff) && !isTravelDay;
   const pureNightAmount = pureNightHours * hourlyRate * settings.pureNightSurchargeFactor;
   const nightOvertimeSurcharge = calculateNightOvertimeSurcharge(
     interval,
@@ -313,7 +340,8 @@ function calculateTariff(input, customSettings = {}) {
   const customEquipmentAmount = customEquipmentItems.reduce((total, item) => total + item.amount, 0);
   const extraTariffAmount = droneTariffAmount + ronin4dTariffAmount + customEquipmentAmount + kilometerAmount + parkingAmount;
 
-  const subtotalExVat = baseAmount + overtimeAmount + nightAmount + extraTariffAmount;
+  const appliedOvertimeAmount = isTravelDay ? 0 : overtimeAmount;
+  const subtotalExVat = baseAmount + appliedOvertimeAmount + nightAmount + extraTariffAmount;
   const vatAmount = subtotalExVat * (settings.vatPercent / 100);
   const totalIncVat = subtotalExVat + vatAmount;
 
@@ -330,24 +358,24 @@ function calculateTariff(input, customSettings = {}) {
     hourlyMinimumAmount,
     minimumAdjustmentAmount,
     totalHours,
-    overtimeHours,
-    standardOvertimeHours: overtime.standardOvertimeHours,
-    overtime10To12Hours: overtime.overtime10To12Hours,
-    overtimeFrom12Hours: overtime.overtimeFrom12Hours,
-    overtimeFrom14Hours: overtime.overtimeFrom14Hours,
-    firstOvertimeHours: overtime.overtime10To12Hours,
-    nextOvertimeHours: overtime.overtimeFrom12Hours + overtime.overtimeFrom14Hours,
+    overtimeHours: isTravelDay ? 0 : overtimeHours,
+    standardOvertimeHours: isTravelDay ? 0 : overtime.standardOvertimeHours,
+    overtime10To12Hours: isTravelDay ? 0 : overtime.overtime10To12Hours,
+    overtimeFrom12Hours: isTravelDay ? 0 : overtime.overtimeFrom12Hours,
+    overtimeFrom14Hours: isTravelDay ? 0 : overtime.overtimeFrom14Hours,
+    firstOvertimeHours: isTravelDay ? 0 : overtime.overtime10To12Hours,
+    nextOvertimeHours: isTravelDay ? 0 : overtime.overtimeFrom12Hours + overtime.overtimeFrom14Hours,
     nightHours: nightTariffEnabled ? nightHours : 0,
     nightOvertimeHours: nightTariffEnabled ? nightOvertimeHours : 0,
     pureNightHours: nightTariffEnabled ? pureNightHours : 0,
     baseAmount,
-    standardOvertimeAmount: overtime.standardOvertimeAmount,
-    overtime10To12Amount: overtime.overtime10To12Amount,
-    overtimeFrom12Amount: overtime.overtimeFrom12Amount,
-    overtimeFrom14Amount: overtime.overtimeFrom14Amount,
-    firstOvertimeAmount: overtime.overtime10To12Amount,
-    nextOvertimeAmount: overtime.overtimeFrom12Amount + overtime.overtimeFrom14Amount,
-    overtimeAmount,
+    standardOvertimeAmount: isTravelDay ? 0 : overtime.standardOvertimeAmount,
+    overtime10To12Amount: isTravelDay ? 0 : overtime.overtime10To12Amount,
+    overtimeFrom12Amount: isTravelDay ? 0 : overtime.overtimeFrom12Amount,
+    overtimeFrom14Amount: isTravelDay ? 0 : overtime.overtimeFrom14Amount,
+    firstOvertimeAmount: isTravelDay ? 0 : overtime.overtime10To12Amount,
+    nextOvertimeAmount: isTravelDay ? 0 : overtime.overtimeFrom12Amount + overtime.overtimeFrom14Amount,
+    overtimeAmount: appliedOvertimeAmount,
     pureNightAmount: nightTariffEnabled ? pureNightAmount : 0,
     overlapNightAmount: nightTariffEnabled ? overlapNightAmount : 0,
     nightOvertimeSurchargeBreakdown: nightTariffEnabled ? nightOvertimeSurcharge.breakdown : [],
@@ -359,6 +387,10 @@ function calculateTariff(input, customSettings = {}) {
     kilometers,
     kilometerAmount,
     parkingAmount,
+    isTravelDay,
+    travelRegion: isTravelDay ? travelRegion : null,
+    travelPercent: isTravelDay ? travelPercent : 0,
+    travelDayAmount,
     extraTariffAmount,
     subtotalExVat,
     vatAmount,

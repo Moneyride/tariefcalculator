@@ -158,14 +158,15 @@ test("delen gebruikt alleen een directe uitnodigingslink en ondersteunt QR", asy
   assert.match(shareLanding, /sourceType === "project" \? "projects\.html" : "workdays\.html"/);
 });
 
-test("werkdag opslaan staat voor berekenen en resultaatacties staan onder het resultaat", async () => {
+test("berekenen blijft de hoofdactie en bewaren staat onderaan voor het resultaat", async () => {
   const html = await readFile(path.join(rootDirectory, "app/index.html"), "utf8");
   const result = html.indexOf('class="result-panel"');
   const actions = html.indexOf('class="footer-actions"');
   const calculate = html.indexOf('id="recalculate"');
+  const newCalculation = html.indexOf('id="new-calculation"');
   const saveWorkday = html.indexOf('id="save-workday"');
   assert.ok(result >= 0 && actions > result);
-  assert.ok(saveWorkday >= 0 && calculate > saveWorkday && calculate < result);
+  assert.ok(calculate >= 0 && newCalculation > calculate && saveWorkday > newCalculation && saveWorkday < result);
   assert.match(html, /class="invoice-copy-button"[^>]+id="copy-summary"/);
   assert.match(html, /id="save-workday"/);
   assert.doesNotMatch(html, /id="share-current-workday"/);
@@ -316,7 +317,7 @@ test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", asy
   assert.ok(calculatorHtml.indexOf("saas/freeActiveWorkdayService.js") < calculatorHtml.indexOf("app.js"));
   assert.match(calculatorHtml, /id="account-login"/);
   assert.match(calculatorHtml, /data-workday-save-label/);
-  assert.match(calculatorHtml, /Werkdag van vandaag opslaan|Bewaar je begintijd/);
+  assert.match(calculatorHtml, /Bewaar voor later/);
   assert.match(calculatorHtml, /data-pro-badge/);
   assert.match(calculatorScript, /const hasSharedRecipient = !isSharedReceiver/);
   assert.match(calculatorScript, /Opslaan werkt gedeelde tijden bij voor je collega's/);
@@ -361,7 +362,7 @@ test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", asy
   assert.match(calculatorScript, /workFunction: selectedWorkFunction\(\)/);
   assert.match(calculatorScript, /applyWorkFunction\(snapshotFunction, \{ preserveRate: true, preserveSettings: true \}\)/);
   assert.match(calculatorScript, /pdfProBadge\.hidden = context\.isPro/);
-  assert.match(calculatorScript, /Actieve werkdag bewaren/);
+  assert.match(calculatorScript, /Bewaar voor later/);
   assert.match(sessionUiScript, /dialog\.id = "signup-confirmation-dialog"/);
   assert.match(sessionUiScript, /Controleer je inbox/);
   assert.match(sessionUiScript, /openSignupConfirmation\(email\)/);
@@ -671,8 +672,8 @@ test("Werkdagen bewaren versieerbare calculatorsnapshots met Pro-RLS", async () 
   assert.match(calculatorScript, /sourceType = projectDayId \? "project_day" : "workday"/);
   assert.match(calculatorHtml, /id="project-day-context"/);
   assert.match(calculatorHtml, /id="share-from-participants"/);
-  assert.match(calculatorHtml, /id="private-participant-panel"/);
-  assert.match(calculatorHtml, /Deelnemers zonder Overuurtje/);
+  assert.doesNotMatch(calculatorHtml, /id="private-participant-panel"/);
+  assert.doesNotMatch(calculatorHtml, /Deelnemers zonder Overuurtje/);
   assert.doesNotMatch(calculatorScript, /sessionStorage\.getItem\(promptKey\)/);
   assert.match(workdaysHtml, /<h1>Werkdagen<\/h1>/);
   assert.doesNotMatch(accountHtml, /id="account-workday-list"/);
@@ -970,7 +971,7 @@ test("Werkdagnamen en deelnemers worden privacyvriendelijk gedeeld", async () =>
   assert.match(migration, /split_part\(trim\(p\.display_name\), ' ', 1\)/i);
   assert.doesNotMatch(migration, /calculation_data\s*->>\s*'[^']*(rate|amount|parking|kilometer)/i);
   assert.match(calculatorHtml, /name="workdayName"/);
-  assert.match(calculatorHtml, /Nodig collega's uit om samen de tijden te registreren/);
+  assert.match(calculatorHtml, /Deel je werkdag met collega's en zie wie er meedoen/);
   assert.match(accountHtml, /name="displayName"/);
   assert.match(calculatorHtml, /id="current-workday-participant-list"/);
   assert.doesNotMatch(workdaysHtml, /data-share-participants-list/);
@@ -978,7 +979,7 @@ test("Werkdagnamen en deelnemers worden privacyvriendelijk gedeeld", async () =>
   const styles = await readFile(path.join(rootDirectory, "app/styles.css"), "utf8");
   assert.match(appScript, /chip\.className = "participant-chip is-account"/);
   assert.match(styles, /\.participant-chip\.is-account\s*\{\s*order:\s*0/);
-  assert.match(styles, /\.participant-chip\.is-private\s*\{\s*order:\s*1/);
+  assert.doesNotMatch(styles, /\.participant-chip\.is-private/);
 });
 
 test("direct gedeelde werkdagen blijven live en melden een opgeslagen eindtijd", async () => {
@@ -1005,9 +1006,9 @@ test("direct gedeelde werkdagen blijven live en melden een opgeslagen eindtijd",
   assert.match(sessionUi, /heeft de eindtijd vastgelegd/);
 });
 
-test("handmatig toegevoegde deelnemers zijn veilig zichtbaar voor gedeelde ontvangers", async () => {
+test("gedeelde ontvangers zien alleen accountdeelnemers met hun Crew Card-badge", async () => {
   const migration = await readFile(
-    path.join(rootDirectory, "supabase/migrations/202607280002_shared_private_participants.sql"),
+    path.join(rootDirectory, "supabase/migrations/202608090001_crew_cards_and_badges.sql"),
     "utf8"
   );
   const calculatorHtml = await readFile(path.join(rootDirectory, "app/index.html"), "utf8");
@@ -1016,16 +1017,14 @@ test("handmatig toegevoegde deelnemers zijn veilig zichtbaar voor gedeelde ontva
   const workdaysScript = await readFile(path.join(rootDirectory, "app/workdays.js"), "utf8");
   const shareServiceScript = await readFile(path.join(rootDirectory, "app/saas/shareService.js"), "utf8");
 
-  assert.match(migration, /has_account boolean/i);
-  assert.match(migration, /calculation_data -> 'privateParticipants'/i);
-  assert.match(migration, /jsonb_array_elements_text\(a\.private_participants\)/i);
-  assert.match(migration, /s\.recipient_id = \(select auth\.uid\(\)\)/i);
-  assert.match(migration, /order by vp\.has_account desc, vp\.is_owner desc/i);
-  assert.doesNotMatch(migration, /calculation_data\s*->\s*'(settings|extras|result|dayRate|hourlyRate)'/i);
+  assert.match(migration, /get_workday_share_participants\(p_source_type text, p_source_id uuid\)/i);
+  assert.match(migration, /selected_badge_icon/i);
+  assert.match(migration, /joint_workdays/i);
+  assert.doesNotMatch(calculatorHtml, /private-participant-panel|Deelnemers zonder Overuurtje/i);
   assert.match(calculatorHtml, /id="shared-receiver-context"/);
   assert.match(calculatorHtml, /id="leave-shared-view"/);
   assert.match(calculatorScript, /const source = currentSharedSource\s*\?\s*currentSharedSource/);
-  assert.match(calculatorScript, /participant\.hasAccount === false/);
+  assert.match(calculatorScript, /participant\.hasAccount !== false/);
   assert.match(calculatorScript, /form\.classList\.toggle\("is-shared-receiver", active\)/);
   assert.match(calculatorScript, /sharedTimeOverrides = new Set\(\)/);
   assert.match(calculatorScript, /dateField\.disabled = active/);
@@ -1035,12 +1034,12 @@ test("handmatig toegevoegde deelnemers zijn veilig zichtbaar voor gedeelde ontva
   assert.doesNotMatch(calculatorHtml, /id="unlock-shared-times"/);
   assert.match(calculatorScript, /projectCreateLink\.hidden = active/);
   assert.match(calculatorScript, /shareFromParticipantsButton\.hidden = active/);
-  assert.match(calculatorScript, /privateParticipantPanel\.hidden = active \|\| !currentUserContext\?\.isPro/);
+  assert.doesNotMatch(calculatorScript, /privateParticipantPanel|privateParticipants/);
   assert.match(calculatorScript, /resumeLiveWorkdayButton && active/);
   assert.match(timePickerScript, /field\.dataset\.sharedLocked === "true"/);
   assert.match(workdaysScript, /index\.html\?shared=/);
   assert.doesNotMatch(workdaysScript, /sharedOwnerName: item\.ownerName \|\| ""/);
-  assert.match(shareServiceScript, /hasAccount: row\.has_account !== false/);
+  assert.match(shareServiceScript, /selectedBadgeIcon: row\.selected_badge_icon \|\| ""/);
 });
 
 test("ongelezen notificaties krijgen een eenmalige duidelijke openingsmelding", async () => {
@@ -1055,7 +1054,7 @@ test("een geaccepteerde uitnodiging veroorzaakt niet direct nogmaals een bericht
   const workdaysScript = await readFile(path.join(rootDirectory, "app/workdays.js"), "utf8");
   const shareService = await readFile(path.join(rootDirectory, "app/saas/shareService.js"), "utf8");
 
-  assert.match(workdaysScript, /claimInvite\(token\)[\s\S]{0,240}markShareNotificationsRead\(shareId\)/);
+  assert.match(workdaysScript, /claimInvite\(token\)[\s\S]{0,700}markShareNotificationsRead\(shareId\)/);
   assert.match(shareService, /async function markShareNotificationsRead\(shareId\)/);
   assert.match(shareService, /item\.shareId === shareId && !item\.readAt/);
   assert.match(shareService, /markNotificationsRead\(notificationIds\)/);
@@ -1195,7 +1194,7 @@ test("Free-account toont Pro-functies zonder misleidende beschikbaarheidslabels"
   assert.doesNotMatch(accountHtml, />Beschikbaar<\/span>/);
 });
 
-test("gast en Free zien een niet-klikbare extra functie als Pro-voorbeeld", async () => {
+test("alleen gasten zien een niet-klikbare extra functie als Pro-voorbeeld", async () => {
   const [calculatorHtml, calculatorScript, styles] = await Promise.all([
     readFile(path.join(rootDirectory, "app/index.html"), "utf8"),
     readFile(path.join(rootDirectory, "app/app.js"), "utf8"),
@@ -1207,6 +1206,7 @@ test("gast en Free zien een niet-klikbare extra functie als Pro-voorbeeld", asyn
   assert.match(calculatorHtml, /<b>Extra functie<\/b><small>Pro<\/small>/);
   assert.match(calculatorHtml, /name="workdayName"[^>]+placeholder="Werkdag"/);
   assert.match(calculatorScript, /choice\.classList\.contains\("department-choice-pro"\)/);
+  assert.match(calculatorScript, /choice\.hidden\s*=\s*true;[\s\S]*?input\.disabled\s*=\s*true;/);
   assert.match(styles, /\.department-choice-pro\s*\{[\s\S]*?cursor:\s*not-allowed/);
 });
 
@@ -1395,4 +1395,36 @@ test("Werkdagen toont gedeelde dagen rustig en houdt installatie boven de juridi
   assert.doesNotMatch(sharedCard, /startTime|endTime|workday-status/);
   assert.ok(calculatorHtml.indexOf('class="footer-install-row"') < calculatorHtml.indexOf('class="footer-meta-row"'));
   assert.match(styles, /\.footer-utility-actions\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?\.footer-meta-row\s*\{[\s\S]*?flex-wrap:\s*wrap;/);
+});
+
+test("Crew Card gebruikt server-side badges en toont alleen accountdeelnemers", async () => {
+  const migration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202608090001_crew_cards_and_badges.sql"),
+    "utf8"
+  );
+  const calculatorHtml = await readFile(path.join(rootDirectory, "app/index.html"), "utf8");
+  const calculatorScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
+  const dashboardHtml = await readFile(path.join(rootDirectory, "app/dashboard.html"), "utf8");
+  const badgeService = await readFile(path.join(rootDirectory, "app/saas/badgeService.js"), "utf8");
+  const shareService = await readFile(path.join(rootDirectory, "app/saas/shareService.js"), "utf8");
+
+  assert.match(migration, /create table if not exists public\.badges/i);
+  assert.match(migration, /create table if not exists public\.user_badges/i);
+  assert.match(migration, /create or replace function public\.evaluate_my_badges\(\)/i);
+  assert.match(migration, /create or replace function public\.get_my_crew_card\(\)/i);
+  assert.match(migration, /insert into public\.badges[\s\S]*'geen_negen_tot_vijf'/i);
+  assert.equal((migration.match(/^  \('/gm) || []).length, 30);
+  assert.match(migration, /on conflict do nothing returning badge_id/i);
+  assert.match(migration, /grant execute on function public\.evaluate_my_badges\(\) to authenticated/i);
+  assert.match(migration, /project_pdf_generated/i);
+  assert.doesNotMatch(migration, /extract\(month from work_date\) = 1 and extract\(day from work_date\) = 1/);
+
+  assert.match(calculatorHtml, /id="current-workday-participants"/);
+  assert.doesNotMatch(calculatorHtml, /private-participant-panel|Deelnemers zonder Overuurtje|\(optioneel\)/i);
+  assert.doesNotMatch(calculatorScript, /privateParticipants|addPrivateParticipant/);
+  assert.match(calculatorScript, /participant\.selectedBadgeIcon/);
+  assert.match(dashboardHtml, /id="crew-card"/);
+  assert.match(dashboardHtml, /id="dashboard-badge-list"/);
+  assert.match(badgeService, /record_badge_activity/);
+  assert.match(shareService, /selectedBadgeIcon/);
 });

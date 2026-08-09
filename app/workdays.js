@@ -249,6 +249,12 @@
     try {
       const shareId = await shareService.claimInvite(token);
       try {
+        const awards = await globalThis.OveruurtjeBadges?.evaluate?.();
+        if (awards?.[0]) sessionUi?.showToast(`${awards[0].icon} Badge behaald: ${awards[0].name}`);
+      } catch (error) {
+        console.warn("Badgecontrole na accepteren is niet gelukt.", error);
+      }
+      try {
         await shareService.markShareNotificationsRead(shareId);
       } catch (error) {
         console.warn("De uitnodigingsmelding kon niet als gelezen worden gemarkeerd.", error);

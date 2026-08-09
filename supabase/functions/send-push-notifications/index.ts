@@ -38,6 +38,14 @@ function notificationCopy(delivery: Delivery) {
       title: "Gedeelde werkdag gestart",
       body: `${actor} begint nu aan de gedeelde werkdag.`
     },
+    workday_overtime_soon: {
+      title: "Overuren beginnen over 15 minuten",
+      body: "Je opgeslagen werkdag nadert de ingestelde overurentijd."
+    },
+    workday_night_soon: {
+      title: "Nachttoeslag begint over 15 minuten",
+      body: "Je opgeslagen werkdag nadert de ingestelde nachtperiode."
+    },
     workday_completed: {
       title: "Eindtijd vastgelegd",
       body: `${actor} heeft de eindtijd van de gedeelde werkdag vastgelegd.`
@@ -53,6 +61,10 @@ function notificationCopy(delivery: Delivery) {
     workday_share_removed: {
       title: "Werkdag niet meer gedeeld",
       body: "Een gedeelde werkdag is niet langer beschikbaar."
+    },
+    push_test: {
+      title: "Testmelding geslaagd",
+      body: "Web Push werkt op dit apparaat."
     }
   };
   return copies[delivery.notification_type] || {
@@ -61,7 +73,7 @@ function notificationCopy(delivery: Delivery) {
   };
 }
 
-function notificationUrl(delivery: Delivery) {
+async function notificationUrl(delivery: Delivery) {
   if (delivery.share_id) {
     return `${publicSiteUrl}/index.html?shared=${encodeURIComponent(delivery.share_id)}`;
   }
@@ -69,6 +81,20 @@ function notificationUrl(delivery: Delivery) {
     return `${publicSiteUrl}/index.html?workday=${encodeURIComponent(delivery.source_id)}`;
   }
   if (delivery.source_type === "project_day") {
+    if (delivery.source_id) {
+      const { data: projectDay } = await database
+        .from("project_days")
+        .select("project_id")
+        .eq("id", delivery.source_id)
+        .maybeSingle();
+      if (projectDay?.project_id) {
+        const parameters = new URLSearchParams({
+          project: String(projectDay.project_id),
+          projectDay: String(delivery.source_id)
+        });
+        return `${publicSiteUrl}/index.html?${parameters.toString()}`;
+      }
+    }
     return `${publicSiteUrl}/projects.html`;
   }
   return `${publicSiteUrl}/index.html`;
@@ -102,6 +128,10 @@ Deno.serve(async (request) => {
   if (dispatchResult.error) {
     console.error("Werkdagstartmeldingen konden niet worden klaargezet.", dispatchResult.error);
   }
+  const ruleDispatchResult = await database.rpc("dispatch_workday_rule_notifications");
+  if (ruleDispatchResult.error) {
+    console.error("Werkregelmeldingen konden niet worden klaargezet.", ruleDispatchResult.error);
+  }
 
   const claimResult = await database.rpc("claim_push_deliveries", { p_limit: 100 });
   if (claimResult.error) {
@@ -116,7 +146,7 @@ Deno.serve(async (request) => {
     const copy = notificationCopy(delivery);
     const payload = JSON.stringify({
       ...copy,
-      url: notificationUrl(delivery),
+      url: await notificationUrl(delivery),
       tag: `overuurtje-${delivery.notification_id}`,
       notificationId: delivery.notification_id,
       renotify: ["workday_completed", "workday_resumed", "workday_times_updated"]
@@ -155,6 +185,7 @@ Deno.serve(async (request) => {
     queued: deliveries.length,
     sent,
     failed,
-    workdayNotificationsCreated: dispatchResult.data || 0
+    workdayNotificationsCreated: dispatchResult.data || 0,
+    workdayRuleNotificationsCreated: ruleDispatchResult.data || 0
   });
 });

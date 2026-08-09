@@ -25,7 +25,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260730a">
-    <link rel="stylesheet" href="styles.css?v=20260802d">
+    <link rel="stylesheet" href="styles.css?v=20260808a">
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
@@ -47,7 +47,7 @@
     <script src="interactionGuard.js?v=20260730a" defer></script>
     <script src="selectUi.js?v=20260725a" defer></script>
     <script src="timePicker.js?v=20260730a" defer></script>
-    <script src="account.js?v=20260802b" defer></script>
+    <script src="account.js?v=20260808a" defer></script>
     <script src="pwa.js?v=20260731a" defer></script>
   </head>
   <body>
@@ -155,6 +155,12 @@
                 <span data-notification-switch-label>Meldingen inschakelen</span>
               </button>
               <p class="saas-form-status" id="account-notification-status" aria-live="polite"></p>
+              <dl class="push-diagnostics" id="push-diagnostics" hidden>
+                <div><dt>Toestemming</dt><dd data-push-permission>-</dd></div>
+                <div><dt>Service worker</dt><dd data-push-worker>-</dd></div>
+                <div><dt>Push subscription</dt><dd data-push-subscription>-</dd></div>
+              </dl>
+              <button class="text-action" id="account-test-notification" type="button">Stuur testmelding</button>
             </div>
             <div class="account-session-actions">
               <button class="text-action danger-action" type="button" data-auth-logout>Uitloggen</button>
@@ -169,7 +175,10 @@
                   <p class="account-section-kicker">Calculator</p>
                   <h2>Rekeninstellingen</h2>
                 </div>
-                <span class="sync-state" id="account-sync-state">Cloudsync actief</span>
+                <div class="account-heading-actions">
+                  <a class="text-action account-explanation-link" href="uitleg-werkregels.html">Uitleg</a>
+                  <span class="sync-state" id="account-sync-state">Cloudsync actief</span>
+                </div>
               </div>
               <div class="account-settings-group">
                 <h3>Tarief en planning</h3>
@@ -276,6 +285,23 @@
                       <button class="time-picker-trigger" type="button" aria-label="Kies eindtijd nachtperiode"><span class="clock-icon" aria-hidden="true"></span></button>
                     </div>
                   </div>
+                  <label>
+                    <span>Nachttarief (totaal)</span>
+                    <span class="suffixed-input"><input type="number" name="nightSurchargePercent" min="100" max="600" step="1" value="200" required><span>%</span></span>
+                    <small>200% betekent: het gewone uur plus 100% nachttoeslag</small>
+                  </label>
+                </div>
+                <div class="account-travel-rules two-column-fields">
+                  <label>
+                    <span>Reisdag binnen Europa</span>
+                    <span class="suffixed-input"><input type="number" name="travelWithinEuropePercent" min="0" max="500" step="1" value="75" required><span>%</span></span>
+                    <small>Percentage van het normale dagtarief</small>
+                  </label>
+                  <label>
+                    <span>Reisdag buiten Europa</span>
+                    <span class="suffixed-input"><input type="number" name="travelOutsideEuropePercent" min="0" max="500" step="1" value="100" required><span>%</span></span>
+                    <small>Percentage van het normale dagtarief</small>
+                  </label>
                 </div>
               </div>
 

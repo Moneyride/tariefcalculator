@@ -95,9 +95,27 @@
       enableNightTariff: accountSettings.enableNightTariff,
       nightStart: accountSettings.nightStart,
       nightEnd: accountSettings.nightEnd,
+      nightSurchargePercent: accountSettings.nightSurchargePercent,
+      enableTravelDay: false,
+      travelRegion: "within_europe",
+      travelPercent: accountSettings.travelWithinEuropePercent,
+      travelWithinEuropePercent: accountSettings.travelWithinEuropePercent,
+      travelOutsideEuropePercent: accountSettings.travelOutsideEuropePercent,
       enableKilometers: false, kilometers: 0, kilometerRate: accountSettings.mileageRate,
       enableParkingCosts: false, parkingCosts: accountSettings.parkingDefaultAmount,
       enableDroneTariff: false, enableRonin4dTariff: false, customEquipment: []
+    };
+  }
+
+  function storedDayData(day) {
+    const stored = day?.calculationData || {};
+    return {
+      ...defaultDayData(),
+      ...stored,
+      // Projectdagen van voor de instelbare nachttoeslag rekenden altijd met 100%.
+      nightSurchargePercent: Object.hasOwn(stored, "nightSurchargePercent")
+        ? Number(stored.nightSurchargePercent)
+        : 100
     };
   }
 
@@ -116,6 +134,9 @@
       enableOvertimeFrom14: Boolean(data.enableOvertimeFrom14),
       enableNightTariff: Boolean(data.enableNightTariff),
       nightStart: data.nightStart || "00:00", nightEnd: data.nightEnd || "06:00",
+      nightSurchargePercent: Number(data.nightSurchargePercent ?? 100),
+      travelWithinEuropePercent: Number(data.travelWithinEuropePercent ?? accountSettings.travelWithinEuropePercent),
+      travelOutsideEuropePercent: Number(data.travelOutsideEuropePercent ?? accountSettings.travelOutsideEuropePercent),
       droneTariffAmount: accountSettings.droneTariffAmount,
       ronin4dTariffAmount: accountSettings.roninTariffAmount,
       kilometerRate: Number(data.kilometerRate ?? accountSettings.mileageRate)
@@ -124,7 +145,7 @@
 
   function totals(days) {
     return days.reduce((all, day) => {
-      const result = calculate({ ...defaultDayData(), ...day.calculationData });
+      const result = calculate(storedDayData(day));
       all.amount += result.subtotalExVat; all.hours += result.totalHours; all.overtime += result.overtimeHours;
       all.night += result.nightHours; all.kilometers += result.kilometers; all.parking += result.parkingAmount;
       all.surcharges += result.overtimeAmount + result.nightAmount + result.droneTariffAmount + result.ronin4dTariffAmount + result.customEquipmentAmount;
@@ -272,6 +293,12 @@
       status.textContent = "Project wordt toegevoegd…";
       const shareId = await shares.claimInvite(token, "project");
       try {
+        const awards = await globalThis.OveruurtjeBadges?.evaluate?.();
+        if (awards?.[0]) sessionUi?.showToast(`${awards[0].icon} Badge behaald: ${awards[0].name}`);
+      } catch (error) {
+        console.warn("Badgecontrole na projectacceptatie is niet gelukt.", error);
+      }
+      try {
         await shares.markShareNotificationsRead(shareId);
       } catch (error) {
         console.warn("De uitnodigingsmelding kon niet als gelezen worden gemarkeerd.", error);
@@ -398,6 +425,9 @@
 
   function summaryText(result) {
     const parts = [];
+    if (result.isTravelDay) {
+      parts.push(`Reisdag · ${result.travelRegion === "outside_europe" ? "Buiten Europa" : "Binnen Europa"} · ${number.format(result.travelPercent)}%`);
+    }
     if (result.overtimeHours) parts.push(`${number.format(result.overtimeHours)} uur overwerk`);
     if (result.nightHours) parts.push(`${number.format(result.nightHours)} nachturen`);
     if (result.kilometerAmount) parts.push(`${number.format(result.kilometers)} km`);
@@ -420,7 +450,7 @@
       ["Totaal exclusief btw", euro.format(total.amount), "primary"]
     ].map(([label, value, className = ""]) => `<div class="${className}"><span>${label}</span><strong>${value}</strong></div>`).join("");
     document.querySelector("#project-day-list").innerHTML = current.days.map((day) => {
-      const data = { ...defaultDayData(), ...day.calculationData }; const result = calculate(data);
+      const data = storedDayData(day); const result = calculate(data);
       const isSource = day.id === copyTimesSourceId;
       const isTarget = copyTimesTargetIds.has(day.id);
       const copyClass = `${isSource ? " is-copy-source" : ""}${isTarget ? " is-copy-target" : ""}`;
@@ -432,7 +462,7 @@
         : `<button type="button" class="project-times-copy-trigger" data-copy-project-times="${day.id}">Tijden kopiëren</button>`;
       return `<article class="project-day-card ${copyClass.trim()}" data-day-card data-day-id="${day.id}">
         <button type="button" class="project-day-open" data-open-project-day="${day.id}" ${copyTimesSourceId ? `aria-pressed="${isTarget}"` : ""}>
-          <span><strong>${formatDate(day.workDate)}</strong><small>${data.startTime} - ${data.endTime}${result.endsNextDay ? " (+1 dag)" : ""} · ${summaryText(result)}</small>${copyBadge}</span>
+          <span><strong>${formatDate(day.workDate)}</strong><small>${data.startTime} - ${data.endTime}${result.endsNextDay ? " (+1 dag)" : ""} · ${summaryText(result)}</small><small class="project-day-sharing" data-project-day-sharing="${day.id}"></small>${copyBadge}</span>
           <strong>${euro.format(result.subtotalExVat)}</strong>
         </button>
         ${copyAction}
@@ -447,10 +477,34 @@
     }));
     renderCopyTimesControls();
     show("project-overview-view");
+    renderProjectDaySharing();
     requestAnimationFrame(() => {
       scrollCarouselToIndex(carouselIndex, "auto");
       updateCarouselControls();
     });
+  }
+
+  async function renderProjectDaySharing() {
+    if (!context?.auth.user || !current?.days?.length) return;
+    await Promise.all(current.days.map(async (day) => {
+      const target = document.querySelector(`[data-project-day-sharing="${day.id}"]`);
+      if (!target) return;
+      try {
+        const sent = await shares.listSent("project_day", day.id);
+        if (!target.isConnected) return;
+        const accepted = sent.filter((share) => share.acceptedAt);
+        const names = accepted
+          .map((share) => share.recipientName || share.recipientEmail || "Collega")
+          .map((name) => String(name).trim().split(/\s+/)[0])
+          .filter(Boolean);
+        if (names.length) target.textContent = `Gedeeld met ${names.join(", ")}`;
+        else if (sent.length) target.textContent = `${sent.length} uitnodiging${sent.length === 1 ? "" : "en"} verstuurd`;
+        else target.remove();
+      } catch (error) {
+        console.warn("Deelstatus van projectdag kon niet worden geladen.", error);
+        target.remove();
+      }
+    }));
   }
 
   function carouselCards() {
@@ -528,7 +582,7 @@
     if (!source || !targetIds.size) return;
     const count = targetIds.size;
     if (!confirm(`De start- en eindtijd van ${count} dag${count === 1 ? "" : "en"} worden vervangen. Doorgaan?`)) return;
-    const sourceData = { ...defaultDayData(), ...source.calculationData };
+    const sourceData = storedDayData(source);
     current.days = current.days.map((day) => targetIds.has(day.id)
       ? {
           ...day,
@@ -690,9 +744,15 @@
     const total = totals(current.days); const p = current.project;
     const summary = `<section class="project-print-page"><header><img src="overuurtje-logo.png" alt="Overuurtje.nl"><div><p>Projectoverzicht</p><h1>${escapeHtml(p.name)}</h1></div></header><dl class="project-print-meta">${p.clientName ? `<div><dt>Opdrachtgever</dt><dd>${escapeHtml(p.clientName)}</dd></div>` : ""}<div><dt>Periode</dt><dd>${formatDate(p.startDate)} - ${formatDate(p.endDate)}</dd></div><div><dt>Werkdagen</dt><dd>${current.days.length}</dd></div>${p.notes ? `<div><dt>Notities</dt><dd>${escapeHtml(p.notes)}</dd></div>` : ""}</dl><div class="project-print-totals"><div><span>Uren</span><strong>${number.format(total.hours)}</strong></div><div><span>Overuren</span><strong>${number.format(total.overtime)}</strong></div><div><span>Nachturen</span><strong>${number.format(total.night)}</strong></div><div><span>Kilometers</span><strong>${number.format(total.kilometers)}</strong></div><div><span>Parkeren</span><strong>${euro.format(total.parking)}</strong></div><div><span>Toeslagen</span><strong>${euro.format(total.surcharges)}</strong></div><div class="grand"><span>Totaal excl. btw</span><strong>${euro.format(total.amount)}</strong></div></div><footer>Powered by Reichgelt Media Group</footer></section>`;
     const pages = current.days.map((day) => {
-      const data = { ...defaultDayData(), ...day.calculationData }; const r = calculate(data);
+      const data = storedDayData(day); const r = calculate(data);
       const lines = [
-        printLine(
+        r.isTravelDay
+          ? printLine(
+            "Reisdagvergoeding",
+            `${r.travelRegion === "outside_europe" ? "Buiten Europa" : "Binnen Europa"} · ${number.format(r.travelPercent)}% van ${euro.format(r.settings.dayRate)}`,
+            r.travelDayAmount
+          )
+          : printLine(
           data.rateMode === "hour" && r.minimumChargeApplied ? "Minimale afname" : "Basistarief",
           data.rateMode === "hour"
             ? `${number.format(r.regularHours)} uur × ${euro.format(r.hourlyRate)}${r.minimumChargeApplied ? ` + ${euro.format(r.minimumAdjustmentAmount)} minimumcorrectie tot ${number.format(r.minimumHours)} uur` : ""}`
@@ -703,14 +763,14 @@
         printLine("Overuren 150%", `${number.format(r.overtime10To12Hours)} uur × ${euro.format(r.hourlyRate)} × 150%`, r.overtime10To12Amount),
         printLine("Overuren 200%", `${number.format(r.overtimeFrom12Hours)} uur × ${euro.format(r.hourlyRate)} × 200%`, r.overtimeFrom12Amount),
         printLine("Overuren 250%", `${number.format(r.overtimeFrom14Hours)} uur × ${euro.format(r.hourlyRate)} × 250%`, r.overtimeFrom14Amount),
-        printLine("Pure nachturen", `${number.format(r.pureNightHours)} uur × ${euro.format(r.hourlyRate)} × 100% nachttoeslag`, r.pureNightAmount),
-        ...r.nightOvertimeSurchargeBreakdown.map((item) => printLine("Nachttoeslag over overuren", `${number.format(item.hours)} uur × ${euro.format(r.hourlyRate)} × ${number.format(item.surchargeFactor * 100)}%`, item.amount)),
+        printLine("Pure nachturen", `${number.format(r.pureNightHours)} uur tegen ${number.format(100 + r.settings.nightSurchargePercent)}% totaal`, r.pureNightAmount),
+        ...r.nightOvertimeSurchargeBreakdown.map((item) => printLine("Nachturen tijdens overuren", `${number.format(item.hours)} uur tegen ${number.format((item.surchargeFactor + (item.surchargeFactor / (r.settings.nightOverlapSurchargeFactor || 1))) * 100)}% totaal`, item.amount)),
         printLine("Drone", "Vaste toeslag", r.droneTariffAmount), printLine("Ronin 4D", "Vaste toeslag", r.ronin4dTariffAmount),
         ...r.customEquipmentItems.map((item) => printLine(item.name, "Vaste apparatuurtoeslag", item.amount)),
         printLine("Kilometers", `${number.format(r.kilometers)} km × ${euro.format(r.settings.kilometerRate)}`, r.kilometerAmount),
         printLine("Parkeer/onkosten", "Ingevoerd bedrag", r.parkingAmount)
       ].join("");
-      return `<section class="project-print-page"><header><img src="overuurtje-logo.png" alt=""><div><p>Projectdag · ${escapeHtml(p.name)}</p><h1>${formatDate(day.workDate)}</h1></div></header><dl class="project-print-meta">${data.workFunctionName ? `<div><dt>Functie</dt><dd>${escapeHtml(data.workFunctionName)}</dd></div>` : ""}<div><dt>Tijden</dt><dd>${data.startTime} - ${data.endTime}${r.endsNextDay ? " (+1 dag)" : ""}</dd></div>${data.breakMinutes ? `<div><dt>Pauze</dt><dd>${data.breakMinutes} minuten</dd></div>` : ""}<div><dt>Gewerkt</dt><dd>${number.format(r.totalHours)} uur</dd></div></dl><div class="project-print-lines">${lines}</div><div class="project-print-invoice"><span>Totaal excl. btw</span><strong>${euro.format(r.subtotalExVat)}</strong><span>Btw 21%</span><strong>${euro.format(r.vatAmount)}</strong><span>Inclusief btw</span><strong>${euro.format(r.totalIncVat)}</strong></div><footer>Powered by Reichgelt Media Group</footer></section>`;
+      return `<section class="project-print-page"><header><img src="overuurtje-logo.png" alt=""><div><p>Projectdag · ${escapeHtml(p.name)}</p><h1>${formatDate(day.workDate)}</h1></div></header><dl class="project-print-meta">${data.workFunctionName ? `<div><dt>Functie</dt><dd>${escapeHtml(data.workFunctionName)}</dd></div>` : ""}${r.isTravelDay ? `<div><dt>Type</dt><dd>Reisdag · ${r.travelRegion === "outside_europe" ? "Buiten Europa" : "Binnen Europa"} · ${number.format(r.travelPercent)}%</dd></div>` : ""}<div><dt>Tijden</dt><dd>${data.startTime && data.endTime ? `${data.startTime} - ${data.endTime}${r.endsNextDay ? " (+1 dag)" : ""}` : "Niet ingevuld"}</dd></div>${data.breakMinutes ? `<div><dt>Pauze</dt><dd>${data.breakMinutes} minuten</dd></div>` : ""}<div><dt>Gewerkt</dt><dd>${number.format(r.totalHours)} uur</dd></div></dl><div class="project-print-lines">${lines}</div><div class="project-print-invoice"><span>Totaal excl. btw</span><strong>${euro.format(r.subtotalExVat)}</strong><span>Btw 21%</span><strong>${euro.format(r.vatAmount)}</strong><span>Inclusief btw</span><strong>${euro.format(r.totalIncVat)}</strong></div><footer>Powered by Reichgelt Media Group</footer></section>`;
     }).join("");
     document.querySelector("#project-print-root").innerHTML = summary + pages;
   }
@@ -797,7 +857,12 @@
   document.querySelector("#share-project-day").addEventListener("click", () => {
     if (currentDayId) shareUi?.open({ sourceType: "project_day", sourceId: currentDayId });
   });
-  document.querySelector("#project-pdf").addEventListener("click", () => { buildProjectPrint(); window.print(); });
+  document.querySelector("#project-pdf").addEventListener("click", () => {
+    globalThis.OveruurtjeBadges?.track?.("project_pdf_generated", current?.project?.id || null)
+      .catch((error) => console.warn("Badgecontrole voor project-pdf is niet gelukt.", error));
+    buildProjectPrint();
+    window.print();
+  });
   sharedProjectDialog.querySelector("[data-shared-project-close]").addEventListener("click", () => closeDialog(sharedProjectDialog));
   projectInviteDialog.querySelector("[data-project-invite-close]").addEventListener("click", () => closeDialog(projectInviteDialog));
   projectInviteDialog.querySelector("[data-project-invite-login]").addEventListener("click", () => {

@@ -30,10 +30,13 @@ function allocationPrice(variant, plan) {
 }
 
 export function normalizeShopifyPricing(product, productUrl) {
-  const variant = product?.variants?.[0];
   const plans = (product?.selling_plan_groups || []).flatMap((group) => group?.selling_plans || []);
   const monthlyPlan = plans.find((plan) => planInterval(plan) === "month");
   const yearlyPlan = plans.find((plan) => planInterval(plan) === "year");
+  const variant = (product?.variants || []).find((item) => {
+    const ids = new Set((item?.selling_plan_allocations || []).map((allocation) => String(allocation?.selling_plan_id)));
+    return ids.has(String(monthlyPlan?.id)) && ids.has(String(yearlyPlan?.id));
+  }) || product?.variants?.[0];
   const monthlyAmount = allocationPrice(variant, monthlyPlan);
   const yearlyAmount = allocationPrice(variant, yearlyPlan);
 
@@ -83,7 +86,7 @@ export default async function handler(request) {
     const pricing = normalizeShopifyPricing(await response.json(), productUrl);
     return Response.json(pricing, {
       headers: {
-        "Cache-Control": "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400"
+        "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
       }
     });
   } catch (error) {

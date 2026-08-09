@@ -1,0 +1,62 @@
+(function initializeBadgeService() {
+  "use strict";
+
+  const supabaseService = globalThis.OveruurtjeSupabase;
+
+  async function client() {
+    const value = await supabaseService?.getClient?.();
+    if (!value) throw new Error("Supabase is niet beschikbaar.");
+    return value;
+  }
+
+  async function rpc(name, values = {}) {
+    const db = await client();
+    const { data, error } = await db.rpc(name, values);
+    if (error) throw error;
+    return data;
+  }
+
+  function normalizeAwards(data) {
+    return (Array.isArray(data) ? data : []).map((item) => ({
+      key: item.key,
+      name: item.name,
+      description: item.description,
+      icon: item.icon,
+      earnedAt: item.earned_at
+    }));
+  }
+
+  async function evaluate() {
+    return normalizeAwards(await rpc("evaluate_my_badges"));
+  }
+
+  async function track(eventKey, sourceId = null, metadata = {}) {
+    return normalizeAwards(await rpc("record_badge_activity", {
+      p_event_key: eventKey,
+      p_source_id: sourceId,
+      p_metadata: metadata
+    }));
+  }
+
+  async function getCrewCard() {
+    return await rpc("get_my_crew_card");
+  }
+
+  async function list() {
+    return (await rpc("list_my_badges") || []).map((item) => ({
+      key: item.key,
+      name: item.name,
+      description: item.description,
+      icon: item.icon,
+      hidden: Boolean(item.hidden),
+      earnedAt: item.earned_at,
+      selected: Boolean(item.is_selected)
+    }));
+  }
+
+  async function select(key) {
+    await rpc("select_my_crew_badge", { p_badge_key: key });
+  }
+
+  globalThis.OveruurtjeBadges = Object.freeze({ evaluate, track, getCrewCard, list, select });
+})();

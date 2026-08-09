@@ -17,7 +17,7 @@
     if (!/^https?:$/.test(url.protocol)) return null;
     const allowedHosts = new Set([location.hostname, "overuurtje.nl", "www.overuurtje.nl", "localhost", "127.0.0.1"]);
     const page = url.pathname.split("/").filter(Boolean).pop();
-    if (!allowedHosts.has(url.hostname) || !["workdays.html", "projects.html"].includes(page)) return null;
+    if (!allowedHosts.has(url.hostname) || !["delen.html", "workdays.html", "projects.html"].includes(page)) return null;
     if (!url.searchParams.get("invite")) return null;
 
     if (["localhost", "127.0.0.1"].includes(location.hostname)) {
@@ -34,7 +34,11 @@
     frameRequest = 0;
     stream?.getTracks().forEach((track) => track.stop());
     stream = null;
-    if (dialog) dialog.querySelector("video").srcObject = null;
+    if (dialog) {
+      dialog.querySelector("video").srcObject = null;
+      dialog.querySelector("[data-qr-camera]").hidden = true;
+      dialog.querySelector("[data-qr-camera-start]").hidden = false;
+    }
   }
 
   function setStatus(message, state = "") {
@@ -96,6 +100,7 @@
       await video.play();
       scanning = true;
       dialog.querySelector("[data-qr-camera]").hidden = false;
+      dialog.querySelector("[data-qr-camera-start]").hidden = true;
       setStatus("Richt de camera op de QR-code.");
       frameRequest = requestAnimationFrame(scanFrame);
     } catch (error) {

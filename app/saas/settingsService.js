@@ -17,8 +17,11 @@
     enableOvertimeFrom12: true,
     enableOvertimeFrom14: false,
     enableNightTariff: true,
+    nightSurchargePercent: 100,
     nightStart: "00:00",
     nightEnd: "06:00",
+    travelWithinEuropePercent: 75,
+    travelOutsideEuropePercent: 100,
     mileageRate: 0.23,
     parkingDefaultAmount: 0,
     droneVisible: false,
@@ -48,6 +51,11 @@
     return Number.isFinite(parsed) ? Math.min(12, Math.max(0, parsed)) : defaults.minimumHours;
   }
 
+  function normalizePercent(value, fallback) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? Math.min(500, Math.max(0, parsed)) : fallback;
+  }
+
   function normalize(row = {}) {
     const preferences = row.preferences && typeof row.preferences === "object" ? row.preferences : {};
     const booleanPreference = (name, fallback) => typeof preferences[name] === "boolean" ? preferences[name] : fallback;
@@ -66,8 +74,11 @@
       enableOvertimeFrom12: booleanPreference("enableOvertimeFrom12", defaults.enableOvertimeFrom12),
       enableOvertimeFrom14: booleanPreference("enableOvertimeFrom14", defaults.enableOvertimeFrom14),
       enableNightTariff: booleanPreference("enableNightTariff", defaults.enableNightTariff),
+      nightSurchargePercent: normalizePercent(preferences.nightSurchargePercent, defaults.nightSurchargePercent),
       nightStart: timePreference("nightStart", defaults.nightStart),
       nightEnd: timePreference("nightEnd", defaults.nightEnd),
+      travelWithinEuropePercent: normalizePercent(preferences.travelWithinEuropePercent, defaults.travelWithinEuropePercent),
+      travelOutsideEuropePercent: normalizePercent(preferences.travelOutsideEuropePercent, defaults.travelOutsideEuropePercent),
       mileageRate: Number(row.mileage_rate ?? defaults.mileageRate),
       parkingDefaultAmount: Number(row.parking_default_amount ?? 0),
       droneVisible: Boolean(row.drone_enabled),
@@ -104,8 +115,11 @@
         enableOvertimeFrom12: Boolean(settings.enableOvertimeFrom12),
         enableOvertimeFrom14: Boolean(settings.enableOvertimeFrom14),
         enableNightTariff: Boolean(settings.enableNightTariff),
+        nightSurchargePercent: normalizePercent(settings.nightSurchargePercent, defaults.nightSurchargePercent),
         nightStart: /^\d{2}:\d{2}$/.test(settings.nightStart || "") ? settings.nightStart : defaults.nightStart,
         nightEnd: /^\d{2}:\d{2}$/.test(settings.nightEnd || "") ? settings.nightEnd : defaults.nightEnd,
+        travelWithinEuropePercent: normalizePercent(settings.travelWithinEuropePercent, defaults.travelWithinEuropePercent),
+        travelOutsideEuropePercent: normalizePercent(settings.travelOutsideEuropePercent, defaults.travelOutsideEuropePercent),
         frequentClients: normalizeTextList(settings.frequentClients)
       },
       updated_at: new Date().toISOString()

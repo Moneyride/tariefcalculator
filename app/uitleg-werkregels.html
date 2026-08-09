@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#173f36">
+    <title>Uitleg werkregels | Overuurtje.nl</title>
+    <meta name="description" content="Lees hoe Overuurtje dagtarieven, overuren, nachttoeslag, pauzes, extra kosten en reisdagen berekent.">
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="stylesheet" href="styles.css?v=20260808a">
+    <script src="workrulesExplanation.js?v=20260808a" defer></script>
+  </head>
+  <body class="calculator-page legal-page-body">
+    <main class="app-shell">
+      <div class="main-glass">
+        <header class="page-header legal-header">
+          <a class="header-title" href="index.html" aria-label="Terug naar Overuurtje">
+            <img class="site-logo" src="overuurtje-logo.png" alt="Overuurtje.nl - Reken. Check. Klaar.">
+          </a>
+          <p class="header-brand">Powered by Reichgelt Media Group</p>
+          <nav class="account-navigation legal-header-navigation" aria-label="Hoofdnavigatie">
+            <a class="guest-about-link" href="account.html#calculator-settings">Terug naar instellingen</a>
+          </nav>
+        </header>
+
+        <article class="legal-page workrules-explanation">
+          <header class="legal-hero">
+            <p class="dialog-eyebrow">Rekeninstellingen</p>
+            <h1>Zo rekent Overuurtje</h1>
+            <p id="example-introduction">De uitkomst volgt altijd jouw opgeslagen werkregels. De voorbeelden hieronder gebruiken jouw ingestelde tarief.</p>
+          </header>
+
+          <div class="legal-content">
+            <section class="legal-section">
+              <h2>Basisuur en normale werkdag</h2>
+              <p id="example-base-rate"></p>
+              <p>Kies je een uurtarief, dan wordt minimaal het ingestelde aantal afname-uren gerekend. Een eventuele halve-dagregeling geldt alleen bij een dagtarief.</p>
+            </section>
+
+            <section class="legal-section">
+              <h2>Overuren en afronding</h2>
+              <p>Overuren beginnen na de normale werkdag. Met de standaardregels worden uur 11 en 12 tegen 150%, uur 13 en 14 tegen 200% en latere uren tegen 250% berekend, voor zover die regels in je instellingen aanstaan.</p>
+              <details><summary>Voorbeeld: één overuur</summary><p id="example-overtime"></p></details>
+              <p>Tijd wordt per kwartier verwerkt. Een begonnen kwartier wordt volgens de ingestelde afronding naar het volgende kwartier gebracht.</p>
+            </section>
+
+            <section class="legal-section">
+              <h2>Nachturen en nachttoeslag</h2>
+              <p id="example-night-intro"></p>
+              <details><summary>Nachtuur binnen de normale werkdag</summary><p id="example-night-regular"></p></details>
+              <details><summary>Nachtuur dat ook overuur is</summary><p id="example-night-overtime"></p></details>
+              <p>Pas je het standaardpercentage later aan, dan gebruiken nieuwe berekeningen het nieuwe percentage. Opgeslagen werkdagen bewaren het percentage waarmee die dag is berekend.</p>
+            </section>
+
+            <section class="legal-section">
+              <h2>Pauze</h2>
+              <p>Een pauze wordt van de gewerkte tijd afgetrokken. Overuurtje schuift daardoor ook het moment waarop overuren beginnen op. Pauzeminuten tellen niet als normale uren, overuren of nachturen.</p>
+            </section>
+
+            <section class="legal-section">
+              <h2>Extra kosten</h2>
+              <p>Kilometers worden vermenigvuldigd met je kilometervergoeding. Parkeren en onkosten worden als ingevuld bedrag toegevoegd. Apparatuur, drone, Ronin en eigen extra’s zijn vaste vergoedingen en krijgen geen overuren of nachttoeslag.</p>
+            </section>
+
+            <section class="legal-section">
+              <h2>Reisdagen</h2>
+              <p id="example-travel"></p>
+              <p>Begin- en eindtijd blijven zichtbaar voor registratie, maar verhogen de reisdagvergoeding niet met overuren of nachttoeslag. Kilometers, parkeren en andere losse kosten kunnen wel worden toegevoegd. Een opgeslagen reisdag bewaart het gebruikte percentage.</p>
+            </section>
+
+            <aside class="workrules-disclaimer">Overuurtje rekent op basis van jouw ingestelde werkregels. Afspraken kunnen verschillen per opdrachtgever, productie of cao. Controleer daarom altijd welke afspraken voor jouw opdracht gelden.</aside>
+          </div>
+        </article>
+      </div>
+    </main>
+  </body>
+</html>

@@ -112,12 +112,18 @@
           <button type="button" aria-label="Niet meer delen">&times;</button>
         `;
         row.querySelector(".share-avatar").textContent = initials(participant.firstName);
-        row.querySelector("strong").textContent = participant.isCurrentUser
+        const name = participant.isCurrentUser
           ? `${participant.firstName} (jij)`
           : participant.firstName;
+        row.querySelector("strong").textContent = participant.selectedBadgeIcon
+          ? `${name} ${participant.selectedBadgeIcon}`
+          : name;
+        row.querySelector("strong").title = participant.selectedBadgeName || "";
         row.querySelector("small").textContent = participant.isOwner
           ? "Eigenaar"
-          : (item?.deliveredAt ? "Deelnemer" : "Wacht op eindtijd");
+          : (participant.jointWorkdays > 0
+            ? `${participant.jointWorkdays} gezamenlijke werkdagen`
+            : (item?.deliveredAt ? "Deelnemer" : "Wacht op eindtijd"));
         const removeButton = row.querySelector("button");
         removeButton.hidden = participant.isOwner || !item;
         if (item) {

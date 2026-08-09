@@ -337,6 +337,9 @@
     if (item.type === "workday_share_joined") return `${item.actorName} doet mee met je gedeelde werkdag.`;
     if (item.type === "workday_start_owner") return "Je vooraf ingestelde werkdag begint nu.";
     if (item.type === "workday_started") return `${item.actorName} begint nu aan de gedeelde werkdag.`;
+    if (item.type === "workday_overtime_soon") return "Over 15 minuten beginnen de overuren van deze werkdag.";
+    if (item.type === "workday_night_soon") return "Over 15 minuten begint de ingestelde nachtperiode.";
+    if (item.type === "push_test") return "Je testmelding is aangekomen. Web Push werkt op dit apparaat.";
     if (item.type === "workday_completed") return `${item.actorName} heeft de eindtijd vastgelegd.`;
     if (item.type === "workday_resumed") return `${item.actorName} heeft de gedeelde werkdag opnieuw live gezet.`;
     if (item.type === "workday_times_updated") return `${item.actorName} heeft de werktijden aangepast.`;
@@ -667,6 +670,14 @@
       } catch (error) {
         console.warn("Profiel kon niet worden geladen.", error);
       }
+      try {
+        // A browser push endpoint can survive logout. Re-attach it to the
+        // current account after login so notifications never follow the
+        // previous user of this device.
+        await globalThis.OveruurtjePush?.refresh?.();
+      } catch (error) {
+        console.warn("Pushabonnement kon niet opnieuw worden gekoppeld.", error);
+      }
     }
 
     const subscription = subscriptions.resolve(profile);
@@ -833,6 +844,11 @@
   document.addEventListener("overuurtje:shares-changed", refreshNotifications);
 
   logoutButtons.forEach((button) => button.addEventListener("click", async () => {
+    try {
+      await globalThis.OveruurtjePush?.detach?.();
+    } catch (pushError) {
+      console.warn("Pushabonnement kon niet van het account worden losgekoppeld.", pushError);
+    }
     const { error } = await auth.signOut();
     if (error) showToast(error.message);
     else showToast("Je bent uitgelogd.");

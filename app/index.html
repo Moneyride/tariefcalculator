@@ -43,7 +43,7 @@
     <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260730a">
-    <link rel="stylesheet" href="styles.css?v=20260802c">
+    <link rel="stylesheet" href="styles.css?v=20260809a">
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
@@ -57,6 +57,7 @@
     <script src="saas/workdayService.js?v=20260727d" defer></script>
     <script src="saas/freeActiveWorkdayService.js?v=20260731a" defer></script>
     <script src="saas/shareService.js?v=20260802a" defer></script>
+    <script src="saas/badgeService.js?v=20260809a" defer></script>
     <script src="saas/subscriptionService.js?v=20260802trial1" defer></script>
     <script src="saas/featureGate.js?v=20260731b" defer></script>
     <script src="calculator.js?v=20260727b" defer></script>
@@ -71,7 +72,7 @@
     <script src="interactionGuard.js?v=20260730a" defer></script>
     <script src="selectUi.js?v=20260725a" defer></script>
     <script src="timePicker.js?v=20260730a" defer></script>
-    <script src="app.js?v=20260803a" defer></script>
+    <script src="app.js?v=20260809a" defer></script>
     <script src="pwa.js?v=20260731a" defer></script>
   </head>
   <body class="calculator-page">
@@ -124,6 +125,11 @@
             </span>
             <button type="button" id="open-active-shared">Openen</button>
           </aside>
+          <aside class="account-settings-entry calculator-settings-shortcut" id="account-settings-entry" hidden>
+            <a href="account.html#calculator-settings" aria-label="Rekeninstellingen openen" title="Rekeninstellingen">
+              <span class="settings-icon" aria-hidden="true">&#9881;</span>
+            </a>
+          </aside>
           <section class="form-section department-section">
             <h3>Functie</h3>
             <p class="active-function-name" id="active-function-name" hidden></p>
@@ -160,12 +166,12 @@
             </div>
             <div class="planning-grid">
               <label class="workday-name-field" id="workday-name-field">
-                <span>Naam werkdag <small>(optioneel)</small></span>
+                <span>Naam werkdag</span>
                 <input type="text" name="workdayName" maxlength="100" placeholder="Werkdag" list="workday-name-suggestions" autocomplete="off">
                 <datalist id="workday-name-suggestions"></datalist>
               </label>
               <label class="client-name-field">
-                <span>Opdrachtgever <small>(optioneel)</small></span>
+                <span>Opdrachtgever</span>
                 <input type="text" name="clientName" maxlength="120" placeholder="Opdrachtgever" list="client-name-suggestions" autocomplete="off">
                 <datalist id="client-name-suggestions"></datalist>
               </label>
@@ -173,7 +179,7 @@
                 <div class="participant-heading">
                   <div>
                     <strong>Deelnemers</strong>
-                    <small>Nodig collega's uit om samen de tijden te registreren, of voeg namen van collega's toe voor je administratie.</small>
+                    <small>Deel je werkdag met collega's en zie wie er meedoen.</small>
                   </div>
                   <button class="participant-share-button" id="share-from-participants" type="button" aria-label="Deel deze werkdag met collega's" title="Delen met collega's">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -185,18 +191,6 @@
                   </button>
                 </div>
                 <div class="participant-list" id="current-workday-participant-list"></div>
-                <details class="private-participant-panel" id="private-participant-panel" hidden>
-                  <summary>
-                    <span>Deelnemers zonder Overuurtje</span>
-                  </summary>
-                  <div class="private-participant-form" id="private-participant-form">
-                    <label>
-                      <span class="sr-only">Naam deelnemer</span>
-                      <input id="private-participant-name" type="text" maxlength="80" placeholder="Naam toevoegen">
-                    </label>
-                    <button type="button" id="add-private-participant">Toevoegen</button>
-                  </div>
-                </details>
               </aside>
               <label class="date-field">
                 <span>Datum</span>
@@ -291,6 +285,20 @@
                   <input type="number" name="parkingCosts" min="0" step="0.01" value="0">
                 </label>
               </div>
+              <div class="extra-option travel-option is-pro-locked" id="travel-option" role="button" tabindex="0" aria-label="Reisdag is beschikbaar met Pro">
+                <label class="checkbox-label">
+                  <input type="checkbox" name="enableTravelDay" disabled>
+                  <span>Reisdag</span>
+                  <small class="pro-option-badge">Pro</small>
+                </label>
+                <label class="extra-field" id="travel-region-input" hidden>
+                  <span>Reisgebied</span>
+                  <select name="travelRegion">
+                    <option value="within_europe">Binnen Europa</option>
+                    <option value="outside_europe">Buiten Europa</option>
+                  </select>
+                </label>
+              </div>
               <div class="extra-option is-pro-locked" id="drone-option" role="button" tabindex="0" aria-label="Drone tarief is beschikbaar met Pro">
                 <label class="checkbox-label">
                   <input type="checkbox" name="enableDroneTariff" disabled>
@@ -312,10 +320,33 @@
           <p class="notice" id="next-day-notice" hidden>
             Eindtijd wordt geïnterpreteerd als de volgende kalenderdag.
           </p>
+
+          <section class="calculate-action" aria-label="Berekening uitvoeren">
+            <p class="notice stale-notice" id="calculation-status" hidden>
+              Wijzigingen nog niet berekend.
+            </p>
+            <div class="button-row">
+              <button type="button" id="recalculate">Berekenen</button>
+              <a class="secondary new-calculation-link" id="new-calculation" href="index.html?new=1">Nieuwe berekening</a>
+              <button class="workday-save-button is-pro-locked" type="button" id="save-workday" disabled>
+                <svg class="button-line-icon" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M5 3h12l2 2v16H5z"></path>
+                  <path d="M8 3v6h8V3"></path>
+                  <path d="M8 21v-7h8v7"></path>
+                </svg>
+                <span class="workday-save-copy">
+                  <strong data-workday-save-label>Bewaar voor later</strong>
+                  <span data-workday-save-hint>Bewaar datum, begintijd en instellingen</span>
+                </span>
+                <small data-workday-save-badge>Pro</small>
+              </button>
+            </div>
+          </section>
         </form>
 
         <details class="settings-panel" id="settings-panel">
         <summary>Instellingen</summary>
+        <a class="settings-explanation-link" id="guest-settings-explanation" href="uitleg-werkregels.html">Uitleg</a>
         <form id="settings-form" class="settings-grid">
           <fieldset class="settings-section settings-section-basic">
             <legend>Basis</legend>
@@ -372,6 +403,11 @@
               <input type="checkbox" name="enableNightTariff">
               <span>Nacht tarief</span>
             </label>
+            <label>
+              <span>Nachttarief (totaal)</span>
+              <span class="suffixed-input"><input type="number" name="nightSurchargePercent" min="100" max="600" step="1" value="200" required><span>%</span></span>
+              <small>200% betekent: het gewone uur plus 100% nachttoeslag</small>
+            </label>
             <div class="night-settings" id="night-time-settings">
               <div class="time-field settings-time-field">
                 <label for="nightStart">Nachtperiode start</label>
@@ -406,34 +442,6 @@
         </form>
       </details>
 
-        <aside class="account-settings-entry" id="account-settings-entry" hidden>
-          <a href="account.html#calculator-settings" aria-label="Rekeninstellingen openen">
-            <span class="settings-icon" aria-hidden="true">&#9881;</span>
-            Rekeninstellingen
-          </a>
-        </aside>
-
-        <section class="calculate-action" aria-label="Berekening uitvoeren">
-          <p class="notice stale-notice" id="calculation-status" hidden>
-            Wijzigingen nog niet berekend.
-          </p>
-          <button class="workday-save-button is-pro-locked" type="button" id="save-workday" disabled>
-            <svg class="button-line-icon" aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M5 3h12l2 2v16H5z"></path>
-              <path d="M8 3v6h8V3"></path>
-              <path d="M8 21v-7h8v7"></path>
-            </svg>
-            <span class="workday-save-copy">
-              <strong data-workday-save-label>Werkdag opslaan</strong>
-              <span data-workday-save-hint>Bewaar je begintijd; vul later je eindtijd in</span>
-            </span>
-            <small data-workday-save-badge>Pro</small>
-          </button>
-          <div class="button-row">
-            <button type="button" id="recalculate">Berekenen</button>
-          </div>
-        </section>
-
         <section class="result-panel" aria-live="polite">
           <div class="result-header">
             <h2>Resultaat</h2>
@@ -457,7 +465,8 @@
             <section class="result-section">
               <h3>Bedragen</h3>
               <dl class="result-list">
-                <div><dt>Basistarief</dt><dd data-result="baseAmount">€ 0,00</dd></div>
+                <div data-base-result><dt>Basistarief</dt><dd data-result="baseAmount">€ 0,00</dd></div>
+                <div data-travel-result hidden><dt>Reisdagvergoeding</dt><dd data-result="travelDayAmount">€ 0,00</dd></div>
                 <div><dt>Overurenbedrag</dt><dd data-result="overtimeAmount">€ 0,00</dd></div>
                 <div><dt>Nachtbedrag</dt><dd data-result="nightAmount">€ 0,00</dd></div>
                 <div><dt>Drone tarief</dt><dd data-result="droneTariffAmount">€ 0,00</dd></div>
