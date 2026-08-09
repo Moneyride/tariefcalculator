@@ -234,6 +234,8 @@ test("subscription mock kan lokaal Free en Pro simuleren", async () => {
     }
   });
 
+  assert.equal(context.OveruurtjeSubscriptions.resolve({ isPro: true }).isPro, true);
+  context.OveruurtjeSubscriptions.setMockPlan("free");
   assert.equal(context.OveruurtjeSubscriptions.resolve({ isPro: true }).isPro, false);
   context.OveruurtjeSubscriptions.setMockPlan("pro");
   assert.equal(context.OveruurtjeSubscriptions.resolve({ isPro: false }).isPro, true);
@@ -1530,4 +1532,20 @@ test("gedeelde Crew Cards blijven voor eigenaar en ontvanger wederzijds beschikb
   assert.match(migration, /s\.owner_id = auth\.uid\(\) and s\.recipient_id = p_user_id/);
   assert.match(migration, /create function public\.get_workday_share_participants/);
   assert.match(migration, /pi\.participant_id = auth\.uid\(\)/);
+});
+
+test("geclaimde uitnodigingen worden geaccepteerd en blijven de actieve gedeelde werkdag", async () => {
+  const repairMigration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202608090006_sharing_badge_repair.sql"),
+    "utf8"
+  );
+  const workdaysScript = await readFile(path.join(rootDirectory, "app/workdays.js"), "utf8");
+  const calculatorScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
+
+  assert.match(repairMigration, /set accepted_at = coalesce\(accepted_at, delivered_at, created_at, now\(\)\)/i);
+  assert.match(repairMigration, /create trigger mark_claimed_workday_share_accepted/i);
+  assert.match(repairMigration, /select s\.recipient_id, false[\s\S]*s\.accepted_at is not null/i);
+  assert.match(workdaysScript, /shareService\.claimInvite\(token\)[\s\S]*shareService\.accept\(shareId\)/i);
+  assert.match(calculatorScript, /const activeShares = await findActiveReceivedShare\(\)[\s\S]*location\.replace\(`index\.html\?shared=/i);
+  assert.doesNotMatch(calculatorScript, /activeShares\.length && !activeContextIsSuppressed\(\)/i);
 });

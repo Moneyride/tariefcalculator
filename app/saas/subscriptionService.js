@@ -7,9 +7,10 @@
   function getMockPlan() {
     if (!config.allowMockSubscriptions) return null;
     try {
-      return localStorage.getItem(MOCK_KEY) === "pro" ? "pro" : "free";
+      const storedPlan = localStorage.getItem(MOCK_KEY);
+      return ["pro", "free"].includes(storedPlan) ? storedPlan : null;
     } catch {
-      return "free";
+      return null;
     }
   }
 

@@ -79,6 +79,24 @@ export function normalizeShopifyPricing(product, productUrl) {
   };
 }
 
+function publishedPricing(pricing, productUrl) {
+  return {
+    ...pricing,
+    productUrl,
+    monthly: {
+      ...pricing.monthly,
+      amountCents: FALLBACK_SHOPIFY_PRICING.monthly.amountCents
+    },
+    yearly: {
+      ...pricing.yearly,
+      amountCents: FALLBACK_SHOPIFY_PRICING.yearly.amountCents
+    },
+    regularYearAmountCents: FALLBACK_SHOPIFY_PRICING.regularYearAmountCents,
+    savingsAmountCents: FALLBACK_SHOPIFY_PRICING.savingsAmountCents,
+    savingsMonths: FALLBACK_SHOPIFY_PRICING.savingsMonths
+  };
+}
+
 export default async function handler(request) {
   if (request.method !== "GET") {
     return Response.json({ error: "Method not allowed" }, { status: 405 });
@@ -95,8 +113,11 @@ export default async function handler(request) {
       headers: { Accept: "application/json" }
     });
     if (!response.ok) throw new Error(`Shopify antwoordde met status ${response.status}.`);
-    const pricing = normalizeShopifyPricing(await response.json(), productUrl);
-    return Response.json({ ...pricing, source: "shopify" }, {
+    const pricing = publishedPricing(
+      normalizeShopifyPricing(await response.json(), productUrl),
+      productUrl
+    );
+    return Response.json({ ...pricing, source: "shopify-product-fixed-price" }, {
       headers: {
         "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
       }

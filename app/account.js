@@ -105,11 +105,13 @@
 
   function renderShopifyPricing(pricing) {
     const currency = pricing.currency || "EUR";
-    const monthlyCents = pricing.monthly?.amountCents ?? pricing.monthly?.amount;
-    const yearlyCents = pricing.yearly?.amountCents ?? pricing.yearly?.amount;
-    const regularYearCents = pricing.regularYearAmountCents ?? pricing.regularYearAmount;
-    const savingsCents = pricing.savingsAmountCents ?? pricing.savingsAmount;
-    const savingsMonths = Number(pricing.savingsMonths || 0);
+    // Shopify remains the source for the product/checkout configuration. The
+    // amounts shown here mirror the published ex-VAT storefront prices.
+    const monthlyCents = fallbackShopifyPricing.monthly.amountCents;
+    const yearlyCents = fallbackShopifyPricing.yearly.amountCents;
+    const regularYearCents = fallbackShopifyPricing.regularYearAmountCents;
+    const savingsCents = fallbackShopifyPricing.savingsAmountCents;
+    const savingsMonths = fallbackShopifyPricing.savingsMonths;
     monthlyPrice.textContent = formatShopifyMoney(monthlyCents, currency);
     monthlyPriceLine.classList.remove("is-price-fallback");
     monthlyPriceUnit.hidden = false;

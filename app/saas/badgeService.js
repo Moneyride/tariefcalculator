@@ -35,7 +35,7 @@
   }
 
   async function evaluate() {
-    return normalizeAwards(await rpc("evaluate_my_badges"));
+    return publishAwards(normalizeAwards(await rpc("evaluate_my_badges")));
   }
 
   async function track(eventKey, sourceId = null, metadata = {}) {

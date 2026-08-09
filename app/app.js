@@ -776,12 +776,20 @@ async function refreshCurrentWorkdayParticipants() {
     return;
   }
   try {
-    const [participants, sentShares] = await Promise.all([
-      shareService.listParticipants(source.type, source.id),
-      currentSharedSource
-        ? Promise.resolve([])
-        : shareService.listSent(source.type, source.id).catch(() => [])
-    ]);
+    let participants = [];
+    let sentShares = [];
+    try {
+      participants = await shareService.listParticipants(source.type, source.id);
+    } catch (error) {
+      console.warn("De centrale deelnemerslijst is nog niet beschikbaar.", error);
+    }
+    if (!currentSharedSource) {
+      try {
+        sentShares = await shareService.listSent(source.type, source.id);
+      } catch (error) {
+        console.warn("Verzonden uitnodigingen konden niet worden geladen.", error);
+      }
+    }
     const participantIds = new Set(participants.map((participant) => participant.userId));
     const acceptedRecipients = sentShares
       .filter((share) => share.acceptedAt && share.recipientId && !participantIds.has(share.recipientId))
@@ -797,15 +805,32 @@ async function refreshCurrentWorkdayParticipants() {
         jointWorkdays: 0
       }));
     sharedParticipants = [...participants, ...acceptedRecipients];
-    if (!currentSharedSource && !sharedParticipants.some((participant) => participant.isCurrentUser)) {
-      const profile = currentUserContext?.profile;
+    const profile = currentUserContext?.profile;
+    if (!sharedParticipants.some((participant) => participant.isCurrentUser)) {
       sharedParticipants.unshift({
         userId: currentAccountUser.id,
         firstName: String(profile?.displayName || currentAccountUser.email || "Jij").trim().split(/\s+/)[0],
-        isOwner: true,
+        isOwner: !currentSharedSource,
         isCurrentUser: true,
         hasAccount: true,
         avatarUrl: profile?.avatarUrl || "",
+        selectedBadgeIcon: "",
+        selectedBadgeName: "",
+        jointWorkdays: 0
+      });
+    }
+    if (
+      currentSharedSource
+      && currentSharedOwnerName
+      && !sharedParticipants.some((participant) => participant.isOwner)
+    ) {
+      sharedParticipants.unshift({
+        userId: "",
+        firstName: currentSharedOwnerName.trim().split(/\s+/)[0] || "Collega",
+        isOwner: true,
+        isCurrentUser: false,
+        hasAccount: true,
+        avatarUrl: "",
         selectedBadgeIcon: "",
         selectedBadgeName: "",
         jointWorkdays: 0
@@ -817,8 +842,9 @@ async function refreshCurrentWorkdayParticipants() {
     }
     renderCurrentWorkdayParticipants();
     updateWorkdaySaveAccess();
-  } catch {
-    sharedParticipants = [];
+  } catch (error) {
+    console.warn("Deelnemers konden niet worden ververst.", error);
+    // Keep the last known list during a transient network or schema-cache error.
     renderCurrentWorkdayParticipants();
     updateWorkdaySaveAccess();
   }
@@ -1307,7 +1333,7 @@ async function persistWorkday(snapshot, id = null) {
   url.searchParams.set("workday", saved.id);
   history.replaceState({}, "", url);
   sessionUi?.showToast("Werkdag opgeslagen.");
-  void trackBadgeActivity("workday_saved", saved.id);
+  await trackBadgeActivity("workday_saved", saved.id);
   return saved;
 }
 
@@ -1331,7 +1357,7 @@ async function persistProjectDay(snapshot) {
   updateWorkdaySaveAccess();
   refreshCurrentWorkdayParticipants();
   sessionUi?.showToast("Projectdag opgeslagen.");
-  void trackBadgeActivity("project_day_saved", savedDay.id);
+  await trackBadgeActivity("project_day_saved", savedDay.id);
   return savedDay;
 }
 
@@ -1505,7 +1531,6 @@ async function initializeWorkdayContext() {
   const requestedProjectDayId = search.get("projectDay");
   try {
     if (search.get("new") === "1") {
-      suppressActiveContextForSession();
       search.delete("new");
       history.replaceState({}, "", `${location.pathname}${search.toString() ? `?${search}` : ""}`);
       return;
@@ -1547,7 +1572,7 @@ async function initializeWorkdayContext() {
     }
 
     const activeShares = await findActiveReceivedShare();
-    if (activeShares.selected && !activeContextIsSuppressed()) {
+    if (activeShares.selected) {
       activeSharedWorkday = activeShares.selected;
       const ownEntries = await listOwnEntriesForSharedDate(activeShares.selected.workDate);
       if (activeShares.all.length === 1 && ownEntries.length === 0) {
@@ -1794,6 +1819,13 @@ async function hydrateAccountSettings(context) {
     renderWorkFunctions(context.isPro ? functions : []);
     refreshPlanningSuggestions();
     updateCalculation();
+    try {
+      // Reconcile historical or previously missed badge awards whenever an
+      // authenticated calculator session becomes ready.
+      await badgeService?.evaluate?.();
+    } catch (error) {
+      console.warn("Badgecontrole bij het openen is niet gelukt.", error);
+    }
     await initializeWorkdayContext();
   } catch (error) {
     console.warn("Accountinstellingen konden niet worden geladen.", error);
@@ -2660,7 +2692,6 @@ document.querySelector("#continue-today-workday")?.addEventListener("click", () 
   closeNativeDialog(todayWorkdayDialog);
 });
 document.querySelector("#new-today-calculation")?.addEventListener("click", () => {
-  suppressActiveContextForSession();
   if (todayWorkday?.kind === "shared") {
     showActiveSharedReminder(todayWorkday.share);
   }
@@ -2672,7 +2703,8 @@ document.querySelector("#new-today-calculation")?.addEventListener("click", () =
   closeNativeDialog(todayWorkdayDialog);
 });
 document.querySelector("#new-calculation")?.addEventListener("click", () => {
-  suppressActiveContextForSession();
+  // This opens one clean calculation. On the next visit to Vandaag an active
+  // accepted shared workday again takes precedence.
 });
 document.querySelectorAll("[data-workday-dialog-close]").forEach((button) => {
   button.addEventListener("click", () => {

@@ -248,6 +248,9 @@
     status.textContent = "Uitnodiging accepteren…";
     try {
       const shareId = await shareService.claimInvite(token);
+      // Claiming creates the recipient relation; accepting makes it visible to
+      // both participants and eligible as the active shared workday.
+      await shareService.accept(shareId);
       try {
         const awards = await globalThis.OveruurtjeBadges?.evaluate?.();
         if (awards?.length) {
