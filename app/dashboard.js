@@ -50,6 +50,7 @@
   ].map(([key, name, description, icon, hidden]) => ({ key, name, description, icon, hidden }));
   let loadedContextKey = "";
   let currentProfile = null;
+  let currentRecords = [];
 
   function projectResult(data) {
     return calculator.calculateTariff({
@@ -221,12 +222,21 @@
     }));
   }
 
-  function decorateCrewCard(card, collection) {
+  function decorateCrewCard(card, collection, records = currentRecords, profile = currentProfile) {
     const title = collection.find((badge) => badge.title);
     const featured = collection.filter((badge) => badge.featured).sort((a, b) => (a.featuredPosition || 99) - (b.featuredPosition || 99)).slice(0, 3);
+    const fallback = {
+      registeredWorkdays: Array.isArray(records) ? records.length : 0,
+      badgeCount: collection.filter((badge) => badge.earnedAt).length,
+      memberSince: profile?.createdAt || ""
+    };
     if (!isBadgeSimulationEnabled()) {
       return {
+        ...fallback,
         ...(card || {}),
+        registeredWorkdays: Number(card?.registeredWorkdays) || fallback.registeredWorkdays,
+        badgeCount: Number(card?.badgeCount) || fallback.badgeCount,
+        memberSince: card?.memberSince || fallback.memberSince,
         selectedBadge: title ? { key: title.key, name: title.name, icon: title.icon } : card?.selectedBadge,
         featuredBadges: featured.length
           ? featured.map((badge) => ({ key: badge.key, name: badge.name, description: badge.description, icon: badge.icon }))
@@ -235,7 +245,9 @@
     }
     return {
       ...(card || {}),
+      registeredWorkdays: Array.isArray(records) ? records.length : Number(card?.registeredWorkdays) || 0,
       badgeCount: collection.filter((badge) => badge.earnedAt).length,
+      memberSince: card?.memberSince || fallback.memberSince,
       selectedBadge: title ? { key: title.key, name: title.name, icon: title.icon } : card?.selectedBadge,
       featuredBadges: featured.map((badge) => ({ key: badge.key, name: badge.name, description: badge.description, icon: badge.icon }))
     };
@@ -320,23 +332,26 @@
     sessionUi.showToast(`Badge${labels.length === 1 ? "" : "s"} behaald: ${labels.join(" · ")}`);
   }
 
-  async function loadCrewCard(profile = currentProfile) {
+  async function loadCrewCard(profile = currentProfile, records = currentRecords) {
     if (!badges) {
       const collection = decorateBadgeCollection([]);
-      renderCrewCard(decorateCrewCard(null, collection), collection, profile);
+      renderCrewCard(decorateCrewCard(null, collection, records, profile), collection, profile);
       return;
     }
-    try {
-      const awards = await badges.evaluate();
-      const [card, storedCollection] = await Promise.all([badges.getCrewCard(), badges.list()]);
-      const collection = decorateBadgeCollection(storedCollection);
-      renderCrewCard(decorateCrewCard(card, collection), collection, profile);
-      showNewBadge(awards);
-    } catch (error) {
-      console.warn("Crew Card kon niet worden geladen.", error);
-      const collection = decorateBadgeCollection([]);
-      renderCrewCard(decorateCrewCard(null, collection), collection, profile);
-    }
+    const evaluation = await badges.evaluate()
+      .then((value) => ({ status: "fulfilled", value }))
+      .catch((reason) => ({ status: "rejected", reason }));
+    const [cardResult, listResult] = await Promise.allSettled([
+      badges.getCrewCard(),
+      badges.list()
+    ]);
+    if (evaluation.status === "rejected") console.warn("Badgecontrole kon niet worden uitgevoerd.", evaluation.reason);
+    if (cardResult.status === "rejected") console.warn("Crew Card kon niet worden geladen.", cardResult.reason);
+    if (listResult.status === "rejected") console.warn("Badges konden niet worden geladen.", listResult.reason);
+    const collection = decorateBadgeCollection(listResult.status === "fulfilled" ? listResult.value : []);
+    const card = cardResult.status === "fulfilled" ? cardResult.value : null;
+    renderCrewCard(decorateCrewCard(card, collection, records, profile), collection, profile);
+    if (evaluation.status === "fulfilled") showNewBadge(evaluation.value);
   }
 
   async function render(context) {
@@ -346,22 +361,24 @@
     content.hidden = !user;
     if (!user) {
       loadedContextKey = "";
+      currentRecords = [];
       return;
     }
 
     const key = `${user.id}:${context.isPro}`;
     if (loadedContextKey === key) {
-      await loadCrewCard(context.profile);
+      await loadCrewCard(context.profile, currentRecords);
       return;
     }
     loadedContextKey = key;
     freeNote.hidden = context.isPro;
     renderPeriodLabels();
-    await loadCrewCard(context.profile);
 
     if (!context.isPro) {
+      currentRecords = [];
       renderStats([]);
       renderActive([]);
+      await loadCrewCard(context.profile, currentRecords);
       return;
     }
 
@@ -375,11 +392,14 @@
         ...savedWorkdays.map(recordFromWorkday),
         ...projectDays.map(recordFromProject)
       ];
+      currentRecords = records;
       renderStats(records);
       renderActive(records);
+      await loadCrewCard(context.profile, records);
     } catch (error) {
       console.warn("Crew Card kon niet volledig worden geladen.", error);
       sessionUi.showToast("Je Crew Card kon niet volledig worden geladen.");
+      await loadCrewCard(context.profile, currentRecords);
     }
   }
 

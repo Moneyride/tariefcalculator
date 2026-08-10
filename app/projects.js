@@ -742,6 +742,11 @@
   }
 
   function printLine(label, detail, amount) { return amount ? `<div><div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(detail)}</span></div><strong>${euro.format(amount)}</strong></div>` : ""; }
+  function clearProjectPrint() {
+    document.body.classList.remove("is-printing-project");
+    document.querySelector("#project-print-root")?.replaceChildren();
+  }
+
   function buildProjectPrint() {
     const total = totals(current.days); const p = current.project;
     const summary = `<section class="project-print-page"><header><img src="overuurtje-logo.png" alt="Overuurtje.nl"><div><p>Projectoverzicht</p><h1>${escapeHtml(p.name)}</h1></div></header><dl class="project-print-meta">${p.clientName ? `<div><dt>Opdrachtgever</dt><dd>${escapeHtml(p.clientName)}</dd></div>` : ""}<div><dt>Periode</dt><dd>${formatDate(p.startDate)} - ${formatDate(p.endDate)}</dd></div><div><dt>Werkdagen</dt><dd>${current.days.length}</dd></div>${p.notes ? `<div><dt>Notities</dt><dd>${escapeHtml(p.notes)}</dd></div>` : ""}</dl><table class="project-print-totals"><tbody><tr><th>Uren</th><td>${number.format(total.hours)}</td><th>Overuren</th><td>${number.format(total.overtime)}</td></tr><tr><th>Nachturen</th><td>${number.format(total.night)}</td><th>Kilometers</th><td>${number.format(total.kilometers)}</td></tr><tr><th>Parkeren</th><td>${euro.format(total.parking)}</td><th>Toeslagen</th><td>${euro.format(total.surcharges)}</td></tr><tr class="grand"><th colspan="3">Totaal excl. btw</th><td>${euro.format(total.amount)}</td></tr></tbody></table><footer>Powered by Reichgelt Media Group</footer></section>`;
@@ -775,6 +780,7 @@
       return `<section class="project-print-page"><header><img src="overuurtje-logo.png" alt=""><div><p>Projectdag · ${escapeHtml(p.name)}</p><h1>${formatDate(day.workDate)}</h1></div></header><dl class="project-print-meta">${data.workFunctionName ? `<div><dt>Functie</dt><dd>${escapeHtml(data.workFunctionName)}</dd></div>` : ""}${r.isTravelDay ? `<div><dt>Type</dt><dd>Reisdag · ${r.travelRegion === "outside_europe" ? "Buiten Europa" : "Binnen Europa"} · ${number.format(r.travelPercent)}%</dd></div>` : ""}<div><dt>Tijden</dt><dd>${data.startTime && data.endTime ? `${data.startTime} - ${data.endTime}${r.endsNextDay ? " (+1 dag)" : ""}` : "Niet ingevuld"}</dd></div>${data.breakMinutes ? `<div><dt>Pauze</dt><dd>${data.breakMinutes} minuten</dd></div>` : ""}<div><dt>Gewerkt</dt><dd>${number.format(r.totalHours)} uur</dd></div></dl><div class="project-print-lines">${lines}</div><table class="project-print-invoice"><tbody><tr><th>Totaal excl. btw</th><td>${euro.format(r.subtotalExVat)}</td></tr><tr><th>Btw 21%</th><td>${euro.format(r.vatAmount)}</td></tr><tr class="invoice-total"><th>Inclusief btw</th><td>${euro.format(r.totalIncVat)}</td></tr></tbody></table><footer>Powered by Reichgelt Media Group</footer></section>`;
     }).join("");
     document.querySelector("#project-print-root").innerHTML = summary + pages;
+    document.body.classList.add("is-printing-project");
   }
 
   async function initialize(userContext) {
@@ -868,8 +874,9 @@
       })
       .catch((error) => console.warn("Badgecontrole voor project-pdf is niet gelukt.", error));
     buildProjectPrint();
-    window.print();
+    requestAnimationFrame(() => window.print());
   });
+  addEventListener("afterprint", () => setTimeout(clearProjectPrint, 0));
   sharedProjectDialog.querySelector("[data-shared-project-close]").addEventListener("click", () => closeDialog(sharedProjectDialog));
   projectInviteDialog.querySelector("[data-project-invite-close]").addEventListener("click", () => closeDialog(projectInviteDialog));
   projectInviteDialog.querySelector("[data-project-invite-login]").addEventListener("click", () => {

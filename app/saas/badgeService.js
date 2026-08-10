@@ -16,8 +16,27 @@
     return data;
   }
 
+  // PostgREST normally returns the JSON value directly. Some cached schema
+  // responses wrap a scalar RPC result in a one-row array, so normalize it
+  // before the UI reads Crew Card data.
+  function unwrapRpcValue(data, resultKey = "") {
+    const value = Array.isArray(data) && data.length === 1 && data[0] && typeof data[0] === "object"
+      ? data[0]
+      : data;
+    return resultKey && value && typeof value === "object" && value[resultKey] && typeof value[resultKey] === "object"
+      ? value[resultKey]
+      : value;
+  }
+
+  function toRows(data, resultKey = "") {
+    const value = resultKey && data && typeof data === "object" && data[resultKey]
+      ? data[resultKey]
+      : data;
+    return Array.isArray(value) ? value : value ? [value] : [];
+  }
+
   function normalizeAwards(data) {
-    return (Array.isArray(data) ? data : []).map((item) => ({
+    return toRows(data).map((item) => ({
       key: item.key,
       name: item.name,
       description: item.description,
@@ -47,7 +66,7 @@
   }
 
   async function getCrewCard() {
-    const value = await rpc("get_my_crew_card");
+    const value = unwrapRpcValue(await rpc("get_my_crew_card"), "get_my_crew_card");
     if (!value) return null;
     return {
       displayName: value.displayName ?? value.display_name ?? "Crewlid",
@@ -63,7 +82,8 @@
   }
 
   async function list() {
-    return (await rpc("list_my_badges") || []).map((item) => ({
+    const rows = toRows(await rpc("list_my_badges"), "list_my_badges");
+    return rows.map((item) => ({
       key: item.key,
       name: item.name,
       description: item.description,
@@ -84,7 +104,7 @@
   }
 
   async function getCrewMember(userId) {
-    return await rpc("get_crew_member_card", { p_user_id: userId });
+    return unwrapRpcValue(await rpc("get_crew_member_card", { p_user_id: userId }), "get_crew_member_card");
   }
 
   globalThis.OveruurtjeBadges = Object.freeze({ evaluate, track, getCrewCard, getCrewMember, list, saveSelection });
