@@ -198,6 +198,10 @@ async function trackBadgeActivity(eventKey, sourceId = null, metadata = {}) {
   } catch (error) {
     // Badges must never prevent a calculation, save, or PDF export.
     console.warn("Badgecontrole is niet gelukt.", error);
+  } finally {
+    // Database triggers can award a badge before record_badge_activity runs.
+    // Refresh the notification inbox even when that RPC returns no new rows.
+    document.dispatchEvent(new CustomEvent("overuurtje:badges-updated"));
   }
 }
 

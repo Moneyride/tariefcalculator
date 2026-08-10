@@ -307,18 +307,21 @@
   .project-print-meta dt, .project-print-meta dd { margin: 0; font-size: 9pt; }
   .project-print-meta dt { color: #6b7280; }
   .project-print-meta dd { overflow-wrap: anywhere; }
-  .project-print-totals { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2.5mm; }
-  .project-print-totals > div { display: grid; gap: 1.2mm; padding: 3mm; border: 1px solid #e0e8e4; }
-  .project-print-totals span { color: #6b7280; font-size: 8pt; }
-  .project-print-totals strong { color: #173f36; font-size: 14pt; }
-  .project-print-totals .grand { grid-column: 1 / -1; background: #edf5f1; }
-  .project-print-totals .grand strong { font-size: 20pt; }
+  .project-print-totals { width: 100%; border-collapse: collapse; table-layout: fixed; break-inside: avoid; }
+  .project-print-totals th, .project-print-totals td { padding: 2.5mm 3mm; border: 1px solid #e0e8e4; vertical-align: middle; }
+  .project-print-totals th { color: #6b7280; font-size: 8pt; font-weight: 500; text-align: left; }
+  .project-print-totals td { color: #173f36; font-size: 12pt; font-weight: 700; text-align: right; }
+  .project-print-totals .grand th, .project-print-totals .grand td { border-top: 1.5px solid #9eb8ad; background: transparent; }
+  .project-print-totals .grand td { font-size: 17pt; }
   .project-print-lines > div { display: grid; grid-template-columns: 1fr auto; gap: 7mm; padding: 1.7mm 2mm; border-bottom: 1px solid #edf1ef; break-inside: avoid; }
   .project-print-lines > div > div { display: grid; gap: 1mm; }
   .project-print-lines strong { font-size: 9pt; }
   .project-print-lines span { color: #6b7280; font-size: 8pt; }
-  .project-print-invoice { display: grid; grid-template-columns: 1fr auto; gap: 2mm 7mm; width: 84mm; margin: 4mm 0 0 auto; padding: 3mm; background: #edf5f1; break-inside: avoid; }
-  .project-print-invoice strong { text-align: right; }
+  .project-print-invoice { width: 84mm; margin: 4mm 0 0 auto; border-collapse: collapse; table-layout: fixed; break-inside: avoid; background: transparent; }
+  .project-print-invoice th, .project-print-invoice td { padding: 1.8mm 2.5mm; border-bottom: 1px solid #dfe7e3; font-size: 9pt; }
+  .project-print-invoice th { font-weight: 500; text-align: left; }
+  .project-print-invoice td { font-weight: 700; text-align: right; }
+  .project-print-invoice .invoice-total th, .project-print-invoice .invoice-total td { border: 1.5px solid #9eb8ad; background: transparent; font-size: 10pt; }
   .project-print-page header { padding-right: 48mm; }
   .project-print-page footer { position: absolute; top: 7mm; right: 9mm; color: #6b7280; font-size: 6pt; }
 }

@@ -857,6 +857,8 @@
   });
   window.addEventListener("focus", refreshNotifications);
   document.addEventListener("overuurtje:shares-changed", refreshNotifications);
+  document.addEventListener("overuurtje:badges-earned", refreshNotifications);
+  document.addEventListener("overuurtje:badges-updated", refreshNotifications);
 
   logoutButtons.forEach((button) => button.addEventListener("click", async () => {
     try {

@@ -1501,6 +1501,62 @@ test("nieuwe badges worden gemeld en blijven selecteerbaar op de Crew Card", asy
   assert.match(pushFunction, /badge_earned[\s\S]*Nieuwe badge behaald/i);
 });
 
+test("badge awards worden ook server-side toegekend en direct ververst", async () => {
+  const repairMigration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202608100001_badge_awarding_repair.sql"),
+    "utf8"
+  );
+  const calculatorScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
+  const sessionUi = await readFile(path.join(rootDirectory, "app/saas/sessionUi.js"), "utf8");
+
+  assert.match(repairMigration, /after insert or update of work_date, calculation_data[\s\S]*on public\.workdays/i);
+  assert.match(repairMigration, /on public\.project_days/i);
+  assert.match(repairMigration, /where b\.key = 'eerste_draaidag'/i);
+  assert.match(repairMigration, /where b\.key = 'teamspeler'/i);
+  assert.match(repairMigration, /where b\.key = 'crew_builder'/i);
+  assert.match(repairMigration, /on conflict do nothing/i);
+  assert.match(repairMigration, /select distinct user_id from public\.workdays/i);
+  assert.match(calculatorScript, /overuurtje:badges-updated/);
+  assert.match(sessionUi, /overuurtje:badges-earned[^\n]*refreshNotifications/);
+  assert.match(sessionUi, /overuurtje:badges-updated[^\n]*refreshNotifications/);
+});
+
+test("Crew Card leest actuele statistieken en de gekozen titelbadge", async () => {
+  const migration = await readFile(
+    path.join(rootDirectory, "supabase/migrations/202608100002_crew_card_sync_repair.sql"),
+    "utf8"
+  );
+  const dashboardScript = await readFile(path.join(rootDirectory, "app/dashboard.js"), "utf8");
+  const badgeService = await readFile(path.join(rootDirectory, "app/saas/badgeService.js"), "utf8");
+
+  assert.match(migration, /create or replace function public\.crew_card_json/i);
+  assert.match(migration, /from public\.crew_records\(p_user_id\)/i);
+  assert.match(migration, /calculation_data ->> 'startTime'/i);
+  assert.match(migration, /'registeredWorkdays', counts\.workdays/i);
+  assert.match(migration, /'selectedBadge'[\s\S]*title\.name/i);
+  assert.match(migration, /fb\.position = 1/i);
+  assert.match(migration, /set selected_badge_id = \([\s\S]*order by fb\.position/i);
+  assert.match(dashboardScript, /overuurtje:badges-updated/);
+  assert.match(dashboardScript, /visibilitychange/);
+  assert.match(dashboardScript, /await loadCrewCard\(context\.profile\)/);
+  assert.match(badgeService, /registeredWorkdays: Number\(value\.registeredWorkdays/);
+  assert.match(badgeService, /selectedBadge: value\.selectedBadge/);
+});
+
+test("project-PDF gebruikt printveilige tabellen zonder grote kleurvlakken", async () => {
+  const projectScript = await readFile(path.join(rootDirectory, "app/projects.js"), "utf8");
+  const styles = await readFile(path.join(rootDirectory, "app/styles.css"), "utf8");
+
+  assert.match(projectScript, /<table class="project-print-totals">/);
+  assert.match(projectScript, /<table class="project-print-invoice">/);
+  assert.doesNotMatch(projectScript, /<div class="project-print-totals">/);
+  assert.doesNotMatch(projectScript, /<div class="project-print-invoice">/);
+  assert.match(styles, /\.project-print-totals \{[^}]*border-collapse:\s*collapse/);
+  assert.match(styles, /\.project-print-invoice \{[^}]*border-collapse:\s*collapse/);
+  assert.match(styles, /\.project-print-totals \.grand th,[^}]*background:\s*transparent/);
+  assert.match(styles, /\.project-print-invoice \.invoice-total th,[^}]*background:\s*transparent/);
+});
+
 test("Profielfoto gebruikt een ronde bijsnijder en heeft een eigen profielpermissie", async () => {
   const accountHtml = await readFile(path.join(rootDirectory, "app/account.html"), "utf8");
   const accountScript = await readFile(path.join(rootDirectory, "app/account.js"), "utf8");

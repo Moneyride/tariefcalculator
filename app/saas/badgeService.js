@@ -47,7 +47,19 @@
   }
 
   async function getCrewCard() {
-    return await rpc("get_my_crew_card");
+    const value = await rpc("get_my_crew_card");
+    if (!value) return null;
+    return {
+      displayName: value.displayName ?? value.display_name ?? "Crewlid",
+      avatarUrl: value.avatarUrl ?? value.avatar_url ?? "",
+      registeredWorkdays: Number(value.registeredWorkdays ?? value.registered_workdays) || 0,
+      badgeCount: Number(value.badgeCount ?? value.badge_count) || 0,
+      crewCount: Number(value.crewCount ?? value.crew_count) || 0,
+      jointWorkdays: Number(value.jointWorkdays ?? value.joint_workdays) || 0,
+      memberSince: value.memberSince ?? value.member_since ?? "",
+      selectedBadge: value.selectedBadge ?? value.selected_badge ?? null,
+      featuredBadges: value.featuredBadges ?? value.featured_badges ?? []
+    };
   }
 
   async function list() {

@@ -222,9 +222,17 @@
   }
 
   function decorateCrewCard(card, collection) {
-    if (!isBadgeSimulationEnabled()) return card;
     const title = collection.find((badge) => badge.title);
     const featured = collection.filter((badge) => badge.featured).sort((a, b) => (a.featuredPosition || 99) - (b.featuredPosition || 99)).slice(0, 3);
+    if (!isBadgeSimulationEnabled()) {
+      return {
+        ...(card || {}),
+        selectedBadge: title ? { key: title.key, name: title.name, icon: title.icon } : card?.selectedBadge,
+        featuredBadges: featured.length
+          ? featured.map((badge) => ({ key: badge.key, name: badge.name, description: badge.description, icon: badge.icon }))
+          : (card?.featuredBadges || [])
+      };
+    }
     return {
       ...(card || {}),
       badgeCount: collection.filter((badge) => badge.earnedAt).length,
@@ -342,7 +350,10 @@
     }
 
     const key = `${user.id}:${context.isPro}`;
-    if (loadedContextKey === key) return;
+    if (loadedContextKey === key) {
+      await loadCrewCard(context.profile);
+      return;
+    }
     loadedContextKey = key;
     freeNote.hidden = context.isPro;
     renderPeriodLabels();
@@ -473,5 +484,12 @@
     }
   });
   document.addEventListener("overuurtje:user-context", (event) => render(event.detail));
+  document.addEventListener("overuurtje:badges-updated", () => loadCrewCard());
+  window.addEventListener("pageshow", () => {
+    if (currentProfile) loadCrewCard();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && currentProfile) loadCrewCard();
+  });
   sessionUi.ready.then(render);
 })();
