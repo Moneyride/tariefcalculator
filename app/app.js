@@ -1854,6 +1854,11 @@ function formatEuro(value) {
   return euroFormatter.format(value);
 }
 
+function formatInvoiceDate(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match ? `${match[3]}-${match[2]}-${match[1]}` : String(value || "");
+}
+
 function setResult(name, value, formatter = formatHours) {
   const el = document.querySelector(`[data-result="${name}"]`);
   if (el) el.textContent = formatter(value);
@@ -1958,8 +1963,8 @@ function renderPrintBreakdown(result) {
   result.nightOvertimeSurchargeBreakdown.forEach((item) => {
     addPrintCalculationLine(
       lines,
-      `Nachturen tijdens overuren tegen ${numberFormatter.format((item.surchargeFactor + (item.surchargeFactor / (result.settings.nightOverlapSurchargeFactor || 1))) * 100)}% totaal`,
-      `${formatCalculation(item.hours, result.hourlyRate, item.surchargeFactor)} extra (overuurvergoeding staat hierboven)`,
+      `Nachturen tijdens overuren tegen ${numberFormatter.format(nightSurchargeToTotalPercent(result.settings.nightSurchargePercent))}%`,
+      `${formatCalculation(item.hours, result.hourlyRate, item.surchargeFactor)} nachttoeslag op dit specifieke overuur (overuurvergoeding staat hierboven)`,
       item.amount
     );
   });
@@ -1993,7 +1998,7 @@ function buildSummary(result) {
   }
 
   if (date) {
-    lines.push(`Datum: ${date}`);
+    lines.push(`Datum: ${formatInvoiceDate(date)}`);
   }
 
   lines.push(`Tijden: ${startTime} tot ${endTime}${result.endsNextDay ? " (volgende dag)" : ""}`);

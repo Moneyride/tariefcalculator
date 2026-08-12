@@ -296,9 +296,9 @@
   body.is-printing-project { display: block !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; background: #fff !important; }
   body.is-printing-project > *:not(.project-print-root) { display: none !important; }
   body.is-printing-project .project-print-root { display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }
-  body.is-printing-project .project-print-page { position: relative; box-sizing: border-box; min-height: 248mm; padding: 7mm 9mm 9mm; break-after: page; page-break-after: always; color: #1f2937; background: #fff !important; background-image: none !important; box-shadow: none !important; overflow: visible !important; }
+  body.is-printing-project .project-print-page { position: relative; box-sizing: border-box; min-height: 0; padding: 7mm 9mm 9mm; break-after: auto; page-break-after: auto; color: #1f2937; background: #fff !important; background-image: none !important; box-shadow: none !important; overflow: visible !important; }
   body.is-printing-project .project-print-page::before, body.is-printing-project .project-print-page::after { display: none !important; content: none !important; }
-  body.is-printing-project .project-print-page:last-child { break-after: auto; page-break-after: auto; }
+  body.is-printing-project .project-print-page + .project-print-page { break-before: page; page-break-before: always; }
   .project-print-page header { display: flex; align-items: center; gap: 6mm; padding-bottom: 3mm; border-bottom: 1px solid #dfe7e3; }
   .project-print-page header img { width: 25mm; height: auto; }
   .project-print-page header p, .project-print-page header h1 { margin: 0; }

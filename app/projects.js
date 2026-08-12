@@ -48,6 +48,10 @@
   const localDate = (iso) => new Date(`${iso}T12:00:00`);
   const isoDate = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   const formatDate = (iso) => dateLong.format(localDate(iso));
+  const formatInvoiceDate = (iso) => {
+    const match = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    return match ? `${match[3]}-${match[2]}-${match[1]}` : String(iso || "");
+  };
   const options = () => ({ mock: Boolean(context?.subscription.isMock) });
   const show = (id) => views.forEach((view) => { document.querySelector(`#${view}`).hidden = view !== id; });
   const setDirty = (value) => { dirty = value; };
@@ -656,7 +660,7 @@
 
   function buildDayInvoiceSummary(day, data, result) {
     const lines = [
-      `Datum: ${day.workDate}`,
+      `Datum: ${formatInvoiceDate(day.workDate)}`,
       `Tijden: ${data.startTime} tot ${data.endTime}${result.endsNextDay ? " (volgende dag)" : ""}`,
       `Totaal gewerkt: ${number.format(result.totalHours)} uur`
     ];
@@ -771,7 +775,7 @@
         printLine("Overuren 200%", `${number.format(r.overtimeFrom12Hours)} uur × ${euro.format(r.hourlyRate)} × 200%`, r.overtimeFrom12Amount),
         printLine("Overuren 250%", `${number.format(r.overtimeFrom14Hours)} uur × ${euro.format(r.hourlyRate)} × 250%`, r.overtimeFrom14Amount),
         printLine("Pure nachturen", `${number.format(r.pureNightHours)} uur tegen ${number.format(100 + r.settings.nightSurchargePercent)}% totaal`, r.pureNightAmount),
-        ...r.nightOvertimeSurchargeBreakdown.map((item) => printLine("Nachturen tijdens overuren", `${number.format(item.hours)} uur tegen ${number.format((item.surchargeFactor + (item.surchargeFactor / (r.settings.nightOverlapSurchargeFactor || 1))) * 100)}% totaal`, item.amount)),
+        ...r.nightOvertimeSurchargeBreakdown.map((item) => printLine("Nachturen tijdens overuren", `${number.format(item.hours)} uur tegen ${number.format(100 + r.settings.nightSurchargePercent)}% nachttarief op dit specifieke overuur; de overuurvergoeding staat hierboven`, item.amount)),
         printLine("Drone", "Vaste toeslag", r.droneTariffAmount), printLine("Ronin 4D", "Vaste toeslag", r.ronin4dTariffAmount),
         ...r.customEquipmentItems.map((item) => printLine(item.name, "Vaste apparatuurtoeslag", item.amount)),
         printLine("Kilometers", `${number.format(r.kilometers)} km × ${euro.format(r.settings.kilometerRate)}`, r.kilometerAmount),
@@ -874,7 +878,7 @@
       })
       .catch((error) => console.warn("Badgecontrole voor project-pdf is niet gelukt.", error));
     buildProjectPrint();
-    requestAnimationFrame(() => window.print());
+    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
   });
   addEventListener("afterprint", () => setTimeout(clearProjectPrint, 0));
   sharedProjectDialog.querySelector("[data-shared-project-close]").addEventListener("click", () => closeDialog(sharedProjectDialog));
