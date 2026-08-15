@@ -10,6 +10,8 @@
   const shareUi = globalThis.OveruurtjeShareUI;
   const shares = globalThis.OveruurtjeShares;
   const calculator = globalThis.TariffCalculator;
+  const accountingExport = globalThis.OveruurtjeAccountingExport;
+  const accountingUi = globalThis.OveruurtjeAccountingUi;
   const euro = new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" });
   const number = new Intl.NumberFormat("nl-NL", { maximumFractionDigits: 2 });
   const dateLong = new Intl.DateTimeFormat("nl-NL", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
@@ -879,6 +881,30 @@
       .catch((error) => console.warn("Badgecontrole voor project-pdf is niet gelukt.", error));
     buildProjectPrint();
     requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+  });
+  document.querySelector("#project-moneybird")?.addEventListener("click", () => {
+    featureGate.require("accounting_export", context, () => {
+      try {
+        const completedDays = current.days
+          .filter((day) => storedDayData(day).endTime)
+          .map((day) => ({
+            ...day,
+            calculationData: {
+              ...storedDayData(day),
+              droneTariffAmount: accountSettings.droneTariffAmount,
+              ronin4dTariffAmount: accountSettings.roninTariffAmount,
+              vatPercent: accountSettings.vatPercent
+            }
+          }));
+        if (!completedDays.length) throw new Error("Rond minimaal één projectdag af voordat je exporteert.");
+        accountingUi.open({
+          exportModel: accountingExport.fromProject(current.project, completedDays),
+          context
+        });
+      } catch (error) {
+        sessionUi.showToast(error.message || "De Moneybird-preview kon niet worden geopend.");
+      }
+    });
   });
   addEventListener("afterprint", () => setTimeout(clearProjectPrint, 0));
   sharedProjectDialog.querySelector("[data-shared-project-close]").addEventListener("click", () => closeDialog(sharedProjectDialog));

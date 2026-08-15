@@ -6,6 +6,8 @@
   const shareService = globalThis.OveruurtjeShares;
   const shareUi = globalThis.OveruurtjeShareUI;
   const calculateTariff = globalThis.TariffCalculator.calculateTariff;
+  const accountingExport = globalThis.OveruurtjeAccountingExport;
+  const accountingUi = globalThis.OveruurtjeAccountingUi;
   const loggedOut = document.querySelector("#workdays-logged-out");
   const upgrade = document.querySelector("#workdays-upgrade");
   const content = document.querySelector("#workdays-content");
@@ -25,6 +27,7 @@
   let pendingDeleteShareId = null;
   let ownedWorkdays = [];
   let receivedShares = [];
+  let accountingHistory = { exports: [], items: [] };
   let visibleMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12);
   const monthFormat = new Intl.DateTimeFormat("nl-NL", { month: "long", year: "numeric" });
 
@@ -102,16 +105,34 @@
       </a>
       <div class="timeline-workday-actions">
         <button class="workday-share-button" type="button">Delen</button>
+        <button class="workday-moneybird-button" type="button">Moneybird</button>
         <button class="workday-delete-button" type="button" aria-label="Werkdag verwijderen" title="Werkdag verwijderen">&times;</button>
       </div>
     `;
     const formattedDate = dateFormat.format(parseDate(workday.workDate));
     article.querySelector("strong").textContent = formattedDate;
     const status = article.querySelector(".workday-status");
-    status.textContent = snapshot.endTime ? "Afgerond" : "Concept";
+    const createdExportIds = new Set(
+      accountingHistory.items
+        .filter((item) => accountingHistory.exports.some((entry) => entry.id === item.export_id && entry.status === "created"))
+        .map((item) => item.source_id)
+    );
+    const exported = createdExportIds.has(workday.id);
+    status.textContent = exported ? "Moneybird ✓" : (snapshot.endTime ? "Afgerond" : "Concept");
+    status.classList.toggle("is-moneybird", exported);
     status.classList.toggle("is-complete", Boolean(snapshot.endTime));
     article.querySelector(".workday-share-button").addEventListener("click", () => {
       shareUi.open({ sourceType: "workday", sourceId: workday.id });
+    });
+    article.querySelector(".workday-moneybird-button").addEventListener("click", () => {
+      globalThis.OveruurtjeFeatureGate.require("accounting_export", currentContext, () => {
+        try {
+          if (!snapshot.endTime) throw new Error("Rond deze werkdag eerst af.");
+          accountingUi.open({ exportModel: accountingExport.fromWorkday(workday), context: currentContext });
+        } catch (error) {
+          sessionUi.showToast(error.message || "De Moneybird-preview kon niet worden geopend.");
+        }
+      });
     });
     article.querySelector(".workday-delete-button").addEventListener("click", () => {
       pendingDeleteId = workday.id;
@@ -284,17 +305,30 @@
       return;
     }
     try {
-      const [items, received] = await Promise.all([
+      const [items, received, history] = await Promise.all([
         context.isPro
           ? workdayService.list(user.id, { mock: context.subscription.isMock })
           : Promise.resolve([]),
-        context.subscription.isMock ? Promise.resolve([]) : shareService.listReceived()
+        context.subscription.isMock ? Promise.resolve([]) : shareService.listReceived(),
+        context.isPro && !context.subscription.isMock
+          ? accountingExportStatus()
+          : Promise.resolve({ exports: [], items: [] })
       ]);
+      accountingHistory = history;
       if (context.isPro) render(items);
       renderReceived(received);
       await loadInvite(context);
     } catch (error) {
       sessionUi.showToast(error.message || "Werkdagen konden niet worden geladen.");
+    }
+  }
+
+  async function accountingExportStatus() {
+    try {
+      return await globalThis.OveruurtjeAccounting.exports();
+    } catch (error) {
+      console.warn("Moneybird-exportstatus kon niet worden geladen.", error);
+      return { exports: [], items: [] };
     }
   }
 

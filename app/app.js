@@ -8,6 +8,7 @@ const nextDayNotice = document.querySelector("#next-day-notice");
 const calculationStatus = document.querySelector("#calculation-status");
 const recalculateButton = document.querySelector("#recalculate");
 const copyButton = document.querySelector("#copy-summary");
+const moneybirdExportButton = document.querySelector("#moneybird-export");
 const pdfButton = document.querySelector("#save-pdf");
 const saveSettingsButton = document.querySelector("#save-settings");
 const copyStatus = document.querySelector("#copy-status");
@@ -81,6 +82,8 @@ const shareService = globalThis.OveruurtjeShares;
 const badgeService = globalThis.OveruurtjeBadges;
 const liveWorkday = globalThis.OveruurtjeLiveWorkday;
 const workdayNotifications = globalThis.OveruurtjeWorkdayNotifications;
+const accountingExport = globalThis.OveruurtjeAccountingExport;
+const accountingUi = globalThis.OveruurtjeAccountingUi;
 const participantDevToggle = document.querySelector("#participant-dev-toggle");
 
 const euroFormatter = new Intl.NumberFormat("nl-NL", {
@@ -2750,6 +2753,37 @@ document.querySelectorAll("[data-shared-resume-cancel]").forEach((button) => {
   button.addEventListener("click", () => closeNativeDialog(sharedResumeDialog));
 });
 copyButton.addEventListener("click", copySummary);
+moneybirdExportButton?.addEventListener("click", () => {
+  globalThis.OveruurtjeFeatureGate.require("accounting_export", currentUserContext, () => {
+    try {
+      if (!latestResult || calculationIsStale || !form.elements.namedItem("endTime").value) {
+        throw new Error("Bereken en rond de werkdag eerst af.");
+      }
+      if (currentProjectDayContext?.project?.id && currentProjectDayContext?.day?.id) {
+        const day = {
+          ...currentProjectDayContext.day,
+          calculationData: buildWorkdaySnapshot()
+        };
+        accountingUi.open({
+          exportModel: accountingExport.fromProject(currentProjectDayContext.project, [day]),
+          context: currentUserContext
+        });
+        return;
+      }
+      if (!currentWorkdayId) throw new Error("Sla deze werkdag eerst op voordat je hem naar Moneybird stuurt.");
+      accountingUi.open({
+        exportModel: accountingExport.fromWorkday({
+          id: currentWorkdayId,
+          workDate: form.elements.namedItem("date").value,
+          calculationData: buildWorkdaySnapshot()
+        }),
+        context: currentUserContext
+      });
+    } catch (error) {
+      sessionUi?.showToast(error.message || "De Moneybird-preview kon niet worden geopend.");
+    }
+  });
+});
 saveSettingsButton.addEventListener("click", saveCurrentSettings);
 pdfButton.addEventListener("click", () => {
   globalThis.OveruurtjeFeatureGate.require("pdf_export", currentUserContext, () => {

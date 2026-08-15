@@ -1277,7 +1277,7 @@
 
 .timeline-workday-actions {
   display: grid;
-  grid-template-columns: auto 42px;
+  grid-template-columns: auto auto 42px;
   align-items: center;
   gap: 6px;
   padding: 8px;
@@ -1290,6 +1290,235 @@
   border: 0;
   border-radius: 10px;
   white-space: nowrap;
+}
+
+.timeline-workday-actions .workday-moneybird-button {
+  min-height: 42px;
+  padding: 0 13px;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.48);
+  color: var(--accent-dark);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.timeline-workday-actions .workday-moneybird-button:hover {
+  border-color: rgba(31, 67, 53, 0.28);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--accent-dark);
+  transform: none;
+}
+
+.workday-status.is-moneybird {
+  background: rgba(31, 67, 53, 0.12);
+  color: var(--accent-dark);
+}
+
+.moneybird-export-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.moneybird-export-button [data-pro-badge],
+.accounting-pro-pill {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(255, 106, 26, 0.13);
+  color: var(--orange-dark);
+  font-size: 0.62rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.accounting-settings-section,
+.accounting-dialog {
+  color: var(--text);
+}
+
+.accounting-provider-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 0;
+  border-block: 1px solid rgba(31, 67, 53, 0.1);
+}
+
+.accounting-provider-row p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.accounting-connection-state {
+  flex: 0 0 auto;
+  color: var(--accent-dark);
+  font-weight: 800;
+}
+
+.accounting-administration {
+  margin-top: 18px;
+}
+
+.accounting-administration label,
+.accounting-preview-meta label,
+.accounting-mappings label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.accounting-administration select,
+.accounting-preview-meta input,
+.accounting-preview-meta select,
+.accounting-mappings select {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 13px;
+  border: 1px solid rgba(31, 67, 53, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--text);
+  font: inherit;
+}
+
+.accounting-settings-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.accounting-dialog {
+  width: min(920px, calc(100vw - 32px));
+  max-height: min(880px, calc(100dvh - 32px));
+  padding: 30px;
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 18px;
+  background: rgba(245, 244, 242, 0.98);
+  box-shadow: 0 28px 80px rgba(12, 28, 23, 0.28);
+}
+
+.accounting-dialog::backdrop {
+  background: rgba(12, 25, 21, 0.58);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.accounting-dialog h2 {
+  margin: 2px 50px 6px 0;
+}
+
+.accounting-dialog-intro {
+  max-width: 680px;
+  margin: 0 0 22px;
+  color: var(--muted);
+}
+
+.accounting-preview-form,
+.accounting-mappings {
+  display: grid;
+  gap: 16px;
+}
+
+.accounting-preview-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.accounting-contact-field select {
+  min-height: 124px;
+}
+
+.accounting-source-selection {
+  padding: 14px;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 10px;
+}
+
+.accounting-source-selection [data-accounting-sources] {
+  display: grid;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.accounting-source-selection label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.accounting-source-selection label small {
+  margin-left: auto;
+  color: var(--accent-dark);
+  font-weight: 800;
+}
+
+.accounting-lines {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 10px;
+}
+
+.accounting-line {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) repeat(4, minmax(76px, 0.65fr));
+  gap: 10px;
+  align-items: center;
+  padding: 11px 13px;
+  border-top: 1px solid rgba(31, 67, 53, 0.08);
+}
+
+.accounting-line:first-child { border-top: 0; }
+.accounting-line > :not(:first-child) { text-align: right; }
+.accounting-line-head { background: rgba(31, 67, 53, 0.06); color: var(--muted); font-size: 0.78rem; font-weight: 800; }
+
+.accounting-mappings {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 14px;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 10px;
+}
+
+.accounting-mappings h3 { grid-column: 1 / -1; margin: 0; }
+
+.accounting-preview-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px;
+  border-radius: 10px;
+  background: rgba(31, 67, 53, 0.08);
+  color: var(--accent-dark);
+}
+
+.accounting-reexport {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+}
+
+.accounting-open-link {
+  justify-self: start;
+  text-decoration: none;
+}
+
+@media (max-width: 760px) {
+  .accounting-dialog { width: calc(100vw - 20px); max-height: calc(100dvh - 20px); padding: 22px 16px; border-radius: 16px; }
+  .accounting-preview-meta, .accounting-mappings { grid-template-columns: 1fr; }
+  .accounting-mappings h3 { grid-column: auto; }
+  .accounting-lines { overflow-x: auto; }
+  .accounting-line { min-width: 660px; }
+  .timeline-workday-actions { grid-template-columns: 1fr 1fr 42px; grid-column: 1 / -1; border-top: 1px solid rgba(31, 67, 53, 0.08); border-left: 0; }
+  .accounting-provider-row { align-items: flex-start; }
 }
 
 .timeline-workday-actions .workday-delete-button {

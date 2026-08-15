@@ -9,7 +9,8 @@
     work_functions: { requiresPro: true },
     workday_sharing: { requiresPro: false },
     pdf_export: { requiresPro: true },
-    device_sync: { requiresPro: true }
+    device_sync: { requiresPro: true },
+    accounting_export: { requiresPro: true }
   });
 
   function canUse(featureName, user) {

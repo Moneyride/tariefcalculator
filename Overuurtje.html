@@ -339,10 +339,12 @@
 }
 
 @media print {
-  body:has(.project-print-root:not(:empty)) > *:not(.project-print-root) { display: none !important; }
-  .project-print-root:not(:empty) { display: block !important; }
-  .project-print-page { position: relative; box-sizing: border-box; min-height: 248mm; padding: 7mm 9mm 9mm; break-after: page; color: #1f2937; background: #fff; }
-  .project-print-page:last-child { break-after: auto; }
+  body.is-printing-project { display: block !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; background: #fff !important; }
+  body.is-printing-project > *:not(.project-print-root) { display: none !important; }
+  body.is-printing-project .project-print-root { display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }
+  body.is-printing-project .project-print-page { position: relative; box-sizing: border-box; min-height: 0; padding: 7mm 9mm 9mm; break-after: auto; page-break-after: auto; color: #1f2937; background: #fff !important; background-image: none !important; box-shadow: none !important; overflow: visible !important; }
+  body.is-printing-project .project-print-page::before, body.is-printing-project .project-print-page::after { display: none !important; content: none !important; }
+  body.is-printing-project .project-print-page + .project-print-page { break-before: page; page-break-before: always; }
   .project-print-page header { display: flex; align-items: center; gap: 6mm; padding-bottom: 3mm; border-bottom: 1px solid #dfe7e3; }
   .project-print-page header img { width: 25mm; height: auto; }
   .project-print-page header p, .project-print-page header h1 { margin: 0; }
@@ -353,18 +355,21 @@
   .project-print-meta dt, .project-print-meta dd { margin: 0; font-size: 9pt; }
   .project-print-meta dt { color: #6b7280; }
   .project-print-meta dd { overflow-wrap: anywhere; }
-  .project-print-totals { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2.5mm; }
-  .project-print-totals > div { display: grid; gap: 1.2mm; padding: 3mm; border: 1px solid #e0e8e4; }
-  .project-print-totals span { color: #6b7280; font-size: 8pt; }
-  .project-print-totals strong { color: #173f36; font-size: 14pt; }
-  .project-print-totals .grand { grid-column: 1 / -1; background: #edf5f1; }
-  .project-print-totals .grand strong { font-size: 20pt; }
+  .project-print-totals { width: 100%; border-collapse: collapse; table-layout: fixed; break-inside: avoid; }
+  .project-print-totals th, .project-print-totals td { padding: 2.5mm 3mm; border: 1px solid #e0e8e4; vertical-align: middle; }
+  .project-print-totals th { color: #6b7280; font-size: 8pt; font-weight: 500; text-align: left; }
+  .project-print-totals td { color: #173f36; font-size: 12pt; font-weight: 700; text-align: right; }
+  .project-print-totals .grand th, .project-print-totals .grand td { border-top: 1.5px solid #9eb8ad; background: transparent; }
+  .project-print-totals .grand td { font-size: 17pt; }
   .project-print-lines > div { display: grid; grid-template-columns: 1fr auto; gap: 7mm; padding: 1.7mm 2mm; border-bottom: 1px solid #edf1ef; break-inside: avoid; }
   .project-print-lines > div > div { display: grid; gap: 1mm; }
   .project-print-lines strong { font-size: 9pt; }
   .project-print-lines span { color: #6b7280; font-size: 8pt; }
-  .project-print-invoice { display: grid; grid-template-columns: 1fr auto; gap: 2mm 7mm; width: 84mm; margin: 4mm 0 0 auto; padding: 3mm; background: #edf5f1; break-inside: avoid; }
-  .project-print-invoice strong { text-align: right; }
+  .project-print-invoice { width: 84mm; margin: 4mm 0 0 auto; border-collapse: collapse; table-layout: fixed; break-inside: avoid; background: transparent; }
+  .project-print-invoice th, .project-print-invoice td { padding: 1.8mm 2.5mm; border-bottom: 1px solid #dfe7e3; font-size: 9pt; }
+  .project-print-invoice th { font-weight: 500; text-align: left; }
+  .project-print-invoice td { font-weight: 700; text-align: right; }
+  .project-print-invoice .invoice-total th, .project-print-invoice .invoice-total td { border: 1.5px solid #9eb8ad; background: transparent; font-size: 10pt; }
   .project-print-page header { padding-right: 48mm; }
   .project-print-page footer { position: absolute; top: 7mm; right: 9mm; color: #6b7280; font-size: 6pt; }
 }
@@ -620,6 +625,22 @@
   color: var(--accent-dark);
   font-size: 0.72rem;
   font-weight: 800;
+}
+
+.share-avatar.has-image {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.shared-with-row .is-crew-card-link {
+  cursor: pointer;
+}
+
+.shared-with-row .is-crew-card-link:hover strong,
+.shared-with-row .is-crew-card-link:focus-visible strong {
+  color: var(--accent-dark);
+  text-decoration: underline;
 }
 
 .share-selected-users {
@@ -945,10 +966,6 @@
   order: 0;
 }
 
-.participant-chip.is-private {
-  order: 1;
-}
-
 .participant-chip .share-avatar {
   width: 28px;
   height: 28px;
@@ -962,9 +979,10 @@
   border-radius: 16px;
   display: grid;
   gap: 10px 14px;
-  grid-column: 1 / -1;
+  box-sizing: border-box;
+  width: min(440px, 100%);
   grid-template-columns: minmax(0, 1fr);
-  margin: 10px 0 2px;
+  margin: 16px 0 2px;
   padding: 16px;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.45),
@@ -1042,119 +1060,6 @@
   display: none;
 }
 
-.private-participant-panel {
-  overflow: hidden;
-  border: 1px solid rgba(31, 67, 53, 0.09);
-  border-radius: 13px;
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.private-participant-panel[hidden] {
-  display: none;
-}
-
-.private-participant-panel summary {
-  position: relative;
-  display: flex;
-  min-height: 42px;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 38px 9px 12px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--accent-dark);
-  font-size: 0.7rem;
-  font-weight: 750;
-  list-style: none;
-}
-
-.private-participant-panel summary::-webkit-details-marker {
-  display: none;
-}
-
-.private-participant-panel summary::after {
-  position: absolute;
-  right: 14px;
-  color: var(--muted);
-  content: "+";
-  font-size: 1rem;
-  font-weight: 500;
-  transition: transform 150ms ease;
-}
-
-.private-participant-panel[open] summary::after {
-  transform: rotate(45deg);
-}
-
-.private-participant-form {
-  align-items: end;
-  display: flex;
-  min-width: 0;
-  gap: 8px;
-  padding: 0 10px 10px;
-}
-
-.private-participant-form label {
-  min-width: 0;
-  flex: 1;
-}
-
-.private-participant-form input {
-  width: 100%;
-  height: 44px;
-  min-height: 44px;
-  padding: 9px 12px;
-  border: 1px solid rgba(31, 67, 53, 0.1);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.58);
-}
-
-.private-participant-form button,
-.participant-chip.is-private button {
-  min-height: auto;
-  border: 0;
-  box-shadow: none;
-}
-
-.private-participant-form button {
-  align-self: end;
-  height: 44px;
-  min-height: 44px;
-  padding: 0 16px;
-  border-radius: 12px;
-  background: rgba(31, 67, 53, 0.1);
-  color: var(--accent-dark);
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-.private-participant-form button:hover,
-.private-participant-form button:active {
-  border: 0;
-  background: rgba(31, 67, 53, 0.1);
-  color: var(--accent-dark);
-  transform: none;
-}
-
-.participant-chip.is-private {
-  padding-left: 10px;
-  border-style: dashed;
-}
-
-.participant-chip.is-private small {
-  color: var(--orange-dark);
-  font-size: 0.56rem;
-  font-weight: 750;
-}
-
-.participant-chip.is-private button {
-  padding: 0 1px;
-  background: transparent;
-  color: var(--muted);
-  font-size: 1rem;
-}
-
 .current-workday-participants[hidden] {
   display: none;
 }
@@ -1191,18 +1096,6 @@
     gap: 9px;
   }
 
-  .private-participant-form {
-    width: 100%;
-  }
-}
-
-@media (hover: none) {
-  .private-participant-form button:hover,
-  .private-participant-form button:active {
-    background: rgba(31, 67, 53, 0.1);
-    color: var(--accent-dark);
-    transform: none;
-  }
 }
 
 .project-day-context {
@@ -1430,7 +1323,7 @@
 
 .timeline-workday-actions {
   display: grid;
-  grid-template-columns: auto 42px;
+  grid-template-columns: auto auto 42px;
   align-items: center;
   gap: 6px;
   padding: 8px;
@@ -1443,6 +1336,235 @@
   border: 0;
   border-radius: 10px;
   white-space: nowrap;
+}
+
+.timeline-workday-actions .workday-moneybird-button {
+  min-height: 42px;
+  padding: 0 13px;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.48);
+  color: var(--accent-dark);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.timeline-workday-actions .workday-moneybird-button:hover {
+  border-color: rgba(31, 67, 53, 0.28);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--accent-dark);
+  transform: none;
+}
+
+.workday-status.is-moneybird {
+  background: rgba(31, 67, 53, 0.12);
+  color: var(--accent-dark);
+}
+
+.moneybird-export-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.moneybird-export-button [data-pro-badge],
+.accounting-pro-pill {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(255, 106, 26, 0.13);
+  color: var(--orange-dark);
+  font-size: 0.62rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.accounting-settings-section,
+.accounting-dialog {
+  color: var(--text);
+}
+
+.accounting-provider-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 0;
+  border-block: 1px solid rgba(31, 67, 53, 0.1);
+}
+
+.accounting-provider-row p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.accounting-connection-state {
+  flex: 0 0 auto;
+  color: var(--accent-dark);
+  font-weight: 800;
+}
+
+.accounting-administration {
+  margin-top: 18px;
+}
+
+.accounting-administration label,
+.accounting-preview-meta label,
+.accounting-mappings label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.accounting-administration select,
+.accounting-preview-meta input,
+.accounting-preview-meta select,
+.accounting-mappings select {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 13px;
+  border: 1px solid rgba(31, 67, 53, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--text);
+  font: inherit;
+}
+
+.accounting-settings-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.accounting-dialog {
+  width: min(920px, calc(100vw - 32px));
+  max-height: min(880px, calc(100dvh - 32px));
+  padding: 30px;
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 18px;
+  background: rgba(245, 244, 242, 0.98);
+  box-shadow: 0 28px 80px rgba(12, 28, 23, 0.28);
+}
+
+.accounting-dialog::backdrop {
+  background: rgba(12, 25, 21, 0.58);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.accounting-dialog h2 {
+  margin: 2px 50px 6px 0;
+}
+
+.accounting-dialog-intro {
+  max-width: 680px;
+  margin: 0 0 22px;
+  color: var(--muted);
+}
+
+.accounting-preview-form,
+.accounting-mappings {
+  display: grid;
+  gap: 16px;
+}
+
+.accounting-preview-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.accounting-contact-field select {
+  min-height: 124px;
+}
+
+.accounting-source-selection {
+  padding: 14px;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 10px;
+}
+
+.accounting-source-selection [data-accounting-sources] {
+  display: grid;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.accounting-source-selection label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.accounting-source-selection label small {
+  margin-left: auto;
+  color: var(--accent-dark);
+  font-weight: 800;
+}
+
+.accounting-lines {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 10px;
+}
+
+.accounting-line {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) repeat(4, minmax(76px, 0.65fr));
+  gap: 10px;
+  align-items: center;
+  padding: 11px 13px;
+  border-top: 1px solid rgba(31, 67, 53, 0.08);
+}
+
+.accounting-line:first-child { border-top: 0; }
+.accounting-line > :not(:first-child) { text-align: right; }
+.accounting-line-head { background: rgba(31, 67, 53, 0.06); color: var(--muted); font-size: 0.78rem; font-weight: 800; }
+
+.accounting-mappings {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 14px;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 10px;
+}
+
+.accounting-mappings h3 { grid-column: 1 / -1; margin: 0; }
+
+.accounting-preview-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px;
+  border-radius: 10px;
+  background: rgba(31, 67, 53, 0.08);
+  color: var(--accent-dark);
+}
+
+.accounting-reexport {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+}
+
+.accounting-open-link {
+  justify-self: start;
+  text-decoration: none;
+}
+
+@media (max-width: 760px) {
+  .accounting-dialog { width: calc(100vw - 20px); max-height: calc(100dvh - 20px); padding: 22px 16px; border-radius: 16px; }
+  .accounting-preview-meta, .accounting-mappings { grid-template-columns: 1fr; }
+  .accounting-mappings h3 { grid-column: auto; }
+  .accounting-lines { overflow-x: auto; }
+  .accounting-line { min-width: 660px; }
+  .timeline-workday-actions { grid-template-columns: 1fr 1fr 42px; grid-column: 1 / -1; border-top: 1px solid rgba(31, 67, 53, 0.08); border-left: 0; }
+  .accounting-provider-row { align-items: flex-start; }
 }
 
 .timeline-workday-actions .workday-delete-button {
@@ -2038,6 +2160,7 @@ select {
 
 .account-avatar {
   display: grid;
+  overflow: hidden;
   width: 42px;
   height: 42px;
   padding: 0;
@@ -2045,6 +2168,12 @@ select {
   border-radius: 50%;
   background: var(--accent);
   color: #fff;
+}
+
+.account-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .account-login:hover,
@@ -2846,7 +2975,7 @@ h3 {
 }
 
 .account-mfa-compact .saas-form-status {
-  grid-column: 1 / -1;
+  width: min(520px, 100%);
 }
 
 @media screen and (max-width: 560px) {
@@ -3684,6 +3813,56 @@ dd {
 
 .account-settings-entry.calculator-settings-shortcut .settings-icon {
   font-size: 1.35rem;
+  line-height: 1;
+}
+
+/* A settings shortcut should read as a lone tool icon, not as a fourth action button. */
+.calculator-glass .account-settings-entry.calculator-settings-shortcut,
+.main-glass .account-settings-entry.calculator-settings-shortcut {
+  top: 13px;
+}
+
+.calculator-glass .account-settings-entry.calculator-settings-shortcut a,
+.main-glass .account-settings-entry.calculator-settings-shortcut a,
+.calculator-glass .account-settings-entry.calculator-settings-shortcut a:hover,
+.calculator-glass .account-settings-entry.calculator-settings-shortcut a:focus-visible,
+.main-glass .account-settings-entry.calculator-settings-shortcut a:hover,
+.main-glass .account-settings-entry.calculator-settings-shortcut a:focus-visible {
+  display: inline-flex;
+  width: 28px;
+  min-width: 0;
+  height: 28px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.participant-chip.is-account {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid rgba(31, 67, 53, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--accent-dark);
+}
+
+.participant-chip-name { font-weight: 760; }
+
+.participant-chip-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  background: rgba(255, 106, 26, 0.11);
+  font-size: 0.86rem;
   line-height: 1;
 }
 
@@ -8414,14 +8593,325 @@ html.is-pwa summary {
   transform: translateY(-1px);
 }
 
+/* Crew Card and badge collection */
+.crew-card,
+.dashboard-badges {
+  margin-top: 18px;
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.31);
+  box-shadow: 0 16px 35px rgba(39, 49, 44, 0.07);
+}
+
+.crew-card-heading,
+.dashboard-badges .dashboard-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.crew-card-heading h2,
+.dashboard-badges h2 { margin: 3px 0 0; }
+
+.crew-card-collection-button {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid rgba(31, 67, 53, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.48);
+  color: var(--accent-dark);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.crew-card-collection-button:hover,
+.crew-card-collection-button:focus-visible {
+  border-color: rgba(255, 106, 26, 0.36);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--accent-dark);
+}
+
+.crew-card-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.crew-card-identity strong,
+.crew-card-identity small { display: block; }
+.crew-card-identity strong { color: var(--accent-dark); font-size: 1.1rem; }
+.crew-card-identity small { margin-top: 2px; color: var(--muted); }
+#crew-card-status { color: var(--orange-dark); font-weight: 800; }
+
+.crew-card-avatar {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--accent-dark);
+  color: white;
+  font-weight: 800;
+}
+
+img.crew-card-avatar {
+  object-fit: cover;
+}
+
+.crew-card-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 20px 0 0;
+}
+
+.crew-card-metrics > div {
+  min-width: 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.crew-card-metrics dt { color: var(--muted); font-size: 0.72rem; font-weight: 700; }
+.crew-card-metrics dd { margin: 5px 0 0; color: var(--accent-dark); font-size: 0.94rem; font-weight: 800; }
+
+.crew-card-badge-row,
+.dashboard-badge-list,
+.crew-badge-collection {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(154px, 1fr));
+  gap: 9px;
+  margin-top: 18px;
+}
+
+.crew-card-badge-row {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.crew-badge {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.43);
+  color: var(--accent-dark);
+  text-align: left;
+  font: inherit;
+  flex-wrap: wrap;
+}
+
+button.crew-badge { cursor: pointer; }
+button.crew-badge:disabled { cursor: default; }
+.crew-badge.is-locked { opacity: 0.56; }
+.crew-badge.is-featured { border-color: rgba(255, 106, 26, 0.54); box-shadow: inset 0 0 0 1px rgba(255, 106, 26, 0.18); }
+.crew-badge.is-title { background: rgba(255, 106, 26, 0.1); border-color: rgba(255, 106, 26, 0.8); }
+.crew-badge-icon { display: grid; flex: 0 0 auto; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: rgba(255, 106, 26, 0.12); font-size: 1rem; }
+.crew-badge-copy { flex: 1 1 110px; min-width: 0; }
+.crew-badge strong,
+.crew-badge small { display: block; }
+.crew-badge strong { font-size: 0.84rem; }
+.crew-badge small { margin-top: 3px; color: var(--muted); font-size: 0.74rem; line-height: 1.35; }
+.crew-badge.is-compact { padding: 9px; }
+.crew-badge.is-compact .crew-badge-icon { width: 23px; height: 23px; }
+.crew-badge-actions { display: flex; width: 100%; gap: 7px; padding-top: 3px; }
+.crew-badge-actions button { min-height: 32px; padding: 6px 10px; border: 1px solid rgba(31, 67, 53, 0.14); border-radius: 8px; background: rgba(255,255,255,.58); color: var(--accent-dark); font: inherit; font-size: .7rem; font-weight: 750; cursor: pointer; }
+.crew-badge-actions button[aria-pressed="true"] { border-color: rgba(255,106,26,.55); background: rgba(255,106,26,.13); color: var(--orange-dark); }
+.crew-badge-actions button:disabled { opacity: .45; cursor: default; }
+.crew-badge.is-title .crew-badge-actions [data-badge-action="title"]::before { content: "★ "; }
+
+.crew-badge-dialog {
+  width: min(760px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: hidden;
+}
+
+.crew-badge-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.crew-badge-dev-toggle {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-top: 14px;
+  padding: 11px 13px;
+  border: 1px solid rgba(255, 106, 26, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 106, 26, 0.07);
+  color: var(--accent-dark);
+  cursor: pointer;
+}
+
+.crew-badge-dev-toggle[hidden] { display: none; }
+.crew-badge-dev-toggle input { width: 18px; height: 18px; margin: 0; accent-color: var(--orange); }
+.crew-badge-dev-toggle strong,
+.crew-badge-dev-toggle small { display: block; }
+.crew-badge-dev-toggle strong { font-size: 0.83rem; }
+.crew-badge-dev-toggle small { margin-top: 2px; color: var(--muted); font-size: 0.72rem; }
+
+.crew-badge-collection {
+  min-height: 0;
+  max-height: min(62dvh, 620px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px 5px 5px 1px;
+}
+
+.crew-badge-empty {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.43);
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.crew-member-dialog { width: min(470px, calc(100vw - 32px)); }
+.crew-member-identity { display: flex; align-items: center; gap: 14px; }
+.crew-member-identity h2 { margin: 0; color: var(--accent-dark); }
+.crew-member-identity strong,
+.crew-member-identity small { display: block; }
+.crew-member-identity strong { margin-top: 3px; color: var(--orange-dark); }
+.crew-member-identity small { margin-top: 3px; color: var(--muted); }
+.crew-member-avatar { display: grid; flex: 0 0 auto; place-items: center; width: 58px; height: 58px; border-radius: 50%; background: var(--accent-dark); color: white; font-size: 1.2rem; font-weight: 800; object-fit: cover; }
+.crew-member-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 20px 0 0; }
+.crew-member-metrics > div { min-width: 0; padding: 11px; border-radius: 12px; background: rgba(255, 255, 255, 0.44); }
+.crew-member-metrics dt { color: var(--muted); font-size: 0.7rem; font-weight: 700; }
+.crew-member-metrics dd { margin: 5px 0 0; color: var(--accent-dark); font-size: 1rem; font-weight: 800; }
+.crew-member-joint { margin: 16px 0 0; color: var(--accent-dark); font-weight: 750; }
+.crew-member-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.crew-member-badge { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: rgba(255, 106, 26, 0.1); }
+
+.participant-chip.is-account:not(span) { cursor: pointer; }
+.participant-chip.is-account:not(span):hover,
+.participant-chip.is-account:not(span):focus-visible { border-color: rgba(255, 106, 26, 0.46); color: var(--accent-dark); }
+.participant-chip-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
+.participant-list-empty { display: block; color: var(--muted); font-weight: 650; }
+.participant-heading-actions { display: flex; align-items: center; gap: 8px; }
+.participant-dev-toggle { min-height: 32px; padding: 6px 9px; border: 1px dashed rgba(255,106,26,.4); border-radius: 8px; background: rgba(255,255,255,.38); color: var(--orange-dark); font: inherit; font-size: .68rem; font-weight: 750; cursor: pointer; }
+.participant-dev-toggle.is-active { border-style: solid; background: rgba(255,106,26,.12); }
+
+.profile-avatar-control { display: flex; align-items: center; gap: 12px; }
+.profile-avatar-preview { display: grid; flex: 0 0 auto; place-items: center; width: 50px; height: 50px; border-radius: 50%; background: var(--accent-dark); color: #fff; font-weight: 800; object-fit: cover; }
+.profile-avatar-upload { min-height: 38px; cursor: pointer; }
+.profile-avatar-status { margin: 8px 0 0; color: var(--muted); font-size: 0.78rem; }
+
+.avatar-crop-dialog {
+  width: min(92vw, 520px);
+  max-height: calc(100dvh - 24px);
+  max-width: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  overflow: auto;
+}
+.avatar-crop-dialog::backdrop { background: rgba(8, 20, 18, 0.66); backdrop-filter: blur(8px); }
+.avatar-crop-card {
+  position: relative;
+  padding: 30px;
+  border: 1px solid rgba(255,255,255,.76);
+  border-radius: 20px;
+  background: rgba(248,249,247,.96);
+  box-shadow: 0 24px 70px rgba(3,25,22,.28);
+}
+.avatar-crop-card h2 { margin: 2px 56px 6px 0; font-size: clamp(1.55rem, 4vw, 2rem); }
+.avatar-crop-intro { margin: 0 48px 22px 0; color: var(--muted); line-height: 1.45; }
+.avatar-crop-stage {
+  width: min(68vw, 300px);
+  aspect-ratio: 1;
+  margin: 0 auto 20px;
+  overflow: hidden;
+  border: 4px solid #fff;
+  border-radius: 50%;
+  background: #e8ece8;
+  box-shadow: 0 0 0 2px rgba(7,63,61,.16), 0 16px 34px rgba(7,63,61,.16);
+  touch-action: none;
+  cursor: grab;
+}
+.avatar-crop-stage:active { cursor: grabbing; }
+.avatar-crop-stage canvas { display: block; width: 100%; height: 100%; }
+.avatar-crop-zoom { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 14px; margin: 0 0 22px; font-weight: 750; }
+.avatar-crop-zoom input { width: 100%; accent-color: var(--orange); }
+.avatar-crop-actions { display: grid; grid-template-columns: 1fr 1.35fr; gap: 10px; }
+.avatar-crop-actions button { width: 100%; }
+
+@media (max-width: 520px) {
+  .avatar-crop-card { padding: 24px 18px 18px; border-radius: 18px; }
+  .avatar-crop-intro { margin-right: 42px; }
+  .avatar-crop-actions { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .crew-card,
+  .dashboard-badges { padding: 18px; border-radius: 16px; }
+  .crew-card-heading { align-items: center; }
+  .crew-card-heading h2 { font-size: 1.3rem; }
+  .crew-card-collection-button { font-size: 0.76rem; }
+  .crew-card-metrics { grid-template-columns: 1fr; gap: 6px; }
+  .crew-card-metrics > div { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .crew-card-metrics dd { margin: 0; }
+  .dashboard-badge-list,
+  .crew-badge-collection { grid-template-columns: 1fr; }
+  .crew-card-badge-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .crew-card-badge-row .crew-badge { display: grid; justify-items: center; padding: 9px 5px; text-align: center; }
+  .crew-card-badge-row .crew-badge-copy { flex: none; width: 100%; }
+  .crew-card-badge-row .crew-badge strong { font-size: .68rem; line-height: 1.15; }
+  .crew-badge-dialog { max-height: calc(100dvh - 18px); }
+  .crew-badge-collection { max-height: 62dvh; }
+  .crew-member-metrics { grid-template-columns: 1fr; gap: 6px; }
+  .crew-member-metrics > div { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .crew-member-metrics dd { margin: 0; }
+}
+
 @media (max-width: 680px) {
   .account-heading-actions {
     gap: 8px;
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .account-heading-actions .sync-state { font-size: 0.72rem; white-space: nowrap; }
+  .subscription-choice-state { max-width: 112px; line-height: 1.2; text-align: right; white-space: normal; }
+}
+
+@media (max-width: 760px) {
+  .calculator-glass .account-settings-entry.calculator-settings-shortcut,
+  .main-glass .account-settings-entry.calculator-settings-shortcut {
+    top: 10px;
+    right: 16px;
+  }
+
+  .calculator-glass .account-settings-entry.calculator-settings-shortcut a,
+  .main-glass .account-settings-entry.calculator-settings-shortcut a {
+    width: 28px;
+    min-width: 0;
+    height: 28px;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 }
 
     </style>
     <script src="saas/freeActiveWorkdayService.js?v=20260731a" defer></script>
+    <script src="saas/badgeService.js?v=20260810b" defer></script>
+    <script src="saas/crewCardUi.js?v=20260809d" defer></script>
   </head>
   <body class="calculator-page">
     <main class="app-shell">
@@ -8439,10 +8929,11 @@ html.is-pwa summary {
           <div class="account-user-menu" id="account-user-menu" hidden>
             <button class="account-avatar" id="account-user-button" type="button" aria-haspopup="menu" aria-expanded="false">
               <span id="account-user-initial">O</span>
+              <img id="account-user-avatar" alt="" hidden>
             </button>
             <div class="account-dropdown" id="account-dropdown" role="menu" hidden>
                 <a id="today-page-link" href="index.html" role="menuitem">Vandaag</a>
-                <a id="dashboard-page-link" href="dashboard.html" role="menuitem">Dashboard</a>
+                <a id="dashboard-page-link" href="dashboard.html" role="menuitem">Crew Card</a>
                 <a id="workdays-page-link" href="workdays.html" role="menuitem">Werkdagen</a>
                 <a id="projects-page-link" href="projects.html" role="menuitem">Projecten</a>
                 <a id="account-page-link" href="account.html" role="menuitem">Account</a>
@@ -8495,6 +8986,26 @@ html.is-pwa summary {
                 <span><b>Extra functie</b><small>Pro</small></span>
               </label>
             </fieldset>
+            <aside class="current-workday-participants" id="current-workday-participants" hidden>
+              <div class="participant-heading">
+                <div>
+                  <strong>Deelnemers</strong>
+                  <small>Deel je werkdag met collega's en zie wie er meedoen.</small>
+                </div>
+                <div class="participant-heading-actions">
+                  <button class="participant-dev-toggle" id="participant-dev-toggle" type="button" hidden>Demo crew</button>
+                  <button class="participant-share-button" id="share-from-participants" type="button" aria-label="Deel deze werkdag met collega's" title="Delen met collega's">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <circle cx="18" cy="5" r="3"></circle>
+                      <circle cx="6" cy="12" r="3"></circle>
+                      <circle cx="18" cy="19" r="3"></circle>
+                      <path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="participant-list" id="current-workday-participant-list"></div>
+            </aside>
           </section>
 
           <section class="form-section planning-section">
@@ -8514,44 +9025,15 @@ html.is-pwa summary {
             </div>
             <div class="planning-grid">
               <label class="workday-name-field" id="workday-name-field">
-                <span>Naam werkdag <small>(optioneel)</small></span>
+                <span>Naam werkdag</span>
                 <input type="text" name="workdayName" maxlength="100" placeholder="Werkdag" list="workday-name-suggestions" autocomplete="off">
                 <datalist id="workday-name-suggestions"></datalist>
               </label>
               <label class="client-name-field">
-                <span>Opdrachtgever <small>(optioneel)</small></span>
+                <span>Opdrachtgever</span>
                 <input type="text" name="clientName" maxlength="120" placeholder="Opdrachtgever" list="client-name-suggestions" autocomplete="off">
                 <datalist id="client-name-suggestions"></datalist>
               </label>
-              <aside class="current-workday-participants" id="current-workday-participants" hidden>
-                <div class="participant-heading">
-                  <div>
-                    <strong>Deelnemers</strong>
-                    <small>Nodig collega's uit om samen de tijden te registreren, of voeg namen van collega's toe voor je administratie.</small>
-                  </div>
-                  <button class="participant-share-button" id="share-from-participants" type="button" aria-label="Deel deze werkdag met collega's" title="Delen met collega's">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <circle cx="18" cy="5" r="3"></circle>
-                      <circle cx="6" cy="12" r="3"></circle>
-                      <circle cx="18" cy="19" r="3"></circle>
-                      <path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"></path>
-                    </svg>
-                  </button>
-                </div>
-                <div class="participant-list" id="current-workday-participant-list"></div>
-                <details class="private-participant-panel" id="private-participant-panel" hidden>
-                  <summary>
-                    <span>Deelnemers zonder Overuurtje</span>
-                  </summary>
-                  <div class="private-participant-form" id="private-participant-form">
-                    <label>
-                      <span class="sr-only">Naam deelnemer</span>
-                      <input id="private-participant-name" type="text" maxlength="80" placeholder="Naam toevoegen">
-                    </label>
-                    <button type="button" id="add-private-participant">Toevoegen</button>
-                  </div>
-                </details>
-              </aside>
               <label class="date-field">
                 <span>Datum</span>
                 <span class="date-control">
@@ -8851,6 +9333,7 @@ html.is-pwa summary {
 
       <div class="footer-actions">
         <button class="invoice-copy-button" type="button" id="copy-summary">Kopiëren voor factuur</button>
+        <button class="invoice-copy-button moneybird-export-button" type="button" id="moneybird-export">Naar Moneybird <span data-pro-badge>Pro</span></button>
         <div class="result-secondary-actions">
           <button class="secondary pro-action-button" type="button" id="save-pdf">
             <svg class="button-line-icon" aria-hidden="true" viewBox="0 0 24 24">
@@ -9507,7 +9990,8 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
   const supabaseService = globalThis.OveruurtjeSupabase;
   const LEGACY_PROFILE_COLUMNS = "id,email,created_at,updated_at,display_name,is_pro,subscription_status,subscription_provider";
   const SUBSCRIPTION_PROFILE_COLUMNS = `${LEGACY_PROFILE_COLUMNS},subscription_current_period_end,subscription_cancel_at_period_end`;
-  const PROFILE_COLUMNS = `${SUBSCRIPTION_PROFILE_COLUMNS},trial_started_at,trial_ends_at,trial_reminder_sent_at,trial_expired_at,trial_expired_notice_shown_at,trial_converted_at`;
+  const TRIAL_PROFILE_COLUMNS = `${SUBSCRIPTION_PROFILE_COLUMNS},trial_started_at,trial_ends_at,trial_reminder_sent_at,trial_expired_at,trial_expired_notice_shown_at,trial_converted_at`;
+  const PROFILE_COLUMNS = `${TRIAL_PROFILE_COLUMNS},avatar_url`;
 
   function normalize(row, user) {
     return {
@@ -9525,7 +10009,8 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
       trialReminderSentAt: row?.trial_reminder_sent_at || null,
       trialExpiredAt: row?.trial_expired_at || null,
       trialExpiredNoticeShownAt: row?.trial_expired_notice_shown_at || null,
-      trialConvertedAt: row?.trial_converted_at || null
+      trialConvertedAt: row?.trial_converted_at || null,
+      avatarUrl: row?.avatar_url || ""
     };
   }
 
@@ -9534,6 +10019,38 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     return error?.code === "42703"
       || error?.code === "PGRST204"
       || columns.some((column) => message.includes(column));
+  }
+
+  function providerAvatarUrl(user) {
+    const candidate = String(user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "").trim();
+    if (!candidate) return "";
+    try {
+      const url = new URL(candidate);
+      return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  async function saveProviderAvatarIfMissing(client, user, profile) {
+    const avatarUrl = providerAvatarUrl(user);
+    if (!avatarUrl || profile?.avatar_url) return profile;
+
+    const { data, error } = await client
+      .from("profiles")
+      .update({ avatar_url: avatarUrl })
+      .eq("id", user.id)
+      .select(PROFILE_COLUMNS)
+      .single();
+
+    // Importing an OAuth avatar is cosmetic. Missing migrations, storage/RLS
+    // restrictions or a temporary API error must never hide the profile and
+    // therefore accidentally remove Pro access.
+    if (error) {
+      console.warn("Profielfoto van loginprovider kon niet worden overgenomen.", error);
+      return profile;
+    }
+    return data || profile;
   }
 
   async function selectProfile(client, userId, columns) {
@@ -9552,6 +10069,9 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     let { data, error } = await selectProfile(client, user.id, PROFILE_COLUMNS);
 
     // Keep login working while a new deployment and migration roll out.
+    if (error && isMissingColumns(error, ["avatar_url"])) {
+      ({ data, error } = await selectProfile(client, user.id, TRIAL_PROFILE_COLUMNS));
+    }
     if (error && isMissingColumns(error, ["trial_started_at", "trial_ends_at"])) {
       ({ data, error } = await selectProfile(client, user.id, SUBSCRIPTION_PROFILE_COLUMNS));
     }
@@ -9560,7 +10080,10 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     }
 
     if (error) throw error;
-    if (data) return normalize(data, user);
+    if (data) {
+      data = await saveProviderAvatarIfMissing(client, user, data);
+      return normalize(data, user);
+    }
 
     const { data: created, error: insertError } = await client
       .from("profiles")
@@ -9569,7 +10092,8 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
       .single();
 
     if (insertError) throw insertError;
-    return normalize(created, user);
+    const profile = await saveProviderAvatarIfMissing(client, user, created);
+    return normalize(profile, user);
   }
 
   async function saveDisplayName(user, displayName) {
@@ -9598,9 +10122,36 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     return data || null;
   }
 
+  async function uploadAvatar(user, file) {
+    if (!user) throw new Error("Log eerst in.");
+    if (!(file instanceof File)) throw new Error("Kies een afbeelding.");
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) throw new Error("Gebruik een JPG, PNG of WebP-afbeelding.");
+    if (file.size > 2 * 1024 * 1024) throw new Error("Gebruik een afbeelding kleiner dan 2 MB.");
+    const client = await supabaseService.getClient();
+    if (!client) throw new Error("Supabase is niet beschikbaar.");
+    const path = `${user.id}/avatar.jpg`;
+    const { error: uploadError } = await client.storage.from("crew-avatars").upload(path, file, {
+      upsert: true,
+      contentType: file.type,
+      cacheControl: "3600"
+    });
+    if (uploadError) throw uploadError;
+    const { data: urlData } = client.storage.from("crew-avatars").getPublicUrl(path);
+    const versionedUrl = `${urlData.publicUrl}?v=${Date.now()}`;
+    const { data, error } = await client
+      .from("profiles")
+      .update({ avatar_url: versionedUrl })
+      .eq("id", user.id)
+      .select(PROFILE_COLUMNS)
+      .single();
+    if (error) throw error;
+    return normalize(data, user);
+  }
+
   globalThis.OveruurtjeProfiles = Object.freeze({
     getForUser,
     saveDisplayName,
+    uploadAvatar,
     markTrialExpiredNoticeShown
   });
 })();
@@ -10567,7 +11118,11 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
       firstName: row.first_name || "Collega",
       isOwner: Boolean(row.is_owner),
       isCurrentUser: Boolean(row.is_current_user),
-      hasAccount: row.has_account !== false
+      hasAccount: row.has_account !== false,
+      avatarUrl: row.avatar_url || "",
+      selectedBadgeIcon: row.selected_badge_icon || "",
+      selectedBadgeName: row.selected_badge_name || "",
+      jointWorkdays: Number(row.joint_workdays) || 0
     }));
   }
 
@@ -10636,9 +11191,10 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
   function getMockPlan() {
     if (!config.allowMockSubscriptions) return null;
     try {
-      return localStorage.getItem(MOCK_KEY) === "pro" ? "pro" : "free";
+      const storedPlan = localStorage.getItem(MOCK_KEY);
+      return ["pro", "free"].includes(storedPlan) ? storedPlan : null;
     } catch {
-      return "free";
+      return null;
     }
   }
 
@@ -10715,7 +11271,8 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     work_functions: { requiresPro: true },
     workday_sharing: { requiresPro: false },
     pdf_export: { requiresPro: true },
-    device_sync: { requiresPro: true }
+    device_sync: { requiresPro: true },
+    accounting_export: { requiresPro: true }
   });
 
   function canUse(featureName, user) {
@@ -10739,6 +11296,75 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
   // Add future premium capabilities to the registry above, then call
   // OveruurtjeFeatureGate.require(featureName, currentUser, callback).
   globalThis.OveruurtjeFeatureGate = Object.freeze({ features, canUse, require: requireFeature });
+})();
+
+    </script>
+    <script>
+(function initializeAccountingService() {
+  "use strict";
+
+  const supabase = globalThis.OveruurtjeSupabase;
+  const config = globalThis.OveruurtjeConfig;
+  const functionName = "accounting-moneybird";
+
+  async function clientAndSession() {
+    const client = await supabase.getClient();
+    if (!client) throw new Error("Supabase is niet geconfigureerd.");
+    const { data, error } = await client.auth.getSession();
+    if (error || !data.session) throw new Error("Log opnieuw in om Moneybird te gebruiken.");
+    return { client, session: data.session };
+  }
+
+  async function invoke(action, payload = {}) {
+    const { session } = await clientAndSession();
+    const response = await fetch(`${config.supabaseUrl}/functions/v1/${functionName}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ action, ...payload })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || "Moneybird kon de actie niet uitvoeren.");
+    return result;
+  }
+
+  async function mappings(table) {
+    const { client } = await clientAndSession();
+    const { data, error } = await client.from(table).select("*");
+    if (error) throw error;
+    return data || [];
+  }
+
+  async function saveMapping(table, record, conflict) {
+    const { client, session } = await clientAndSession();
+    const { data, error } = await client.from(table).upsert({ user_id: session.user.id, ...record }, {
+      onConflict: conflict
+    }).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  globalThis.OveruurtjeAccounting = Object.freeze({
+    status: () => invoke("status"),
+    startOAuth: () => invoke("startOAuth"),
+    connectDevelopment: () => invoke("connectDevelopment"),
+    administrations: () => invoke("administrations"),
+    selectAdministration: (administrationId) => invoke("selectAdministration", { administrationId }),
+    validate: () => invoke("validate"),
+    disconnect: () => invoke("disconnect"),
+    contacts: (query = "") => invoke("contacts", { query }),
+    configurationOptions: () => invoke("configurationOptions"),
+    createDraftInvoice: (payload) => invoke("createDraftInvoice", payload),
+    exports: () => invoke("exports"),
+    customerMappings: () => mappings("accounting_customer_mappings"),
+    taxMappings: () => mappings("accounting_tax_mappings"),
+    ledgerMappings: () => mappings("accounting_ledger_mappings"),
+    saveCustomerMapping: (record) => saveMapping("accounting_customer_mappings", record, "connection_id,local_customer_key"),
+    saveTaxMapping: (record) => saveMapping("accounting_tax_mappings", record, "connection_id,local_tax_percentage"),
+    saveLedgerMapping: (record) => saveMapping("accounting_ledger_mappings", record, "connection_id,category")
+  });
 })();
 
     </script>
@@ -11153,6 +11779,484 @@ globalThis.TariffCalculator = {
   parseTimeToMinutes,
   roundUpToInterval
 };
+})();
+
+    </script>
+    <script>
+(function initializeAccountingExportModel() {
+  "use strict";
+
+  const calculate = globalThis.TariffCalculator?.calculateTariff;
+  const roundMoney = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+  const dateLabel = (value) => {
+    if (!value) return "";
+    return new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "long", year: "numeric" })
+      .format(new Date(`${value}T12:00:00`));
+  };
+  const customerKey = (name) => String(name || "").trim().toLocaleLowerCase("nl-NL").replace(/\s+/g, " ");
+
+  function normalizeSnapshot(snapshot = {}, overrides = {}) {
+    if (snapshot.settings && snapshot.extras) return { ...snapshot, ...overrides };
+    const rateMode = snapshot.rateMode === "hour" ? "hour" : "day";
+    const normalDayHours = Number(snapshot.normalDayHours) || 10;
+    const rateAmount = Number(snapshot.rateAmount) || 0;
+    return {
+      ...snapshot,
+      ...overrides,
+      workFunction: snapshot.workFunction || (snapshot.workFunctionName ? { name: snapshot.workFunctionName } : null),
+      settings: {
+        ...globalThis.TariffCalculator?.DEFAULT_SETTINGS,
+        dayRate: rateMode === "day" ? rateAmount : Number(snapshot.dayRate) || 0,
+        hourlyRate: rateMode === "hour" ? rateAmount : undefined,
+        rateMode,
+        normalDayHours,
+        minimumHours: Number(snapshot.minimumHours) || 0,
+        enableHalfDayUnder6Hours: Boolean(snapshot.enableHalfDayUnder6Hours),
+        enableOvertime10To12: Boolean(snapshot.enableOvertime10To12),
+        enableOvertimeFrom12: Boolean(snapshot.enableOvertimeFrom12),
+        enableOvertimeFrom14: Boolean(snapshot.enableOvertimeFrom14),
+        enableNightTariff: Boolean(snapshot.enableNightTariff),
+        nightStart: snapshot.nightStart || "00:00",
+        nightEnd: snapshot.nightEnd || "06:00",
+        nightSurchargePercent: Number(snapshot.nightSurchargePercent ?? 100),
+        travelWithinEuropePercent: Number(snapshot.travelWithinEuropePercent ?? 75),
+        travelOutsideEuropePercent: Number(snapshot.travelOutsideEuropePercent ?? 100),
+        kilometerRate: Number(snapshot.kilometerRate) || 0,
+        droneTariffAmount: Number(snapshot.droneTariffAmount) || 0,
+        ronin4dTariffAmount: Number(snapshot.ronin4dTariffAmount) || 0,
+        vatPercent: Number(snapshot.vatPercent ?? globalThis.TariffCalculator?.DEFAULT_SETTINGS?.vatPercent ?? 21)
+      },
+      extras: {
+        enableDroneTariff: Boolean(snapshot.enableDroneTariff),
+        enableRonin4dTariff: Boolean(snapshot.enableRonin4dTariff),
+        enableKilometers: Boolean(snapshot.enableKilometers),
+        kilometers: Number(snapshot.kilometers) || 0,
+        enableParkingCosts: Boolean(snapshot.enableParkingCosts),
+        parkingCosts: Number(snapshot.parkingCosts) || 0,
+        enableTravelDay: Boolean(snapshot.enableTravelDay),
+        travelRegion: snapshot.travelRegion || "within_europe",
+        travelPercent: Number(snapshot.travelPercent) || 0,
+        customEquipment: snapshot.customEquipment || []
+      }
+    };
+  }
+
+  function calculationFromSnapshot(snapshot) {
+    if (!calculate) throw new Error("De calculator is niet beschikbaar.");
+    const settings = snapshot.settings || {};
+    const extras = snapshot.extras || {};
+    return calculate({
+      startTime: snapshot.startTime,
+      endTime: snapshot.endTime,
+      breakMinutes: Number(snapshot.breakMinutes ?? settings.breakMinutes ?? 0),
+      rateMode: settings.rateMode || snapshot.rateMode || "day",
+      hourlyRate: Number(settings.hourlyRate || snapshot.hourlyRate || 0),
+      enableDroneTariff: Boolean(extras.enableDroneTariff),
+      enableRonin4dTariff: Boolean(extras.enableRonin4dTariff),
+      customEquipment: extras.customEquipment || [],
+      enableKilometers: Boolean(extras.enableKilometers),
+      kilometers: Number(extras.kilometers || 0),
+      enableParkingCosts: Boolean(extras.enableParkingCosts),
+      parkingCosts: Number(extras.parkingCosts || 0),
+      enableTravelDay: Boolean(extras.enableTravelDay),
+      travelRegion: extras.travelRegion || "within_europe",
+      travelPercent: Number(extras.travelPercent || 0)
+    }, settings);
+  }
+
+  function line(category, description, quantity, unit, unitPrice, vatPercentage, source) {
+    const qty = Number(quantity);
+    const price = Number(unitPrice);
+    if (!(qty > 0) || !Number.isFinite(price) || Math.abs(qty * price) < 0.005) return null;
+    return {
+      category, description, quantity: qty, unit, unitPrice: roundMoney(price),
+      vatPercentage: Number(vatPercentage || 0), lineTotal: roundMoney(qty * price), source
+    };
+  }
+
+  function linesFromResult(result, snapshot, source) {
+    const vat = Number(result.settings?.vatPercent || 0);
+    const role = snapshot.workFunction?.name || snapshot.functionName || "Draaidag";
+    const label = dateLabel(snapshot.date);
+    const lines = [];
+    if (result.isTravelDay) {
+      lines.push(line(
+        result.travelRegion === "outside_europe" ? "travel_day_non_eu" : "travel_day_eu",
+        `Reisdag ${result.travelRegion === "outside_europe" ? "buiten Europa" : "binnen Europa"} (${Number(result.travelPercent)}%) – ${label}`,
+        1, "dag", result.travelDayAmount, vat, source
+      ));
+    } else {
+      lines.push(line("normal_day", `${role} – draaidag ${label}`, 1, "dag", result.baseAmount, vat, source));
+      const overtime = [
+        [result.overtime10To12Hours, result.overtime10To12Amount, "Overuren 150%"],
+        [result.overtimeFrom12Hours, result.overtimeFrom12Amount, "Overuren 200%"],
+        [result.overtimeFrom14Hours, result.overtimeFrom14Amount, "Overuren 250%"]
+      ];
+      overtime.forEach(([hours, amount, description]) => {
+        if (Number(hours) > 0) lines.push(line("overtime", `${description} – ${Number(hours).toLocaleString("nl-NL")} uur`, hours, "uur", Number(amount) / Number(hours), vat, source));
+      });
+      if (Number(result.nightHours) > 0) {
+        lines.push(line("night_hours", `Nachttoeslag – ${Number(result.nightHours).toLocaleString("nl-NL")} uur`, result.nightHours, "uur", Number(result.nightAmount) / Number(result.nightHours), vat, source));
+      }
+    }
+    if (Number(result.kilometers) > 0 && Number(result.kilometerAmount) > 0) {
+      lines.push(line("mileage", `Kilometervergoeding – ${Number(result.kilometers).toLocaleString("nl-NL")} km`, result.kilometers, "km", result.settings.kilometerRate, vat, source));
+    }
+    if (Number(result.parkingAmount) > 0) lines.push(line("custom_extra", "Parkeer- en onkosten", 1, "stuk", result.parkingAmount, vat, source));
+    if (Number(result.droneTariffAmount) > 0) lines.push(line("gear", "Drone", 1, "dag", result.droneTariffAmount, vat, source));
+    if (Number(result.ronin4dTariffAmount) > 0) lines.push(line("gear", "Ronin 4D", 1, "dag", result.ronin4dTariffAmount, vat, source));
+    (result.customEquipmentItems || []).forEach((item) => lines.push(line("gear", item.name, 1, "dag", item.amount, vat, source)));
+    return lines.filter(Boolean);
+  }
+
+  function fromWorkday(workday) {
+    const rawSnapshot = workday.calculationData || workday.calculation_data || workday;
+    const snapshot = normalizeSnapshot(rawSnapshot, {
+      date: rawSnapshot.date || workday.workDate || workday.work_date
+    });
+    const id = workday.id || snapshot.id;
+    if (!id) throw new Error("Sla deze werkdag eerst op voordat je hem exporteert.");
+    const result = calculationFromSnapshot(snapshot);
+    const source = { sourceType: "workday", sourceId: id };
+    return {
+      schemaVersion: 1,
+      sourceType: "workday", sourceId: id, sourceItems: [source],
+      date: snapshot.date || workday.workDate || workday.work_date,
+      customer: { name: snapshot.clientName || "", localKey: customerKey(snapshot.clientName), key: customerKey(snapshot.clientName) },
+      project: null,
+      reference: snapshot.workdayName || `Werkdag ${snapshot.date || ""}`,
+      description: snapshot.workdayName || "Werkdag",
+      lineItems: linesFromResult(result, snapshot, source)
+    };
+  }
+
+  function fromProject(project, days) {
+    const selected = (days || []).filter((day) => day.selected !== false);
+    const models = selected.map((day) => {
+      const data = day.calculationData || day.calculation_data || {};
+      const sourceId = day.id;
+      const model = fromWorkday({
+        id: sourceId,
+        workDate: day.workDate || day.work_date || data.date,
+        calculationData: {
+          ...data,
+          date: day.workDate || day.work_date || data.date,
+          clientName: project.clientName || project.client_name || data.clientName
+        }
+      });
+      const source = { sourceType: "project_day", sourceId };
+      return {
+        ...model,
+        sourceItems: [source],
+        lineItems: model.lineItems.map((item) => ({ ...item, source }))
+      };
+    });
+    return {
+      schemaVersion: 1,
+      sourceType: "project", sourceId: project.id,
+      sourceItems: models.flatMap((model) => model.sourceItems.map((item) => ({ ...item, sourceType: "project_day" }))),
+      date: new Date().toISOString().slice(0, 10),
+      customer: { name: project.clientName || project.client_name || "", localKey: customerKey(project.clientName || project.client_name), key: customerKey(project.clientName || project.client_name) },
+      project: { id: project.id, name: project.name || "Project" },
+      reference: project.name || "Project",
+      description: project.name || "Project",
+      lineItems: models.flatMap((model) => model.lineItems)
+    };
+  }
+
+  function withSourceItems(exportModel, selectedIds) {
+    const ids = new Set(selectedIds || []);
+    return {
+      ...exportModel,
+      sourceItems: exportModel.sourceItems.filter((item) => ids.has(item.sourceId)),
+      lineItems: exportModel.lineItems.filter((item) => ids.has(item.source?.sourceId))
+    };
+  }
+
+  globalThis.OveruurtjeAccountingExport = Object.freeze({ fromWorkday, fromProject, withSourceItems, customerKey });
+})();
+
+    </script>
+    <script>
+(function initializeAccountingUi() {
+  "use strict";
+
+  const service = globalThis.OveruurtjeAccounting;
+  const exportTools = globalThis.OveruurtjeAccountingExport;
+  const euro = new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" });
+  let dialog;
+  let originalModel;
+  let connection;
+  let options;
+  let currentContext;
+  let exportHistory = { exports: [], items: [] };
+  let reexportKey = crypto.randomUUID();
+
+  function ensureDialog() {
+    if (dialog) return dialog;
+    dialog = document.createElement("dialog");
+    dialog.className = "saas-dialog accounting-dialog";
+    dialog.innerHTML = `
+      <button class="dialog-close" type="button" data-accounting-close aria-label="Sluiten">&times;</button>
+      <p class="dialog-eyebrow">Boekhouding</p>
+      <h2>Controleer voor Moneybird</h2>
+      <p class="accounting-dialog-intro">Controleer de regels. Overuurtje maakt alleen een conceptfactuur; verzenden doe je zelf in Moneybird.</p>
+      <form class="accounting-preview-form">
+        <div class="accounting-preview-meta">
+          <label><span>Administratie</span><select name="administration" required></select></label>
+          <label class="accounting-contact-field"><span>Opdrachtgever</span><input name="contactSearch" type="search" placeholder="Zoek Moneybird-contact" autocomplete="off"><select name="contact" size="4" required></select></label>
+          <label><span>Factuurdatum</span><input name="invoiceDate" type="date" required></label>
+        </div>
+        <fieldset class="accounting-source-selection" hidden><legend>Projectdagen</legend><div data-accounting-sources></div></fieldset>
+        <div class="accounting-lines"></div>
+        <div class="accounting-mappings"></div>
+        <div class="accounting-preview-total"><span>Totaal excl. btw</span><strong></strong></div>
+        <label class="accounting-reexport" hidden><input type="checkbox" name="confirmReexport"><span>Bewust opnieuw exporteren naar een nieuw Moneybird-concept</span></label>
+        <p class="saas-form-status" aria-live="polite"></p>
+        <button class="saas-primary-button" type="submit">Maak conceptfactuur</button>
+      </form>`;
+    document.body.append(dialog);
+    dialog.querySelector("[data-accounting-close]").addEventListener("click", close);
+    dialog.addEventListener("click", (event) => { if (event.target === dialog) close(); });
+    dialog.querySelector("input[name='contactSearch']").addEventListener("input", debounce(loadContacts, 350));
+    dialog.querySelector("select[name='administration']").addEventListener("change", changeAdministration);
+    dialog.querySelector("[data-accounting-sources]").addEventListener("change", refreshPreview);
+    dialog.querySelector("form").addEventListener("submit", createDraft);
+    return dialog;
+  }
+
+  function close() {
+    dialog?.close();
+    document.documentElement.classList.remove("dialog-open");
+  }
+
+  function debounce(fn, delay) {
+    let timer;
+    return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), delay); };
+  }
+
+  function status(message) { ensureDialog().querySelector(".saas-form-status").textContent = message || ""; }
+  function createdExportIds() {
+    const created = new Set((exportHistory.exports || []).filter((item) => item.status === "created").map((item) => item.id));
+    return new Set((exportHistory.items || []).filter((item) => created.has(item.export_id)).map((item) => item.source_id));
+  }
+
+  function selectedModel() {
+    if (originalModel.sourceType !== "project") return originalModel;
+    const ids = Array.from(dialog.querySelectorAll("[data-accounting-source]:checked"), (input) => input.value);
+    return exportTools.withSourceItems(originalModel, ids);
+  }
+
+  function renderSources() {
+    const fieldset = dialog.querySelector(".accounting-source-selection");
+    fieldset.hidden = originalModel.sourceType !== "project";
+    if (fieldset.hidden) return;
+    const exported = createdExportIds();
+    const root = dialog.querySelector("[data-accounting-sources]");
+    root.replaceChildren(...originalModel.sourceItems.map((item) => {
+      const label = document.createElement("label");
+      const wasExported = exported.has(item.sourceId);
+      const line = originalModel.lineItems.find((entry) => entry.source?.sourceId === item.sourceId);
+      label.className = wasExported ? "is-exported" : "";
+      label.innerHTML = `<input type="checkbox" data-accounting-source value="${item.sourceId}" ${wasExported ? "" : "checked"}><span>${line?.description?.replace(/^.*?–\s*/, "") || "Projectdag"}</span>${wasExported ? "<small>Moneybird ✓</small>" : ""}`;
+      return label;
+    }));
+  }
+
+  async function loadContacts() {
+    const query = dialog.querySelector("input[name='contactSearch']").value;
+    const result = await service.contacts(query);
+    const select = dialog.querySelector("select[name='contact']");
+    const previous = select.value;
+    select.replaceChildren(...result.contacts.map((contact) => {
+      const option = document.createElement("option");
+      option.value = contact.id;
+      option.textContent = `${contact.name}${contact.email ? ` · ${contact.email}` : ""}`;
+      option.dataset.name = contact.name;
+      return option;
+    }));
+    if (Array.from(select.options).some((option) => option.value === previous)) select.value = previous;
+  }
+
+  function selectMappedContact(mapped) {
+    if (!mapped) return;
+    const select = dialog.querySelector("select[name='contact']");
+    if (!Array.from(select.options).some((option) => option.value === mapped.external_contact_id)) {
+      const option = new Option(mapped.external_contact_name || originalModel.customer.name, mapped.external_contact_id);
+      option.dataset.name = mapped.external_contact_name || originalModel.customer.name;
+      select.add(option, 0);
+    }
+    select.value = mapped.external_contact_id;
+  }
+
+  function renderLines() {
+    const model = selectedModel();
+    const root = dialog.querySelector(".accounting-lines");
+    root.innerHTML = `<div class="accounting-line accounting-line-head"><span>Omschrijving</span><span>Aantal</span><span>Prijs</span><span>Btw</span><span>Bedrag</span></div>`;
+    model.lineItems.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "accounting-line";
+      row.innerHTML = `<span></span><span></span><span></span><span></span><strong></strong>`;
+      row.children[0].textContent = item.description;
+      row.children[1].textContent = `${item.quantity.toLocaleString("nl-NL")} ${item.unit}`;
+      row.children[2].textContent = euro.format(item.unitPrice);
+      row.children[3].textContent = `${item.vatPercentage}%`;
+      row.children[4].textContent = euro.format(item.lineTotal);
+      root.append(row);
+    });
+    dialog.querySelector(".accounting-preview-total strong").textContent = euro.format(model.lineItems.reduce((sum, item) => sum + item.lineTotal, 0));
+  }
+
+  async function renderMappings() {
+    const model = selectedModel();
+    const [savedTaxes, savedLedgers] = await Promise.all([service.taxMappings(), service.ledgerMappings()]);
+    const categories = [...new Set(model.lineItems.map((item) => item.category))];
+    const percentages = [...new Set(model.lineItems.map((item) => Number(item.vatPercentage)))];
+    const root = dialog.querySelector(".accounting-mappings");
+    root.innerHTML = `<h3>Moneybird-koppelingen</h3>`;
+    percentages.forEach((percentage) => {
+      const label = document.createElement("label");
+      label.innerHTML = `<span>Btw ${percentage}%</span><select data-tax="${percentage}" required><option value="">Kies Moneybird-btw</option></select>`;
+      const select = label.querySelector("select");
+      options.taxRates.forEach((tax) => select.add(new Option(`${tax.name} (${tax.percentage}%)`, tax.id)));
+      select.value = savedTaxes.find((item) => Number(item.local_tax_percentage) === percentage)?.external_tax_rate_id || "";
+      root.append(label);
+    });
+    categories.forEach((category) => {
+      const name = model.lineItems.find((item) => item.category === category)?.description || category;
+      const label = document.createElement("label");
+      label.innerHTML = `<span>Grootboek · ${name}</span><select data-ledger="${category}" required><option value="">Kies grootboekrekening</option></select>`;
+      const select = label.querySelector("select");
+      options.ledgerAccounts.forEach((ledger) => select.add(new Option(ledger.name, ledger.id)));
+      select.value = savedLedgers.find((item) => item.category === category)?.external_ledger_account_id || "";
+      root.append(label);
+    });
+  }
+
+  function renderReexportState() {
+    const selected = selectedModel().sourceItems.map((item) => item.sourceId);
+    const hasExported = selected.some((id) => createdExportIds().has(id));
+    const label = dialog.querySelector(".accounting-reexport");
+    label.hidden = !hasExported;
+    if (!hasExported) label.querySelector("input").checked = false;
+  }
+
+  async function refreshPreview() {
+    renderLines();
+    renderReexportState();
+    await renderMappings();
+  }
+
+  async function changeAdministration(event) {
+    status("Administratie wisselen…");
+    try {
+      const result = await service.selectAdministration(event.target.value);
+      connection = result.connection;
+      options = await service.configurationOptions();
+      dialog.querySelector("input[name='contactSearch']").value = "";
+      await Promise.all([loadContacts(), renderMappings()]);
+      status("");
+    } catch (error) { status(error.message); }
+  }
+
+  async function createDraft(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const activeModel = selectedModel();
+    if (!activeModel.sourceItems.length || !activeModel.lineItems.length) { status("Selecteer minimaal één projectdag."); return; }
+    const mustConfirmReexport = !form.elements.confirmReexport.closest("label").hidden;
+    if (mustConfirmReexport && !form.elements.confirmReexport.checked) { status("Bevestig dat je de reeds geëxporteerde dag opnieuw wilt meenemen."); return; }
+    if (!form.reportValidity()) return;
+    const button = form.querySelector("button[type='submit']");
+    button.disabled = true;
+    status("Conceptfactuur aanmaken…");
+    try {
+      const contact = form.elements.contact.selectedOptions[0];
+      if (!contact) throw new Error("Kies eerst een Moneybird-contact.");
+      const taxMappings = {};
+      const ledgerMappings = {};
+      const saves = [];
+      dialog.querySelectorAll("[data-tax]").forEach((select) => {
+        taxMappings[select.dataset.tax] = select.value;
+        const selected = options.taxRates.find((item) => item.id === select.value);
+        saves.push(service.saveTaxMapping({ connection_id: connection.id, local_tax_percentage: Number(select.dataset.tax), external_tax_rate_id: select.value, external_tax_rate_name: selected?.name || "" }));
+      });
+      dialog.querySelectorAll("[data-ledger]").forEach((select) => {
+        ledgerMappings[select.dataset.ledger] = select.value;
+        const selected = options.ledgerAccounts.find((item) => item.id === select.value);
+        saves.push(service.saveLedgerMapping({ connection_id: connection.id, category: select.dataset.ledger, external_ledger_account_id: select.value, external_ledger_account_name: selected?.name || "" }));
+      });
+      if (activeModel.customer.key) saves.push(service.saveCustomerMapping({ connection_id: connection.id, local_customer_key: activeModel.customer.key, local_customer_name: activeModel.customer.name, external_contact_id: contact.value, external_contact_name: contact.dataset.name || contact.textContent }));
+      await Promise.all(saves);
+      activeModel.date = form.elements.invoiceDate.value;
+      const result = await service.createDraftInvoice({
+        exportModel: activeModel,
+        contactId: contact.value,
+        taxMappings,
+        ledgerMappings,
+        ...(mustConfirmReexport ? { reexportKey } : {})
+      });
+      status(result.alreadyCreated ? "Deze conceptfactuur bestond al in Moneybird." : "Conceptfactuur aangemaakt in Moneybird.");
+      button.hidden = true;
+      if (result.export?.external_invoice_url) {
+        const link = document.createElement("a");
+        link.className = "saas-secondary-button accounting-open-link";
+        link.href = result.export.external_invoice_url;
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.textContent = "Open in Moneybird";
+        button.after(link);
+      }
+      document.dispatchEvent(new CustomEvent("overuurtje:accounting-exported", { detail: result.export }));
+    } catch (error) {
+      status(error.message || "Conceptfactuur kon niet worden aangemaakt.");
+      button.disabled = false;
+    }
+  }
+
+  async function open({ exportModel, context }) {
+    currentContext = context;
+    if (!currentContext?.isPro) {
+      document.dispatchEvent(new CustomEvent("overuurtje:pro-required", { detail: { feature: "accounting_export" } }));
+      return;
+    }
+    originalModel = structuredClone(exportModel);
+    reexportKey = crypto.randomUUID();
+    ensureDialog();
+    document.documentElement.classList.add("dialog-open");
+    const submit = dialog.querySelector("button[type='submit']");
+    submit.hidden = false;
+    submit.disabled = false;
+    dialog.querySelector(".accounting-open-link")?.remove();
+    dialog.querySelector("form").reset();
+    status("Moneybird laden…");
+    dialog.showModal();
+    try {
+      const result = await service.status();
+      connection = result.connection;
+      if (!connection || connection.status !== "connected") throw new Error("Verbind Moneybird eerst via Account → Boekhouding.");
+      const [administrations, configuration, history] = await Promise.all([
+        service.administrations(), service.configurationOptions(), service.exports()
+      ]);
+      options = configuration;
+      exportHistory = history;
+      const admin = dialog.querySelector("select[name='administration']");
+      admin.replaceChildren(...administrations.administrations.map((item) => new Option(item.name, item.id)));
+      admin.value = connection.administration_id || connection.administrationId || "";
+      dialog.querySelector("input[name='invoiceDate']").value = originalModel.date;
+      renderSources();
+      await Promise.all([loadContacts(), refreshPreview()]);
+      const mappings = await service.customerMappings();
+      const mapped = mappings.find((item) => item.local_customer_key === originalModel.customer.key);
+      selectMappedContact(mapped);
+      status("");
+    } catch (error) {
+      status(error.message);
+      submit.disabled = true;
+    }
+  }
+
+  globalThis.OveruurtjeAccountingUi = Object.freeze({ open });
 })();
 
     </script>
@@ -11647,6 +12751,7 @@ globalThis.TariffCalculator = {
   const userMenuButton = document.querySelector("#account-user-button");
   const userDropdown = document.querySelector("#account-dropdown");
   const userInitial = document.querySelector("#account-user-initial");
+  const userAvatar = document.querySelector("#account-user-avatar");
   let dashboardLink = document.querySelector("#dashboard-page-link");
   const accountLink = document.querySelector("#account-page-link");
   const workdaysLink = document.querySelector("#workdays-page-link");
@@ -11962,6 +13067,7 @@ globalThis.TariffCalculator = {
   }
 
   function notificationText(item) {
+    if (item.type === "badge_earned") return "Je hebt een nieuwe badge behaald. Bekijk hem op je Crew Card.";
     if (item.type === "trial_ending") return "Je gratis Pro-periode eindigt over 7 dagen. Je gegevens blijven bewaard als je teruggaat naar Free.";
     if (item.type === "trial_expired") return "Je gratis Pro-periode is afgelopen. Je account is teruggezet naar Free en je gegevens zijn bewaard.";
     if (item.type === "workday_share_joined") return `${item.actorName} doet mee met je gedeelde werkdag.`;
@@ -11978,6 +13084,7 @@ globalThis.TariffCalculator = {
   }
 
   function notificationHref(item) {
+    if (item.type === "badge_earned") return config.dashboardUrl;
     if (["trial_ending", "trial_expired"].includes(item.type)) return config.accountUrl;
     if (item.type === "workday_share_joined" && item.sourceType === "workday" && item.sourceId) {
       return `${config.calculatorUrl}?workday=${encodeURIComponent(item.sourceId)}`;
@@ -12259,7 +13366,7 @@ globalThis.TariffCalculator = {
       dashboardLink.id = "dashboard-page-link";
       dashboardLink.href = config.dashboardUrl;
       dashboardLink.setAttribute("role", "menuitem");
-      dashboardLink.textContent = "Dashboard";
+      dashboardLink.textContent = "Crew Card";
       userDropdown.insertBefore(dashboardLink, accountLink);
     }
     loginButton.hidden = Boolean(user);
@@ -12275,6 +13382,18 @@ globalThis.TariffCalculator = {
 
     const label = context.profile?.displayName || user.email || "Account";
     userInitial.textContent = label.trim().charAt(0).toUpperCase() || "O";
+    const avatarUrl = String(context.profile?.avatarUrl || "").trim();
+    if (userAvatar) {
+      userAvatar.hidden = !avatarUrl;
+      userInitial.hidden = Boolean(avatarUrl);
+      if (avatarUrl) {
+        userAvatar.src = avatarUrl;
+        userAvatar.alt = `Profielfoto van ${label}`;
+      } else {
+        userAvatar.removeAttribute("src");
+        userAvatar.alt = "";
+      }
+    }
     userMenuButton.setAttribute("aria-label", `Account van ${label}`);
     if (dashboardLink) dashboardLink.href = config.dashboardUrl;
     accountLink.href = config.accountUrl;
@@ -12472,6 +13591,8 @@ globalThis.TariffCalculator = {
   });
   window.addEventListener("focus", refreshNotifications);
   document.addEventListener("overuurtje:shares-changed", refreshNotifications);
+  document.addEventListener("overuurtje:badges-earned", refreshNotifications);
+  document.addEventListener("overuurtje:badges-updated", refreshNotifications);
 
   logoutButtons.forEach((button) => button.addEventListener("click", async () => {
     try {
@@ -25243,14 +26364,40 @@ var qrcode = function() {
           <button type="button" aria-label="Niet meer delen">&times;</button>
         `;
         row.querySelector(".share-avatar").textContent = initials(participant.firstName);
-        row.querySelector("strong").textContent = participant.isCurrentUser
+        if (participant.avatarUrl) {
+          row.querySelector(".share-avatar").style.backgroundImage = `url("${participant.avatarUrl.replace(/["\\]/g, "")}")`;
+          row.querySelector(".share-avatar").classList.add("has-image");
+          row.querySelector(".share-avatar").textContent = "";
+        }
+        const name = participant.isCurrentUser
           ? `${participant.firstName} (jij)`
           : participant.firstName;
+        row.querySelector("strong").textContent = participant.selectedBadgeIcon
+          ? `${name} ${participant.selectedBadgeIcon}`
+          : name;
+        row.querySelector("strong").title = participant.selectedBadgeName || "";
         row.querySelector("small").textContent = participant.isOwner
           ? "Eigenaar"
-          : (item?.deliveredAt ? "Deelnemer" : "Wacht op eindtijd");
+          : (participant.jointWorkdays > 0
+            ? `${participant.jointWorkdays} gezamenlijke werkdagen`
+            : (item?.deliveredAt ? "Deelnemer" : "Wacht op eindtijd"));
         const removeButton = row.querySelector("button");
         removeButton.hidden = participant.isOwner || !item;
+        const profileTarget = row.querySelector("span:nth-child(2)");
+        if (!participant.isCurrentUser) {
+          profileTarget.classList.add("is-crew-card-link");
+          profileTarget.tabIndex = 0;
+          profileTarget.setAttribute("role", "button");
+          profileTarget.setAttribute("aria-label", `Bekijk de Crew Card van ${participant.firstName}`);
+          const openCrewCard = () => globalThis.OveruurtjeCrewCards?.open?.(participant.userId);
+          profileTarget.addEventListener("click", openCrewCard);
+          profileTarget.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              openCrewCard();
+            }
+          });
+        }
         if (item) {
           removeButton.addEventListener("click", async () => {
             if (activeSource.type === "project") await shares.removeProjectShare(item.id);
@@ -25697,6 +26844,7 @@ const nextDayNotice = document.querySelector("#next-day-notice");
 const calculationStatus = document.querySelector("#calculation-status");
 const recalculateButton = document.querySelector("#recalculate");
 const copyButton = document.querySelector("#copy-summary");
+const moneybirdExportButton = document.querySelector("#moneybird-export");
 const pdfButton = document.querySelector("#save-pdf");
 const saveSettingsButton = document.querySelector("#save-settings");
 const copyStatus = document.querySelector("#copy-status");
@@ -25722,10 +26870,6 @@ const workdayNameSuggestions = document.querySelector("#workday-name-suggestions
 const clientNameSuggestions = document.querySelector("#client-name-suggestions");
 const currentWorkdayParticipants = document.querySelector("#current-workday-participants");
 const currentWorkdayParticipantList = document.querySelector("#current-workday-participant-list");
-const privateParticipantPanel = document.querySelector("#private-participant-panel");
-const privateParticipantForm = document.querySelector("#private-participant-form");
-const privateParticipantName = document.querySelector("#private-participant-name");
-const addPrivateParticipantButton = document.querySelector("#add-private-participant");
 const sharedReceiverContext = document.querySelector("#shared-receiver-context");
 const sharedReceiverTitle = document.querySelector("#shared-receiver-title");
 const resumeSharedWorkdayButton = document.querySelector("#resume-shared-workday");
@@ -25771,8 +26915,12 @@ const freeActiveWorkdayService = globalThis.OveruurtjeFreeActiveWorkday;
 const sessionUi = globalThis.OveruurtjeSessionUI;
 const shareUi = globalThis.OveruurtjeShareUI;
 const shareService = globalThis.OveruurtjeShares;
+const badgeService = globalThis.OveruurtjeBadges;
 const liveWorkday = globalThis.OveruurtjeLiveWorkday;
 const workdayNotifications = globalThis.OveruurtjeWorkdayNotifications;
+const accountingExport = globalThis.OveruurtjeAccountingExport;
+const accountingUi = globalThis.OveruurtjeAccountingUi;
+const participantDevToggle = document.querySelector("#participant-dev-toggle");
 
 const euroFormatter = new Intl.NumberFormat("nl-NL", {
   style: "currency",
@@ -25811,12 +26959,94 @@ let persistedWorkdayEndTime = "";
 let sharedReceiverCalculatedEarly = false;
 let sharedTimeOverrides = new Set();
 let sharedParticipants = [];
-let privateParticipants = [];
 let pendingDuplicateWorkday = null;
 let todayWorkday = null;
 let activeSharedWorkday = null;
 let pendingSharedCompletionSave = null;
 let workdayContextInitializedFor = null;
+const PARTICIPANT_DEMO_KEY = "overuurtjeDevSharedCrew";
+
+const participantDemoProfiles = [
+  {
+    userId: "demo-ivo",
+    firstName: "Ivo",
+    hasAccount: true,
+    isOwner: false,
+    isCurrentUser: false,
+    selectedBadgeIcon: "🌙",
+    selectedBadgeName: "Nachtraaf",
+    crewCard: {
+      displayName: "Ivo",
+      memberSince: "2025-11-14",
+      registeredWorkdays: 86,
+      badgeCount: 12,
+      crewCount: 19,
+      jointWorkdays: 24,
+      selectedBadge: { name: "Nachtraaf", icon: "🌙" },
+      featuredBadges: [
+        { name: "Nachtraaf", icon: "🌙" },
+        { name: "Teamspeler", icon: "🤝" },
+        { name: "First Call", icon: "⏰" }
+      ]
+    }
+  },
+  {
+    userId: "demo-noor",
+    firstName: "Noor",
+    hasAccount: true,
+    isOwner: false,
+    isCurrentUser: false,
+    selectedBadgeIcon: "🎥",
+    selectedBadgeName: "Productieveteraan",
+    crewCard: {
+      displayName: "Noor",
+      memberSince: "2026-02-03",
+      registeredWorkdays: 121,
+      badgeCount: 16,
+      crewCount: 27,
+      jointWorkdays: 8,
+      selectedBadge: { name: "Productieveteraan", icon: "🎥" },
+      featuredBadges: [
+        { name: "Productieveteraan", icon: "🎥" },
+        { name: "Road Warrior", icon: "🚗" },
+        { name: "Drukke Maand", icon: "🔥" }
+      ]
+    }
+  }
+];
+
+function canDemoParticipants() {
+  return ["localhost", "127.0.0.1"].includes(location.hostname)
+    || Boolean(globalThis.OveruurtjeConfig?.subscription?.allowMockSubscriptions);
+}
+
+function participantDemoEnabled() {
+  return canDemoParticipants() && localStorage.getItem(PARTICIPANT_DEMO_KEY) === "1";
+}
+
+function announceBadgeAwards(awards) {
+  if (!awards?.length) return;
+  const labels = awards.map((badge) => `${badge.icon} ${badge.name}`);
+  sessionUi?.showToast(`Badge${labels.length === 1 ? "" : "s"} behaald: ${labels.join(" · ")}`);
+}
+
+async function trackBadgeActivity(eventKey, sourceId = null, metadata = {}) {
+  if (!currentAccountUser || !badgeService) return;
+  try {
+    await badgeService.track(eventKey, sourceId, metadata);
+  } catch (error) {
+    // Badges must never prevent a calculation, save, or PDF export.
+    console.warn("Badgecontrole is niet gelukt.", error);
+  } finally {
+    // Database triggers can award a badge before record_badge_activity runs.
+    // Refresh the notification inbox even when that RPC returns no new rows.
+    document.dispatchEvent(new CustomEvent("overuurtje:badges-updated"));
+  }
+}
+
+document.addEventListener("overuurtje:badges-earned", (event) => {
+  announceBadgeAwards(event.detail?.awards || []);
+});
 let liveWorkdayController = null;
 let workdayNotificationController = null;
 let liveWorkdayArmed = false;
@@ -26215,7 +27445,6 @@ function buildWorkdaySnapshot() {
     startTime: form.elements.namedItem("startTime").value,
     endTime,
     breakMinutes: settings.breakMinutes,
-    privateParticipants: [...privateParticipants],
     settings,
     extras: {
       enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
@@ -26271,7 +27500,6 @@ function projectDayToWorkdaySnapshot(project, day) {
     startTime: data.startTime || "08:00",
     endTime: data.endTime || "",
     breakMinutes: Number(data.breakMinutes) || 0,
-    privateParticipants: Array.isArray(data.privateParticipants) ? data.privateParticipants : [],
     settings: {
       ...currentSettings,
       rateMode,
@@ -26352,7 +27580,6 @@ function workdaySnapshotToProjectDay(snapshot, existing = {}) {
     enableDroneTariff: Boolean(extras.enableDroneTariff),
     enableRonin4dTariff: Boolean(extras.enableRonin4dTariff),
     customEquipment: Array.isArray(extras.customEquipment) ? extras.customEquipment : [],
-    privateParticipants: Array.isArray(snapshot.privateParticipants) ? snapshot.privateParticipants : []
   };
 }
 
@@ -26392,15 +27619,75 @@ async function refreshCurrentWorkdayParticipants() {
     return;
   }
   try {
-    sharedParticipants = await shareService.listParticipants(source.type, source.id);
+    let participants = [];
+    let sentShares = [];
+    try {
+      participants = await shareService.listParticipants(source.type, source.id);
+    } catch (error) {
+      console.warn("De centrale deelnemerslijst is nog niet beschikbaar.", error);
+    }
+    if (!currentSharedSource) {
+      try {
+        sentShares = await shareService.listSent(source.type, source.id);
+      } catch (error) {
+        console.warn("Verzonden uitnodigingen konden niet worden geladen.", error);
+      }
+    }
+    const participantIds = new Set(participants.map((participant) => participant.userId));
+    const acceptedRecipients = sentShares
+      .filter((share) => share.acceptedAt && share.recipientId && !participantIds.has(share.recipientId))
+      .map((share) => ({
+        userId: share.recipientId,
+        firstName: String(share.recipientName || share.recipientEmail || "Collega").trim().split(/\s+/)[0],
+        isOwner: false,
+        isCurrentUser: false,
+        hasAccount: true,
+        avatarUrl: "",
+        selectedBadgeIcon: "",
+        selectedBadgeName: "",
+        jointWorkdays: 0
+      }));
+    sharedParticipants = [...participants, ...acceptedRecipients];
+    const profile = currentUserContext?.profile;
+    if (!sharedParticipants.some((participant) => participant.isCurrentUser)) {
+      sharedParticipants.unshift({
+        userId: currentAccountUser.id,
+        firstName: String(profile?.displayName || currentAccountUser.email || "Jij").trim().split(/\s+/)[0],
+        isOwner: !currentSharedSource,
+        isCurrentUser: true,
+        hasAccount: true,
+        avatarUrl: profile?.avatarUrl || "",
+        selectedBadgeIcon: "",
+        selectedBadgeName: "",
+        jointWorkdays: 0
+      });
+    }
+    if (
+      currentSharedSource
+      && currentSharedOwnerName
+      && !sharedParticipants.some((participant) => participant.isOwner)
+    ) {
+      sharedParticipants.unshift({
+        userId: "",
+        firstName: currentSharedOwnerName.trim().split(/\s+/)[0] || "Collega",
+        isOwner: true,
+        isCurrentUser: false,
+        hasAccount: true,
+        avatarUrl: "",
+        selectedBadgeIcon: "",
+        selectedBadgeName: "",
+        jointWorkdays: 0
+      });
+    }
     if (currentSharedSource && !currentSharedOwnerName) {
       currentSharedOwnerName = sharedParticipants.find((participant) => participant.isOwner)?.firstName || "";
       updateSharedReceiverMode();
     }
     renderCurrentWorkdayParticipants();
     updateWorkdaySaveAccess();
-  } catch {
-    sharedParticipants = [];
+  } catch (error) {
+    console.warn("Deelnemers konden niet worden ververst.", error);
+    // Keep the last known list during a transient network or schema-cache error.
     renderCurrentWorkdayParticipants();
     updateWorkdaySaveAccess();
   }
@@ -26490,60 +27777,51 @@ function updateSharedReceiverSync() {
 
 function renderCurrentWorkdayParticipants() {
   if (!currentWorkdayParticipants || !currentWorkdayParticipantList) return;
-  const isPro = Boolean(currentUserContext?.isPro);
-  const isSharedReceiver = Boolean(currentSharedSource);
-  const accountParticipants = sharedParticipants.filter((participant) => participant.hasAccount !== false);
-  const remotePrivateParticipants = sharedParticipants
-    .filter((participant) => participant.hasAccount === false)
-    .map((participant) => participant.firstName)
-    .filter((name) => !privateParticipants.some(
-      (item) => item.toLocaleLowerCase("nl-NL") === name.toLocaleLowerCase("nl-NL")
-    ));
-  const visibleShared = accountParticipants.length >= 2 ? accountParticipants : [];
-  const chips = [
-    ...visibleShared.map((participant) => {
-      const chip = document.createElement("span");
-      chip.className = "participant-chip is-account";
-      chip.textContent = participant.isCurrentUser
-        ? `${participant.firstName} (jij)`
-        : participant.firstName;
-      return chip;
-    }),
-    ...privateParticipants.map((name, index) => {
-      const chip = document.createElement("span");
-      chip.className = "participant-chip is-private";
-      const label = document.createElement("span");
-      label.textContent = name;
-      const badge = document.createElement("small");
-      badge.textContent = "Zonder account";
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.setAttribute("aria-label", `${name} verwijderen`);
-      remove.textContent = "×";
-      remove.addEventListener("click", () => {
-        privateParticipants.splice(index, 1);
-        renderCurrentWorkdayParticipants();
-        markCalculationStale();
-      });
-      chip.append(label, badge);
-      if (!isSharedReceiver) chip.append(remove);
-      return chip;
-    }),
-    ...remotePrivateParticipants.map((name) => {
-      const chip = document.createElement("span");
-      chip.className = "participant-chip is-private";
-      const label = document.createElement("span");
-      label.textContent = name;
-      const badge = document.createElement("small");
-      badge.textContent = "Zonder account";
-      chip.append(label, badge);
-      return chip;
-    })
+  const accountParticipants = [
+    ...sharedParticipants.filter((participant) => participant.hasAccount !== false),
+    ...(participantDemoEnabled() ? participantDemoProfiles : [])
   ];
+  const chips = accountParticipants.map((participant) => {
+    const chip = document.createElement(participant.isCurrentUser ? "span" : "button");
+    chip.className = "participant-chip is-account";
+    if (!participant.isCurrentUser) {
+      chip.type = "button";
+      if (participant.crewCard) chip.dataset.crewPreviewId = participant.userId;
+      else chip.dataset.crewUserId = participant.userId;
+      chip.title = `Bekijk de Crew Card van ${participant.firstName}`;
+      chip.setAttribute("aria-label", `Bekijk de Crew Card van ${participant.firstName}`);
+    }
+    if (participant.avatarUrl) {
+      const avatar = document.createElement("img");
+      avatar.className = "participant-chip-avatar";
+      avatar.src = participant.avatarUrl;
+      avatar.alt = "";
+      chip.append(avatar);
+    }
+    const name = document.createElement("span");
+    name.className = "participant-chip-name";
+    name.textContent = participant.isCurrentUser
+      ? `${participant.firstName} (jij)`
+      : participant.firstName;
+    chip.append(name);
+    if (participant.selectedBadgeIcon) {
+      const badge = document.createElement("span");
+      badge.className = "participant-chip-badge";
+      badge.textContent = participant.selectedBadgeIcon;
+      badge.title = participant.selectedBadgeName || "Geselecteerde badge";
+      chip.append(badge);
+    }
+    return chip;
+  });
+  if (!chips.length) {
+    const empty = document.createElement("small");
+    empty.className = "participant-list-empty";
+    empty.textContent = "Nodig een collega uit om dezelfde tijden te volgen.";
+    chips.push(empty);
+  }
   currentWorkdayParticipantList.replaceChildren(...chips);
-  currentWorkdayParticipantList.hidden = chips.length === 0;
-  if (privateParticipantPanel) privateParticipantPanel.hidden = !isPro || isSharedReceiver;
-  if (privateParticipantForm) privateParticipantForm.hidden = !isPro || isSharedReceiver;
+  currentWorkdayParticipantList.hidden = false;
+  // Keep the invite route available before somebody has accepted it.
   currentWorkdayParticipants.hidden = false;
 }
 
@@ -26601,8 +27879,6 @@ function updateSharedReceiverMode() {
     clientName.closest("label")?.classList.toggle("is-shared-readonly", active);
   }
   if (shareFromParticipantsButton) shareFromParticipantsButton.hidden = active;
-  if (privateParticipantPanel) privateParticipantPanel.hidden = active || !currentUserContext?.isPro;
-  if (privateParticipantForm) privateParticipantForm.hidden = active || !currentUserContext?.isPro;
   if (resumeLiveWorkdayButton && active) resumeLiveWorkdayButton.hidden = true;
   if (resumeSharedWorkdayButton) {
     resumeSharedWorkdayButton.hidden = !active || !sharedReceiverCalculatedEarly;
@@ -26626,9 +27902,6 @@ function applyWorkdaySnapshot(workday, { projectContext = null, freeActive = fal
   sharedReceiverCalculatedEarly = false;
   sharedTimeOverrides = new Set();
   currentSharedOwnerName = snapshot.sharedOwnerName || "";
-  privateParticipants = Array.isArray(snapshot.privateParticipants)
-    ? snapshot.privateParticipants.map((name) => String(name || "").trim()).filter(Boolean)
-    : [];
   if (form.elements.namedItem("workdayName")) {
     form.elements.namedItem("workdayName").value = workday.name || snapshot.workdayName || "";
   }
@@ -26903,6 +28176,7 @@ async function persistWorkday(snapshot, id = null) {
   url.searchParams.set("workday", saved.id);
   history.replaceState({}, "", url);
   sessionUi?.showToast("Werkdag opgeslagen.");
+  await trackBadgeActivity("workday_saved", saved.id);
   return saved;
 }
 
@@ -26926,6 +28200,7 @@ async function persistProjectDay(snapshot) {
   updateWorkdaySaveAccess();
   refreshCurrentWorkdayParticipants();
   sessionUi?.showToast("Projectdag opgeslagen.");
+  await trackBadgeActivity("project_day_saved", savedDay.id);
   return savedDay;
 }
 
@@ -27099,7 +28374,6 @@ async function initializeWorkdayContext() {
   const requestedProjectDayId = search.get("projectDay");
   try {
     if (search.get("new") === "1") {
-      suppressActiveContextForSession();
       search.delete("new");
       history.replaceState({}, "", `${location.pathname}${search.toString() ? `?${search}` : ""}`);
       return;
@@ -27141,7 +28415,7 @@ async function initializeWorkdayContext() {
     }
 
     const activeShares = await findActiveReceivedShare();
-    if (activeShares.selected && !activeContextIsSuppressed()) {
+    if (activeShares.selected) {
       activeSharedWorkday = activeShares.selected;
       const ownEntries = await listOwnEntriesForSharedDate(activeShares.selected.workDate);
       if (activeShares.all.length === 1 && ownEntries.length === 0) {
@@ -27388,6 +28662,13 @@ async function hydrateAccountSettings(context) {
     renderWorkFunctions(context.isPro ? functions : []);
     refreshPlanningSuggestions();
     updateCalculation();
+    try {
+      // Reconcile historical or previously missed badge awards whenever an
+      // authenticated calculator session becomes ready.
+      await badgeService?.evaluate?.();
+    } catch (error) {
+      console.warn("Badgecontrole bij het openen is niet gelukt.", error);
+    }
     await initializeWorkdayContext();
   } catch (error) {
     console.warn("Accountinstellingen konden niet worden geladen.", error);
@@ -27410,6 +28691,11 @@ function formatHours(value) {
 function formatEuro(value) {
   if (!Number.isFinite(value) || value <= 0) return "-";
   return euroFormatter.format(value);
+}
+
+function formatInvoiceDate(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match ? `${match[3]}-${match[2]}-${match[1]}` : String(value || "");
 }
 
 function setResult(name, value, formatter = formatHours) {
@@ -27516,8 +28802,8 @@ function renderPrintBreakdown(result) {
   result.nightOvertimeSurchargeBreakdown.forEach((item) => {
     addPrintCalculationLine(
       lines,
-      `Nachturen tijdens overuren tegen ${numberFormatter.format((item.surchargeFactor + (item.surchargeFactor / (result.settings.nightOverlapSurchargeFactor || 1))) * 100)}% totaal`,
-      `${formatCalculation(item.hours, result.hourlyRate, item.surchargeFactor)} extra (overuurvergoeding staat hierboven)`,
+      `Nachturen tijdens overuren tegen ${numberFormatter.format(nightSurchargeToTotalPercent(result.settings.nightSurchargePercent))}%`,
+      `${formatCalculation(item.hours, result.hourlyRate, item.surchargeFactor)} nachttoeslag op dit specifieke overuur (overuurvergoeding staat hierboven)`,
       item.amount
     );
   });
@@ -27551,7 +28837,7 @@ function buildSummary(result) {
   }
 
   if (date) {
-    lines.push(`Datum: ${date}`);
+    lines.push(`Datum: ${formatInvoiceDate(date)}`);
   }
 
   lines.push(`Tijden: ${startTime} tot ${endTime}${result.endsNextDay ? " (volgende dag)" : ""}`);
@@ -27671,6 +28957,10 @@ function updateCalculation(trackCompletion = false) {
   calculationStatus.hidden = true;
 
   if (trackCompletion) {
+    void trackBadgeActivity("calculator_calculated", currentWorkdayId || currentProjectDayContext?.day?.id || null, {
+      shared: Boolean(currentSharedSource),
+      travelDay: result.isTravelDay
+    });
     void syncFreeSharedWorkdaySource().catch((error) => {
       console.warn("Gedeelde Free-werkdag bijwerken is mislukt.", error);
     });
@@ -28176,6 +29466,29 @@ async function openCurrentWorkdayShare() {
 }
 
 shareFromParticipantsButton?.addEventListener("click", openCurrentWorkdayShare);
+currentWorkdayParticipantList?.addEventListener("click", (event) => {
+  const preview = event.target.closest("[data-crew-preview-id]");
+  if (preview?.dataset.crewPreviewId) {
+    const profile = participantDemoProfiles.find((item) => item.userId === preview.dataset.crewPreviewId);
+    if (profile) globalThis.OveruurtjeCrewCards?.openPreview?.(profile.crewCard);
+    return;
+  }
+  const participant = event.target.closest("[data-crew-user-id]");
+  if (!participant?.dataset.crewUserId) return;
+  globalThis.OveruurtjeCrewCards?.open?.(participant.dataset.crewUserId);
+});
+if (participantDevToggle) {
+  participantDevToggle.hidden = !canDemoParticipants();
+  participantDevToggle.classList.toggle("is-active", participantDemoEnabled());
+  participantDevToggle.textContent = participantDemoEnabled() ? "Demo aan" : "Demo crew";
+  participantDevToggle.addEventListener("click", () => {
+    const enabled = !participantDemoEnabled();
+    localStorage.setItem(PARTICIPANT_DEMO_KEY, enabled ? "1" : "0");
+    participantDevToggle.classList.toggle("is-active", enabled);
+    participantDevToggle.textContent = enabled ? "Demo aan" : "Demo crew";
+    renderCurrentWorkdayParticipants();
+  });
+}
 function toggleSharedTimeOverride(fieldName) {
   if (!currentSharedSource) return;
   const label = fieldName === "startTime" ? "Starttijd" : "Eindtijd";
@@ -28190,27 +29503,6 @@ function toggleSharedTimeOverride(fieldName) {
 }
 sharedStartTimeLockButton?.addEventListener("click", () => toggleSharedTimeOverride("startTime"));
 sharedEndTimeLockButton?.addEventListener("click", () => toggleSharedTimeOverride("endTime"));
-function addPrivateParticipant() {
-  if (!currentUserContext?.isPro) {
-    sessionUi?.openUpgrade();
-    return;
-  }
-  const name = String(privateParticipantName?.value || "").trim();
-  if (!name) return;
-  if (!privateParticipants.some((item) => item.toLocaleLowerCase("nl-NL") === name.toLocaleLowerCase("nl-NL"))) {
-    privateParticipants.push(name);
-  }
-  privateParticipantName.value = "";
-  renderCurrentWorkdayParticipants();
-  markCalculationStale();
-}
-
-addPrivateParticipantButton?.addEventListener("click", addPrivateParticipant);
-privateParticipantName?.addEventListener("keydown", (event) => {
-  if (event.key !== "Enter") return;
-  event.preventDefault();
-  addPrivateParticipant();
-});
 document.addEventListener("overuurtje:shares-changed", refreshCurrentWorkdayParticipants);
 window.addEventListener("focus", () => {
   refreshCurrentWorkdayParticipants();
@@ -28248,7 +29540,6 @@ document.querySelector("#continue-today-workday")?.addEventListener("click", () 
   closeNativeDialog(todayWorkdayDialog);
 });
 document.querySelector("#new-today-calculation")?.addEventListener("click", () => {
-  suppressActiveContextForSession();
   if (todayWorkday?.kind === "shared") {
     showActiveSharedReminder(todayWorkday.share);
   }
@@ -28260,7 +29551,8 @@ document.querySelector("#new-today-calculation")?.addEventListener("click", () =
   closeNativeDialog(todayWorkdayDialog);
 });
 document.querySelector("#new-calculation")?.addEventListener("click", () => {
-  suppressActiveContextForSession();
+  // This opens one clean calculation. On the next visit to Vandaag an active
+  // accepted shared workday again takes precedence.
 });
 document.querySelectorAll("[data-workday-dialog-close]").forEach((button) => {
   button.addEventListener("click", () => {
@@ -28297,9 +29589,43 @@ document.querySelectorAll("[data-shared-resume-cancel]").forEach((button) => {
   button.addEventListener("click", () => closeNativeDialog(sharedResumeDialog));
 });
 copyButton.addEventListener("click", copySummary);
+moneybirdExportButton?.addEventListener("click", () => {
+  globalThis.OveruurtjeFeatureGate.require("accounting_export", currentUserContext, () => {
+    try {
+      if (!latestResult || calculationIsStale || !form.elements.namedItem("endTime").value) {
+        throw new Error("Bereken en rond de werkdag eerst af.");
+      }
+      if (currentProjectDayContext?.project?.id && currentProjectDayContext?.day?.id) {
+        const day = {
+          ...currentProjectDayContext.day,
+          calculationData: buildWorkdaySnapshot()
+        };
+        accountingUi.open({
+          exportModel: accountingExport.fromProject(currentProjectDayContext.project, [day]),
+          context: currentUserContext
+        });
+        return;
+      }
+      if (!currentWorkdayId) throw new Error("Sla deze werkdag eerst op voordat je hem naar Moneybird stuurt.");
+      accountingUi.open({
+        exportModel: accountingExport.fromWorkday({
+          id: currentWorkdayId,
+          workDate: form.elements.namedItem("date").value,
+          calculationData: buildWorkdaySnapshot()
+        }),
+        context: currentUserContext
+      });
+    } catch (error) {
+      sessionUi?.showToast(error.message || "De Moneybird-preview kon niet worden geopend.");
+    }
+  });
+});
 saveSettingsButton.addEventListener("click", saveCurrentSettings);
 pdfButton.addEventListener("click", () => {
-  globalThis.OveruurtjeFeatureGate.require("pdf_export", currentUserContext, () => window.print());
+  globalThis.OveruurtjeFeatureGate.require("pdf_export", currentUserContext, () => {
+    void trackBadgeActivity("pdf_generated", currentWorkdayId || currentProjectDayContext?.day?.id || null);
+    window.print();
+  });
 });
 optionsToggle?.addEventListener("click", () => {
   const expanded = optionsToggle.getAttribute("aria-expanded") === "true";
