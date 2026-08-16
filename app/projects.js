@@ -12,6 +12,7 @@
   const calculator = globalThis.TariffCalculator;
   const accountingExport = globalThis.OveruurtjeAccountingExport;
   const accountingUi = globalThis.OveruurtjeAccountingUi;
+  const accountingService = globalThis.OveruurtjeAccounting;
   const euro = new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" });
   const number = new Intl.NumberFormat("nl-NL", { maximumFractionDigits: 2 });
   const dateLong = new Intl.DateTimeFormat("nl-NL", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
@@ -45,6 +46,7 @@
   let carouselIndex = 0;
   let copyTimesSourceId = "";
   let copyTimesTargetIds = new Set();
+  let accountingVisibilityRequest = 0;
 
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
   const localDate = (iso) => new Date(`${iso}T12:00:00`);
@@ -58,6 +60,25 @@
   const show = (id) => views.forEach((view) => { document.querySelector(`#${view}`).hidden = view !== id; });
   const setDirty = (value) => { dirty = value; };
   const openDialog = (dialog) => typeof dialog.showModal === "function" ? dialog.showModal() : dialog.setAttribute("open", "");
+
+  async function updateAccountingExportVisibility(userContext) {
+    const button = document.querySelector("#project-moneybird");
+    if (!button) return;
+    const request = ++accountingVisibilityRequest;
+    button.hidden = true;
+    if (!userContext?.auth?.user || !userContext?.isPro || !accountingService) return;
+    try {
+      const connection = (await accountingService.status()).connection;
+      if (request !== accountingVisibilityRequest) return;
+      button.hidden = !(
+        connection?.status === "connected"
+        && (connection.administration_id || connection.administrationId)
+      );
+      if (!button.hidden) button.textContent = connection.provider === "moneybird" ? "Naar Moneybird" : "Naar boekhouding";
+    } catch {
+      if (request === accountingVisibilityRequest) button.hidden = true;
+    }
+  }
   const closeDialog = (dialog) => typeof dialog.close === "function" ? dialog.close() : dialog.removeAttribute("open");
 
   function renderClientSuggestions() {
@@ -790,6 +811,7 @@
   }
 
   async function initialize(userContext) {
+    void updateAccountingExportVisibility(userContext);
     const contextKey = `${userContext.auth.user?.id || "guest"}:${userContext.subscription.plan}:${location.search}`;
     if (contextKey === initializedContextKey) return;
     initializedContextKey = contextKey;
@@ -902,7 +924,7 @@
           context
         });
       } catch (error) {
-        sessionUi.showToast(error.message || "De Moneybird-preview kon niet worden geopend.");
+        sessionUi.showToast(error.message || "De boekhoudpreview kon niet worden geopend.");
       }
     });
   });

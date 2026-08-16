@@ -1323,7 +1323,7 @@
 
 .timeline-workday-actions {
   display: grid;
-  grid-template-columns: auto auto 42px;
+  grid-template-columns: auto 42px;
   align-items: center;
   gap: 6px;
   padding: 8px;
@@ -1338,25 +1338,6 @@
   white-space: nowrap;
 }
 
-.timeline-workday-actions .workday-moneybird-button {
-  min-height: 42px;
-  padding: 0 13px;
-  border: 1px solid rgba(31, 67, 53, 0.12);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.48);
-  color: var(--accent-dark);
-  font: inherit;
-  font-weight: 750;
-  cursor: pointer;
-}
-
-.timeline-workday-actions .workday-moneybird-button:hover {
-  border-color: rgba(31, 67, 53, 0.28);
-  background: rgba(255, 255, 255, 0.82);
-  color: var(--accent-dark);
-  transform: none;
-}
-
 .workday-status.is-moneybird {
   background: rgba(31, 67, 53, 0.12);
   color: var(--accent-dark);
@@ -1369,7 +1350,6 @@
   gap: 8px;
 }
 
-.moneybird-export-button [data-pro-badge],
 .accounting-pro-pill {
   padding: 3px 7px;
   border-radius: 999px;
@@ -1385,13 +1365,49 @@
   color: var(--text);
 }
 
+.accounting-provider-choice {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.75fr) minmax(0, 1.25fr);
+  gap: 18px;
+  align-items: end;
+}
+
+.accounting-provider-choice label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.accounting-provider-choice select {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 13px;
+  border: 1px solid rgba(31, 67, 53, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--text);
+  font: inherit;
+}
+
+.accounting-provider-choice p {
+  margin: 0 0 11px;
+  color: var(--muted);
+}
+
+.accounting-provider-details {
+  margin-top: 14px;
+  padding-top: 2px;
+  border-top: 1px solid rgba(31, 67, 53, 0.1);
+}
+
 .accounting-provider-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
   padding: 18px 0;
-  border-block: 1px solid rgba(31, 67, 53, 0.1);
+  border-bottom: 1px solid rgba(31, 67, 53, 0.1);
 }
 
 .accounting-provider-row p {
@@ -1475,12 +1491,49 @@
 
 .accounting-preview-meta {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
-.accounting-contact-field select {
-  min-height: 124px;
+.accounting-contact-field {
+  position: relative;
+}
+
+.accounting-contact-suggestions {
+  position: absolute;
+  z-index: 4;
+  top: 100%;
+  right: 0;
+  left: 0;
+  display: grid;
+  max-height: 190px;
+  overflow-y: auto;
+  border: 1px solid rgba(31, 67, 53, 0.16);
+  border-radius: 10px;
+  background: #f7f6f4;
+  box-shadow: 0 14px 32px rgba(12, 28, 23, 0.14);
+}
+
+.accounting-contact-suggestions button {
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid rgba(31, 67, 53, 0.08);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+
+.accounting-contact-suggestions button:last-child {
+  border-bottom: 0;
+}
+
+.accounting-contact-suggestions button:hover {
+  background: rgba(31, 67, 53, 0.07);
+  color: var(--text);
+  transform: none;
 }
 
 .accounting-source-selection {
@@ -1563,8 +1616,10 @@
   .accounting-mappings h3 { grid-column: auto; }
   .accounting-lines { overflow-x: auto; }
   .accounting-line { min-width: 660px; }
-  .timeline-workday-actions { grid-template-columns: 1fr 1fr 42px; grid-column: 1 / -1; border-top: 1px solid rgba(31, 67, 53, 0.08); border-left: 0; }
-  .accounting-provider-row { align-items: flex-start; }
+  .timeline-workday-actions { grid-template-columns: 1fr 42px; grid-column: 1 / -1; border-top: 1px solid rgba(31, 67, 53, 0.08); border-left: 0; }
+  .accounting-provider-choice { grid-template-columns: 1fr; gap: 7px; }
+  .accounting-provider-choice p { margin: 0; font-size: 0.78rem; line-height: 1.35; }
+  .accounting-provider-row { align-items: flex-start; padding-block: 13px; }
 }
 
 .timeline-workday-actions .workday-delete-button {
@@ -4281,7 +4336,7 @@ summary:hover {
 
 .footer-actions {
   display: grid;
-  grid-template-columns: minmax(230px, 0.8fr) minmax(0, 1.7fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: stretch;
   gap: 14px;
   margin-top: 0;
@@ -4295,29 +4350,24 @@ summary:hover {
   backdrop-filter: none;
 }
 
+.footer-actions:has(#moneybird-export[hidden]) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .footer-actions .secondary {
   border-color: rgba(255, 255, 255, 0.68);
   background: rgba(255, 255, 255, 0.82);
 }
 
 .footer-actions button {
+  width: 100%;
+  min-height: 64px;
   min-width: 0;
 }
 
 .invoice-copy-button {
   min-height: 64px;
   font-size: 1rem;
-}
-
-.result-secondary-actions {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-
-.result-secondary-actions > button {
-  width: 100%;
-  height: 100%;
 }
 
 .footer-actions .copy-status {
@@ -6661,17 +6711,14 @@ html.is-pwa summary {
     padding: 22px 18px;
   }
 
-  .footer-actions {
+  .footer-actions,
+  .footer-actions:has(#moneybird-export[hidden]) {
     grid-template-columns: 1fr;
     padding: 20px 12px;
   }
 
   .footer-actions button {
     width: 100%;
-  }
-
-  .result-secondary-actions {
-    grid-template-columns: 1fr;
   }
 
   .site-footer {
@@ -6923,10 +6970,6 @@ html.is-pwa summary {
   align-items: center;
   justify-content: center;
   gap: 9px;
-}
-
-.result-secondary-actions .workday-save-button {
-  min-height: 54px;
 }
 
 .workday-save-button:hover {
@@ -9332,20 +9375,18 @@ button.crew-badge:disabled { cursor: default; }
       </section>
 
       <div class="footer-actions">
+        <button class="secondary pro-action-button invoice-copy-button" type="button" id="save-pdf">
+          <svg class="button-line-icon" aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M6 3h8l4 4v14H6z"></path>
+            <path d="M14 3v4h4"></path>
+            <path d="M12 10v7"></path>
+            <path d="m9 14 3 3 3-3"></path>
+          </svg>
+          PDF opslaan
+          <span data-pro-badge>Pro</span>
+        </button>
         <button class="invoice-copy-button" type="button" id="copy-summary">Kopiëren voor factuur</button>
-        <button class="invoice-copy-button moneybird-export-button" type="button" id="moneybird-export">Naar Moneybird <span data-pro-badge>Pro</span></button>
-        <div class="result-secondary-actions">
-          <button class="secondary pro-action-button" type="button" id="save-pdf">
-            <svg class="button-line-icon" aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M6 3h8l4 4v14H6z"></path>
-              <path d="M14 3v4h4"></path>
-              <path d="M12 10v7"></path>
-              <path d="m9 14 3 3 3-3"></path>
-            </svg>
-            Pdf opslaan
-            <span data-pro-badge>Pro</span>
-          </button>
-        </div>
+        <button class="invoice-copy-button moneybird-export-button" type="button" id="moneybird-export" hidden>Naar Moneybird</button>
         <p class="copy-status" id="copy-status" aria-live="polite"></p>
       </div>
 
@@ -12005,6 +12046,12 @@ globalThis.TariffCalculator = {
   let currentContext;
   let exportHistory = { exports: [], items: [] };
   let reexportKey = crypto.randomUUID();
+  let selectedContact = null;
+  let resolvedTaxRate = null;
+
+  function providerName() {
+    return connection?.provider === "moneybird" ? "Moneybird" : "je boekhoudsysteem";
+  }
 
   function ensureDialog() {
     if (dialog) return dialog;
@@ -12013,27 +12060,26 @@ globalThis.TariffCalculator = {
     dialog.innerHTML = `
       <button class="dialog-close" type="button" data-accounting-close aria-label="Sluiten">&times;</button>
       <p class="dialog-eyebrow">Boekhouding</p>
-      <h2>Controleer voor Moneybird</h2>
-      <p class="accounting-dialog-intro">Controleer de regels. Overuurtje maakt alleen een conceptfactuur; verzenden doe je zelf in Moneybird.</p>
+      <h2>Controleer conceptfactuur</h2>
+      <p class="accounting-dialog-intro">Controleer de regels. Overuurtje maakt alleen een conceptfactuur; verzenden doe je zelf in je boekhoudsysteem.</p>
       <form class="accounting-preview-form">
         <div class="accounting-preview-meta">
-          <label><span>Administratie</span><select name="administration" required></select></label>
-          <label class="accounting-contact-field"><span>Opdrachtgever</span><input name="contactSearch" type="search" placeholder="Zoek Moneybird-contact" autocomplete="off"><select name="contact" size="4" required></select></label>
+          <label class="accounting-contact-field"><span>Opdrachtgever</span><input name="contactSearch" type="search" placeholder="Zoek opdrachtgever" autocomplete="off"><div class="accounting-contact-suggestions" data-accounting-contact-suggestions hidden></div></label>
           <label><span>Factuurdatum</span><input name="invoiceDate" type="date" required></label>
         </div>
         <fieldset class="accounting-source-selection" hidden><legend>Projectdagen</legend><div data-accounting-sources></div></fieldset>
         <div class="accounting-lines"></div>
         <div class="accounting-mappings"></div>
         <div class="accounting-preview-total"><span>Totaal excl. btw</span><strong></strong></div>
-        <label class="accounting-reexport" hidden><input type="checkbox" name="confirmReexport"><span>Bewust opnieuw exporteren naar een nieuw Moneybird-concept</span></label>
+        <label class="accounting-reexport" hidden><input type="checkbox" name="confirmReexport"><span>Bewust opnieuw exporteren naar een nieuw concept</span></label>
         <p class="saas-form-status" aria-live="polite"></p>
         <button class="saas-primary-button" type="submit">Maak conceptfactuur</button>
       </form>`;
     document.body.append(dialog);
     dialog.querySelector("[data-accounting-close]").addEventListener("click", close);
     dialog.addEventListener("click", (event) => { if (event.target === dialog) close(); });
-    dialog.querySelector("input[name='contactSearch']").addEventListener("input", debounce(loadContacts, 350));
-    dialog.querySelector("select[name='administration']").addEventListener("change", changeAdministration);
+    dialog.querySelector("input[name='contactSearch']").addEventListener("input", debounce(loadContacts, 300));
+    dialog.querySelector("[data-accounting-contact-suggestions]").addEventListener("click", chooseContactSuggestion);
     dialog.querySelector("[data-accounting-sources]").addEventListener("change", refreshPreview);
     dialog.querySelector("form").addEventListener("submit", createDraft);
     return dialog;
@@ -12072,35 +12118,50 @@ globalThis.TariffCalculator = {
       const wasExported = exported.has(item.sourceId);
       const line = originalModel.lineItems.find((entry) => entry.source?.sourceId === item.sourceId);
       label.className = wasExported ? "is-exported" : "";
-      label.innerHTML = `<input type="checkbox" data-accounting-source value="${item.sourceId}" ${wasExported ? "" : "checked"}><span>${line?.description?.replace(/^.*?–\s*/, "") || "Projectdag"}</span>${wasExported ? "<small>Moneybird ✓</small>" : ""}`;
+      label.innerHTML = `<input type="checkbox" data-accounting-source value="${item.sourceId}" ${wasExported ? "" : "checked"}><span>${line?.description?.replace(/^.*?–\s*/, "") || "Projectdag"}</span>${wasExported ? "<small>Geëxporteerd ✓</small>" : ""}`;
       return label;
     }));
   }
 
   async function loadContacts() {
-    const query = dialog.querySelector("input[name='contactSearch']").value;
+    const input = dialog.querySelector("input[name='contactSearch']");
+    const query = input.value.trim();
+    const suggestions = dialog.querySelector("[data-accounting-contact-suggestions]");
+    selectedContact = selectedContact?.name === query ? selectedContact : null;
+    if (query.length < 2) {
+      suggestions.replaceChildren();
+      suggestions.hidden = true;
+      return;
+    }
     const result = await service.contacts(query);
-    const select = dialog.querySelector("select[name='contact']");
-    const previous = select.value;
-    select.replaceChildren(...result.contacts.map((contact) => {
-      const option = document.createElement("option");
-      option.value = contact.id;
-      option.textContent = `${contact.name}${contact.email ? ` · ${contact.email}` : ""}`;
-      option.dataset.name = contact.name;
-      return option;
+    suggestions.replaceChildren(...result.contacts.map((contact) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.contactId = contact.id;
+      button.dataset.contactName = contact.name;
+      button.textContent = `${contact.name}${contact.email ? ` · ${contact.email}` : ""}`;
+      return button;
     }));
-    if (Array.from(select.options).some((option) => option.value === previous)) select.value = previous;
+    suggestions.hidden = result.contacts.length === 0;
+  }
+
+  function chooseContactSuggestion(event) {
+    const button = event.target.closest("[data-contact-id]");
+    if (!button) return;
+    selectedContact = { id: button.dataset.contactId, name: button.dataset.contactName };
+    dialog.querySelector("input[name='contactSearch']").value = selectedContact.name;
+    const suggestions = dialog.querySelector("[data-accounting-contact-suggestions]");
+    suggestions.replaceChildren();
+    suggestions.hidden = true;
   }
 
   function selectMappedContact(mapped) {
     if (!mapped) return;
-    const select = dialog.querySelector("select[name='contact']");
-    if (!Array.from(select.options).some((option) => option.value === mapped.external_contact_id)) {
-      const option = new Option(mapped.external_contact_name || originalModel.customer.name, mapped.external_contact_id);
-      option.dataset.name = mapped.external_contact_name || originalModel.customer.name;
-      select.add(option, 0);
-    }
-    select.value = mapped.external_contact_id;
+    selectedContact = {
+      id: mapped.external_contact_id,
+      name: mapped.external_contact_name || originalModel.customer.name
+    };
+    dialog.querySelector("input[name='contactSearch']").value = selectedContact.name;
   }
 
   function renderLines() {
@@ -12125,17 +12186,13 @@ globalThis.TariffCalculator = {
     const model = selectedModel();
     const [savedTaxes, savedLedgers] = await Promise.all([service.taxMappings(), service.ledgerMappings()]);
     const categories = [...new Set(model.lineItems.map((item) => item.category))];
-    const percentages = [...new Set(model.lineItems.map((item) => Number(item.vatPercentage)))];
     const root = dialog.querySelector(".accounting-mappings");
-    root.innerHTML = `<h3>Moneybird-koppelingen</h3>`;
-    percentages.forEach((percentage) => {
-      const label = document.createElement("label");
-      label.innerHTML = `<span>Btw ${percentage}%</span><select data-tax="${percentage}" required><option value="">Kies Moneybird-btw</option></select>`;
-      const select = label.querySelector("select");
-      options.taxRates.forEach((tax) => select.add(new Option(`${tax.name} (${tax.percentage}%)`, tax.id)));
-      select.value = savedTaxes.find((item) => Number(item.local_tax_percentage) === percentage)?.external_tax_rate_id || "";
-      root.append(label);
-    });
+    root.innerHTML = `<h3>Boekhoudkoppelingen</h3>`;
+    const savedTax = savedTaxes.find((item) => Number(item.local_tax_percentage) === 21);
+    resolvedTaxRate = options.taxRates.find((tax) => tax.id === savedTax?.external_tax_rate_id)
+      || options.taxRates.find((tax) => Number(tax.percentage) === 21 && tax.taxRateType === "sales_invoice")
+      || options.taxRates.find((tax) => Number(tax.percentage) === 21)
+      || null;
     categories.forEach((category) => {
       const name = model.lineItems.find((item) => item.category === category)?.description || category;
       const label = document.createElement("label");
@@ -12161,18 +12218,6 @@ globalThis.TariffCalculator = {
     await renderMappings();
   }
 
-  async function changeAdministration(event) {
-    status("Administratie wisselen…");
-    try {
-      const result = await service.selectAdministration(event.target.value);
-      connection = result.connection;
-      options = await service.configurationOptions();
-      dialog.querySelector("input[name='contactSearch']").value = "";
-      await Promise.all([loadContacts(), renderMappings()]);
-      status("");
-    } catch (error) { status(error.message); }
-  }
-
   async function createDraft(event) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -12185,32 +12230,27 @@ globalThis.TariffCalculator = {
     button.disabled = true;
     status("Conceptfactuur aanmaken…");
     try {
-      const contact = form.elements.contact.selectedOptions[0];
-      if (!contact) throw new Error("Kies eerst een Moneybird-contact.");
-      const taxMappings = {};
+      if (!selectedContact) throw new Error("Kies eerst een opdrachtgever uit de suggesties.");
+      if (!resolvedTaxRate) throw new Error("Geen geldig btw-tarief van 21% gevonden. Controleer de instellingen van je boekhoudsysteem.");
+      const taxMappings = { "21": resolvedTaxRate.id };
       const ledgerMappings = {};
-      const saves = [];
-      dialog.querySelectorAll("[data-tax]").forEach((select) => {
-        taxMappings[select.dataset.tax] = select.value;
-        const selected = options.taxRates.find((item) => item.id === select.value);
-        saves.push(service.saveTaxMapping({ connection_id: connection.id, local_tax_percentage: Number(select.dataset.tax), external_tax_rate_id: select.value, external_tax_rate_name: selected?.name || "" }));
-      });
+      const saves = [service.saveTaxMapping({ connection_id: connection.id, local_tax_percentage: 21, external_tax_rate_id: resolvedTaxRate.id, external_tax_rate_name: resolvedTaxRate.name || "21%" })];
       dialog.querySelectorAll("[data-ledger]").forEach((select) => {
         ledgerMappings[select.dataset.ledger] = select.value;
         const selected = options.ledgerAccounts.find((item) => item.id === select.value);
         saves.push(service.saveLedgerMapping({ connection_id: connection.id, category: select.dataset.ledger, external_ledger_account_id: select.value, external_ledger_account_name: selected?.name || "" }));
       });
-      if (activeModel.customer.key) saves.push(service.saveCustomerMapping({ connection_id: connection.id, local_customer_key: activeModel.customer.key, local_customer_name: activeModel.customer.name, external_contact_id: contact.value, external_contact_name: contact.dataset.name || contact.textContent }));
+      if (activeModel.customer.key) saves.push(service.saveCustomerMapping({ connection_id: connection.id, local_customer_key: activeModel.customer.key, local_customer_name: activeModel.customer.name, external_contact_id: selectedContact.id, external_contact_name: selectedContact.name }));
       await Promise.all(saves);
       activeModel.date = form.elements.invoiceDate.value;
       const result = await service.createDraftInvoice({
         exportModel: activeModel,
-        contactId: contact.value,
+        contactId: selectedContact.id,
         taxMappings,
         ledgerMappings,
         ...(mustConfirmReexport ? { reexportKey } : {})
       });
-      status(result.alreadyCreated ? "Deze conceptfactuur bestond al in Moneybird." : "Conceptfactuur aangemaakt in Moneybird.");
+      status(result.alreadyCreated ? "Deze conceptfactuur bestond al in je boekhoudsysteem." : `Conceptfactuur aangemaakt in ${providerName()}.`);
       button.hidden = true;
       if (result.export?.external_invoice_url) {
         const link = document.createElement("a");
@@ -12218,7 +12258,7 @@ globalThis.TariffCalculator = {
         link.href = result.export.external_invoice_url;
         link.target = "_blank";
         link.rel = "noopener";
-        link.textContent = "Open in Moneybird";
+        link.textContent = `Open in ${providerName()}`;
         button.after(link);
       }
       document.dispatchEvent(new CustomEvent("overuurtje:accounting-exported", { detail: result.export }));
@@ -12235,7 +12275,10 @@ globalThis.TariffCalculator = {
       return;
     }
     originalModel = structuredClone(exportModel);
+    originalModel.lineItems = originalModel.lineItems.map((line) => ({ ...line, vatPercentage: 21 }));
     reexportKey = crypto.randomUUID();
+    selectedContact = null;
+    resolvedTaxRate = null;
     ensureDialog();
     document.documentElement.classList.add("dialog-open");
     const submit = dialog.querySelector("button[type='submit']");
@@ -12243,23 +12286,23 @@ globalThis.TariffCalculator = {
     submit.disabled = false;
     dialog.querySelector(".accounting-open-link")?.remove();
     dialog.querySelector("form").reset();
-    status("Moneybird laden…");
+    status("Boekhoudkoppeling laden…");
     dialog.showModal();
     try {
       const result = await service.status();
       connection = result.connection;
-      if (!connection || connection.status !== "connected") throw new Error("Verbind Moneybird eerst via Account → Boekhouding.");
-      const [administrations, configuration, history] = await Promise.all([
-        service.administrations(), service.configurationOptions(), service.exports()
-      ]);
+      if (!connection || connection.status !== "connected" || !(connection.administration_id || connection.administrationId)) {
+        throw new Error("Kies en verbind eerst een boekhoudsysteem via Account → Boekhouding.");
+      }
+      const [configuration, history] = await Promise.all([service.configurationOptions(), service.exports()]);
       options = configuration;
       exportHistory = history;
-      const admin = dialog.querySelector("select[name='administration']");
-      admin.replaceChildren(...administrations.administrations.map((item) => new Option(item.name, item.id)));
-      admin.value = connection.administration_id || connection.administrationId || "";
       dialog.querySelector("input[name='invoiceDate']").value = originalModel.date;
+      dialog.querySelector("input[name='contactSearch']").value = "";
+      dialog.querySelector("[data-accounting-contact-suggestions]").replaceChildren();
+      dialog.querySelector("[data-accounting-contact-suggestions]").hidden = true;
       renderSources();
-      await Promise.all([loadContacts(), refreshPreview()]);
+      await refreshPreview();
       const mappings = await service.customerMappings();
       const mapped = mappings.find((item) => item.local_customer_key === originalModel.customer.key);
       selectMappedContact(mapped);
@@ -26934,6 +26977,7 @@ const liveWorkday = globalThis.OveruurtjeLiveWorkday;
 const workdayNotifications = globalThis.OveruurtjeWorkdayNotifications;
 const accountingExport = globalThis.OveruurtjeAccountingExport;
 const accountingUi = globalThis.OveruurtjeAccountingUi;
+const accountingService = globalThis.OveruurtjeAccounting;
 const participantDevToggle = document.querySelector("#participant-dev-toggle");
 
 const euroFormatter = new Intl.NumberFormat("nl-NL", {
@@ -26948,6 +26992,27 @@ const numberFormatter = new Intl.NumberFormat("nl-NL", {
 
 let calculationIsStale = false;
 let latestResult = null;
+let accountingVisibilityRequest = 0;
+
+async function updateAccountingExportVisibility(context) {
+  if (!moneybirdExportButton) return;
+  const request = ++accountingVisibilityRequest;
+  moneybirdExportButton.hidden = true;
+  if (!context?.auth?.user || !context?.isPro || !accountingService) return;
+  try {
+    const connection = (await accountingService.status()).connection;
+    if (request !== accountingVisibilityRequest) return;
+    moneybirdExportButton.hidden = !(
+      connection?.status === "connected"
+      && (connection.administration_id || connection.administrationId)
+    );
+    if (!moneybirdExportButton.hidden) {
+      moneybirdExportButton.textContent = connection.provider === "moneybird" ? "Naar Moneybird" : "Naar boekhouding";
+    }
+  } catch {
+    if (request === accountingVisibilityRequest) moneybirdExportButton.hidden = true;
+  }
+}
 let currentAccountUser = null;
 let currentUserContext = null;
 let currentAccountSettings = null;
@@ -28586,6 +28651,7 @@ async function restoreSharedTimesFromUrl() {
 async function hydrateAccountSettings(context) {
   currentUserContext = context;
   currentAccountUser = context.auth.user;
+  void updateAccountingExportVisibility(context);
   const pdfProBadge = pdfButton?.querySelector("[data-pro-badge]");
   if (pdfProBadge) pdfProBadge.hidden = context.isPro;
   updateSettingsScope();
@@ -29620,7 +29686,7 @@ moneybirdExportButton?.addEventListener("click", () => {
         });
         return;
       }
-      if (!currentWorkdayId) throw new Error("Sla deze werkdag eerst op voordat je hem naar Moneybird stuurt.");
+      if (!currentWorkdayId) throw new Error("Sla deze werkdag eerst op voordat je hem naar je boekhoudsysteem stuurt.");
       accountingUi.open({
         exportModel: accountingExport.fromWorkday({
           id: currentWorkdayId,
@@ -29630,7 +29696,7 @@ moneybirdExportButton?.addEventListener("click", () => {
         context: currentUserContext
       });
     } catch (error) {
-      sessionUi?.showToast(error.message || "De Moneybird-preview kon niet worden geopend.");
+      sessionUi?.showToast(error.message || "De boekhoudpreview kon niet worden geopend.");
     }
   });
 });
@@ -29663,6 +29729,7 @@ details.open = localStorage.getItem("cameraTariefSettingsOpen") === "true";
 updateWorkdaySaveAccess();
 
 document.addEventListener("overuurtje:user-context", (event) => hydrateAccountSettings(event.detail));
+document.addEventListener("overuurtje:accounting-connection", () => updateAccountingExportVisibility(currentUserContext));
 sessionUi?.ready.then(hydrateAccountSettings);
 
     </script>

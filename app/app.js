@@ -84,6 +84,7 @@ const liveWorkday = globalThis.OveruurtjeLiveWorkday;
 const workdayNotifications = globalThis.OveruurtjeWorkdayNotifications;
 const accountingExport = globalThis.OveruurtjeAccountingExport;
 const accountingUi = globalThis.OveruurtjeAccountingUi;
+const accountingService = globalThis.OveruurtjeAccounting;
 const participantDevToggle = document.querySelector("#participant-dev-toggle");
 
 const euroFormatter = new Intl.NumberFormat("nl-NL", {
@@ -98,6 +99,27 @@ const numberFormatter = new Intl.NumberFormat("nl-NL", {
 
 let calculationIsStale = false;
 let latestResult = null;
+let accountingVisibilityRequest = 0;
+
+async function updateAccountingExportVisibility(context) {
+  if (!moneybirdExportButton) return;
+  const request = ++accountingVisibilityRequest;
+  moneybirdExportButton.hidden = true;
+  if (!context?.auth?.user || !context?.isPro || !accountingService) return;
+  try {
+    const connection = (await accountingService.status()).connection;
+    if (request !== accountingVisibilityRequest) return;
+    moneybirdExportButton.hidden = !(
+      connection?.status === "connected"
+      && (connection.administration_id || connection.administrationId)
+    );
+    if (!moneybirdExportButton.hidden) {
+      moneybirdExportButton.textContent = connection.provider === "moneybird" ? "Naar Moneybird" : "Naar boekhouding";
+    }
+  } catch {
+    if (request === accountingVisibilityRequest) moneybirdExportButton.hidden = true;
+  }
+}
 let currentAccountUser = null;
 let currentUserContext = null;
 let currentAccountSettings = null;
@@ -1736,6 +1758,7 @@ async function restoreSharedTimesFromUrl() {
 async function hydrateAccountSettings(context) {
   currentUserContext = context;
   currentAccountUser = context.auth.user;
+  void updateAccountingExportVisibility(context);
   const pdfProBadge = pdfButton?.querySelector("[data-pro-badge]");
   if (pdfProBadge) pdfProBadge.hidden = context.isPro;
   updateSettingsScope();
@@ -2770,7 +2793,7 @@ moneybirdExportButton?.addEventListener("click", () => {
         });
         return;
       }
-      if (!currentWorkdayId) throw new Error("Sla deze werkdag eerst op voordat je hem naar Moneybird stuurt.");
+      if (!currentWorkdayId) throw new Error("Sla deze werkdag eerst op voordat je hem naar je boekhoudsysteem stuurt.");
       accountingUi.open({
         exportModel: accountingExport.fromWorkday({
           id: currentWorkdayId,
@@ -2780,7 +2803,7 @@ moneybirdExportButton?.addEventListener("click", () => {
         context: currentUserContext
       });
     } catch (error) {
-      sessionUi?.showToast(error.message || "De Moneybird-preview kon niet worden geopend.");
+      sessionUi?.showToast(error.message || "De boekhoudpreview kon niet worden geopend.");
     }
   });
 });
@@ -2813,4 +2836,5 @@ details.open = localStorage.getItem("cameraTariefSettingsOpen") === "true";
 updateWorkdaySaveAccess();
 
 document.addEventListener("overuurtje:user-context", (event) => hydrateAccountSettings(event.detail));
+document.addEventListener("overuurtje:accounting-connection", () => updateAccountingExportVisibility(currentUserContext));
 sessionUi?.ready.then(hydrateAccountSettings);

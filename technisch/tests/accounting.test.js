@@ -113,3 +113,31 @@ test("Moneybird-client verstuurt de Supabase API-key en blijft nooit eindeloos w
   assert.match(client, /setTimeout\(\(\) => controller\.abort\(\), 15000\)/);
   assert.match(accountUi, /button\.disabled = false/);
 });
+
+test("boekhoudintegratie is generiek en toont export alleen in relevante schermen", () => {
+  const index = fs.readFileSync(path.join(root, "app/index.html"), "utf8");
+  const projects = fs.readFileSync(path.join(root, "app/projects.html"), "utf8");
+  const workdays = fs.readFileSync(path.join(root, "app/workdays.html"), "utf8");
+  const workdaysUi = fs.readFileSync(path.join(root, "app/workdays.js"), "utf8");
+  const settingsUi = fs.readFileSync(path.join(root, "app/accountAccounting.js"), "utf8");
+
+  assert.match(index, /id="moneybird-export" hidden>Naar Moneybird<\/button>/);
+  assert.match(projects, /id="project-moneybird" type="button" hidden>Naar Moneybird<\/button>/);
+  assert.doesNotMatch(index, /id="moneybird-export"[^\n]*data-pro-badge/);
+  assert.doesNotMatch(workdays, /accountingUi\.js/);
+  assert.doesNotMatch(workdaysUi, /workday-moneybird-button/);
+  assert.match(settingsUi, /Kies boekhoudsysteem/);
+  assert.doesNotMatch(settingsUi, /data-accounting-test/);
+});
+
+test("boekhoudpreview zoekt opdrachtgevers op invoer en gebruikt altijd 21 procent btw", () => {
+  const preview = fs.readFileSync(path.join(root, "app/accountingUi.js"), "utf8");
+  const css = fs.readFileSync(path.join(root, "app/styles.css"), "utf8");
+
+  assert.doesNotMatch(preview, /name="administration"/);
+  assert.match(preview, /query\.length < 2/);
+  assert.match(preview, /vatPercentage: 21/);
+  assert.match(preview, /local_tax_percentage: 21/);
+  assert.match(css, /\.footer-actions\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/s);
+  assert.match(css, /\.footer-actions:has\(#moneybird-export\[hidden\]\)\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
+});

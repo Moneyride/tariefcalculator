@@ -6,8 +6,6 @@
   const shareService = globalThis.OveruurtjeShares;
   const shareUi = globalThis.OveruurtjeShareUI;
   const calculateTariff = globalThis.TariffCalculator.calculateTariff;
-  const accountingExport = globalThis.OveruurtjeAccountingExport;
-  const accountingUi = globalThis.OveruurtjeAccountingUi;
   const loggedOut = document.querySelector("#workdays-logged-out");
   const upgrade = document.querySelector("#workdays-upgrade");
   const content = document.querySelector("#workdays-content");
@@ -105,7 +103,6 @@
       </a>
       <div class="timeline-workday-actions">
         <button class="workday-share-button" type="button">Delen</button>
-        <button class="workday-moneybird-button" type="button">Moneybird</button>
         <button class="workday-delete-button" type="button" aria-label="Werkdag verwijderen" title="Werkdag verwijderen">&times;</button>
       </div>
     `;
@@ -123,16 +120,6 @@
     status.classList.toggle("is-complete", Boolean(snapshot.endTime));
     article.querySelector(".workday-share-button").addEventListener("click", () => {
       shareUi.open({ sourceType: "workday", sourceId: workday.id });
-    });
-    article.querySelector(".workday-moneybird-button").addEventListener("click", () => {
-      globalThis.OveruurtjeFeatureGate.require("accounting_export", currentContext, () => {
-        try {
-          if (!snapshot.endTime) throw new Error("Rond deze werkdag eerst af.");
-          accountingUi.open({ exportModel: accountingExport.fromWorkday(workday), context: currentContext });
-        } catch (error) {
-          sessionUi.showToast(error.message || "De Moneybird-preview kon niet worden geopend.");
-        }
-      });
     });
     article.querySelector(".workday-delete-button").addEventListener("click", () => {
       pendingDeleteId = workday.id;

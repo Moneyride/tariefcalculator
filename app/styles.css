@@ -1277,7 +1277,7 @@
 
 .timeline-workday-actions {
   display: grid;
-  grid-template-columns: auto auto 42px;
+  grid-template-columns: auto 42px;
   align-items: center;
   gap: 6px;
   padding: 8px;
@@ -1292,25 +1292,6 @@
   white-space: nowrap;
 }
 
-.timeline-workday-actions .workday-moneybird-button {
-  min-height: 42px;
-  padding: 0 13px;
-  border: 1px solid rgba(31, 67, 53, 0.12);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.48);
-  color: var(--accent-dark);
-  font: inherit;
-  font-weight: 750;
-  cursor: pointer;
-}
-
-.timeline-workday-actions .workday-moneybird-button:hover {
-  border-color: rgba(31, 67, 53, 0.28);
-  background: rgba(255, 255, 255, 0.82);
-  color: var(--accent-dark);
-  transform: none;
-}
-
 .workday-status.is-moneybird {
   background: rgba(31, 67, 53, 0.12);
   color: var(--accent-dark);
@@ -1323,7 +1304,6 @@
   gap: 8px;
 }
 
-.moneybird-export-button [data-pro-badge],
 .accounting-pro-pill {
   padding: 3px 7px;
   border-radius: 999px;
@@ -1339,13 +1319,49 @@
   color: var(--text);
 }
 
+.accounting-provider-choice {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.75fr) minmax(0, 1.25fr);
+  gap: 18px;
+  align-items: end;
+}
+
+.accounting-provider-choice label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.accounting-provider-choice select {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 13px;
+  border: 1px solid rgba(31, 67, 53, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--text);
+  font: inherit;
+}
+
+.accounting-provider-choice p {
+  margin: 0 0 11px;
+  color: var(--muted);
+}
+
+.accounting-provider-details {
+  margin-top: 14px;
+  padding-top: 2px;
+  border-top: 1px solid rgba(31, 67, 53, 0.1);
+}
+
 .accounting-provider-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
   padding: 18px 0;
-  border-block: 1px solid rgba(31, 67, 53, 0.1);
+  border-bottom: 1px solid rgba(31, 67, 53, 0.1);
 }
 
 .accounting-provider-row p {
@@ -1429,12 +1445,49 @@
 
 .accounting-preview-meta {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
-.accounting-contact-field select {
-  min-height: 124px;
+.accounting-contact-field {
+  position: relative;
+}
+
+.accounting-contact-suggestions {
+  position: absolute;
+  z-index: 4;
+  top: 100%;
+  right: 0;
+  left: 0;
+  display: grid;
+  max-height: 190px;
+  overflow-y: auto;
+  border: 1px solid rgba(31, 67, 53, 0.16);
+  border-radius: 10px;
+  background: #f7f6f4;
+  box-shadow: 0 14px 32px rgba(12, 28, 23, 0.14);
+}
+
+.accounting-contact-suggestions button {
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid rgba(31, 67, 53, 0.08);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+
+.accounting-contact-suggestions button:last-child {
+  border-bottom: 0;
+}
+
+.accounting-contact-suggestions button:hover {
+  background: rgba(31, 67, 53, 0.07);
+  color: var(--text);
+  transform: none;
 }
 
 .accounting-source-selection {
@@ -1517,8 +1570,10 @@
   .accounting-mappings h3 { grid-column: auto; }
   .accounting-lines { overflow-x: auto; }
   .accounting-line { min-width: 660px; }
-  .timeline-workday-actions { grid-template-columns: 1fr 1fr 42px; grid-column: 1 / -1; border-top: 1px solid rgba(31, 67, 53, 0.08); border-left: 0; }
-  .accounting-provider-row { align-items: flex-start; }
+  .timeline-workday-actions { grid-template-columns: 1fr 42px; grid-column: 1 / -1; border-top: 1px solid rgba(31, 67, 53, 0.08); border-left: 0; }
+  .accounting-provider-choice { grid-template-columns: 1fr; gap: 7px; }
+  .accounting-provider-choice p { margin: 0; font-size: 0.78rem; line-height: 1.35; }
+  .accounting-provider-row { align-items: flex-start; padding-block: 13px; }
 }
 
 .timeline-workday-actions .workday-delete-button {
@@ -4235,7 +4290,7 @@ summary:hover {
 
 .footer-actions {
   display: grid;
-  grid-template-columns: minmax(230px, 0.8fr) minmax(0, 1.7fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: stretch;
   gap: 14px;
   margin-top: 0;
@@ -4249,29 +4304,24 @@ summary:hover {
   backdrop-filter: none;
 }
 
+.footer-actions:has(#moneybird-export[hidden]) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .footer-actions .secondary {
   border-color: rgba(255, 255, 255, 0.68);
   background: rgba(255, 255, 255, 0.82);
 }
 
 .footer-actions button {
+  width: 100%;
+  min-height: 64px;
   min-width: 0;
 }
 
 .invoice-copy-button {
   min-height: 64px;
   font-size: 1rem;
-}
-
-.result-secondary-actions {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-
-.result-secondary-actions > button {
-  width: 100%;
-  height: 100%;
 }
 
 .footer-actions .copy-status {
@@ -6615,17 +6665,14 @@ html.is-pwa summary {
     padding: 22px 18px;
   }
 
-  .footer-actions {
+  .footer-actions,
+  .footer-actions:has(#moneybird-export[hidden]) {
     grid-template-columns: 1fr;
     padding: 20px 12px;
   }
 
   .footer-actions button {
     width: 100%;
-  }
-
-  .result-secondary-actions {
-    grid-template-columns: 1fr;
   }
 
   .site-footer {
@@ -6877,10 +6924,6 @@ html.is-pwa summary {
   align-items: center;
   justify-content: center;
   gap: 9px;
-}
-
-.result-secondary-actions .workday-save-button {
-  min-height: 54px;
 }
 
 .workday-save-button:hover {
