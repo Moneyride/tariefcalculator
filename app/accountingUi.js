@@ -88,6 +88,18 @@
     return exportTools.withSourceItems(originalModel, ids);
   }
 
+  function projectDayLabel(item) {
+    if (!item?.date) return "Projectdag";
+    const date = new Date(`${item.date}T12:00:00`);
+    if (Number.isNaN(date.getTime())) return item.date;
+    return new Intl.DateTimeFormat("nl-NL", {
+      weekday: "short",
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    }).format(date).replace(/^./, (character) => character.toUpperCase());
+  }
+
   function renderSources() {
     const fieldset = dialog.querySelector(".accounting-source-selection");
     fieldset.hidden = originalModel.sourceType !== "project";
@@ -97,9 +109,9 @@
     root.replaceChildren(...originalModel.sourceItems.map((item) => {
       const label = document.createElement("label");
       const wasExported = exported.has(item.sourceId);
-      const line = originalModel.lineItems.find((entry) => entry.source?.sourceId === item.sourceId);
-      label.className = wasExported ? "is-exported" : "";
-      label.innerHTML = `<input type="checkbox" data-accounting-source value="${item.sourceId}" ${wasExported ? "" : "checked"}><span>${line?.description?.replace(/^.*?–\s*/, "") || "Projectdag"}</span>${wasExported ? "<small>Geëxporteerd ✓</small>" : ""}`;
+      label.className = `checkbox-label accounting-source-row${wasExported ? " is-exported" : ""}`;
+      label.innerHTML = `<input type="checkbox" data-accounting-source value="${item.sourceId}" ${wasExported ? "" : "checked"}><span class="accounting-source-date"></span>${wasExported ? "<small>Geëxporteerd ✓</small>" : ""}`;
+      label.querySelector(".accounting-source-date").textContent = projectDayLabel(item);
       return label;
     }));
   }

@@ -156,10 +156,13 @@ test("boekhoudpreview zoekt opdrachtgevers op invoer en gebruikt altijd 21 proce
   assert.match(preview, /local_tax_percentage: 21/);
   assert.match(preview, /class="accounting-dialog-scroll"/);
   assert.match(preview, /class="accounting-reexport checkbox-label"/);
+  assert.match(preview, /checkbox-label accounting-source-row/);
+  assert.match(preview, /projectDayLabel/);
   assert.match(preview, /syncSubmitState/);
   assert.match(css, /dialog\.accounting-dialog\s*\{[^}]*max-height:[^;]*100dvh[^;]*;[^}]*overflow:\s*hidden/s);
   assert.match(css, /\.accounting-dialog-scroll\s*\{[^}]*overflow-y:\s*auto/s);
   assert.match(css, /\.accounting-line:not\(\.accounting-line-head\)/);
+  assert.match(css, /\.accounting-source-selection \.accounting-source-row/);
   assert.match(css, /\.footer-actions\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/s);
   assert.match(css, /\.footer-actions:has\(#moneybird-export\[hidden\]\)\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
 });

@@ -132,7 +132,11 @@
     const id = workday.id || snapshot.id;
     if (!id) throw new Error("Sla deze werkdag eerst op voordat je hem exporteert.");
     const result = calculationFromSnapshot(snapshot);
-    const source = { sourceType: "workday", sourceId: id };
+    const source = {
+      sourceType: "workday",
+      sourceId: id,
+      date: snapshot.date || workday.workDate || workday.work_date || ""
+    };
     return {
       schemaVersion: 1,
       sourceType: "workday", sourceId: id, sourceItems: [source],
