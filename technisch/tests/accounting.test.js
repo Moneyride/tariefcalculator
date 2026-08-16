@@ -90,6 +90,22 @@ test("projectfilter neemt alleen geselecteerde werkdagen mee", () => {
   assert.ok(filtered.lineItems.every((item) => item.source.sourceId === days[1].id));
 });
 
+test("factuurpreview groepeert btw-percentages en toont het inclusief totaal", () => {
+  const totals = accounting.summarizeTotals([
+    { lineTotal: 575, vatPercentage: 21 },
+    { lineTotal: 50, vatPercentage: 9 },
+    { lineTotal: 25, vatPercentage: 0 }
+  ]);
+  assert.equal(totals.subtotal, 650);
+  assert.deepEqual(totals.vatLines, [
+    { percentage: 21, amount: 120.75 },
+    { percentage: 9, amount: 4.5 },
+    { percentage: 0, amount: 0 }
+  ]);
+  assert.equal(totals.vatTotal, 125.25);
+  assert.equal(totals.total, 775.25);
+});
+
 test("backend bewaart secrets buiten clientpolicies en maakt nooit automatisch verzending aan", () => {
   const migration = fs.readFileSync(path.join(root, "supabase/migrations/202608150001_accounting_integrations.sql"), "utf8");
   const edge = fs.readFileSync(path.join(root, "supabase/functions/accounting-moneybird/index.ts"), "utf8");
@@ -138,6 +154,12 @@ test("boekhoudpreview zoekt opdrachtgevers op invoer en gebruikt altijd 21 proce
   assert.match(preview, /query\.length < 2/);
   assert.match(preview, /vatPercentage: 21/);
   assert.match(preview, /local_tax_percentage: 21/);
+  assert.match(preview, /class="accounting-dialog-scroll"/);
+  assert.match(preview, /class="accounting-reexport checkbox-label"/);
+  assert.match(preview, /syncSubmitState/);
+  assert.match(css, /dialog\.accounting-dialog\s*\{[^}]*max-height:[^;]*100dvh[^;]*;[^}]*overflow:\s*hidden/s);
+  assert.match(css, /\.accounting-dialog-scroll\s*\{[^}]*overflow-y:\s*auto/s);
+  assert.match(css, /\.accounting-line:not\(\.accounting-line-head\)/);
   assert.match(css, /\.footer-actions\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/s);
   assert.match(css, /\.footer-actions:has\(#moneybird-export\[hidden\]\)\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s);
 });

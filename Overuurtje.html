@@ -1456,15 +1456,26 @@
   margin-top: 14px;
 }
 
-.accounting-dialog {
+html.dialog-open,
+html.dialog-open body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+dialog.accounting-dialog {
   width: min(920px, calc(100vw - 32px));
   max-height: min(880px, calc(100dvh - 32px));
-  padding: 30px;
-  overflow: auto;
+  padding: 0;
+  overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.75);
   border-radius: 18px;
   background: rgba(245, 244, 242, 0.98);
   box-shadow: 0 28px 80px rgba(12, 28, 23, 0.28);
+}
+
+dialog.accounting-dialog[open] {
+  display: flex;
+  flex-direction: column;
 }
 
 .accounting-dialog::backdrop {
@@ -1477,16 +1488,64 @@
   margin: 2px 50px 6px 0;
 }
 
+.accounting-dialog .dialog-close {
+  z-index: 3;
+}
+
+.accounting-dialog-header {
+  flex: 0 0 auto;
+  padding: 30px 30px 0;
+}
+
 .accounting-dialog-intro {
   max-width: 680px;
-  margin: 0 0 22px;
+  margin: 0 0 20px;
   color: var(--muted);
 }
 
-.accounting-preview-form,
+.accounting-preview-form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.accounting-dialog-scroll,
 .accounting-mappings {
   display: grid;
   gap: 16px;
+}
+
+.accounting-dialog-scroll {
+  min-height: 0;
+  padding: 0 30px 20px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  align-content: start;
+  grid-auto-rows: max-content;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.accounting-dialog-actions {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 30px max(18px, env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(31, 67, 53, 0.1);
+  background: rgba(245, 244, 242, 0.98);
+  box-shadow: 0 -10px 24px rgba(12, 28, 23, 0.05);
+}
+
+.accounting-dialog-actions .saas-form-status {
+  min-width: 0;
+  margin: 0;
+}
+
+.accounting-dialog-actions .saas-primary-button {
+  min-width: 230px;
 }
 
 .accounting-preview-meta {
@@ -1578,31 +1637,65 @@
 
 .accounting-line:first-child { border-top: 0; }
 .accounting-line > :not(:first-child) { text-align: right; }
+.accounting-line > * { min-width: 0; }
+.accounting-line > :first-child { overflow-wrap: anywhere; }
+.accounting-line > :nth-child(n + 2) { white-space: nowrap; }
 .accounting-line-head { background: rgba(31, 67, 53, 0.06); color: var(--muted); font-size: 0.78rem; font-weight: 800; }
 
 .accounting-mappings {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   padding: 14px;
   border: 1px solid rgba(31, 67, 53, 0.12);
   border-radius: 10px;
 }
 
-.accounting-mappings h3 { grid-column: 1 / -1; margin: 0; }
+.accounting-mappings h3 { margin: 0; }
 
-.accounting-preview-total {
-  display: flex;
-  justify-content: space-between;
-  padding: 16px;
+.accounting-preview-totals {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid rgba(31, 67, 53, 0.1);
   border-radius: 10px;
   background: rgba(31, 67, 53, 0.08);
   color: var(--accent-dark);
 }
 
-.accounting-reexport {
+.accounting-total-row {
   display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 10px 14px;
+  border-top: 1px solid rgba(31, 67, 53, 0.09);
+}
+
+.accounting-total-row:first-child {
+  border-top: 0;
+}
+
+.accounting-total-row strong {
+  white-space: nowrap;
+}
+
+.accounting-total-row.is-grand-total {
+  padding-block: 14px;
+  background: rgba(31, 67, 53, 0.08);
+  font-size: 1.02rem;
+}
+
+.accounting-reexport.checkbox-label {
   align-items: center;
-  gap: 9px;
-  color: var(--muted);
+  gap: 12px;
+  min-height: 58px;
+  padding: 10px 14px;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.45);
+  color: var(--text);
+  font-weight: 750;
+}
+
+.accounting-reexport[hidden] {
+  display: none;
 }
 
 .accounting-open-link {
@@ -1611,11 +1704,123 @@
 }
 
 @media (max-width: 760px) {
-  .accounting-dialog { width: calc(100vw - 20px); max-height: calc(100dvh - 20px); padding: 22px 16px; border-radius: 16px; }
-  .accounting-preview-meta, .accounting-mappings { grid-template-columns: 1fr; }
-  .accounting-mappings h3 { grid-column: auto; }
-  .accounting-lines { overflow-x: auto; }
-  .accounting-line { min-width: 660px; }
+  dialog.accounting-dialog {
+    width: calc(100vw - 12px);
+    max-height: calc(100dvh - 12px);
+    border-radius: 16px;
+  }
+
+  .accounting-dialog-header {
+    padding: max(22px, env(safe-area-inset-top)) 18px 0;
+  }
+
+  .accounting-dialog-intro {
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+    line-height: 1.45;
+  }
+
+  .accounting-dialog-scroll {
+    gap: 13px;
+    padding: 0 16px 16px;
+  }
+
+  .accounting-dialog-actions {
+    grid-template-columns: 1fr;
+    gap: 9px;
+    padding: 12px 16px max(16px, env(safe-area-inset-bottom));
+  }
+
+  .accounting-dialog-actions .saas-primary-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .accounting-preview-meta { grid-template-columns: 1fr; }
+
+  .accounting-lines {
+    gap: 10px;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .accounting-line-head {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  .accounting-line:not(.accounting-line-head) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 11px 14px;
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid rgba(31, 67, 53, 0.12);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.45);
+  }
+
+  .accounting-line:not(.accounting-line-head) > * {
+    display: grid;
+    gap: 3px;
+    text-align: left;
+    white-space: normal;
+  }
+
+  .accounting-line:not(.accounting-line-head) > :first-child {
+    grid-column: 1 / -1;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(31, 67, 53, 0.08);
+    font-weight: 800;
+  }
+
+  .accounting-line:not(.accounting-line-head) > *::before {
+    color: var(--muted);
+    content: attr(data-label);
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .accounting-line:not(.accounting-line-head) > :nth-child(2n + 3) {
+    text-align: right;
+  }
+
+  .accounting-line:not(.accounting-line-head) > strong {
+    color: var(--accent-dark);
+  }
+
+  .accounting-mappings {
+    gap: 13px;
+    padding: 13px;
+  }
+
+  .accounting-mappings label,
+  .accounting-mappings select {
+    min-width: 0;
+  }
+
+  .accounting-mappings label span {
+    overflow-wrap: anywhere;
+  }
+
+  .accounting-total-row {
+    gap: 12px;
+    padding-inline: 13px;
+  }
+
+  .accounting-reexport.checkbox-label {
+    align-items: center;
+    padding: 11px 13px;
+    font-size: 0.9rem;
+  }
+
   .timeline-workday-actions { grid-template-columns: 1fr 42px; grid-column: 1 / -1; border-top: 1px solid rgba(31, 67, 53, 0.08); border-left: 0; }
   .accounting-provider-choice { grid-template-columns: 1fr; gap: 7px; }
   .accounting-provider-choice p { margin: 0; font-size: 0.78rem; line-height: 1.35; }
@@ -12028,7 +12233,28 @@ globalThis.TariffCalculator = {
     };
   }
 
-  globalThis.OveruurtjeAccountingExport = Object.freeze({ fromWorkday, fromProject, withSourceItems, customerKey });
+  function summarizeTotals(lineItems = []) {
+    const vatByPercentage = new Map();
+    const subtotal = roundMoney(lineItems.reduce((sum, item) => sum + Number(item.lineTotal || 0), 0));
+    lineItems.forEach((item) => {
+      const percentage = Number(item.vatPercentage || 0);
+      const vat = Number(item.lineTotal || 0) * percentage / 100;
+      vatByPercentage.set(percentage, (vatByPercentage.get(percentage) || 0) + vat);
+    });
+    const vatLines = [...vatByPercentage.entries()]
+      .sort(([first], [second]) => second - first)
+      .map(([percentage, amount]) => ({ percentage, amount: roundMoney(amount) }));
+    const vatTotal = roundMoney(vatLines.reduce((sum, item) => sum + item.amount, 0));
+    return { subtotal, vatLines, vatTotal, total: roundMoney(subtotal + vatTotal) };
+  }
+
+  globalThis.OveruurtjeAccountingExport = Object.freeze({
+    fromWorkday,
+    fromProject,
+    withSourceItems,
+    summarizeTotals,
+    customerKey
+  });
 })();
 
     </script>
@@ -12048,6 +12274,9 @@ globalThis.TariffCalculator = {
   let reexportKey = crypto.randomUUID();
   let selectedContact = null;
   let resolvedTaxRate = null;
+  let previewReady = false;
+  let creatingDraft = false;
+  let requiresReexport = false;
 
   function providerName() {
     return connection?.provider === "moneybird" ? "Moneybird" : "je boekhoudsysteem";
@@ -12059,21 +12288,27 @@ globalThis.TariffCalculator = {
     dialog.className = "saas-dialog accounting-dialog";
     dialog.innerHTML = `
       <button class="dialog-close" type="button" data-accounting-close aria-label="Sluiten">&times;</button>
-      <p class="dialog-eyebrow">Boekhouding</p>
-      <h2>Controleer conceptfactuur</h2>
-      <p class="accounting-dialog-intro">Controleer de regels. Overuurtje maakt alleen een conceptfactuur; verzenden doe je zelf in je boekhoudsysteem.</p>
+      <header class="accounting-dialog-header">
+        <p class="dialog-eyebrow">Boekhouding</p>
+        <h2>Controleer conceptfactuur</h2>
+        <p class="accounting-dialog-intro">Controleer de regels. Overuurtje maakt alleen een conceptfactuur; verzenden doe je zelf in je boekhoudsysteem.</p>
+      </header>
       <form class="accounting-preview-form">
-        <div class="accounting-preview-meta">
-          <label class="accounting-contact-field"><span>Opdrachtgever</span><input name="contactSearch" type="search" placeholder="Zoek opdrachtgever" autocomplete="off"><div class="accounting-contact-suggestions" data-accounting-contact-suggestions hidden></div></label>
-          <label><span>Factuurdatum</span><input name="invoiceDate" type="date" required></label>
+        <div class="accounting-dialog-scroll">
+          <div class="accounting-preview-meta">
+            <label class="accounting-contact-field"><span>Opdrachtgever</span><input name="contactSearch" type="search" placeholder="Zoek opdrachtgever" autocomplete="off"><div class="accounting-contact-suggestions" data-accounting-contact-suggestions hidden></div></label>
+            <label><span>Factuurdatum</span><input name="invoiceDate" type="date" required></label>
+          </div>
+          <fieldset class="accounting-source-selection" hidden><legend>Projectdagen</legend><div data-accounting-sources></div></fieldset>
+          <div class="accounting-lines"></div>
+          <div class="accounting-mappings"></div>
+          <div class="accounting-preview-totals" aria-label="Factuurtotalen"></div>
+          <label class="accounting-reexport checkbox-label" hidden><input type="checkbox" name="confirmReexport"><span>Bewust opnieuw exporteren naar een nieuw concept</span></label>
         </div>
-        <fieldset class="accounting-source-selection" hidden><legend>Projectdagen</legend><div data-accounting-sources></div></fieldset>
-        <div class="accounting-lines"></div>
-        <div class="accounting-mappings"></div>
-        <div class="accounting-preview-total"><span>Totaal excl. btw</span><strong></strong></div>
-        <label class="accounting-reexport" hidden><input type="checkbox" name="confirmReexport"><span>Bewust opnieuw exporteren naar een nieuw concept</span></label>
-        <p class="saas-form-status" aria-live="polite"></p>
-        <button class="saas-primary-button" type="submit">Maak conceptfactuur</button>
+        <footer class="accounting-dialog-actions">
+          <p class="saas-form-status" aria-live="polite"></p>
+          <button class="saas-primary-button" type="submit">Maak conceptfactuur</button>
+        </footer>
       </form>`;
     document.body.append(dialog);
     dialog.querySelector("[data-accounting-close]").addEventListener("click", close);
@@ -12081,6 +12316,7 @@ globalThis.TariffCalculator = {
     dialog.querySelector("input[name='contactSearch']").addEventListener("input", debounce(loadContacts, 300));
     dialog.querySelector("[data-accounting-contact-suggestions]").addEventListener("click", chooseContactSuggestion);
     dialog.querySelector("[data-accounting-sources]").addEventListener("change", refreshPreview);
+    dialog.querySelector("input[name='confirmReexport']").addEventListener("change", syncSubmitState);
     dialog.querySelector("form").addEventListener("submit", createDraft);
     return dialog;
   }
@@ -12096,6 +12332,12 @@ globalThis.TariffCalculator = {
   }
 
   function status(message) { ensureDialog().querySelector(".saas-form-status").textContent = message || ""; }
+
+  function syncSubmitState() {
+    const submit = ensureDialog().querySelector("button[type='submit']");
+    const confirmed = dialog.querySelector("input[name='confirmReexport']").checked;
+    submit.disabled = !previewReady || creatingDraft || (requiresReexport && !confirmed);
+  }
   function createdExportIds() {
     const created = new Set((exportHistory.exports || []).filter((item) => item.status === "created").map((item) => item.id));
     return new Set((exportHistory.items || []).filter((item) => created.has(item.export_id)).map((item) => item.source_id));
@@ -12171,7 +12413,7 @@ globalThis.TariffCalculator = {
     model.lineItems.forEach((item) => {
       const row = document.createElement("div");
       row.className = "accounting-line";
-      row.innerHTML = `<span></span><span></span><span></span><span></span><strong></strong>`;
+      row.innerHTML = `<span data-label="Omschrijving"></span><span data-label="Aantal"></span><span data-label="Prijs"></span><span data-label="Btw"></span><strong data-label="Regelbedrag"></strong>`;
       row.children[0].textContent = item.description;
       row.children[1].textContent = `${item.quantity.toLocaleString("nl-NL")} ${item.unit}`;
       row.children[2].textContent = euro.format(item.unitPrice);
@@ -12179,7 +12421,26 @@ globalThis.TariffCalculator = {
       row.children[4].textContent = euro.format(item.lineTotal);
       root.append(row);
     });
-    dialog.querySelector(".accounting-preview-total strong").textContent = euro.format(model.lineItems.reduce((sum, item) => sum + item.lineTotal, 0));
+    renderTotals(model.lineItems);
+  }
+
+  function renderTotals(lineItems) {
+    const totals = exportTools.summarizeTotals(lineItems);
+    const root = dialog.querySelector(".accounting-preview-totals");
+    root.replaceChildren();
+    const rows = [
+      ["Totaal excl. btw", totals.subtotal],
+      ...totals.vatLines.map((item) => [`Btw ${Number(item.percentage).toLocaleString("nl-NL")}%`, item.amount]),
+      ["Totaal incl. btw", totals.total]
+    ];
+    rows.forEach(([label, amount], index) => {
+      const row = document.createElement("div");
+      row.className = index === rows.length - 1 ? "accounting-total-row is-grand-total" : "accounting-total-row";
+      row.innerHTML = "<span></span><strong></strong>";
+      row.children[0].textContent = label;
+      row.children[1].textContent = euro.format(amount);
+      root.append(row);
+    });
   }
 
   async function renderMappings() {
@@ -12208,14 +12469,27 @@ globalThis.TariffCalculator = {
     const selected = selectedModel().sourceItems.map((item) => item.sourceId);
     const hasExported = selected.some((id) => createdExportIds().has(id));
     const label = dialog.querySelector(".accounting-reexport");
-    label.hidden = !hasExported;
+    requiresReexport = hasExported;
+    label.hidden = !requiresReexport;
     if (!hasExported) label.querySelector("input").checked = false;
+    syncSubmitState();
   }
 
   async function refreshPreview() {
+    const restoreReadyState = previewReady;
+    previewReady = false;
+    syncSubmitState();
     renderLines();
     renderReexportState();
-    await renderMappings();
+    try {
+      await renderMappings();
+      previewReady = restoreReadyState;
+    } catch (error) {
+      previewReady = false;
+      status(error.message || "Boekhoudkoppelingen konden niet worden geladen.");
+    } finally {
+      syncSubmitState();
+    }
   }
 
   async function createDraft(event) {
@@ -12223,11 +12497,12 @@ globalThis.TariffCalculator = {
     const form = event.currentTarget;
     const activeModel = selectedModel();
     if (!activeModel.sourceItems.length || !activeModel.lineItems.length) { status("Selecteer minimaal één projectdag."); return; }
-    const mustConfirmReexport = !form.elements.confirmReexport.closest("label").hidden;
+    const mustConfirmReexport = requiresReexport;
     if (mustConfirmReexport && !form.elements.confirmReexport.checked) { status("Bevestig dat je de reeds geëxporteerde dag opnieuw wilt meenemen."); return; }
     if (!form.reportValidity()) return;
     const button = form.querySelector("button[type='submit']");
-    button.disabled = true;
+    creatingDraft = true;
+    syncSubmitState();
     status("Conceptfactuur aanmaken…");
     try {
       if (!selectedContact) throw new Error("Kies eerst een opdrachtgever uit de suggesties.");
@@ -12264,7 +12539,8 @@ globalThis.TariffCalculator = {
       document.dispatchEvent(new CustomEvent("overuurtje:accounting-exported", { detail: result.export }));
     } catch (error) {
       status(error.message || "Conceptfactuur kon niet worden aangemaakt.");
-      button.disabled = false;
+      creatingDraft = false;
+      syncSubmitState();
     }
   }
 
@@ -12279,11 +12555,14 @@ globalThis.TariffCalculator = {
     reexportKey = crypto.randomUUID();
     selectedContact = null;
     resolvedTaxRate = null;
+    previewReady = false;
+    creatingDraft = false;
+    requiresReexport = false;
     ensureDialog();
     document.documentElement.classList.add("dialog-open");
     const submit = dialog.querySelector("button[type='submit']");
     submit.hidden = false;
-    submit.disabled = false;
+    syncSubmitState();
     dialog.querySelector(".accounting-open-link")?.remove();
     dialog.querySelector("form").reset();
     status("Boekhoudkoppeling laden…");
@@ -12306,10 +12585,13 @@ globalThis.TariffCalculator = {
       const mappings = await service.customerMappings();
       const mapped = mappings.find((item) => item.local_customer_key === originalModel.customer.key);
       selectMappedContact(mapped);
+      previewReady = true;
+      syncSubmitState();
       status("");
     } catch (error) {
       status(error.message);
-      submit.disabled = true;
+      previewReady = false;
+      syncSubmitState();
     }
   }
 

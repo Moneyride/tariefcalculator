@@ -188,5 +188,26 @@
     };
   }
 
-  globalThis.OveruurtjeAccountingExport = Object.freeze({ fromWorkday, fromProject, withSourceItems, customerKey });
+  function summarizeTotals(lineItems = []) {
+    const vatByPercentage = new Map();
+    const subtotal = roundMoney(lineItems.reduce((sum, item) => sum + Number(item.lineTotal || 0), 0));
+    lineItems.forEach((item) => {
+      const percentage = Number(item.vatPercentage || 0);
+      const vat = Number(item.lineTotal || 0) * percentage / 100;
+      vatByPercentage.set(percentage, (vatByPercentage.get(percentage) || 0) + vat);
+    });
+    const vatLines = [...vatByPercentage.entries()]
+      .sort(([first], [second]) => second - first)
+      .map(([percentage, amount]) => ({ percentage, amount: roundMoney(amount) }));
+    const vatTotal = roundMoney(vatLines.reduce((sum, item) => sum + item.amount, 0));
+    return { subtotal, vatLines, vatTotal, total: roundMoney(subtotal + vatTotal) };
+  }
+
+  globalThis.OveruurtjeAccountingExport = Object.freeze({
+    fromWorkday,
+    fromProject,
+    withSourceItems,
+    summarizeTotals,
+    customerKey
+  });
 })();

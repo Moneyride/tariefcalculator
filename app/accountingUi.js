@@ -13,6 +13,9 @@
   let reexportKey = crypto.randomUUID();
   let selectedContact = null;
   let resolvedTaxRate = null;
+  let previewReady = false;
+  let creatingDraft = false;
+  let requiresReexport = false;
 
   function providerName() {
     return connection?.provider === "moneybird" ? "Moneybird" : "je boekhoudsysteem";
@@ -24,21 +27,27 @@
     dialog.className = "saas-dialog accounting-dialog";
     dialog.innerHTML = `
       <button class="dialog-close" type="button" data-accounting-close aria-label="Sluiten">&times;</button>
-      <p class="dialog-eyebrow">Boekhouding</p>
-      <h2>Controleer conceptfactuur</h2>
-      <p class="accounting-dialog-intro">Controleer de regels. Overuurtje maakt alleen een conceptfactuur; verzenden doe je zelf in je boekhoudsysteem.</p>
+      <header class="accounting-dialog-header">
+        <p class="dialog-eyebrow">Boekhouding</p>
+        <h2>Controleer conceptfactuur</h2>
+        <p class="accounting-dialog-intro">Controleer de regels. Overuurtje maakt alleen een conceptfactuur; verzenden doe je zelf in je boekhoudsysteem.</p>
+      </header>
       <form class="accounting-preview-form">
-        <div class="accounting-preview-meta">
-          <label class="accounting-contact-field"><span>Opdrachtgever</span><input name="contactSearch" type="search" placeholder="Zoek opdrachtgever" autocomplete="off"><div class="accounting-contact-suggestions" data-accounting-contact-suggestions hidden></div></label>
-          <label><span>Factuurdatum</span><input name="invoiceDate" type="date" required></label>
+        <div class="accounting-dialog-scroll">
+          <div class="accounting-preview-meta">
+            <label class="accounting-contact-field"><span>Opdrachtgever</span><input name="contactSearch" type="search" placeholder="Zoek opdrachtgever" autocomplete="off"><div class="accounting-contact-suggestions" data-accounting-contact-suggestions hidden></div></label>
+            <label><span>Factuurdatum</span><input name="invoiceDate" type="date" required></label>
+          </div>
+          <fieldset class="accounting-source-selection" hidden><legend>Projectdagen</legend><div data-accounting-sources></div></fieldset>
+          <div class="accounting-lines"></div>
+          <div class="accounting-mappings"></div>
+          <div class="accounting-preview-totals" aria-label="Factuurtotalen"></div>
+          <label class="accounting-reexport checkbox-label" hidden><input type="checkbox" name="confirmReexport"><span>Bewust opnieuw exporteren naar een nieuw concept</span></label>
         </div>
-        <fieldset class="accounting-source-selection" hidden><legend>Projectdagen</legend><div data-accounting-sources></div></fieldset>
-        <div class="accounting-lines"></div>
-        <div class="accounting-mappings"></div>
-        <div class="accounting-preview-total"><span>Totaal excl. btw</span><strong></strong></div>
-        <label class="accounting-reexport" hidden><input type="checkbox" name="confirmReexport"><span>Bewust opnieuw exporteren naar een nieuw concept</span></label>
-        <p class="saas-form-status" aria-live="polite"></p>
-        <button class="saas-primary-button" type="submit">Maak conceptfactuur</button>
+        <footer class="accounting-dialog-actions">
+          <p class="saas-form-status" aria-live="polite"></p>
+          <button class="saas-primary-button" type="submit">Maak conceptfactuur</button>
+        </footer>
       </form>`;
     document.body.append(dialog);
     dialog.querySelector("[data-accounting-close]").addEventListener("click", close);
@@ -46,6 +55,7 @@
     dialog.querySelector("input[name='contactSearch']").addEventListener("input", debounce(loadContacts, 300));
     dialog.querySelector("[data-accounting-contact-suggestions]").addEventListener("click", chooseContactSuggestion);
     dialog.querySelector("[data-accounting-sources]").addEventListener("change", refreshPreview);
+    dialog.querySelector("input[name='confirmReexport']").addEventListener("change", syncSubmitState);
     dialog.querySelector("form").addEventListener("submit", createDraft);
     return dialog;
   }
@@ -61,6 +71,12 @@
   }
 
   function status(message) { ensureDialog().querySelector(".saas-form-status").textContent = message || ""; }
+
+  function syncSubmitState() {
+    const submit = ensureDialog().querySelector("button[type='submit']");
+    const confirmed = dialog.querySelector("input[name='confirmReexport']").checked;
+    submit.disabled = !previewReady || creatingDraft || (requiresReexport && !confirmed);
+  }
   function createdExportIds() {
     const created = new Set((exportHistory.exports || []).filter((item) => item.status === "created").map((item) => item.id));
     return new Set((exportHistory.items || []).filter((item) => created.has(item.export_id)).map((item) => item.source_id));
@@ -136,7 +152,7 @@
     model.lineItems.forEach((item) => {
       const row = document.createElement("div");
       row.className = "accounting-line";
-      row.innerHTML = `<span></span><span></span><span></span><span></span><strong></strong>`;
+      row.innerHTML = `<span data-label="Omschrijving"></span><span data-label="Aantal"></span><span data-label="Prijs"></span><span data-label="Btw"></span><strong data-label="Regelbedrag"></strong>`;
       row.children[0].textContent = item.description;
       row.children[1].textContent = `${item.quantity.toLocaleString("nl-NL")} ${item.unit}`;
       row.children[2].textContent = euro.format(item.unitPrice);
@@ -144,7 +160,26 @@
       row.children[4].textContent = euro.format(item.lineTotal);
       root.append(row);
     });
-    dialog.querySelector(".accounting-preview-total strong").textContent = euro.format(model.lineItems.reduce((sum, item) => sum + item.lineTotal, 0));
+    renderTotals(model.lineItems);
+  }
+
+  function renderTotals(lineItems) {
+    const totals = exportTools.summarizeTotals(lineItems);
+    const root = dialog.querySelector(".accounting-preview-totals");
+    root.replaceChildren();
+    const rows = [
+      ["Totaal excl. btw", totals.subtotal],
+      ...totals.vatLines.map((item) => [`Btw ${Number(item.percentage).toLocaleString("nl-NL")}%`, item.amount]),
+      ["Totaal incl. btw", totals.total]
+    ];
+    rows.forEach(([label, amount], index) => {
+      const row = document.createElement("div");
+      row.className = index === rows.length - 1 ? "accounting-total-row is-grand-total" : "accounting-total-row";
+      row.innerHTML = "<span></span><strong></strong>";
+      row.children[0].textContent = label;
+      row.children[1].textContent = euro.format(amount);
+      root.append(row);
+    });
   }
 
   async function renderMappings() {
@@ -173,14 +208,27 @@
     const selected = selectedModel().sourceItems.map((item) => item.sourceId);
     const hasExported = selected.some((id) => createdExportIds().has(id));
     const label = dialog.querySelector(".accounting-reexport");
-    label.hidden = !hasExported;
+    requiresReexport = hasExported;
+    label.hidden = !requiresReexport;
     if (!hasExported) label.querySelector("input").checked = false;
+    syncSubmitState();
   }
 
   async function refreshPreview() {
+    const restoreReadyState = previewReady;
+    previewReady = false;
+    syncSubmitState();
     renderLines();
     renderReexportState();
-    await renderMappings();
+    try {
+      await renderMappings();
+      previewReady = restoreReadyState;
+    } catch (error) {
+      previewReady = false;
+      status(error.message || "Boekhoudkoppelingen konden niet worden geladen.");
+    } finally {
+      syncSubmitState();
+    }
   }
 
   async function createDraft(event) {
@@ -188,11 +236,12 @@
     const form = event.currentTarget;
     const activeModel = selectedModel();
     if (!activeModel.sourceItems.length || !activeModel.lineItems.length) { status("Selecteer minimaal één projectdag."); return; }
-    const mustConfirmReexport = !form.elements.confirmReexport.closest("label").hidden;
+    const mustConfirmReexport = requiresReexport;
     if (mustConfirmReexport && !form.elements.confirmReexport.checked) { status("Bevestig dat je de reeds geëxporteerde dag opnieuw wilt meenemen."); return; }
     if (!form.reportValidity()) return;
     const button = form.querySelector("button[type='submit']");
-    button.disabled = true;
+    creatingDraft = true;
+    syncSubmitState();
     status("Conceptfactuur aanmaken…");
     try {
       if (!selectedContact) throw new Error("Kies eerst een opdrachtgever uit de suggesties.");
@@ -229,7 +278,8 @@
       document.dispatchEvent(new CustomEvent("overuurtje:accounting-exported", { detail: result.export }));
     } catch (error) {
       status(error.message || "Conceptfactuur kon niet worden aangemaakt.");
-      button.disabled = false;
+      creatingDraft = false;
+      syncSubmitState();
     }
   }
 
@@ -244,11 +294,14 @@
     reexportKey = crypto.randomUUID();
     selectedContact = null;
     resolvedTaxRate = null;
+    previewReady = false;
+    creatingDraft = false;
+    requiresReexport = false;
     ensureDialog();
     document.documentElement.classList.add("dialog-open");
     const submit = dialog.querySelector("button[type='submit']");
     submit.hidden = false;
-    submit.disabled = false;
+    syncSubmitState();
     dialog.querySelector(".accounting-open-link")?.remove();
     dialog.querySelector("form").reset();
     status("Boekhoudkoppeling laden…");
@@ -271,10 +324,13 @@
       const mappings = await service.customerMappings();
       const mapped = mappings.find((item) => item.local_customer_key === originalModel.customer.key);
       selectMappedContact(mapped);
+      previewReady = true;
+      syncSubmitState();
       status("");
     } catch (error) {
       status(error.message);
-      submit.disabled = true;
+      previewReady = false;
+      syncSubmitState();
     }
   }
 

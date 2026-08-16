@@ -1410,15 +1410,26 @@
   margin-top: 14px;
 }
 
-.accounting-dialog {
+html.dialog-open,
+html.dialog-open body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+dialog.accounting-dialog {
   width: min(920px, calc(100vw - 32px));
   max-height: min(880px, calc(100dvh - 32px));
-  padding: 30px;
-  overflow: auto;
+  padding: 0;
+  overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.75);
   border-radius: 18px;
   background: rgba(245, 244, 242, 0.98);
   box-shadow: 0 28px 80px rgba(12, 28, 23, 0.28);
+}
+
+dialog.accounting-dialog[open] {
+  display: flex;
+  flex-direction: column;
 }
 
 .accounting-dialog::backdrop {
@@ -1431,16 +1442,64 @@
   margin: 2px 50px 6px 0;
 }
 
+.accounting-dialog .dialog-close {
+  z-index: 3;
+}
+
+.accounting-dialog-header {
+  flex: 0 0 auto;
+  padding: 30px 30px 0;
+}
+
 .accounting-dialog-intro {
   max-width: 680px;
-  margin: 0 0 22px;
+  margin: 0 0 20px;
   color: var(--muted);
 }
 
-.accounting-preview-form,
+.accounting-preview-form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.accounting-dialog-scroll,
 .accounting-mappings {
   display: grid;
   gap: 16px;
+}
+
+.accounting-dialog-scroll {
+  min-height: 0;
+  padding: 0 30px 20px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  align-content: start;
+  grid-auto-rows: max-content;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.accounting-dialog-actions {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 30px max(18px, env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(31, 67, 53, 0.1);
+  background: rgba(245, 244, 242, 0.98);
+  box-shadow: 0 -10px 24px rgba(12, 28, 23, 0.05);
+}
+
+.accounting-dialog-actions .saas-form-status {
+  min-width: 0;
+  margin: 0;
+}
+
+.accounting-dialog-actions .saas-primary-button {
+  min-width: 230px;
 }
 
 .accounting-preview-meta {
@@ -1532,31 +1591,65 @@
 
 .accounting-line:first-child { border-top: 0; }
 .accounting-line > :not(:first-child) { text-align: right; }
+.accounting-line > * { min-width: 0; }
+.accounting-line > :first-child { overflow-wrap: anywhere; }
+.accounting-line > :nth-child(n + 2) { white-space: nowrap; }
 .accounting-line-head { background: rgba(31, 67, 53, 0.06); color: var(--muted); font-size: 0.78rem; font-weight: 800; }
 
 .accounting-mappings {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   padding: 14px;
   border: 1px solid rgba(31, 67, 53, 0.12);
   border-radius: 10px;
 }
 
-.accounting-mappings h3 { grid-column: 1 / -1; margin: 0; }
+.accounting-mappings h3 { margin: 0; }
 
-.accounting-preview-total {
-  display: flex;
-  justify-content: space-between;
-  padding: 16px;
+.accounting-preview-totals {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid rgba(31, 67, 53, 0.1);
   border-radius: 10px;
   background: rgba(31, 67, 53, 0.08);
   color: var(--accent-dark);
 }
 
-.accounting-reexport {
+.accounting-total-row {
   display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 10px 14px;
+  border-top: 1px solid rgba(31, 67, 53, 0.09);
+}
+
+.accounting-total-row:first-child {
+  border-top: 0;
+}
+
+.accounting-total-row strong {
+  white-space: nowrap;
+}
+
+.accounting-total-row.is-grand-total {
+  padding-block: 14px;
+  background: rgba(31, 67, 53, 0.08);
+  font-size: 1.02rem;
+}
+
+.accounting-reexport.checkbox-label {
   align-items: center;
-  gap: 9px;
-  color: var(--muted);
+  gap: 12px;
+  min-height: 58px;
+  padding: 10px 14px;
+  border: 1px solid rgba(31, 67, 53, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.45);
+  color: var(--text);
+  font-weight: 750;
+}
+
+.accounting-reexport[hidden] {
+  display: none;
 }
 
 .accounting-open-link {
@@ -1565,11 +1658,123 @@
 }
 
 @media (max-width: 760px) {
-  .accounting-dialog { width: calc(100vw - 20px); max-height: calc(100dvh - 20px); padding: 22px 16px; border-radius: 16px; }
-  .accounting-preview-meta, .accounting-mappings { grid-template-columns: 1fr; }
-  .accounting-mappings h3 { grid-column: auto; }
-  .accounting-lines { overflow-x: auto; }
-  .accounting-line { min-width: 660px; }
+  dialog.accounting-dialog {
+    width: calc(100vw - 12px);
+    max-height: calc(100dvh - 12px);
+    border-radius: 16px;
+  }
+
+  .accounting-dialog-header {
+    padding: max(22px, env(safe-area-inset-top)) 18px 0;
+  }
+
+  .accounting-dialog-intro {
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+    line-height: 1.45;
+  }
+
+  .accounting-dialog-scroll {
+    gap: 13px;
+    padding: 0 16px 16px;
+  }
+
+  .accounting-dialog-actions {
+    grid-template-columns: 1fr;
+    gap: 9px;
+    padding: 12px 16px max(16px, env(safe-area-inset-bottom));
+  }
+
+  .accounting-dialog-actions .saas-primary-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .accounting-preview-meta { grid-template-columns: 1fr; }
+
+  .accounting-lines {
+    gap: 10px;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .accounting-line-head {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  .accounting-line:not(.accounting-line-head) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 11px 14px;
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid rgba(31, 67, 53, 0.12);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.45);
+  }
+
+  .accounting-line:not(.accounting-line-head) > * {
+    display: grid;
+    gap: 3px;
+    text-align: left;
+    white-space: normal;
+  }
+
+  .accounting-line:not(.accounting-line-head) > :first-child {
+    grid-column: 1 / -1;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(31, 67, 53, 0.08);
+    font-weight: 800;
+  }
+
+  .accounting-line:not(.accounting-line-head) > *::before {
+    color: var(--muted);
+    content: attr(data-label);
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .accounting-line:not(.accounting-line-head) > :nth-child(2n + 3) {
+    text-align: right;
+  }
+
+  .accounting-line:not(.accounting-line-head) > strong {
+    color: var(--accent-dark);
+  }
+
+  .accounting-mappings {
+    gap: 13px;
+    padding: 13px;
+  }
+
+  .accounting-mappings label,
+  .accounting-mappings select {
+    min-width: 0;
+  }
+
+  .accounting-mappings label span {
+    overflow-wrap: anywhere;
+  }
+
+  .accounting-total-row {
+    gap: 12px;
+    padding-inline: 13px;
+  }
+
+  .accounting-reexport.checkbox-label {
+    align-items: center;
+    padding: 11px 13px;
+    font-size: 0.9rem;
+  }
+
   .timeline-workday-actions { grid-template-columns: 1fr 42px; grid-column: 1 / -1; border-top: 1px solid rgba(31, 67, 53, 0.08); border-left: 0; }
   .accounting-provider-choice { grid-template-columns: 1fr; gap: 7px; }
   .accounting-provider-choice p { margin: 0; font-size: 0.78rem; line-height: 1.35; }
