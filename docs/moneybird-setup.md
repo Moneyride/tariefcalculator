@@ -48,6 +48,36 @@ Gebruik nooit een Moneybird-token als Netlify-variabele of client-side configura
 
 De callback van Moneybird bevat geen Supabase-JWT. De functie valideert de OAuth-state zelf en valideert alle andere acties expliciet met het bearer-token van de gebruiker. Deploy daarom zo:
 
+### Zonder terminal, via het Supabase-dashboard
+
+1. Open je Supabase-project en ga naar **Edge Functions**.
+2. Open de functie **accounting-moneybird**.
+3. Open het tabblad **Code** en kies **Edit function** of **Edit code**.
+4. Open lokaal het bestand `supabase/functions/accounting-moneybird/index.ts`.
+5. Selecteer en kopieer de volledige inhoud van dit bestand, van de eerste `import` tot en met de laatste `});`.
+6. Vervang in de Supabase-editor de volledige bestaande inhoud door de gekopieerde code.
+7. Open de instellingen van deze functie en zet **Verify JWT** of **Enforce JWT verification** uit. De Moneybird-callback komt zonder ingelogde Overuurtje-sessie terug; de functie beveiligt de overige acties zelf.
+8. Klik op **Deploy updates** en wacht op de succesmelding.
+9. Open daarna in een nieuw browsertabblad:
+
+   `https://kdevseeblnjwrqnanfke.supabase.co/functions/v1/accounting-moneybird/health`
+
+   De verwachte reactie is:
+
+   `{"ok":true,"provider":"moneybird"}`
+
+Alleen op **Deploy updates** drukken zonder stap 5 en 6 publiceert opnieuw de al aanwezige online code. Lokale reparaties worden daarmee niet automatisch naar Supabase gekopieerd. Een GitHub- of Netlify-deploy werkt de Supabase Edge Function evenmin bij.
+
+Controleer onder **Edge Functions → Secrets** ook of deze vijf namen bestaan. De waarden zelf hoeven en mogen niet in de repository staan:
+
+- `MONEYBIRD_CLIENT_ID`
+- `MONEYBIRD_CLIENT_SECRET`
+- `MONEYBIRD_REDIRECT_URI`
+- `OVERUURTJE_APP_URL`
+- `ACCOUNTING_TOKEN_ENCRYPTION_KEY`
+
+### Met de Supabase CLI
+
 ```bash
 supabase functions deploy accounting-moneybird \
   --project-ref kdevseeblnjwrqnanfke \

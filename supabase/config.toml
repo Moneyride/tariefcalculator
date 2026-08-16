@@ -1,3 +1,5 @@
 [functions.send-push-notifications]
 verify_jwt = false
 
+[functions.accounting-moneybird]
+verify_jwt = false
