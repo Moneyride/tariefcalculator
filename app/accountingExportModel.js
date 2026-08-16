@@ -101,14 +101,22 @@
         1, "dag", result.travelDayAmount, vat, source
       ));
     } else {
-      lines.push(line("normal_day", `${role} – draaidag ${label}`, 1, "dag", result.baseAmount, vat, source));
+      const usesHalfDayRate = result.rateMode === "day" && result.baseAmount < result.settings.dayRate;
+      const baseCategory = result.rateMode === "hour"
+        ? (result.minimumChargeApplied ? "minimum_hours" : "hourly_rate")
+        : (usesHalfDayRate ? "half_day" : "normal_day");
+      const baseDescription = result.rateMode === "hour"
+        ? `${role} – ${result.minimumChargeApplied ? "minimale afname" : "uurtarief"} ${label}`
+        : `${role} – ${usesHalfDayRate ? "halve dag" : "draaidag"} ${label}`;
+      lines.push(line(baseCategory, baseDescription, 1, "dag", result.baseAmount, vat, source));
       const overtime = [
-        [result.overtime10To12Hours, result.overtime10To12Amount, "Overuren 150%"],
-        [result.overtimeFrom12Hours, result.overtimeFrom12Amount, "Overuren 200%"],
-        [result.overtimeFrom14Hours, result.overtimeFrom14Amount, "Overuren 250%"]
+        ["overtime_100", result.standardOvertimeHours, result.standardOvertimeAmount, "Overuren 100%"],
+        ["overtime_150", result.overtime10To12Hours, result.overtime10To12Amount, "Overuren 150%"],
+        ["overtime_200", result.overtimeFrom12Hours, result.overtimeFrom12Amount, "Overuren 200%"],
+        ["overtime_250", result.overtimeFrom14Hours, result.overtimeFrom14Amount, "Overuren 250%"]
       ];
-      overtime.forEach(([hours, amount, description]) => {
-        if (Number(hours) > 0) lines.push(line("overtime", `${description} – ${Number(hours).toLocaleString("nl-NL")} uur`, hours, "uur", Number(amount) / Number(hours), vat, source));
+      overtime.forEach(([category, hours, amount, description]) => {
+        if (Number(hours) > 0) lines.push(line(category, `${description} – ${Number(hours).toLocaleString("nl-NL")} uur`, hours, "uur", Number(amount) / Number(hours), vat, source));
       });
       if (Number(result.nightHours) > 0) {
         lines.push(line("night_hours", `Nachttoeslag – ${Number(result.nightHours).toLocaleString("nl-NL")} uur`, result.nightHours, "uur", Number(result.nightAmount) / Number(result.nightHours), vat, source));
@@ -117,9 +125,9 @@
     if (Number(result.kilometers) > 0 && Number(result.kilometerAmount) > 0) {
       lines.push(line("mileage", `Kilometervergoeding – ${Number(result.kilometers).toLocaleString("nl-NL")} km`, result.kilometers, "km", result.settings.kilometerRate, vat, source));
     }
-    if (Number(result.parkingAmount) > 0) lines.push(line("custom_extra", "Parkeer- en onkosten", 1, "stuk", result.parkingAmount, vat, source));
-    if (Number(result.droneTariffAmount) > 0) lines.push(line("gear", "Drone", 1, "dag", result.droneTariffAmount, vat, source));
-    if (Number(result.ronin4dTariffAmount) > 0) lines.push(line("gear", "Ronin 4D", 1, "dag", result.ronin4dTariffAmount, vat, source));
+    if (Number(result.parkingAmount) > 0) lines.push(line("parking", "Parkeer- en onkosten", 1, "stuk", result.parkingAmount, vat, source));
+    if (Number(result.droneTariffAmount) > 0) lines.push(line("drone", "Drone", 1, "dag", result.droneTariffAmount, vat, source));
+    if (Number(result.ronin4dTariffAmount) > 0) lines.push(line("ronin", "Ronin 4D", 1, "dag", result.ronin4dTariffAmount, vat, source));
     (result.customEquipmentItems || []).forEach((item) => lines.push(line("gear", item.name, 1, "dag", item.amount, vat, source)));
     return lines.filter(Boolean);
   }

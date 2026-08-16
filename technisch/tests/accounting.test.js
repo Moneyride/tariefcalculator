@@ -50,7 +50,8 @@ test("werkdag gebruikt bestaande calculator voor professionele factuurregels", (
   });
   assert.equal(model.customer.name, "Nivo");
   assert.ok(model.lineItems.some((line) => line.category === "normal_day" && line.description.includes("Cameraman")));
-  assert.ok(model.lineItems.some((line) => line.category === "overtime"));
+  assert.ok(model.lineItems.some((line) => line.category === "overtime_150"));
+  assert.ok(model.lineItems.some((line) => line.category === "overtime_200"));
   assert.ok(model.lineItems.some((line) => line.category === "mileage" && line.quantity === 124));
   assert.ok(model.lineItems.some((line) => line.category === "gear" && line.description === "Sony FX9"));
   assert.ok(model.lineItems.every((line) => !line.description.includes("normal_day")));
@@ -72,9 +73,36 @@ test("reisdag onderdrukt overuren en nachttoeslag, maar behoudt losse kosten", (
   });
   const model = accounting.fromWorkday({ id: "22222222-2222-4222-8222-222222222222", calculationData: travel });
   assert.ok(model.lineItems.some((line) => line.category === "travel_day_non_eu" && line.lineTotal === 450));
-  assert.equal(model.lineItems.some((line) => line.category === "overtime"), false);
+  assert.equal(model.lineItems.some((line) => line.category.startsWith("overtime_")), false);
   assert.equal(model.lineItems.some((line) => line.category === "night_hours"), false);
-  assert.ok(model.lineItems.some((line) => line.category === "custom_extra" && line.lineTotal === 18));
+  assert.ok(model.lineItems.some((line) => line.category === "parking" && line.lineTotal === 18));
+});
+
+test("halve dagen en overuurstaffels blijven afzonderlijke boekhoudcategorieën", () => {
+  const halfDay = accounting.fromWorkday({
+    id: "23232323-2323-4232-8232-232323232323",
+    calculationData: snapshot({
+      startTime: "08:00",
+      endTime: "13:00",
+      settings: { ...snapshot().settings, enableHalfDayUnder6Hours: true },
+      extras: { ...snapshot().extras, enableKilometers: false, customEquipment: [] }
+    })
+  });
+  assert.equal(halfDay.lineItems[0].category, "half_day");
+
+  const standardOvertime = accounting.fromWorkday({
+    id: "24242424-2424-4242-8242-242424242424",
+    calculationData: snapshot({
+      settings: {
+        ...snapshot().settings,
+        enableOvertime10To12: false,
+        enableOvertimeFrom12: false,
+        enableOvertimeFrom14: false
+      },
+      extras: { ...snapshot().extras, enableKilometers: false, customEquipment: [] }
+    })
+  });
+  assert.ok(standardOvertime.lineItems.some((line) => line.category === "overtime_100"));
 });
 
 test("projectfilter neemt alleen geselecteerde werkdagen mee", () => {
@@ -161,6 +189,9 @@ test("boekhoudpreview zoekt opdrachtgevers op invoer en gebruikt altijd 21 proce
   assert.match(preview, /projectDayLabel/);
   assert.match(preview, /summarizePreviewLines/);
   assert.match(preview, /normal_day: "Dagtarieven"/);
+  assert.match(preview, /half_day: "Halve dagen"/);
+  assert.match(preview, /overtime_150: "Overuren 150%"/);
+  assert.match(preview, /legacyMappingCategories/);
   assert.match(preview, /Grootboek · \$\{name\}/);
   assert.match(preview, /syncSubmitState/);
   assert.match(css, /dialog\.accounting-dialog\s*\{[^}]*max-height:[^;]*100dvh[^;]*;[^}]*overflow:\s*hidden/s);

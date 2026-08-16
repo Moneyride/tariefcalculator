@@ -6,13 +6,34 @@
   const euro = new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" });
   const categoryLabels = Object.freeze({
     normal_day: "Dagtarieven",
-    overtime: "Overuren",
+    half_day: "Halve dagen",
+    hourly_rate: "Uurtarieven",
+    minimum_hours: "Minimale afname",
+    overtime_100: "Overuren 100%",
+    overtime_150: "Overuren 150%",
+    overtime_200: "Overuren 200%",
+    overtime_250: "Overuren 250%",
     night_hours: "Nachturen",
     travel_day_eu: "Reisdagen binnen Europa",
     travel_day_non_eu: "Reisdagen buiten Europa",
     mileage: "Kilometers",
+    parking: "Parkeer- en onkosten",
+    drone: "Drone",
+    ronin: "Ronin 4D",
     gear: "Apparatuur",
     custom_extra: "Overige kosten"
+  });
+  const legacyMappingCategories = Object.freeze({
+    half_day: "normal_day",
+    hourly_rate: "normal_day",
+    minimum_hours: "normal_day",
+    overtime_100: "overtime",
+    overtime_150: "overtime",
+    overtime_200: "overtime",
+    overtime_250: "overtime",
+    parking: "custom_extra",
+    drone: "gear",
+    ronin: "gear"
   });
   let dialog;
   let originalModel;
@@ -208,7 +229,7 @@
     });
     return [...groups.values()].map((group) => {
       const singleUnit = group.units.size === 1 ? [...group.units][0] : "regels";
-      const dayLabel = group.category === "normal_day" || group.category.startsWith("travel_day_");
+      const dayLabel = ["normal_day", "half_day"].includes(group.category) || group.category.startsWith("travel_day_");
       const quantityLabel = dayLabel
         ? `${group.count.toLocaleString("nl-NL")} ${group.count === 1 ? "dag" : "dagen"}`
         : `${group.quantity.toLocaleString("nl-NL")} ${singleUnit}`;
@@ -257,7 +278,9 @@
       label.innerHTML = `<span>Grootboek · ${name}</span><select data-ledger="${category}" required><option value="">Kies grootboekrekening</option></select>`;
       const select = label.querySelector("select");
       options.ledgerAccounts.forEach((ledger) => select.add(new Option(ledger.name, ledger.id)));
-      select.value = savedLedgers.find((item) => item.category === category)?.external_ledger_account_id || "";
+      const saved = savedLedgers.find((item) => item.category === category)
+        || savedLedgers.find((item) => item.category === legacyMappingCategories[category]);
+      select.value = saved?.external_ledger_account_id || "";
       root.append(label);
     });
   }
