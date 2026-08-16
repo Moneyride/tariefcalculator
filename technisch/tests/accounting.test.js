@@ -86,6 +86,7 @@ test("projectfilter neemt alleen geselecteerde werkdagen mee", () => {
   const model = accounting.fromProject(project, days);
   const filtered = accounting.withSourceItems(model, [days[1].id]);
   assert.deepEqual(filtered.sourceItems.map((item) => item.sourceId), [days[1].id]);
+  assert.deepEqual(model.sourceItems.map((item) => item.date), ["2026-08-12", "2026-08-13"]);
   assert.ok(filtered.lineItems.length > 0);
   assert.ok(filtered.lineItems.every((item) => item.source.sourceId === days[1].id));
 });
@@ -158,6 +159,9 @@ test("boekhoudpreview zoekt opdrachtgevers op invoer en gebruikt altijd 21 proce
   assert.match(preview, /class="accounting-reexport checkbox-label"/);
   assert.match(preview, /checkbox-label accounting-source-row/);
   assert.match(preview, /projectDayLabel/);
+  assert.match(preview, /summarizePreviewLines/);
+  assert.match(preview, /normal_day: "Dagtarieven"/);
+  assert.match(preview, /Grootboek · \$\{name\}/);
   assert.match(preview, /syncSubmitState/);
   assert.match(css, /dialog\.accounting-dialog\s*\{[^}]*max-height:[^;]*100dvh[^;]*;[^}]*overflow:\s*hidden/s);
   assert.match(css, /\.accounting-dialog-scroll\s*\{[^}]*overflow-y:\s*auto/s);

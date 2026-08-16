@@ -4,6 +4,16 @@
   const service = globalThis.OveruurtjeAccounting;
   const exportTools = globalThis.OveruurtjeAccountingExport;
   const euro = new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" });
+  const categoryLabels = Object.freeze({
+    normal_day: "Dagtarieven",
+    overtime: "Overuren",
+    night_hours: "Nachturen",
+    travel_day_eu: "Reisdagen binnen Europa",
+    travel_day_non_eu: "Reisdagen buiten Europa",
+    mileage: "Kilometers",
+    gear: "Apparatuur",
+    custom_extra: "Overige kosten"
+  });
   let dialog;
   let originalModel;
   let connection;
@@ -161,18 +171,54 @@
     const model = selectedModel();
     const root = dialog.querySelector(".accounting-lines");
     root.innerHTML = `<div class="accounting-line accounting-line-head"><span>Omschrijving</span><span>Aantal</span><span>Prijs</span><span>Btw</span><span>Bedrag</span></div>`;
-    model.lineItems.forEach((item) => {
+    summarizePreviewLines(model.lineItems).forEach((item) => {
       const row = document.createElement("div");
       row.className = "accounting-line";
       row.innerHTML = `<span data-label="Omschrijving"></span><span data-label="Aantal"></span><span data-label="Prijs"></span><span data-label="Btw"></span><strong data-label="Regelbedrag"></strong>`;
       row.children[0].textContent = item.description;
-      row.children[1].textContent = `${item.quantity.toLocaleString("nl-NL")} ${item.unit}`;
-      row.children[2].textContent = euro.format(item.unitPrice);
+      row.children[1].textContent = item.quantityLabel;
+      row.children[2].textContent = item.priceLabel;
       row.children[3].textContent = `${item.vatPercentage}%`;
       row.children[4].textContent = euro.format(item.lineTotal);
       root.append(row);
     });
     renderTotals(model.lineItems);
+  }
+
+  function summarizePreviewLines(lineItems) {
+    const groups = new Map();
+    lineItems.forEach((item) => {
+      const key = `${item.category}:${Number(item.vatPercentage || 0)}`;
+      const group = groups.get(key) || {
+        category: item.category,
+        description: categoryLabels[item.category] || "Overige kosten",
+        vatPercentage: Number(item.vatPercentage || 0),
+        quantity: 0,
+        units: new Set(),
+        prices: new Set(),
+        lineTotal: 0,
+        count: 0
+      };
+      group.quantity += Number(item.quantity || 0);
+      group.units.add(item.unit || "stuk");
+      group.prices.add(Number(item.unitPrice || 0).toFixed(2));
+      group.lineTotal += Number(item.lineTotal || 0);
+      group.count += 1;
+      groups.set(key, group);
+    });
+    return [...groups.values()].map((group) => {
+      const singleUnit = group.units.size === 1 ? [...group.units][0] : "regels";
+      const dayLabel = group.category === "normal_day" || group.category.startsWith("travel_day_");
+      const quantityLabel = dayLabel
+        ? `${group.count.toLocaleString("nl-NL")} ${group.count === 1 ? "dag" : "dagen"}`
+        : `${group.quantity.toLocaleString("nl-NL")} ${singleUnit}`;
+      return {
+        ...group,
+        quantityLabel,
+        priceLabel: group.prices.size === 1 ? euro.format(Number([...group.prices][0])) : "Verschillend",
+        lineTotal: Math.round((group.lineTotal + Number.EPSILON) * 100) / 100
+      };
+    });
   }
 
   function renderTotals(lineItems) {
@@ -206,7 +252,7 @@
       || options.taxRates.find((tax) => Number(tax.percentage) === 21)
       || null;
     categories.forEach((category) => {
-      const name = model.lineItems.find((item) => item.category === category)?.description || category;
+      const name = categoryLabels[category] || "Overige kosten";
       const label = document.createElement("label");
       label.innerHTML = `<span>Grootboek · ${name}</span><select data-ledger="${category}" required><option value="">Kies grootboekrekening</option></select>`;
       const select = label.querySelector("select");

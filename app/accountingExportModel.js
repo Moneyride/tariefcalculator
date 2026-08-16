@@ -163,7 +163,11 @@
           clientName: project.clientName || project.client_name || data.clientName
         }
       });
-      const source = { sourceType: "project_day", sourceId };
+      const source = {
+        sourceType: "project_day",
+        sourceId,
+        date: day.workDate || day.work_date || data.date || ""
+      };
       return {
         ...model,
         sourceItems: [source],
