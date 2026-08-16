@@ -15,14 +15,28 @@
 
   async function invoke(action, payload = {}) {
     const { session } = await clientAndSession();
-    const response = await fetch(`${config.supabaseUrl}/functions/v1/${functionName}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ action, ...payload })
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    let response;
+    try {
+      response = await fetch(`${config.supabaseUrl}/functions/v1/${functionName}`, {
+        method: "POST",
+        headers: {
+          apikey: config.supabaseAnonKey,
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ action, ...payload }),
+        signal: controller.signal
+      });
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        throw new Error("De Moneybird-koppeling reageert niet. Probeer het opnieuw.");
+      }
+      throw new Error("De Moneybird-koppeling kon niet worden bereikt.");
+    } finally {
+      clearTimeout(timeout);
+    }
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || "Moneybird kon de actie niet uitvoeren.");
     return result;

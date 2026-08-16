@@ -98,8 +98,18 @@ test("backend bewaart secrets buiten clientpolicies en maakt nooit automatisch v
   assert.match(edge, /scope: "sales_invoices settings"/);
   assert.match(edge, /sales_invoices\/find_by_reference/);
   assert.match(edge, /sales_invoices\.json/);
+  assert.match(edge, /url\.pathname\.endsWith\("\/health"\)/);
   assert.match(edge, /accounting_exports"\)\.insert\(exportRecord\)/);
   assert.match(edge, /error\?\.code === "23505"/);
   assert.doesNotMatch(edge, /accounting_exports"\)\.upsert\(exportRecord/);
   assert.doesNotMatch(edge, /send_invoice/);
+});
+
+test("Moneybird-client verstuurt de Supabase API-key en blijft nooit eindeloos wachten", () => {
+  const client = fs.readFileSync(path.join(root, "app/saas/accountingService.js"), "utf8");
+  const accountUi = fs.readFileSync(path.join(root, "app/accountAccounting.js"), "utf8");
+  assert.match(client, /apikey:\s*config\.supabaseAnonKey/);
+  assert.match(client, /new AbortController\(\)/);
+  assert.match(client, /setTimeout\(\(\) => controller\.abort\(\), 15000\)/);
+  assert.match(accountUi, /button\.disabled = false/);
 });

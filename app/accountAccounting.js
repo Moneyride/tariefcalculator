@@ -41,8 +41,17 @@
   function setStatus(message) { ensureSection().querySelector("[data-accounting-status]").textContent = message || ""; }
   async function connect() {
     if (!context?.isPro) { document.dispatchEvent(new CustomEvent("overuurtje:pro-required", { detail: { feature: "accounting_export" } })); return; }
+    const button = ensureSection().querySelector("[data-accounting-connect]");
+    button.disabled = true;
     setStatus("Moneybird openen…");
-    try { location.href = (await service.startOAuth()).authorizationUrl; } catch (error) { setStatus(error.message); }
+    try {
+      const authorizationUrl = (await service.startOAuth()).authorizationUrl;
+      if (!authorizationUrl) throw new Error("Moneybird gaf geen geldige verbindingslink terug.");
+      location.assign(authorizationUrl);
+    } catch (error) {
+      setStatus(error.message);
+      button.disabled = false;
+    }
   }
   async function test() {
     setStatus("Verbinding controleren…");

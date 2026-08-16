@@ -465,6 +465,9 @@ async function handleCallback(url: URL) {
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const url = new URL(request.url);
+  if (request.method === "GET" && url.pathname.endsWith("/health")) {
+    return json({ ok: true, provider: "moneybird" });
+  }
   if (request.method === "GET" && url.pathname.endsWith("/callback")) return handleCallback(url);
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
