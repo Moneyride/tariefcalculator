@@ -11617,6 +11617,29 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
   const supabase = globalThis.OveruurtjeSupabase;
   const config = globalThis.OveruurtjeConfig;
   const functionName = "accounting-moneybird";
+  const responseCache = new Map();
+  const pendingRequests = new Map();
+  const cacheLimits = Object.freeze({ maxEntries: 80 });
+
+  function cacheKey(action, payload) {
+    return `${action}:${JSON.stringify(payload || {})}`;
+  }
+
+  function pruneCache() {
+    const now = Date.now();
+    for (const [key, entry] of responseCache) {
+      if (entry.expiresAt <= now) responseCache.delete(key);
+    }
+    while (responseCache.size > cacheLimits.maxEntries) {
+      responseCache.delete(responseCache.keys().next().value);
+    }
+  }
+
+  function invalidate(...actions) {
+    for (const key of responseCache.keys()) {
+      if (!actions.length || actions.some((action) => key.startsWith(`${action}:`))) responseCache.delete(key);
+    }
+  }
 
   async function clientAndSession() {
     const client = await supabase.getClient();
@@ -11626,7 +11649,7 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     return { client, session: data.session };
   }
 
-  async function invoke(action, payload = {}) {
+  async function request(action, payload = {}) {
     const { session } = await clientAndSession();
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
@@ -11655,11 +11678,40 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     return result;
   }
 
+  function invoke(action, payload = {}, options = {}) {
+    const key = cacheKey(action, payload);
+    const ttl = Math.max(0, Number(options.cacheTtlMs) || 0);
+    pruneCache();
+    const cached = responseCache.get(key);
+    if (ttl && cached?.expiresAt > Date.now()) return Promise.resolve(cached.value);
+    if (pendingRequests.has(key)) return pendingRequests.get(key);
+
+    const pending = request(action, payload).then((result) => {
+      if (ttl) responseCache.set(key, { value: result, expiresAt: Date.now() + ttl });
+      return result;
+    }).finally(() => pendingRequests.delete(key));
+    pendingRequests.set(key, pending);
+    return pending;
+  }
+
   async function mappings(table) {
+    const key = `mapping:${table}`;
+    pruneCache();
+    const cached = responseCache.get(key);
+    if (cached?.expiresAt > Date.now()) return cached.value;
+    if (pendingRequests.has(key)) return pendingRequests.get(key);
+    const pending = loadMappings(table).finally(() => pendingRequests.delete(key));
+    pendingRequests.set(key, pending);
+    return pending;
+  }
+
+  async function loadMappings(table) {
     const { client } = await clientAndSession();
-    const { data, error } = await client.from(table).select("*");
+    const { data, error } = await client.from(table).select("*").limit(500);
     if (error) throw error;
-    return data || [];
+    const result = data || [];
+    responseCache.set(`mapping:${table}`, { value: result, expiresAt: Date.now() + 30000 });
+    return result;
   }
 
   async function saveMapping(table, record, conflict) {
@@ -11668,21 +11720,40 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
       onConflict: conflict
     }).select().single();
     if (error) throw error;
+    responseCache.delete(`mapping:${table}`);
     return data;
   }
 
   globalThis.OveruurtjeAccounting = Object.freeze({
-    status: () => invoke("status"),
+    status: () => invoke("status", {}, { cacheTtlMs: 15000 }),
     startOAuth: () => invoke("startOAuth"),
-    connectDevelopment: () => invoke("connectDevelopment"),
-    administrations: () => invoke("administrations"),
-    selectAdministration: (administrationId) => invoke("selectAdministration", { administrationId }),
+    connectDevelopment: async () => {
+      const result = await invoke("connectDevelopment");
+      invalidate();
+      return result;
+    },
+    administrations: () => invoke("administrations", {}, { cacheTtlMs: 5 * 60 * 1000 }),
+    settingsBootstrap: () => invoke("settingsBootstrap", {}, { cacheTtlMs: 15000 }),
+    selectAdministration: async (administrationId) => {
+      const result = await invoke("selectAdministration", { administrationId });
+      invalidate();
+      return result;
+    },
     validate: () => invoke("validate"),
-    disconnect: () => invoke("disconnect"),
-    contacts: (query = "") => invoke("contacts", { query }),
-    configurationOptions: () => invoke("configurationOptions"),
-    createDraftInvoice: (payload) => invoke("createDraftInvoice", payload),
-    exports: () => invoke("exports"),
+    disconnect: async () => {
+      const result = await invoke("disconnect");
+      invalidate();
+      return result;
+    },
+    contacts: (query = "") => invoke("contacts", { query: query.trim() }, { cacheTtlMs: 2 * 60 * 1000 }),
+    configurationOptions: () => invoke("configurationOptions", {}, { cacheTtlMs: 30 * 60 * 1000 }),
+    previewBootstrap: () => invoke("previewBootstrap"),
+    createDraftInvoice: async (payload) => {
+      const result = await invoke("createDraftInvoice", payload);
+      invalidate("exports", "previewBootstrap");
+      return result;
+    },
+    exports: () => invoke("exports", {}, { cacheTtlMs: 15000 }),
     customerMappings: () => mappings("accounting_customer_mappings"),
     taxMappings: () => mappings("accounting_tax_mappings"),
     ledgerMappings: () => mappings("accounting_ledger_mappings"),
@@ -12389,6 +12460,7 @@ globalThis.TariffCalculator = {
   let previewReady = false;
   let creatingDraft = false;
   let requiresReexport = false;
+  let contactRequestSequence = 0;
 
   function providerName() {
     return connection?.provider === "moneybird" ? "Moneybird" : "je boekhoudsysteem";
@@ -12434,6 +12506,7 @@ globalThis.TariffCalculator = {
   }
 
   function close() {
+    contactRequestSequence += 1;
     dialog?.close();
     document.documentElement.classList.remove("dialog-open");
   }
@@ -12495,11 +12568,20 @@ globalThis.TariffCalculator = {
     const suggestions = dialog.querySelector("[data-accounting-contact-suggestions]");
     selectedContact = selectedContact?.name === query ? selectedContact : null;
     if (query.length < 2) {
+      contactRequestSequence += 1;
       suggestions.replaceChildren();
       suggestions.hidden = true;
       return;
     }
-    const result = await service.contacts(query);
+    const request = ++contactRequestSequence;
+    let result;
+    try {
+      result = await service.contacts(query);
+    } catch (error) {
+      if (request === contactRequestSequence) status(error.message || "Opdrachtgevers konden niet worden gezocht.");
+      return;
+    }
+    if (request !== contactRequestSequence || input.value.trim() !== query) return;
     suggestions.replaceChildren(...result.contacts.map((contact) => {
       const button = document.createElement("button");
       button.type = "button";
@@ -12707,6 +12789,7 @@ globalThis.TariffCalculator = {
   }
 
   async function open({ exportModel, context }) {
+    contactRequestSequence += 1;
     currentContext = context;
     if (!currentContext?.isPro) {
       document.dispatchEvent(new CustomEvent("overuurtje:pro-required", { detail: { feature: "accounting_export" } }));
@@ -12730,21 +12813,20 @@ globalThis.TariffCalculator = {
     status("Boekhoudkoppeling laden…");
     dialog.showModal();
     try {
-      const result = await service.status();
-      connection = result.connection;
+      const bootstrap = await service.previewBootstrap();
+      connection = bootstrap.connection;
       if (!connection || connection.status !== "connected" || !(connection.administration_id || connection.administrationId)) {
         throw new Error("Kies en verbind eerst een boekhoudsysteem via Account → Boekhouding.");
       }
-      const [configuration, history] = await Promise.all([service.configurationOptions(), service.exports()]);
-      options = configuration;
-      exportHistory = history;
+      options = bootstrap.configuration;
+      exportHistory = bootstrap.history;
       dialog.querySelector("input[name='invoiceDate']").value = originalModel.date;
       dialog.querySelector("input[name='contactSearch']").value = "";
       dialog.querySelector("[data-accounting-contact-suggestions]").replaceChildren();
       dialog.querySelector("[data-accounting-contact-suggestions]").hidden = true;
       renderSources();
       await refreshPreview();
-      const mappings = await service.customerMappings();
+      const mappings = bootstrap.customerMappings;
       const mapped = mappings.find((item) => item.local_customer_key === originalModel.customer.key);
       selectMappedContact(mapped);
       previewReady = true;

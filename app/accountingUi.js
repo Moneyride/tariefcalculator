@@ -47,6 +47,7 @@
   let previewReady = false;
   let creatingDraft = false;
   let requiresReexport = false;
+  let contactRequestSequence = 0;
 
   function providerName() {
     return connection?.provider === "moneybird" ? "Moneybird" : "je boekhoudsysteem";
@@ -92,6 +93,7 @@
   }
 
   function close() {
+    contactRequestSequence += 1;
     dialog?.close();
     document.documentElement.classList.remove("dialog-open");
   }
@@ -153,11 +155,20 @@
     const suggestions = dialog.querySelector("[data-accounting-contact-suggestions]");
     selectedContact = selectedContact?.name === query ? selectedContact : null;
     if (query.length < 2) {
+      contactRequestSequence += 1;
       suggestions.replaceChildren();
       suggestions.hidden = true;
       return;
     }
-    const result = await service.contacts(query);
+    const request = ++contactRequestSequence;
+    let result;
+    try {
+      result = await service.contacts(query);
+    } catch (error) {
+      if (request === contactRequestSequence) status(error.message || "Opdrachtgevers konden niet worden gezocht.");
+      return;
+    }
+    if (request !== contactRequestSequence || input.value.trim() !== query) return;
     suggestions.replaceChildren(...result.contacts.map((contact) => {
       const button = document.createElement("button");
       button.type = "button";
@@ -365,6 +376,7 @@
   }
 
   async function open({ exportModel, context }) {
+    contactRequestSequence += 1;
     currentContext = context;
     if (!currentContext?.isPro) {
       document.dispatchEvent(new CustomEvent("overuurtje:pro-required", { detail: { feature: "accounting_export" } }));
@@ -388,21 +400,20 @@
     status("Boekhoudkoppeling laden…");
     dialog.showModal();
     try {
-      const result = await service.status();
-      connection = result.connection;
+      const bootstrap = await service.previewBootstrap();
+      connection = bootstrap.connection;
       if (!connection || connection.status !== "connected" || !(connection.administration_id || connection.administrationId)) {
         throw new Error("Kies en verbind eerst een boekhoudsysteem via Account → Boekhouding.");
       }
-      const [configuration, history] = await Promise.all([service.configurationOptions(), service.exports()]);
-      options = configuration;
-      exportHistory = history;
+      options = bootstrap.configuration;
+      exportHistory = bootstrap.history;
       dialog.querySelector("input[name='invoiceDate']").value = originalModel.date;
       dialog.querySelector("input[name='contactSearch']").value = "";
       dialog.querySelector("[data-accounting-contact-suggestions]").replaceChildren();
       dialog.querySelector("[data-accounting-contact-suggestions]").hidden = true;
       renderSources();
       await refreshPreview();
-      const mappings = await service.customerMappings();
+      const mappings = bootstrap.customerMappings;
       const mapped = mappings.find((item) => item.local_customer_key === originalModel.customer.key);
       selectMappedContact(mapped);
       previewReady = true;

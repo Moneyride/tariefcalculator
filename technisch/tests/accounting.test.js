@@ -156,7 +156,32 @@ test("Moneybird-client verstuurt de Supabase API-key en blijft nooit eindeloos w
   assert.match(client, /apikey:\s*config\.supabaseAnonKey/);
   assert.match(client, /new AbortController\(\)/);
   assert.match(client, /setTimeout\(\(\) => controller\.abort\(\), 15000\)/);
+  assert.match(client, /pendingRequests\.has\(key\)/);
+  assert.match(client, /cacheTtlMs: 30 \* 60 \* 1000/);
+  assert.match(client, /cacheTtlMs: 2 \* 60 \* 1000/);
+  assert.match(client, /previewBootstrap/);
+  assert.match(client, /settingsBootstrap/);
   assert.match(accountUi, /button\.disabled = false/);
+});
+
+test("providerlaag begrenst retries, verwerkt 429 en cachet statische providerdata server-side", () => {
+  const edge = fs.readFileSync(path.join(root, "supabase/functions/accounting-moneybird/index.ts"), "utf8");
+  const cacheMigration = fs.readFileSync(path.join(root, "supabase/migrations/202608190001_accounting_provider_cache.sql"), "utf8");
+
+  assert.match(edge, /type ProviderRequestPolicy/);
+  assert.match(edge, /const safeToRetry = \["GET", "HEAD"\]\.includes\(method\)/);
+  assert.match(edge, /const maxAttempts = safeToRetry/);
+  assert.match(edge, /response\.headers\.get\("Retry-After"\)/);
+  assert.match(edge, /refreshInFlight/);
+  assert.match(edge, /cachedProviderValue\([\s\S]*"administrations"/);
+  assert.match(edge, /`configuration:\$\{administrationId\}`/);
+  assert.match(edge, /6 \* 60 \* 60 \* 1000/);
+  assert.match(edge, /contacts:\$\{administrationId\}/);
+  assert.match(edge, /action === "previewBootstrap"/);
+  assert.match(edge, /action === "settingsBootstrap"/);
+  assert.match(edge, /model\.lineItems\.length > 500/);
+  assert.match(cacheMigration, /revoke all on public\.accounting_provider_cache from anon, authenticated/i);
+  assert.match(cacheMigration, /primary key \(connection_id, cache_key\)/i);
 });
 
 test("boekhoudintegratie is generiek en toont export alleen in relevante schermen", () => {

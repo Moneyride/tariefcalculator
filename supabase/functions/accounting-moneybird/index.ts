@@ -48,6 +48,138 @@ type ExportModel = {
   lineItems: ExportLine[];
 };
 
+type ProviderRequestPolicy = {
+  maxAttempts?: number;
+  timeoutMs?: number;
+  maxRetryDelayMs?: number;
+  retryStatuses?: number[];
+};
+
+type RuntimeCacheEntry = { value: unknown; expiresAt: number };
+const providerRuntimeCache = new Map<string, RuntimeCacheEntry>();
+const providerInFlight = new Map<string, Promise<unknown>>();
+const refreshInFlight = new Map<string, Promise<Credentials>>();
+const MAX_RUNTIME_CACHE_ENTRIES = 150;
+
+function sleep(milliseconds: number) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function pruneRuntimeCache() {
+  const now = Date.now();
+  for (const [key, entry] of providerRuntimeCache) {
+    if (entry.expiresAt <= now) providerRuntimeCache.delete(key);
+  }
+  while (providerRuntimeCache.size > MAX_RUNTIME_CACHE_ENTRIES) {
+    const oldestKey = providerRuntimeCache.keys().next().value;
+    if (!oldestKey) break;
+    providerRuntimeCache.delete(oldestKey);
+  }
+}
+
+function retryDelay(response: Response, attempt: number, maximum: number) {
+  const retryAfter = response.headers.get("Retry-After");
+  const seconds = retryAfter && /^\d+(\.\d+)?$/.test(retryAfter) ? Number(retryAfter) : NaN;
+  const headerDelay = Number.isFinite(seconds) ? seconds * 1000 : NaN;
+  const exponential = 250 * (2 ** attempt) + Math.floor(Math.random() * 150);
+  return Math.min(Number.isFinite(headerDelay) ? headerDelay : exponential, maximum);
+}
+
+async function providerResponse(
+  provider: string,
+  url: string,
+  init: RequestInit,
+  policy: ProviderRequestPolicy = {}
+) {
+  const method = String(init.method || "GET").toUpperCase();
+  const safeToRetry = ["GET", "HEAD"].includes(method);
+  const maxAttempts = safeToRetry ? Math.max(1, Math.min(policy.maxAttempts || 2, 3)) : 1;
+  const timeoutMs = Math.max(1000, Math.min(policy.timeoutMs || 12000, 20000));
+  const maxRetryDelayMs = Math.max(0, Math.min(policy.maxRetryDelayMs || 2500, 5000));
+  const retryStatuses = new Set(policy.retryStatuses || [429, 500, 502, 503, 504]);
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { ...init, signal: controller.signal });
+      if (!retryStatuses.has(response.status) || attempt === maxAttempts - 1) return response;
+      const delay = retryDelay(response, attempt, maxRetryDelayMs);
+      if (response.status === 429 && delay >= maxRetryDelayMs) return response;
+      if (response.body) await response.body.cancel().catch(() => {});
+      await sleep(delay);
+    } catch (error) {
+      if (!safeToRetry || attempt === maxAttempts - 1) {
+        const message = (error as { name?: string }).name === "AbortError"
+          ? `${provider} reageert niet op tijd.`
+          : `${provider} kon niet worden bereikt.`;
+        throw Object.assign(new Error(message), { status: 504 });
+      }
+      await sleep(Math.min(250 * (2 ** attempt), maxRetryDelayMs));
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+  throw Object.assign(new Error(`${provider} kon niet worden bereikt.`), { status: 503 });
+}
+
+async function cachedProviderValue<T>(
+  connection: Record<string, unknown>,
+  cacheKey: string,
+  ttlMs: number,
+  loader: () => Promise<T>,
+  persist = false,
+  force = false
+): Promise<T> {
+  const connectionId = String(connection.id);
+  const key = `${connectionId}:${cacheKey}`;
+  pruneRuntimeCache();
+  if (!force) {
+    const runtime = providerRuntimeCache.get(key);
+    if (runtime?.expiresAt > Date.now()) return runtime.value as T;
+    if (providerInFlight.has(key)) return providerInFlight.get(key) as Promise<T>;
+    if (persist) {
+      const cached = await database.from("accounting_provider_cache")
+        .select("payload, expires_at")
+        .eq("connection_id", connectionId)
+        .eq("cache_key", cacheKey)
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+      if (!cached.error && cached.data) {
+        const expiresAt = new Date(cached.data.expires_at).getTime();
+        providerRuntimeCache.set(key, { value: cached.data.payload, expiresAt });
+        return cached.data.payload as T;
+      }
+    }
+  }
+
+  const pending = loader().then(async (value) => {
+    const expiresAt = Date.now() + ttlMs;
+    providerRuntimeCache.set(key, { value, expiresAt });
+    if (persist) {
+      const result = await database.from("accounting_provider_cache").upsert({
+        connection_id: connectionId,
+        provider: String(connection.provider),
+        cache_key: cacheKey,
+        payload: value,
+        expires_at: new Date(expiresAt).toISOString(),
+        updated_at: new Date().toISOString()
+      }, { onConflict: "connection_id,cache_key" });
+      if (result.error) console.warn("Providercache kon niet worden opgeslagen.", { provider: connection.provider, cacheKey });
+    }
+    return value;
+  }).finally(() => providerInFlight.delete(key));
+  providerInFlight.set(key, pending);
+  return pending;
+}
+
+async function clearProviderCache(connectionId: string) {
+  for (const key of providerRuntimeCache.keys()) {
+    if (key.startsWith(`${connectionId}:`)) providerRuntimeCache.delete(key);
+  }
+  await database.from("accounting_provider_cache").delete().eq("connection_id", connectionId);
+}
+
 function json(data: unknown, status = 200) {
   return Response.json(data, { status, headers: corsHeaders });
 }
@@ -173,9 +305,9 @@ function moneybirdError(status: number) {
   return "Moneybird is tijdelijk niet bereikbaar.";
 }
 
-async function refreshAccessToken(connectionId: string, credentials: Credentials) {
+async function performAccessTokenRefresh(connectionId: string, credentials: Credentials) {
   if (!credentials.refreshToken || !clientId || !clientSecret) return credentials;
-  const response = await fetch("https://moneybird.com/oauth/token", {
+  const response = await providerResponse("Moneybird", "https://moneybird.com/oauth/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -184,7 +316,7 @@ async function refreshAccessToken(connectionId: string, credentials: Credentials
       client_id: clientId,
       client_secret: clientSecret
     })
-  });
+  }, { maxAttempts: 1 });
   if (!response.ok) throw Object.assign(new Error("De Moneybird-verbinding is verlopen. Verbind opnieuw."), { status: 401 });
   const token = await response.json();
   const refreshed: Credentials = {
@@ -197,6 +329,15 @@ async function refreshAccessToken(connectionId: string, credentials: Credentials
   return refreshed;
 }
 
+async function refreshAccessToken(connectionId: string, credentials: Credentials) {
+  const current = refreshInFlight.get(connectionId);
+  if (current) return current;
+  const pending = performAccessTokenRefresh(connectionId, credentials)
+    .finally(() => refreshInFlight.delete(connectionId));
+  refreshInFlight.set(connectionId, pending);
+  return pending;
+}
+
 async function moneybirdFetch(
   connection: Record<string, unknown>,
   path: string,
@@ -207,7 +348,7 @@ async function moneybirdFetch(
   if (credentials.expiresAt && new Date(credentials.expiresAt).getTime() < Date.now() + 60000) {
     credentials = await refreshAccessToken(String(connection.id), credentials);
   }
-  const response = await fetch(`https://moneybird.com${path}`, {
+  const response = await providerResponse("Moneybird", `https://moneybird.com${path}`, {
     ...options,
     headers: {
       Authorization: `Bearer ${credentials.accessToken}`,
@@ -215,22 +356,76 @@ async function moneybirdFetch(
       ...(options.body ? { "Content-Type": "application/json" } : {}),
       ...(options.headers || {})
     }
-  });
+  }, { maxAttempts: 2, timeoutMs: 12000, maxRetryDelayMs: 2500 });
   if (response.status === 401 && canRefresh && credentials.refreshToken) {
     credentials = await refreshAccessToken(String(connection.id), credentials);
     return moneybirdFetch(connection, path, options, false);
   }
   if (!response.ok) {
-    const details = (await response.text()).slice(0, 2000);
-    console.error("Moneybird API-fout", { status: response.status, path, details });
+    if (response.body) await response.body.cancel().catch(() => {});
+    console.error("Moneybird API-fout", {
+      status: response.status,
+      path: path.split("?")[0],
+      retryAfter: response.headers.get("Retry-After"),
+      rateLimitRemaining: response.headers.get("RateLimit-Remaining"),
+      rateLimitReset: response.headers.get("RateLimit-Reset")
+    });
     throw Object.assign(new Error(moneybirdError(response.status)), { status: response.status });
   }
   if (response.status === 204) return null;
   return response.json();
 }
 
-async function listAdministrations(connection: Record<string, unknown>) {
-  return moneybirdFetch(connection, "/api/v2/administrations.json");
+async function listAdministrations(connection: Record<string, unknown>, force = false) {
+  return cachedProviderValue(
+    connection,
+    "administrations",
+    15 * 60 * 1000,
+    () => moneybirdFetch(connection, "/api/v2/administrations.json"),
+    true,
+    force
+  );
+}
+
+async function configurationOptionsFor(connection: Record<string, unknown>, administrationId: string) {
+  const configuration = await cachedProviderValue(
+    connection,
+    `configuration:${administrationId}`,
+    6 * 60 * 60 * 1000,
+    async () => {
+      const [taxRates, ledgerAccounts] = await Promise.all([
+        moneybirdFetch(connection, `/api/v2/${administrationId}/tax_rates.json?per_page=100`),
+        moneybirdFetch(connection, `/api/v2/${administrationId}/ledger_accounts.json?per_page=100`)
+      ]);
+      return { taxRates, ledgerAccounts };
+    },
+    true
+  ) as { taxRates: Record<string, unknown>[]; ledgerAccounts: Record<string, unknown>[] };
+
+  return {
+    taxRates: configuration.taxRates
+      .filter((item) => item.active !== false)
+      .map((item) => ({
+        id: String(item.id), name: item.name, percentage: Number(item.percentage), taxRateType: item.tax_rate_type
+      })),
+    ledgerAccounts: configuration.ledgerAccounts
+      .filter((item) => item.active !== false
+        && item.account_type === "revenue"
+        && (!Array.isArray(item.allowed_document_types) || item.allowed_document_types.includes("sales_invoice")))
+      .map((item) => ({ id: String(item.id), name: item.name }))
+  };
+}
+
+async function exportHistoryFor(userId: string) {
+  const [result, itemResult] = await Promise.all([
+    database.from("accounting_exports").select("*")
+      .eq("user_id", userId).eq("provider", "moneybird").order("created_at", { ascending: false }).limit(100),
+    database.from("accounting_export_items").select("source_type, source_id, export_id")
+      .eq("user_id", userId).limit(500)
+  ]);
+  if (result.error) throw result.error;
+  if (itemResult.error) throw itemResult.error;
+  return { exports: result.data, items: itemResult.data };
 }
 
 function normalizeKey(value: string) {
@@ -243,8 +438,12 @@ function validateExportModel(model: ExportModel) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(model.date || "")) throw new Error("Ongeldige factuurdatum.");
   if (!model.customer?.name?.trim()) throw new Error("Kies eerst een opdrachtgever.");
   if (!Array.isArray(model.lineItems) || !model.lineItems.length) throw new Error("Er zijn geen factuurregels om te exporteren.");
+  if (model.lineItems.length > 500 || (model.sourceItems || []).length > 250) {
+    throw new Error("Deze export bevat te veel regels om veilig in een keer te verwerken.");
+  }
   model.lineItems.forEach((line) => {
-    if (!line.description?.trim() || !(Number(line.quantity) > 0) || !Number.isFinite(Number(line.unitPrice))) {
+    if (!line.description?.trim() || line.description.length > 500
+      || !(Number(line.quantity) > 0) || !Number.isFinite(Number(line.unitPrice))) {
       throw new Error("Een factuurregel is niet volledig.");
     }
   });
@@ -419,7 +618,7 @@ async function handleCallback(url: URL) {
     return redirect("/account.html?accounting=moneybird-state-expired");
   }
   await database.from("accounting_oauth_states").update({ used_at: new Date().toISOString() }).eq("id", record.id);
-  const tokenResponse = await fetch("https://moneybird.com/oauth/token", {
+  const tokenResponse = await providerResponse("Moneybird", "https://moneybird.com/oauth/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -429,9 +628,10 @@ async function handleCallback(url: URL) {
       client_secret: clientSecret,
       redirect_uri: redirectUri
     })
-  });
+  }, { maxAttempts: 1 });
   if (!tokenResponse.ok) {
-    console.error("Moneybird token exchange mislukt", tokenResponse.status, (await tokenResponse.text()).slice(0, 1000));
+    if (tokenResponse.body) await tokenResponse.body.cancel().catch(() => {});
+    console.error("Moneybird token exchange mislukt", { status: tokenResponse.status });
     return redirect("/account.html?accounting=moneybird-error");
   }
   const token = await tokenResponse.json();
@@ -451,7 +651,8 @@ async function handleCallback(url: URL) {
     tokenType: token.token_type || "Bearer",
     expiresAt: token.expires_in ? new Date(Date.now() + Number(token.expires_in) * 1000).toISOString() : null
   });
-  const administrations = await listAdministrations(connectionResult.data);
+  await clearProviderCache(connectionResult.data.id);
+  const administrations = await listAdministrations(connectionResult.data, true);
   if (administrations.length === 1) {
     await database.from("accounting_connections").update({
       administration_id: String(administrations[0].id),
@@ -480,6 +681,8 @@ Deno.serve(async (request) => {
 
     if (action === "startOAuth") {
       if (!clientId || !clientSecret || !redirectUri) throw new Error("Moneybird OAuth is nog niet geconfigureerd.");
+      // One active OAuth state per user is sufficient and prevents abandoned rows building up.
+      await database.from("accounting_oauth_states").delete().eq("user_id", user.id).eq("provider", "moneybird");
       const state = bytesToBase64(crypto.getRandomValues(new Uint8Array(32))).replace(/[+/=]/g, "");
       const stateResult = await database.from("accounting_oauth_states").insert({
         user_id: user.id,
@@ -513,11 +716,18 @@ Deno.serve(async (request) => {
       }, { onConflict: "user_id,provider" }).select().single();
       if (connectionResult.error) throw connectionResult.error;
       await storeCredentials(connectionResult.data.id, { accessToken: developmentPat, tokenType: "Bearer" });
+      await clearProviderCache(connectionResult.data.id);
       return json({ connected: true });
     }
 
     const connection = await connectionFor(user.id);
     if (action === "status") return json({ connection: connection || null });
+    if (action === "settingsBootstrap") {
+      const administrations = connection && connection.status !== "disconnected"
+        ? await listAdministrations(connection)
+        : [];
+      return json({ connection: connection || null, administrations });
+    }
     if (!connection || connection.status === "disconnected") throw new Error("Verbind eerst Moneybird.");
 
     if (action === "administrations") return json({ administrations: await listAdministrations(connection) });
@@ -534,10 +744,11 @@ Deno.serve(async (request) => {
         updated_at: new Date().toISOString()
       }).eq("id", connection.id).select().single();
       if (result.error) throw result.error;
+      await clearProviderCache(String(connection.id));
       return json({ connection: result.data });
     }
     if (action === "validate") {
-      await listAdministrations(connection);
+      await listAdministrations(connection, true);
       await database.from("accounting_connections").update({
         status: "connected", last_validated_at: new Date().toISOString(), last_error: null, updated_at: new Date().toISOString()
       }).eq("id", connection.id);
@@ -545,6 +756,7 @@ Deno.serve(async (request) => {
     }
     if (action === "disconnect") {
       await database.from("accounting_credentials").delete().eq("connection_id", connection.id);
+      await clearProviderCache(String(connection.id));
       await database.from("accounting_connections").update({
         status: "disconnected", administration_id: null, administration_name: null,
         disconnected_at: new Date().toISOString(), updated_at: new Date().toISOString()
@@ -555,44 +767,37 @@ Deno.serve(async (request) => {
     const administrationId = String(connection.administration_id || "");
     if (!administrationId) throw new Error("Kies eerst een Moneybird-administratie.");
     if (action === "contacts") {
-      const query = String(body.query || "").trim();
-      const path = query
-        ? `/api/v2/${administrationId}/contacts/filter.json?filter=${encodeURIComponent(query)}`
-        : `/api/v2/${administrationId}/contacts.json?per_page=50`;
-      const contacts = await moneybirdFetch(connection, path);
-      return json({ contacts: contacts.map((item: Record<string, unknown>) => ({
+      const query = String(body.query || "").trim().slice(0, 100);
+      if (query.length < 2) return json({ contacts: [] });
+      const path = `/api/v2/${administrationId}/contacts/filter.json?filter=${encodeURIComponent(query)}`;
+      const contactCacheKey = `contacts:${administrationId}:${normalizeKey(query)}`;
+      const contacts = await cachedProviderValue(
+        connection,
+        contactCacheKey,
+        2 * 60 * 1000,
+        () => moneybirdFetch(connection, path)
+      );
+      return json({ contacts: contacts.slice(0, 50).map((item: Record<string, unknown>) => ({
         id: String(item.id),
         name: item.company_name || [item.firstname, item.lastname].filter(Boolean).join(" ") || item.email || "Onbekend contact",
         email: item.email || ""
       })) });
     }
     if (action === "configurationOptions") {
-      const [taxRates, ledgerAccounts] = await Promise.all([
-        moneybirdFetch(connection, `/api/v2/${administrationId}/tax_rates.json?per_page=100`),
-        moneybirdFetch(connection, `/api/v2/${administrationId}/ledger_accounts.json`)
+      return json(await configurationOptionsFor(connection, administrationId));
+    }
+    if (action === "previewBootstrap") {
+      const [configuration, history, mappings] = await Promise.all([
+        configurationOptionsFor(connection, administrationId),
+        exportHistoryFor(user.id),
+        database.from("accounting_customer_mappings").select("*").eq("user_id", user.id).limit(500)
       ]);
-      return json({
-        taxRates: taxRates.filter((item: Record<string, unknown>) => item.active !== false).map((item: Record<string, unknown>) => ({
-          id: String(item.id), name: item.name, percentage: Number(item.percentage), taxRateType: item.tax_rate_type
-        })),
-        ledgerAccounts: ledgerAccounts.filter((item: Record<string, unknown>) =>
-          item.active !== false
-          && item.account_type === "revenue"
-          && (!Array.isArray(item.allowed_document_types) || item.allowed_document_types.includes("sales_invoice"))
-        ).map((item: Record<string, unknown>) => ({ id: String(item.id), name: item.name }))
-      });
+      if (mappings.error) throw mappings.error;
+      return json({ connection, configuration, history, customerMappings: mappings.data || [] });
     }
     if (action === "createDraftInvoice") return json(await createDraft(user.id, connection, body));
     if (action === "exports") {
-      const [result, itemResult] = await Promise.all([
-        database.from("accounting_exports").select("*")
-          .eq("user_id", user.id).eq("provider", "moneybird").order("created_at", { ascending: false }).limit(100),
-        database.from("accounting_export_items").select("source_type, source_id, export_id")
-          .eq("user_id", user.id).limit(500)
-      ]);
-      if (result.error) throw result.error;
-      if (itemResult.error) throw itemResult.error;
-      return json({ exports: result.data, items: itemResult.data });
+      return json(await exportHistoryFor(user.id));
     }
     throw Object.assign(new Error("Onbekende Moneybird-actie."), { status: 400 });
   } catch (error) {

@@ -129,7 +129,8 @@
       return;
     }
     try {
-      connection = (await service.status()).connection;
+      const bootstrap = await service.settingsBootstrap();
+      connection = bootstrap.connection;
       const connected = connection?.status === "connected";
       if (connected) providerSelect.value = connection.provider || "moneybird";
       renderProviderChoice();
@@ -141,9 +142,8 @@
       root.querySelector("[data-accounting-disconnect]").hidden = !connected;
       root.querySelector(".accounting-administration").hidden = !connected;
       if (connected) {
-        const administrations = await service.administrations();
         const select = root.querySelector("[data-accounting-administration]");
-        select.replaceChildren(new Option("Kies administratie", ""), ...administrations.administrations.map((item) => new Option(item.name, item.id)));
+        select.replaceChildren(new Option("Kies administratie", ""), ...bootstrap.administrations.map((item) => new Option(item.name, item.id)));
         select.value = connection.administration_id || connection.administrationId || "";
       }
       announceConnection();
