@@ -663,15 +663,30 @@ function buildWorkdaySnapshot() {
 function projectDayToWorkdaySnapshot(project, day) {
   const data = day?.calculationData || {};
   const currentSettings = getSettingsFromForm();
-  const normalDayHours = Number(data.normalDayHours) || currentSettings.normalDayHours;
+  const selectValue = (name, value, fallback) => {
+    const field = settingsForm.elements.namedItem(name);
+    const normalized = String(value ?? "");
+    return field instanceof HTMLSelectElement
+      && [...field.options].some((option) => option.value === normalized)
+      ? Number(normalized)
+      : fallback;
+  };
+  const validTime = (value, fallback) => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(value || ""))
+    ? String(value)
+    : fallback;
+  const finiteNumber = (value, fallback, minimum = 0, maximum = Number.POSITIVE_INFINITY) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? Math.min(maximum, Math.max(minimum, parsed)) : fallback;
+  };
+  const normalDayHours = selectValue("normalDayHours", data.normalDayHours, currentSettings.normalDayHours);
   const rateMode = data.rateMode === "hour" ? "hour" : "day";
   const rateAmount = Number(data.rateAmount);
-  const dayRate = rateMode === "day" && Number.isFinite(rateAmount) && rateAmount > 0
+  const dayRate = rateMode === "day" && Number.isFinite(rateAmount) && rateAmount >= 0
     ? rateAmount
     : currentSettings.dayRate;
-  const hourlyRate = rateMode === "hour" && Number.isFinite(rateAmount) && rateAmount > 0
+  const hourlyRate = rateMode === "hour" && Number.isFinite(rateAmount) && rateAmount >= 0
     ? rateAmount
-    : dayRate / normalDayHours;
+    : finiteNumber(dayRate / normalDayHours, currentSettings.hourlyRate);
   return {
     schemaVersion: 1,
     workdayName: "",
@@ -694,18 +709,16 @@ function projectDayToWorkdaySnapshot(project, day) {
       enableBreak: Boolean(currentSettings.enableBreak || Number(data.breakMinutes) > 0),
       breakMinutes: Number(data.breakMinutes) || 0,
       normalDayHours,
-      minimumHours: Number.isFinite(Number(data.minimumHours)) ? Number(data.minimumHours) : currentSettings.minimumHours,
+      minimumHours: selectValue("minimumHours", data.minimumHours, currentSettings.minimumHours),
       enableHalfDayUnder6Hours: Boolean(data.enableHalfDayUnder6Hours),
       enableOvertime10To12: Boolean(data.enableOvertime10To12),
       enableOvertimeFrom12: Boolean(data.enableOvertimeFrom12),
       enableOvertimeFrom14: Boolean(data.enableOvertimeFrom14),
       enableNightTariff: Boolean(data.enableNightTariff),
-      nightSurchargePercent: Number.isFinite(Number(data.nightSurchargePercent))
-        ? Number(data.nightSurchargePercent)
-        : 100,
-      nightStart: data.nightStart || currentSettings.nightStart,
-      nightEnd: data.nightEnd || currentSettings.nightEnd,
-      kilometerRate: Number(data.kilometerRate) || currentSettings.kilometerRate,
+      nightSurchargePercent: finiteNumber(data.nightSurchargePercent, 100, 0, 500),
+      nightStart: validTime(data.nightStart, currentSettings.nightStart),
+      nightEnd: validTime(data.nightEnd, currentSettings.nightEnd),
+      kilometerRate: finiteNumber(data.kilometerRate, currentSettings.kilometerRate),
       travelWithinEuropePercent: data.enableTravelDay && data.travelRegion !== "outside_europe"
         ? Number(data.travelPercent) || currentSettings.travelWithinEuropePercent
         : currentSettings.travelWithinEuropePercent,
@@ -2075,13 +2088,60 @@ async function syncFreeSharedWorkdaySource() {
   await persistFreeActiveWorkday(buildWorkdaySnapshot(), { showToast: false });
 }
 
+function calculationValidationFields(settings, formData) {
+  const fields = [form.elements.namedItem("startTime")];
+  if (settings.rateMode === "hour") {
+    fields.push(
+      settingsForm.elements.namedItem("hourlyRate"),
+      settingsForm.elements.namedItem("minimumHours")
+    );
+  } else {
+    fields.push(
+      settingsForm.elements.namedItem("dayRate"),
+      settingsForm.elements.namedItem("normalDayHours")
+    );
+  }
+  if (settings.enableNightTariff) {
+    fields.push(
+      settingsForm.elements.namedItem("nightSurchargePercent"),
+      settingsForm.elements.namedItem("nightStart"),
+      settingsForm.elements.namedItem("nightEnd")
+    );
+  }
+  if (readCheckbox(formData, "enableKilometers")) {
+    fields.push(
+      form.elements.namedItem("kilometers"),
+      settingsForm.elements.namedItem("kilometerRate")
+    );
+  }
+  if (readCheckbox(formData, "enableParkingCosts")) {
+    fields.push(form.elements.namedItem("parkingCosts"));
+  }
+  return fields.filter((field) => field instanceof HTMLElement);
+}
+
+function validateCalculationInputs(settings, formData) {
+  const invalidField = calculationValidationFields(settings, formData)
+    .find((field) => typeof field.checkValidity === "function" && !field.checkValidity());
+  if (!invalidField) return true;
+
+  const settingsDetails = invalidField.closest("details");
+  if (settingsDetails) settingsDetails.open = true;
+  const label = invalidField.closest("label")?.querySelector("span")?.textContent?.trim();
+  sessionUi?.showToast(label
+    ? `Controleer het veld ${label.toLowerCase()}.`
+    : "Controleer de gemarkeerde invoer.");
+  requestAnimationFrame(() => invalidField.reportValidity?.());
+  return false;
+}
+
 function updateCalculation(trackCompletion = false) {
   const endTimeField = form.elements.namedItem("endTime");
   const settings = getSettingsFromForm();
   const formData = new FormData(form);
   const isTravelDay = readCheckbox(formData, "enableTravelDay");
 
-  if (!form.reportValidity() || !settingsForm.reportValidity()) return;
+  if (!validateCalculationInputs(settings, formData)) return;
   if (!endTimeField.value && !isTravelDay) {
     clearCalculationDisplay();
     if (trackCompletion) sessionUi?.showToast("Vul eerst de eindtijd in om te berekenen.");
@@ -2090,28 +2150,36 @@ function updateCalculation(trackCompletion = false) {
 
   const department = formData.get("department");
 
-  const result = calculateTariff(
-    {
-      startTime: form.elements.namedItem("startTime").value,
-      endTime: form.elements.namedItem("endTime").value,
-      breakMinutes: settings.breakMinutes,
-      rateMode: settings.rateMode,
-      hourlyRate: settings.hourlyRate,
-      enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
-      enableRonin4dTariff: department === "camera" && readCheckbox(formData, "enableRonin4dTariff"),
-      customEquipment: getSelectedCustomEquipment(),
-      enableKilometers: readCheckbox(formData, "enableKilometers"),
-      kilometers: readNumber(formData, "kilometers"),
-      enableParkingCosts: readCheckbox(formData, "enableParkingCosts"),
-      parkingCosts: readNumber(formData, "parkingCosts"),
-      enableTravelDay: readCheckbox(formData, "enableTravelDay"),
-      travelRegion: formData.get("travelRegion") || "within_europe",
-      travelPercent: formData.get("travelRegion") === "outside_europe"
-        ? settings.travelOutsideEuropePercent
-        : settings.travelWithinEuropePercent
-    },
-    settings
-  );
+  let result;
+  try {
+    result = calculateTariff(
+      {
+        startTime: form.elements.namedItem("startTime").value,
+        endTime: form.elements.namedItem("endTime").value,
+        breakMinutes: settings.breakMinutes,
+        rateMode: settings.rateMode,
+        hourlyRate: settings.hourlyRate,
+        enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
+        enableRonin4dTariff: department === "camera" && readCheckbox(formData, "enableRonin4dTariff"),
+        customEquipment: getSelectedCustomEquipment(),
+        enableKilometers: readCheckbox(formData, "enableKilometers"),
+        kilometers: readNumber(formData, "kilometers"),
+        enableParkingCosts: readCheckbox(formData, "enableParkingCosts"),
+        parkingCosts: readNumber(formData, "parkingCosts"),
+        enableTravelDay: readCheckbox(formData, "enableTravelDay"),
+        travelRegion: formData.get("travelRegion") || "within_europe",
+        travelPercent: formData.get("travelRegion") === "outside_europe"
+          ? settings.travelOutsideEuropePercent
+          : settings.travelWithinEuropePercent
+      },
+      settings
+    );
+  } catch (error) {
+    console.warn("Berekening kon niet worden uitgevoerd.", error);
+    clearCalculationDisplay();
+    sessionUi?.showToast(error.message || "De werkdag kon niet worden berekend.");
+    return;
+  }
 
   setResult("totalHours", result.totalHours);
   setResult("overtimeHours", result.overtimeHours);
@@ -2173,6 +2241,9 @@ function wait(milliseconds) {
 
 async function stopLiveWorkdayAndCalculate() {
   const endTimeField = form.elements.namedItem("endTime");
+  if (currentProjectDayContext && !endTimeField.value) {
+    liveWorkdayArmed = true;
+  }
   const endTimeIsFixed = endTimeField.dataset.timePicked === "true"
     || endTimeField.dataset.timeRestored === "true";
   const liveState = !endTimeIsFixed && liveWorkday

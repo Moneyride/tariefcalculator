@@ -83,6 +83,17 @@ test("calculator start pas live na een bewuste tijdkeuze of opgeslagen concept",
   assert.match(script, /endTimeIsFixed \? endTimeField\.value : ""/);
 });
 
+test("projectdagen worden niet geblokkeerd door verborgen irrelevante instellingen", async () => {
+  const script = await readFile(new URL("../../app/app.js", import.meta.url), "utf8");
+
+  assert.match(script, /function calculationValidationFields\(settings, formData\)/);
+  assert.match(script, /if \(settings\.rateMode === "hour"\)/);
+  assert.match(script, /if \(settings\.enableNightTariff\)/);
+  assert.match(script, /if \(!validateCalculationInputs\(settings, formData\)\) return;/);
+  assert.doesNotMatch(script, /!form\.reportValidity\(\) \|\| !settingsForm\.reportValidity\(\)/);
+  assert.match(script, /if \(currentProjectDayContext && !endTimeField\.value\) \{\s*liveWorkdayArmed = true;/);
+});
+
 test("een opgeslagen werkdag wordt na terugkeer opnieuw aangeboden en live hervat", async () => {
   const script = await readFile(new URL("../../app/app.js", import.meta.url), "utf8");
   assert.doesNotMatch(script, /overuurtjeTodayWorkdayPrompt/);
