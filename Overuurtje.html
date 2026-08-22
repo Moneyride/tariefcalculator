@@ -148,7 +148,11 @@
   .calendar-day.is-weekend { color: var(--muted); }
   .calendar-day.is-in-period { border-color: rgba(31,67,53,.08); background: rgba(23,63,54,.09); }
   .calendar-day.is-period-start, .calendar-day.is-period-end { box-shadow: inset 0 0 0 1px rgba(23,63,54,.3); }
+  .calendar-day.is-today { border-color: var(--accent-dark); box-shadow: inset 0 0 0 2px rgba(23,63,54,.2); }
+  .calendar-day.is-today::after { content: ""; position: absolute; top: 6px; width: 4px; height: 4px; border-radius: 50%; background: var(--accent-dark); }
   .calendar-day.is-workday { border-color: rgba(255,106,26,.46); background: var(--orange); color: #fff; box-shadow: 0 5px 14px rgba(255,106,26,.16); }
+  .calendar-day.is-workday.is-today { border-color: #fff; box-shadow: inset 0 0 0 2px var(--accent-dark), 0 5px 14px rgba(255,106,26,.16); }
+  .calendar-day.is-workday.is-today::after { background: #fff; }
   .calendar-day.is-workday i { position: absolute; right: 7px; bottom: 6px; width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.88); }
   .calendar-footer { justify-content: space-between; gap: 16px; margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(31,67,53,.08); }
   .calendar-footer p { color: var(--accent-dark); font-size: .85rem; font-weight: 650; }
@@ -159,6 +163,7 @@
   .calendar-legend i { width: 10px; height: 10px; border-radius: 3px; }
   .calendar-legend .period-key { background: rgba(23,63,54,.13); }
   .calendar-legend .workday-key { background: var(--orange); }
+  .calendar-legend .today-key { border: 2px solid var(--accent-dark); background: rgba(255,255,255,.32); }
   .copy-day-targets label { cursor: pointer; }
   .project-shell #project-list-view, .project-shell #project-form-view, .project-shell #project-overview-view, .project-shell #day-editor-view { width: calc(100% - 64px); margin-inline: auto; }
   .project-shell #project-list-view { padding-top: 28px; }
@@ -29090,7 +29095,7 @@ function renderCustomEquipmentResults(items) {
     const row = document.createElement("div");
     const label = document.createElement("dt");
     const value = document.createElement("dd");
-    label.textContent = item.name;
+    label.textContent = item.amount < 0 ? `${item.name} · correctie` : item.name;
     value.textContent = formatEuro(item.amount);
     row.append(label, value);
     return row;
@@ -29317,7 +29322,7 @@ function formatHours(value) {
 }
 
 function formatEuro(value) {
-  if (!Number.isFinite(value) || value <= 0) return "-";
+  if (!Number.isFinite(value) || value === 0) return "-";
   return euroFormatter.format(value);
 }
 
@@ -29341,7 +29346,7 @@ function formatCalculation(hours, hourlyRate, factor) {
 }
 
 function addPrintCalculationLine(container, label, calculation, amount) {
-  if (!Number.isFinite(amount) || amount <= 0) return;
+  if (!Number.isFinite(amount) || amount === 0) return;
 
   const row = document.createElement("div");
   const description = document.createElement("div");
@@ -29438,7 +29443,12 @@ function renderPrintBreakdown(result) {
   addPrintCalculationLine(lines, "Drone tarief", "Vaste toeslag", result.droneTariffAmount);
   addPrintCalculationLine(lines, "Ronin 4D tarief", "Vaste toeslag", result.ronin4dTariffAmount);
   result.customEquipmentItems.forEach((item) => {
-    addPrintCalculationLine(lines, item.name, "Vaste apparatuurtoeslag", item.amount);
+    addPrintCalculationLine(
+      lines,
+      item.name,
+      item.amount < 0 ? "Correctie op het dagtarief" : "Vaste apparatuurtoeslag",
+      item.amount
+    );
   });
   addPrintCalculationLine(
     lines,

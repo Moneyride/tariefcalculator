@@ -367,6 +367,7 @@
 
   function renderCalendar() {
     syncCalendarInputs();
+    const todayIso = isoDate(new Date());
     const year = calendarCursor.getFullYear();
     const month = calendarCursor.getMonth();
     const firstDayOffset = (new Date(year, month, 1, 12).getDay() + 6) % 7;
@@ -378,16 +379,18 @@
       const iso = isoDate(date);
       const inPeriod = Boolean(periodStart && periodEnd && iso >= periodStart && iso <= periodEnd);
       const isWorkday = selectedWorkdays.has(iso);
+      const isToday = iso === todayIso;
       const classes = [
         "calendar-day",
+        isToday ? "is-today" : "",
         inPeriod ? "is-in-period" : "",
         isWorkday ? "is-workday" : "",
         iso === periodStart ? "is-period-start" : "",
         iso === periodEnd ? "is-period-end" : "",
         [0, 6].includes(date.getDay()) ? "is-weekend" : ""
       ].filter(Boolean).join(" ");
-      const state = isWorkday ? "werkdag" : (inPeriod ? "geen werkdag" : "");
-      cells.push(`<button type="button" class="${classes}" data-calendar-date="${iso}" aria-label="${formatDate(iso)}${state ? `, ${state}` : ""}" ${inPeriod ? `aria-pressed="${isWorkday}"` : ""}><span>${day}</span>${isWorkday ? '<i aria-hidden="true"></i>' : ""}</button>`);
+      const states = [isToday ? "vandaag" : "", isWorkday ? "werkdag" : (inPeriod ? "geen werkdag" : "")].filter(Boolean);
+      cells.push(`<button type="button" class="${classes}" data-calendar-date="${iso}" aria-label="${formatDate(iso)}${states.length ? `, ${states.join(", ")}` : ""}" ${isToday ? 'aria-current="date"' : ""} ${inPeriod ? `aria-pressed="${isWorkday}"` : ""}><span>${day}</span>${isWorkday ? '<i aria-hidden="true"></i>' : ""}</button>`);
     }
 
     while (cells.length % 7 !== 0) cells.push('<span class="calendar-day-spacer" aria-hidden="true"></span>');
@@ -472,7 +475,9 @@
     if (result.kilometerAmount) parts.push(`${number.format(result.kilometers)} km`);
     if (result.parkingAmount) parts.push("parkeer/onkosten");
     if (result.droneTariffAmount) parts.push("drone"); if (result.ronin4dTariffAmount) parts.push("Ronin 4D");
-    result.customEquipmentItems.forEach((item) => parts.push(item.name));
+    result.customEquipmentItems.forEach((item) => {
+      parts.push(item.amount < 0 ? `${item.name} · ${euro.format(item.amount)}` : item.name);
+    });
     return parts.join(" · ") || "Geen toeslagen of extra kosten";
   }
 
@@ -810,7 +815,11 @@
         printLine("Pure nachturen", `${number.format(r.pureNightHours)} uur tegen ${number.format(100 + r.settings.nightSurchargePercent)}% totaal`, r.pureNightAmount),
         ...r.nightOvertimeSurchargeBreakdown.map((item) => printLine("Nachturen tijdens overuren", `${number.format(item.hours)} uur tegen ${number.format(100 + r.settings.nightSurchargePercent)}% nachttarief op dit specifieke overuur; de overuurvergoeding staat hierboven`, item.amount)),
         printLine("Drone", "Vaste toeslag", r.droneTariffAmount), printLine("Ronin 4D", "Vaste toeslag", r.ronin4dTariffAmount),
-        ...r.customEquipmentItems.map((item) => printLine(item.name, "Vaste apparatuurtoeslag", item.amount)),
+        ...r.customEquipmentItems.map((item) => printLine(
+          item.name,
+          item.amount < 0 ? "Correctie op het dagtarief" : "Vaste apparatuurtoeslag",
+          item.amount
+        )),
         printLine("Kilometers", `${number.format(r.kilometers)} km × ${euro.format(r.settings.kilometerRate)}`, r.kilometerAmount),
         printLine("Parkeer/onkosten", "Ingevoerd bedrag", r.parkingAmount)
       ].join("");

@@ -1662,7 +1662,7 @@ function renderCustomEquipmentResults(items) {
     const row = document.createElement("div");
     const label = document.createElement("dt");
     const value = document.createElement("dd");
-    label.textContent = item.name;
+    label.textContent = item.amount < 0 ? `${item.name} · correctie` : item.name;
     value.textContent = formatEuro(item.amount);
     row.append(label, value);
     return row;
@@ -1889,7 +1889,7 @@ function formatHours(value) {
 }
 
 function formatEuro(value) {
-  if (!Number.isFinite(value) || value <= 0) return "-";
+  if (!Number.isFinite(value) || value === 0) return "-";
   return euroFormatter.format(value);
 }
 
@@ -1913,7 +1913,7 @@ function formatCalculation(hours, hourlyRate, factor) {
 }
 
 function addPrintCalculationLine(container, label, calculation, amount) {
-  if (!Number.isFinite(amount) || amount <= 0) return;
+  if (!Number.isFinite(amount) || amount === 0) return;
 
   const row = document.createElement("div");
   const description = document.createElement("div");
@@ -2010,7 +2010,12 @@ function renderPrintBreakdown(result) {
   addPrintCalculationLine(lines, "Drone tarief", "Vaste toeslag", result.droneTariffAmount);
   addPrintCalculationLine(lines, "Ronin 4D tarief", "Vaste toeslag", result.ronin4dTariffAmount);
   result.customEquipmentItems.forEach((item) => {
-    addPrintCalculationLine(lines, item.name, "Vaste apparatuurtoeslag", item.amount);
+    addPrintCalculationLine(
+      lines,
+      item.name,
+      item.amount < 0 ? "Correctie op het dagtarief" : "Vaste apparatuurtoeslag",
+      item.amount
+    );
   });
   addPrintCalculationLine(
     lines,
