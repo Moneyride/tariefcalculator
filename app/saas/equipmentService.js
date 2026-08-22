@@ -41,7 +41,7 @@
       .insert({
         user_id: userId,
         name: String(values.name || "").trim(),
-        amount: Math.max(0, Number(values.amount) || 0),
+        amount: Number(values.amount) || 0,
         is_visible: values.isVisible !== false
       })
       .select(COLUMNS)
@@ -56,7 +56,7 @@
       .from("equipment")
       .update({
         name: String(values.name || "").trim(),
-        amount: Math.max(0, Number(values.amount) || 0),
+        amount: Number(values.amount) || 0,
         is_visible: Boolean(values.isVisible)
       })
       .eq("id", id)

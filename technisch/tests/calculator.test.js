@@ -126,7 +126,7 @@ test("meer dan 6 uur gebruikt automatisch het minimale volledige dagtarief", () 
   assertMoney(result.subtotalExVat, 450);
 });
 
-test("zonder overuur-checkboxes worden overuren tegen 100 procent gerekend", () => {
+test("zonder overuur-checkboxes worden geen overuren berekend", () => {
   const result = calculate("08:00", "20:00", {
     enableOvertime10To12: false,
     enableOvertimeFrom12: false,
@@ -134,10 +134,10 @@ test("zonder overuur-checkboxes worden overuren tegen 100 procent gerekend", () 
   });
 
   assert.equal(result.totalHours, 12);
-  assert.equal(result.overtimeHours, 2);
-  assert.equal(result.standardOvertimeHours, 2);
-  assertMoney(result.overtimeAmount, 90);
-  assertMoney(result.subtotalExVat, 540);
+  assert.equal(result.overtimeHours, 0);
+  assert.equal(result.standardOvertimeHours, 0);
+  assertMoney(result.overtimeAmount, 0);
+  assertMoney(result.subtotalExVat, 450);
 });
 
 test("alleen 150 procent aangevinkt rekent alle overuren tegen 150 procent", () => {
@@ -272,6 +272,23 @@ test("eigen apparatuur telt als vaste toeslag mee en niet als overuur", () => {
   assertMoney(result.customEquipmentAmount, 75);
   assert.equal(result.customEquipmentItems.length, 1);
   assertMoney(result.subtotalExVat, 592.5);
+});
+
+test("eigen apparatuur kan een negatieve correctie op het dagtarief zijn", () => {
+  const result = calculateTariff(
+    {
+      startTime: "08:00",
+      endTime: "18:00",
+      customEquipment: [
+        { id: "correction", name: "Correctie dagtarief", amount: -50, enabled: true }
+      ]
+    },
+    DEFAULT_SETTINGS
+  );
+
+  assertMoney(result.customEquipmentAmount, -50);
+  assertMoney(result.subtotalExVat, 400);
+  assertMoney(result.totalIncVat, 484);
 });
 
 test("projectpauze wordt afgetrokken voordat overuren beginnen", () => {

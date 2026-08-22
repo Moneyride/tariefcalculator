@@ -259,7 +259,12 @@ function calculateTariff(input, customSettings = {}) {
 
   const normalMinutes = settings.normalDayHours * MINUTES_PER_HOUR;
   const overtimeStart = interval.start + normalMinutes + breakMinutes;
-  const overtimeMinutes = Math.max(0, workedMinutes - normalMinutes);
+  const overtimeEnabled = Boolean(
+    settings.enableOvertime10To12
+    || settings.enableOvertimeFrom12
+    || settings.enableOvertimeFrom14
+  );
+  const overtimeMinutes = overtimeEnabled ? Math.max(0, workedMinutes - normalMinutes) : 0;
   const overtimeHours = minutesToHours(overtimeMinutes);
 
   const nightWindows = hasTimes ? getNightWindows(interval, settings) : [];
@@ -278,7 +283,11 @@ function calculateTariff(input, customSettings = {}) {
   const nightOvertimeHours = minutesToHours(roundedNightOvertimeMinutes);
   const pureNightHours = minutesToHours(pureNightMinutes);
 
-  const overtime = calculateOvertimeAmount(totalHours, hourlyRate, settings);
+  const overtime = calculateOvertimeAmount(
+    overtimeEnabled ? totalHours : settings.normalDayHours,
+    hourlyRate,
+    settings
+  );
   const overtimeAmount =
     overtime.standardOvertimeAmount +
     overtime.overtime10To12Amount +
@@ -335,7 +344,7 @@ function calculateTariff(input, customSettings = {}) {
     .map((item) => ({
       id: String(item.id || ""),
       name: String(item.name || "Apparatuur"),
-      amount: Math.max(0, Number(item.amount) || 0)
+      amount: Number(item.amount) || 0
     }));
   const customEquipmentAmount = customEquipmentItems.reduce((total, item) => total + item.amount, 0);
   const extraTariffAmount = droneTariffAmount + ronin4dTariffAmount + customEquipmentAmount + kilometerAmount + parkingAmount;

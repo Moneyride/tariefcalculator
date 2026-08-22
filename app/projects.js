@@ -105,32 +105,42 @@
 
   function defaultDayData() {
     const defaultFunction = workFunctions.find((item) => item.isDefault) || workFunctions[0] || null;
-    const rateMode = accountSettings.defaultRateMode === "hour" ? "hour" : "day";
+    const preset = defaultFunction?.calculationSettings || {};
+    const functionSettings = preset.settings || {};
+    const functionExtras = preset.extras || {};
+    const selectedEquipment = new Set(functionExtras.customEquipmentIds || []);
+    const rateMode = functionSettings.rateMode === "hour"
+      ? "hour"
+      : defaultFunction ? "day" : (accountSettings.defaultRateMode === "hour" ? "hour" : "day");
     return {
       startTime: "08:00", endTime: "18:00", breakMinutes: 0,
       workFunctionId: defaultFunction?.id || "",
       workFunctionName: defaultFunction?.name || "",
       department: defaultFunction?.department || accountSettings.defaultDepartment,
-      rateMode: defaultFunction ? "day" : rateMode,
-      rateAmount: defaultFunction?.dayRate ?? (rateMode === "hour" ? accountSettings.defaultHourlyRate : accountSettings.defaultDayRate),
-      normalDayHours: accountSettings.normalDayHours,
-      minimumHours: accountSettings.minimumHours,
-      enableHalfDayUnder6Hours: accountSettings.enableHalfDayUnder6Hours,
-      enableOvertime10To12: accountSettings.enableOvertime10To12,
-      enableOvertimeFrom12: accountSettings.enableOvertimeFrom12,
-      enableOvertimeFrom14: accountSettings.enableOvertimeFrom14,
-      enableNightTariff: accountSettings.enableNightTariff,
-      nightStart: accountSettings.nightStart,
-      nightEnd: accountSettings.nightEnd,
-      nightSurchargePercent: accountSettings.nightSurchargePercent,
-      enableTravelDay: false,
-      travelRegion: "within_europe",
+      rateMode,
+      rateAmount: rateMode === "hour"
+        ? Number(functionSettings.hourlyRate ?? accountSettings.defaultHourlyRate)
+        : Number(defaultFunction?.dayRate ?? accountSettings.defaultDayRate),
+      normalDayHours: Number(functionSettings.normalDayHours ?? accountSettings.normalDayHours),
+      minimumHours: Number(functionSettings.minimumHours ?? accountSettings.minimumHours),
+      enableHalfDayUnder6Hours: Boolean(functionSettings.enableHalfDayUnder6Hours ?? accountSettings.enableHalfDayUnder6Hours),
+      enableOvertime10To12: Boolean(functionSettings.enableOvertime10To12 ?? accountSettings.enableOvertime10To12),
+      enableOvertimeFrom12: Boolean(functionSettings.enableOvertimeFrom12 ?? accountSettings.enableOvertimeFrom12),
+      enableOvertimeFrom14: Boolean(functionSettings.enableOvertimeFrom14 ?? accountSettings.enableOvertimeFrom14),
+      enableNightTariff: Boolean(functionSettings.enableNightTariff ?? accountSettings.enableNightTariff),
+      nightStart: functionSettings.nightStart ?? accountSettings.nightStart,
+      nightEnd: functionSettings.nightEnd ?? accountSettings.nightEnd,
+      nightSurchargePercent: Number(functionSettings.nightSurchargePercent ?? accountSettings.nightSurchargePercent),
+      enableTravelDay: Boolean(functionExtras.enableTravelDay),
+      travelRegion: functionExtras.travelRegion === "outside_europe" ? "outside_europe" : "within_europe",
       travelPercent: accountSettings.travelWithinEuropePercent,
       travelWithinEuropePercent: accountSettings.travelWithinEuropePercent,
       travelOutsideEuropePercent: accountSettings.travelOutsideEuropePercent,
-      enableKilometers: false, kilometers: 0, kilometerRate: accountSettings.mileageRate,
-      enableParkingCosts: false, parkingCosts: accountSettings.parkingDefaultAmount,
-      enableDroneTariff: false, enableRonin4dTariff: false, customEquipment: []
+      enableKilometers: Boolean(functionExtras.enableKilometers), kilometers: 0, kilometerRate: Number(functionSettings.kilometerRate ?? accountSettings.mileageRate),
+      enableParkingCosts: Boolean(functionExtras.enableParkingCosts), parkingCosts: accountSettings.parkingDefaultAmount,
+      enableDroneTariff: Boolean(functionExtras.enableDroneTariff),
+      enableRonin4dTariff: Boolean(functionExtras.enableRonin4dTariff),
+      customEquipment: equipment.map((item) => ({ ...item, enabled: selectedEquipment.has(item.id) }))
     };
   }
 

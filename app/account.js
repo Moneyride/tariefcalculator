@@ -499,7 +499,7 @@
           <input type="checkbox" data-equipment-visible ${item.isVisible ? "checked" : ""} ${isPro ? "" : "disabled"}>
           <span><strong></strong><small>Tonen als optie in de calculator</small></span>
         </label>
-        <label class="equipment-amount-field"><span>Vergoeding</span><span class="prefixed-input"><span>€</span><input type="number" data-equipment-amount min="0" step="0.01" value="${item.amount}" ${isPro ? "" : "disabled"}></span></label>
+        <label class="equipment-amount-field"><span>Vergoeding</span><span class="prefixed-input"><span>€</span><input type="number" data-equipment-amount step="0.01" value="${item.amount}" ${isPro ? "" : "disabled"}></span></label>
         <button class="remove-equipment-button" type="button" aria-label="Apparatuur verwijderen" title="Apparatuur verwijderen" ${isPro ? "" : "disabled"}>&times;</button>
       `;
       row.querySelector("strong").textContent = item.name;
