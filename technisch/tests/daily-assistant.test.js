@@ -54,6 +54,28 @@ test("live werkdag loopt vandaag en gisteren, maar niet op oudere dagen", () => 
   }).active, false);
 });
 
+test("lopende werkdag is ook na middernacht herkenbaar als actieve context", () => {
+  const now = new Date(2026, 6, 28, 1, 0);
+  assert.equal(live.isRunning({
+    date: "2026-07-27",
+    startTime: "23:00",
+    endTime: "",
+    now
+  }), true);
+  assert.equal(live.isRunning({
+    date: "2026-07-27",
+    startTime: "23:00",
+    endTime: "00:45",
+    now
+  }), false);
+  assert.equal(live.isRunning({
+    date: "2026-07-26",
+    startTime: "23:00",
+    endTime: "",
+    now
+  }), false);
+});
+
 test("een standaardtijd start geen werkdag zonder bewuste tijdkeuze", () => {
   const state = live.getState({
     armed: false,
@@ -98,8 +120,18 @@ test("een opgeslagen werkdag wordt na terugkeer opnieuw aangeboden en live herva
   const script = await readFile(new URL("../../app/app.js", import.meta.url), "utf8");
   assert.doesNotMatch(script, /overuurtjeTodayWorkdayPrompt/);
   assert.match(script, /if \(requested\) applyWorkdaySnapshot\(requested\)/);
-  assert.match(script, /const existing = await listExistingDateEntries\(localDateValue\(\)\)/);
+  assert.match(script, /async function findPreferredOwnDateEntry/);
+  assert.match(script, /previousLocalDateValue/);
+  assert.match(script, /\.filter\(\(entry\) => isRunningDateEntry\(entry, now\)\)/);
+  assert.match(script, /const preferred = await findPreferredOwnDateEntry\(\)/);
   assert.match(script, /updateResumeLiveAccess\(\)/);
+});
+
+test("project-deeplink blijft behouden totdat het project succesvol opent", async () => {
+  const script = await readFile(new URL("../../app/projects.js", import.meta.url), "utf8");
+  assert.match(script, /const opened = await openProject\(requested, requestedDay\)/);
+  assert.match(script, /if \(opened\) history\.replaceState/);
+  assert.doesNotMatch(script, /projectList\.some\(\(project\) => project\.id === requested\)/);
 });
 
 test("live controller schakelt na een formulierwijziging direct naar 25 fps", () => {

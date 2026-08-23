@@ -232,9 +232,9 @@
     }
     const requested = parameters.get("project");
     const requestedDay = parameters.get("day");
-    if (requested && projectList.some((project) => project.id === requested)) {
-      history.replaceState(null, "", location.pathname);
-      await openProject(requested, requestedDay);
+    if (requested) {
+      const opened = await openProject(requested, requestedDay);
+      if (opened) history.replaceState(null, "", location.pathname);
     }
   }
 
@@ -650,12 +650,19 @@
 
   async function openProject(id, dayId = "") {
     try {
+      document.querySelector("#projects-error").textContent = "";
+      document.querySelector("#projects-unavailable").hidden = true;
       current = await projects.get(context.auth.user.id, id, options());
       if (!current) throw new Error("Project niet gevonden.");
       if (dayId && current.days.some((day) => day.id === dayId)) openDay(dayId);
       else renderOverview();
+      return true;
     }
-    catch (error) { document.querySelector("#projects-error").textContent = error.message; document.querySelector("#projects-unavailable").hidden = false; }
+    catch (error) {
+      document.querySelector("#projects-error").textContent = error.message;
+      document.querySelector("#projects-unavailable").hidden = false;
+      return false;
+    }
   }
 
   function renderEquipmentOptions(data) {

@@ -12947,6 +12947,16 @@ globalThis.TariffCalculator = {
     };
   }
 
+  function isRunning({ date, startTime, endTime, now = new Date() }) {
+    return getState({
+      armed: true,
+      date,
+      startTime,
+      endTime,
+      now
+    }).active;
+  }
+
   function createController({ read, render, onTick = () => {} }) {
     let timer = null;
     let lastTickSecond = null;
@@ -13004,6 +13014,7 @@ globalThis.TariffCalculator = {
     formatDuration,
     formatTimecode,
     getState,
+    isRunning,
     createController
   });
 })(globalThis);
@@ -28664,6 +28675,49 @@ async function listExistingDateEntries(date) {
   ];
 }
 
+function dateEntryWorkDate(entry) {
+  return entry?.kind === "project-day"
+    ? entry.day?.workDate || ""
+    : entry?.workday?.workDate || entry?.workday?.calculationData?.date || "";
+}
+
+function dateEntryCalculationData(entry) {
+  return entry?.kind === "project-day"
+    ? entry.day?.calculationData || {}
+    : entry?.workday?.calculationData || {};
+}
+
+function dateEntryUpdatedAt(entry) {
+  return entry?.kind === "project-day"
+    ? entry.day?.updatedAt || entry.project?.updatedAt || ""
+    : entry?.workday?.updatedAt || "";
+}
+
+function isRunningDateEntry(entry, now = new Date()) {
+  const data = dateEntryCalculationData(entry);
+  return Boolean(globalThis.OveruurtjeLiveWorkday?.isRunning?.({
+    date: dateEntryWorkDate(entry),
+    startTime: data.startTime,
+    endTime: data.endTime,
+    now
+  }));
+}
+
+async function findPreferredOwnDateEntry(now = new Date()) {
+  const today = localDateValue(now);
+  const yesterday = globalThis.OveruurtjeLiveWorkday?.previousLocalDateValue?.(now);
+  const [todayEntries, yesterdayEntries] = await Promise.all([
+    listExistingDateEntries(today),
+    yesterday && yesterday !== today
+      ? listExistingDateEntries(yesterday)
+      : Promise.resolve([])
+  ]);
+  const running = [...todayEntries, ...yesterdayEntries]
+    .filter((entry) => isRunningDateEntry(entry, now))
+    .sort((a, b) => dateEntryUpdatedAt(b).localeCompare(dateEntryUpdatedAt(a)));
+  return running[0] || todayEntries[0] || null;
+}
+
 async function listOwnEntriesForSharedDate(date) {
   if (currentUserContext?.isPro) return listExistingDateEntries(date);
   const localWorkday = freeActiveWorkdayService.load(currentAccountUser.id);
@@ -28691,15 +28745,26 @@ function configureTodayWorkdayDialog(entry) {
   const projectDay = entry?.kind === "project-day";
   const freeActive = entry?.kind === "free-active";
   const shared = entry?.kind === "shared";
+  const running = projectDay || entry?.kind === "workday"
+    ? isRunningDateEntry(entry)
+    : false;
+  const entryDate = dateEntryWorkDate(entry);
+  const startedEarlier = running && entryDate && entryDate !== localDateValue();
   document.querySelector("#today-workday-title").textContent = shared
     ? "Je hebt nog een gedeelde werkdag lopen."
+    : projectDay && running
+    ? `Je projectdag in “${entry.project.name}” loopt nog.`
     : projectDay
     ? `Vandaag staat er een werkdag in project “${entry.project.name}”.`
     : freeActive
       ? "Je hebt nog een actieve werkdag."
+      : running
+        ? "Je hebt nog een werkdag lopen."
       : "Je hebt vandaag al een werkdag opgeslagen.";
   document.querySelector("#today-workday-copy").textContent = shared
     ? `Je registreert deze werkdag samen met ${entry.share.ownerName || "een collega"}. Wil je verdergaan of een nieuwe berekening openen?`
+    : running && startedEarlier
+    ? "Deze werkdag begon gisteren en heeft nog geen eindtijd. Wil je verdergaan waar je gebleven was?"
     : projectDay
     ? "Wil je verdergaan met het bewerken van deze projectdag?"
     : freeActive
@@ -29070,9 +29135,9 @@ async function initializeWorkdayContext() {
       return;
     }
 
-    const existing = await listExistingDateEntries(localDateValue());
-    if (existing.length) {
-      todayWorkday = existing[0];
+    const preferred = await findPreferredOwnDateEntry();
+    if (preferred) {
+      todayWorkday = preferred;
       configureTodayWorkdayDialog(todayWorkday);
       openNativeDialog(todayWorkdayDialog);
     }

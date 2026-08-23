@@ -87,6 +87,16 @@
     };
   }
 
+  function isRunning({ date, startTime, endTime, now = new Date() }) {
+    return getState({
+      armed: true,
+      date,
+      startTime,
+      endTime,
+      now
+    }).active;
+  }
+
   function createController({ read, render, onTick = () => {} }) {
     let timer = null;
     let lastTickSecond = null;
@@ -144,6 +154,7 @@
     formatDuration,
     formatTimecode,
     getState,
+    isRunning,
     createController
   });
 })(globalThis);
