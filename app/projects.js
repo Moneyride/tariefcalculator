@@ -61,6 +61,14 @@
   const setDirty = (value) => { dirty = value; };
   const openDialog = (dialog) => typeof dialog.showModal === "function" ? dialog.showModal() : dialog.setAttribute("open", "");
 
+  function applyAccountingExportState(result, userContext = context) {
+    const button = document.querySelector("#project-moneybird");
+    if (!button) return;
+    const state = accountingService?.exportConnectionState?.(result) || { ready: false };
+    button.hidden = !(userContext?.isPro && state.ready);
+    if (!button.hidden) button.textContent = `Naar ${state.providerName}`;
+  }
+
   async function updateAccountingExportVisibility(userContext) {
     const button = document.querySelector("#project-moneybird");
     if (!button) return;
@@ -68,13 +76,9 @@
     button.hidden = true;
     if (!userContext?.auth?.user || !userContext?.isPro || !accountingService) return;
     try {
-      const connection = (await accountingService.status()).connection;
+      const status = await accountingService.status();
       if (request !== accountingVisibilityRequest) return;
-      button.hidden = !(
-        connection?.status === "connected"
-        && (connection.administration_id || connection.administrationId)
-      );
-      if (!button.hidden) button.textContent = connection.provider === "moneybird" ? "Naar Moneybird" : "Naar boekhouding";
+      applyAccountingExportState(status, userContext);
     } catch {
       if (request === accountingVisibilityRequest) button.hidden = true;
     }
@@ -107,8 +111,6 @@
     const defaultFunction = workFunctions.find((item) => item.isDefault) || workFunctions[0] || null;
     const preset = defaultFunction?.calculationSettings || {};
     const functionSettings = preset.settings || {};
-    const functionExtras = preset.extras || {};
-    const selectedEquipment = new Set(functionExtras.customEquipmentIds || []);
     const rateMode = functionSettings.rateMode === "hour"
       ? "hour"
       : defaultFunction ? "day" : (accountSettings.defaultRateMode === "hour" ? "hour" : "day");
@@ -131,16 +133,16 @@
       nightStart: functionSettings.nightStart ?? accountSettings.nightStart,
       nightEnd: functionSettings.nightEnd ?? accountSettings.nightEnd,
       nightSurchargePercent: Number(functionSettings.nightSurchargePercent ?? accountSettings.nightSurchargePercent),
-      enableTravelDay: Boolean(functionExtras.enableTravelDay),
-      travelRegion: functionExtras.travelRegion === "outside_europe" ? "outside_europe" : "within_europe",
+      enableTravelDay: false,
+      travelRegion: "within_europe",
       travelPercent: accountSettings.travelWithinEuropePercent,
       travelWithinEuropePercent: accountSettings.travelWithinEuropePercent,
       travelOutsideEuropePercent: accountSettings.travelOutsideEuropePercent,
-      enableKilometers: Boolean(functionExtras.enableKilometers), kilometers: 0, kilometerRate: Number(functionSettings.kilometerRate ?? accountSettings.mileageRate),
-      enableParkingCosts: Boolean(functionExtras.enableParkingCosts), parkingCosts: accountSettings.parkingDefaultAmount,
-      enableDroneTariff: Boolean(functionExtras.enableDroneTariff),
-      enableRonin4dTariff: Boolean(functionExtras.enableRonin4dTariff),
-      customEquipment: equipment.map((item) => ({ ...item, enabled: selectedEquipment.has(item.id) }))
+      enableKilometers: false, kilometers: 0, kilometerRate: Number(functionSettings.kilometerRate ?? accountSettings.mileageRate),
+      enableParkingCosts: false, parkingCosts: accountSettings.parkingDefaultAmount,
+      enableDroneTariff: false,
+      enableRonin4dTariff: false,
+      customEquipment: equipment.map((item) => ({ ...item, enabled: false }))
     };
   }
 
@@ -967,6 +969,10 @@
         sessionUi.showToast(error.message || "De boekhoudpreview kon niet worden geopend.");
       }
     });
+  });
+  document.addEventListener("overuurtje:accounting-connection", (event) => {
+    if (event.detail) applyAccountingExportState(event.detail);
+    else void updateAccountingExportVisibility(context);
   });
   addEventListener("afterprint", () => setTimeout(clearProjectPrint, 0));
   sharedProjectDialog.querySelector("[data-shared-project-close]").addEventListener("click", () => closeDialog(sharedProjectDialog));

@@ -284,6 +284,29 @@ async function credentialsFor(connectionId: string) {
   return decryptCredentials(data);
 }
 
+async function hasStoredCredentials(connectionId: string) {
+  const { data, error } = await database
+    .from("accounting_credentials")
+    .select("connection_id")
+    .eq("connection_id", connectionId)
+    .maybeSingle();
+  if (error) throw error;
+  return Boolean(data?.connection_id);
+}
+
+async function connectionState(connection: Record<string, unknown> | null) {
+  const connected = Boolean(
+    connection
+    && connection.status === "connected"
+    && await hasStoredCredentials(String(connection.id))
+  );
+  return {
+    connected,
+    ready: connected && Boolean(connection?.administration_id),
+    provider: connected ? String(connection?.provider || "") : ""
+  };
+}
+
 async function storeCredentials(connectionId: string, credentials: Credentials) {
   const encrypted = await encryptCredentials(credentials);
   const { error } = await database.from("accounting_credentials").upsert({
@@ -721,12 +744,15 @@ Deno.serve(async (request) => {
     }
 
     const connection = await connectionFor(user.id);
-    if (action === "status") return json({ connection: connection || null });
+    if (action === "status") {
+      return json({ connection: connection || null, ...await connectionState(connection) });
+    }
     if (action === "settingsBootstrap") {
-      const administrations = connection && connection.status !== "disconnected"
-        ? await listAdministrations(connection)
+      const state = await connectionState(connection);
+      const administrations = state.connected
+        ? await listAdministrations(connection as Record<string, unknown>)
         : [];
-      return json({ connection: connection || null, administrations });
+      return json({ connection: connection || null, administrations, ...state });
     }
     if (!connection || connection.status === "disconnected") throw new Error("Verbind eerst Moneybird.");
 

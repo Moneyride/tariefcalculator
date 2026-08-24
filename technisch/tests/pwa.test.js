@@ -179,7 +179,7 @@ test("Cookie settings behoudt een transparante tekst-hover", async () => {
 
 test("Printlayouts houden veilige ruimte over voor mobiele browserfooters", async () => {
   const styles = await read("app/styles.css");
-  assert.match(styles, /\.project-print-page\s*\{[^}]*min-height:\s*248mm/);
+  assert.match(styles, /body\.is-printing-project \.project-print-page\s*\{[^}]*min-height:\s*0/);
   const footerRule = [...styles.matchAll(/\.print-footer\s*\{[^}]+\}/g)].at(-1)?.[0] || "";
   assert.doesNotMatch(footerRule, /position:\s*(?:absolute|fixed)/);
   assert.match(styles, /\.project-print-page footer\s*\{[^}]*top:\s*7mm/);

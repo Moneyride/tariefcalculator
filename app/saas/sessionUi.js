@@ -58,6 +58,11 @@
   let mfaVerificationPromise = null;
   let socialAuthActions = null;
 
+  function revealSessionUi() {
+    document.documentElement.classList.remove("auth-pending");
+    document.documentElement.classList.add("auth-ready");
+  }
+
   function showToast(message) {
     if (globalThis.OveruurtjeAnalytics?.showToast) {
       globalThis.OveruurtjeAnalytics.showToast(message);
@@ -685,14 +690,6 @@
       } catch (error) {
         console.warn("Profiel kon niet worden geladen.", error);
       }
-      try {
-        // A browser push endpoint can survive logout. Re-attach it to the
-        // current account after login so notifications never follow the
-        // previous user of this device.
-        await globalThis.OveruurtjePush?.refresh?.();
-      } catch (error) {
-        console.warn("Pushabonnement kon niet opnieuw worden gekoppeld.", error);
-      }
     }
 
     const subscription = subscriptions.resolve(profile);
@@ -704,6 +701,15 @@
     });
     renderHeader(currentContext);
     document.dispatchEvent(new CustomEvent("overuurtje:user-context", { detail: currentContext }));
+    revealSessionUi();
+
+    if (authState.user) {
+      // Push recovery may use the network, but it must never delay the
+      // visible account session while navigating between pages.
+      globalThis.OveruurtjePush?.refresh?.().catch((error) => {
+        console.warn("Pushabonnement kon niet opnieuw worden gekoppeld.", error);
+      });
+    }
 
     if (
       authState.user
@@ -884,7 +890,12 @@
     currentContext = Object.freeze({ ...currentContext, profile: event.detail });
     renderHeader(currentContext);
   });
-  auth.subscribe(buildContext);
+  auth.subscribe((authState) => {
+    // The first synchronous state only means that stored auth is being read.
+    // Rendering it as a guest causes a visible guest-to-account flash.
+    if (authState.loading) return;
+    buildContext(authState);
+  });
 
   globalThis.OveruurtjeSessionUI = Object.freeze({
     ready,

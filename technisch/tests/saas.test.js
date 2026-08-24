@@ -177,7 +177,7 @@ test("opslaan en PDF gebruiken consistente lijniconen zonder PDF-lettermerk", as
   const html = await readFile(path.join(rootDirectory, "app/index.html"), "utf8");
   const styles = await readFile(path.join(rootDirectory, "app/styles.css"), "utf8");
   const saveButton = html.match(/<button class="workday-save-button[\s\S]*?<\/button>/)?.[0] || "";
-  const pdfButton = html.match(/<button class="secondary pro-action-button"[^>]+id="save-pdf"[\s\S]*?<\/button>/)?.[0] || "";
+  const pdfButton = html.match(/<button class="[^"]*secondary[^"]*pro-action-button[^"]*"[^>]+id="save-pdf"[\s\S]*?<\/button>/)?.[0] || "";
 
   assert.match(saveButton, /class="button-line-icon"/);
   assert.match(saveButton, /M5 3h12l2 2v16H5z/);
@@ -1542,7 +1542,7 @@ test("Crew Card leest actuele statistieken en de gekozen titelbadge", async () =
   assert.match(migration, /set selected_badge_id = \([\s\S]*order by fb\.position/i);
   assert.match(dashboardScript, /overuurtje:badges-updated/);
   assert.match(dashboardScript, /visibilitychange/);
-  assert.match(dashboardScript, /await loadCrewCard\(context\.profile\)/);
+  assert.match(dashboardScript, /await loadCrewCard\(context\.profile(?:,\s*(?:records|currentRecords))?\)/);
   assert.match(badgeService, /registeredWorkdays: Number\(value\.registeredWorkdays/);
   assert.match(badgeService, /selectedBadge: value\.selectedBadge/);
 });
@@ -1608,4 +1608,36 @@ test("geclaimde uitnodigingen worden geaccepteerd en blijven de actieve gedeelde
   assert.match(workdaysScript, /shareService\.claimInvite\(token\)[\s\S]*shareService\.accept\(shareId\)/i);
   assert.match(calculatorScript, /const activeShares = await findActiveReceivedShare\(\)[\s\S]*location\.replace\(`index\.html\?shared=/i);
   assert.doesNotMatch(calculatorScript, /activeShares\.length && !activeContextIsSuppressed\(\)/i);
+});
+
+test("daggebonden extra's beginnen uit en lekken niet naar een andere werkdag", async () => {
+  const calculatorScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
+  const projectScript = await readFile(path.join(rootDirectory, "app/projects.js"), "utf8");
+
+  assert.match(calculatorScript, /function resetDailyExtras\(\)[\s\S]*field\.checked = false/);
+  assert.match(calculatorScript, /const extras = snapshot\.extras \|\| \{\};\s*resetDailyExtras\(\);/);
+  assert.match(calculatorScript, /function getWorkFunctionPreset\(\)[\s\S]*extras: \{\}/);
+  assert.doesNotMatch(calculatorScript, /applyWorkFunctionExtras\(preset\.extras\)/);
+  assert.match(projectScript, /enableTravelDay: false/);
+  assert.match(projectScript, /enableKilometers: false/);
+  assert.match(projectScript, /enableParkingCosts: false/);
+  assert.match(projectScript, /enableDroneTariff: false/);
+  assert.match(projectScript, /enableRonin4dTariff: false/);
+  assert.match(projectScript, /customEquipment: equipment\.map\(\(item\) => \(\{ \.\.\.item, enabled: false \}\)\)/);
+});
+
+test("bewaarde sessie wordt zonder tijdelijke gastweergave opgebouwd", async () => {
+  const sessionUi = await readFile(path.join(rootDirectory, "app/saas/sessionUi.js"), "utf8");
+  const styles = await readFile(path.join(rootDirectory, "app/styles.css"), "utf8");
+  const pages = ["index.html", "account.html", "workdays.html", "projects.html", "dashboard.html"];
+
+  assert.match(sessionUi, /if \(authState\.loading\) return;/);
+  assert.match(sessionUi, /revealSessionUi\(\);/);
+  assert.match(sessionUi, /OveruurtjePush\?\.refresh\?\.\(\)\.catch/);
+  assert.doesNotMatch(sessionUi, /await globalThis\.OveruurtjePush\?\.refresh/);
+  assert.match(styles, /html\.auth-pending \.app-shell[\s\S]*visibility:\s*hidden/);
+  for (const page of pages) {
+    const html = await readFile(path.join(rootDirectory, "app", page), "utf8");
+    assert.match(html, /<html lang="nl" class="auth-pending">/);
+  }
 });

@@ -1,9 +1,10 @@
 <!doctype html>
-<html lang="nl">
+<html lang="nl" class="auth-pending">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#073f3d">
+    <script>setTimeout(function(){document.documentElement.classList.remove("auth-pending")},5000)</script>
     <script>
       window.dataLayer = window.dataLayer || [];
       window.gtag = window.gtag || function gtag() { window.dataLayer.push(arguments); };
@@ -25,7 +26,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260730a">
-    <link rel="stylesheet" href="styles.css?v=20260816b">
+    <link rel="stylesheet" href="styles.css?v=20260824a">
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
@@ -40,9 +41,9 @@
     <script src="saas/shareService.js?v=20260802a" defer></script>
     <script src="saas/subscriptionService.js?v=20260809a" defer></script>
     <script src="saas/featureGate.js?v=20260731b" defer></script>
-    <script src="saas/accountingService.js?v=20260815b" defer></script>
+    <script src="saas/accountingService.js?v=20260824a" defer></script>
     <script src="analytics.js?v=20260722q" defer></script>
-    <script src="saas/sessionUi.js?v=20260809d" defer></script>
+    <script src="saas/sessionUi.js?v=20260824a" defer></script>
     <script src="vendor/jsQR.js?v=20260731a" defer></script>
     <script src="qrScanner.js?v=20260731a" defer></script>
     <script src="interactionGuard.js?v=20260730a" defer></script>
@@ -50,7 +51,7 @@
     <script src="timePicker.js?v=20260730a" defer></script>
     <script src="avatarCropper.js?v=20260809a" defer></script>
     <script src="account.js?v=20260822a" defer></script>
-    <script src="accountAccounting.js?v=20260816a" defer></script>
+    <script src="accountAccounting.js?v=20260824a" defer></script>
     <script src="pwa.js?v=20260731a" defer></script>
   </head>
   <body>

@@ -49,8 +49,14 @@
   }
 
   function announceConnection() {
+    const provider = connection?.provider || "";
     document.dispatchEvent(new CustomEvent("overuurtje:accounting-connection", {
-      detail: { provider: connection?.provider || "", ready: isReady() }
+      detail: {
+        connection,
+        provider,
+        providerName: service.providerName(provider),
+        ready: isReady()
+      }
     }));
   }
 
@@ -131,7 +137,8 @@
     try {
       const bootstrap = await service.settingsBootstrap();
       connection = bootstrap.connection;
-      const connected = connection?.status === "connected";
+      const connected = bootstrap.connected === true;
+      if (!connected) connection = null;
       if (connected) providerSelect.value = connection.provider || "moneybird";
       renderProviderChoice();
       root.querySelector("[data-accounting-state]").textContent = connected ? "Verbonden" : "Niet verbonden";

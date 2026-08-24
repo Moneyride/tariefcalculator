@@ -78,7 +78,7 @@ test("reisdag onderdrukt overuren en nachttoeslag, maar behoudt losse kosten", (
   assert.ok(model.lineItems.some((line) => line.category === "parking" && line.lineTotal === 18));
 });
 
-test("halve dagen en overuurstaffels blijven afzonderlijke boekhoudcategorieën", () => {
+test("halve dagen blijven apart en uitgeschakelde overuren worden niet geëxporteerd", () => {
   const halfDay = accounting.fromWorkday({
     id: "23232323-2323-4232-8232-232323232323",
     calculationData: snapshot({
@@ -102,7 +102,7 @@ test("halve dagen en overuurstaffels blijven afzonderlijke boekhoudcategorieën"
       extras: { ...snapshot().extras, enableKilometers: false, customEquipment: [] }
     })
   });
-  assert.ok(standardOvertime.lineItems.some((line) => line.category === "overtime_100"));
+  assert.equal(standardOvertime.lineItems.some((line) => line.category.startsWith("overtime_")), false);
 });
 
 test("projectfilter neemt alleen geselecteerde werkdagen mee", () => {
@@ -173,6 +173,8 @@ test("providerlaag begrenst retries, verwerkt 429 en cachet statische providerda
   assert.match(edge, /const maxAttempts = safeToRetry/);
   assert.match(edge, /response\.headers\.get\("Retry-After"\)/);
   assert.match(edge, /refreshInFlight/);
+  assert.match(edge, /hasStoredCredentials/);
+  assert.match(edge, /ready:\s*connected && Boolean\(connection\?\.administration_id\)/);
   assert.match(edge, /cachedProviderValue\([\s\S]*"administrations"/);
   assert.match(edge, /`configuration:\$\{administrationId\}`/);
   assert.match(edge, /6 \* 60 \* 60 \* 1000/);
@@ -191,13 +193,16 @@ test("boekhoudintegratie is generiek en toont export alleen in relevante scherme
   const workdaysUi = fs.readFileSync(path.join(root, "app/workdays.js"), "utf8");
   const settingsUi = fs.readFileSync(path.join(root, "app/accountAccounting.js"), "utf8");
 
-  assert.match(index, /id="moneybird-export" hidden>Naar Moneybird<\/button>/);
-  assert.match(projects, /id="project-moneybird" type="button" hidden>Naar Moneybird<\/button>/);
+  assert.match(index, /id="moneybird-export" hidden>Naar boekhouding<\/button>/);
+  assert.match(projects, /id="project-moneybird" type="button" hidden>Naar boekhouding<\/button>/);
   assert.doesNotMatch(index, /id="moneybird-export"[^\n]*data-pro-badge/);
   assert.doesNotMatch(workdays, /accountingUi\.js/);
   assert.doesNotMatch(workdaysUi, /workday-moneybird-button/);
   assert.match(settingsUi, /Kies boekhoudsysteem/);
   assert.doesNotMatch(settingsUi, /data-accounting-test/);
+  assert.match(fs.readFileSync(path.join(root, "app/saas/accountingService.js"), "utf8"), /providerName/);
+  assert.match(fs.readFileSync(path.join(root, "app/app.js"), "utf8"), /state\.ready/);
+  assert.match(fs.readFileSync(path.join(root, "app/projects.js"), "utf8"), /state\.providerName/);
 });
 
 test("boekhoudpreview zoekt opdrachtgevers op invoer en gebruikt altijd 21 procent btw", () => {

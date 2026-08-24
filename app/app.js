@@ -101,21 +101,22 @@ let calculationIsStale = false;
 let latestResult = null;
 let accountingVisibilityRequest = 0;
 
+function applyAccountingExportState(result) {
+  if (!moneybirdExportButton) return;
+  const state = accountingService?.exportConnectionState?.(result) || { ready: false };
+  moneybirdExportButton.hidden = !(currentUserContext?.isPro && state.ready);
+  if (!moneybirdExportButton.hidden) moneybirdExportButton.textContent = `Naar ${state.providerName}`;
+}
+
 async function updateAccountingExportVisibility(context) {
   if (!moneybirdExportButton) return;
   const request = ++accountingVisibilityRequest;
   moneybirdExportButton.hidden = true;
   if (!context?.auth?.user || !context?.isPro || !accountingService) return;
   try {
-    const connection = (await accountingService.status()).connection;
+    const status = await accountingService.status();
     if (request !== accountingVisibilityRequest) return;
-    moneybirdExportButton.hidden = !(
-      connection?.status === "connected"
-      && (connection.administration_id || connection.administrationId)
-    );
-    if (!moneybirdExportButton.hidden) {
-      moneybirdExportButton.textContent = connection.provider === "moneybird" ? "Naar Moneybird" : "Naar boekhouding";
-    }
+    applyAccountingExportState(status);
   } catch {
     if (request === accountingVisibilityRequest) moneybirdExportButton.hidden = true;
   }
@@ -417,6 +418,7 @@ async function rememberCurrentClient() {
 
 function applyAccountSettings(accountSettings, isPro) {
   if (!accountSettings) return;
+  resetDailyExtras();
   currentAccountSettings = accountSettings;
   accountEquipmentVisibility = isPro
     ? { drone: accountSettings.droneVisible, ronin: accountSettings.roninVisible }
@@ -463,11 +465,6 @@ function applyAccountSettings(accountSettings, isPro) {
     choice.hidden = !input.checked;
     input.disabled = !input.checked;
   });
-  if (isPro) {
-    form.elements.namedItem("enableDroneTariff").checked = false;
-    form.elements.namedItem("enableRonin4dTariff").checked = false;
-  }
-  form.elements.namedItem("parkingCosts").value = "0";
   updateDepartmentVisibility();
   updateKilometerVisibility();
   updateParkingVisibility();
@@ -482,34 +479,23 @@ function selectedWorkFunction() {
 }
 
 function getWorkFunctionPreset() {
-  const formData = new FormData(form);
   return {
     settings: getSettingsFromForm(),
-    extras: {
-      enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
-      enableRonin4dTariff: readCheckbox(formData, "enableRonin4dTariff"),
-      enableKilometers: readCheckbox(formData, "enableKilometers"),
-      enableParkingCosts: readCheckbox(formData, "enableParkingCosts"),
-      enableTravelDay: readCheckbox(formData, "enableTravelDay"),
-      travelRegion: formData.get("travelRegion") || "within_europe",
-      customEquipmentIds: getSelectedCustomEquipment()
-        .filter((item) => item.enabled)
-        .map((item) => item.id)
-    }
+    // Extra's horen bij een specifieke werkdag en zijn nooit functiestandaarden.
+    extras: {}
   };
 }
 
-function applyWorkFunctionExtras(extras = {}) {
+function resetDailyExtras() {
   ["enableDroneTariff", "enableRonin4dTariff", "enableKilometers", "enableParkingCosts", "enableTravelDay"].forEach((name) => {
     const field = form.elements.namedItem(name);
-    if (field && !field.disabled && Object.hasOwn(extras, name)) field.checked = Boolean(extras[name]);
+    if (field) field.checked = false;
   });
-  if (extras.travelRegion && form.elements.namedItem("travelRegion")) {
-    form.elements.namedItem("travelRegion").value = extras.travelRegion;
-  }
-  const selectedEquipment = new Set(extras.customEquipmentIds || []);
+  if (form.elements.namedItem("kilometers")) form.elements.namedItem("kilometers").value = "0";
+  if (form.elements.namedItem("parkingCosts")) form.elements.namedItem("parkingCosts").value = "0";
+  if (form.elements.namedItem("travelRegion")) form.elements.namedItem("travelRegion").value = "within_europe";
   customEquipmentOptions.querySelectorAll("[data-custom-equipment-id]").forEach((field) => {
-    field.checked = selectedEquipment.has(field.dataset.customEquipmentId);
+    field.checked = false;
   });
 }
 
@@ -568,11 +554,9 @@ function applyWorkFunction(workFunction, { preserveRate = false, preserveSetting
   updateRateSettingsVisibility();
   updateNightSettingsVisibility();
   updatePauseVisibility();
-  if (!preserveSettings) {
-    applyWorkFunctionExtras(preset.extras);
-    updateKilometerVisibility();
-    updateParkingVisibility();
-  }
+  updateKilometerVisibility();
+  updateParkingVisibility();
+  updateTravelVisibility();
 }
 
 async function syncActiveWorkFunction() {
@@ -1137,6 +1121,7 @@ function applyWorkdaySnapshot(workday, { projectContext = null, freeActive = fal
   form.elements.namedItem("breakMinutes").value = String(snapshot.breakMinutes || 0);
 
   const extras = snapshot.extras || {};
+  resetDailyExtras();
   [
     "enableDroneTariff", "enableRonin4dTariff", "enableKilometers", "enableParkingCosts", "enableTravelDay"
   ].forEach((name) => {
@@ -1841,6 +1826,7 @@ async function hydrateAccountSettings(context) {
     };
     renderCustomEquipment([]);
     renderWorkFunctions([]);
+    resetDailyExtras();
     currentWorkdayId = null;
     currentShareWorkdayId = null;
     currentSharedSource = null;
@@ -2966,5 +2952,8 @@ details.open = localStorage.getItem("cameraTariefSettingsOpen") === "true";
 updateWorkdaySaveAccess();
 
 document.addEventListener("overuurtje:user-context", (event) => hydrateAccountSettings(event.detail));
-document.addEventListener("overuurtje:accounting-connection", () => updateAccountingExportVisibility(currentUserContext));
+document.addEventListener("overuurtje:accounting-connection", (event) => {
+  if (event.detail) applyAccountingExportState(event.detail);
+  else void updateAccountingExportVisibility(currentUserContext);
+});
 sessionUi?.ready.then(hydrateAccountSettings);

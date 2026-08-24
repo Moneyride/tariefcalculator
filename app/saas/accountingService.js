@@ -7,6 +7,24 @@
   const responseCache = new Map();
   const pendingRequests = new Map();
   const cacheLimits = Object.freeze({ maxEntries: 80 });
+  const providerLabels = Object.freeze({ moneybird: "Moneybird" });
+
+  function providerName(provider) {
+    const key = String(provider || "").trim().toLowerCase();
+    if (!key) return "boekhouding";
+    return providerLabels[key] || key
+      .split(/[-_\s]+/)
+      .filter(Boolean)
+      .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+      .join(" ");
+  }
+
+  function exportConnectionState(result = {}) {
+    const connection = result.connection || null;
+    const ready = result.ready === true;
+    const provider = ready ? String(result.provider || connection?.provider || "") : "";
+    return Object.freeze({ connection, ready, provider, providerName: providerName(provider) });
+  }
 
   function cacheKey(action, payload) {
     return `${action}:${JSON.stringify(payload || {})}`;
@@ -113,6 +131,8 @@
 
   globalThis.OveruurtjeAccounting = Object.freeze({
     status: () => invoke("status", {}, { cacheTtlMs: 15000 }),
+    exportConnectionState,
+    providerName,
     startOAuth: () => invoke("startOAuth"),
     connectDevelopment: async () => {
       const result = await invoke("connectDevelopment");

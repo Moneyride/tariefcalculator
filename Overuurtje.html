@@ -1,9 +1,10 @@
 <!doctype html>
-<html lang="nl">
+<html lang="nl" class="auth-pending">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#073f3d">
+    <script>setTimeout(function(){document.documentElement.classList.remove("auth-pending")},5000)</script>
     <script>
       window.dataLayer = window.dataLayer || [];
       window.gtag = window.gtag || function gtag() { window.dataLayer.push(arguments); };
@@ -69,6 +70,24 @@
   --glass-soft: rgba(255, 255, 255, 0.42);
   --glass-line: rgba(255, 255, 255, 0.46);
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+html.auth-pending .app-shell {
+  visibility: hidden;
+  opacity: 0;
+}
+
+html.auth-ready .app-shell {
+  animation: session-ui-reveal 120ms ease-out both;
+}
+
+@keyframes session-ui-reveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.auth-ready .app-shell { animation: none; }
 }
 
 @media screen {
@@ -9661,7 +9680,7 @@ button.crew-badge:disabled { cursor: default; }
           <span data-pro-badge>Pro</span>
         </button>
         <button class="invoice-copy-button" type="button" id="copy-summary">Kopiëren voor factuur</button>
-        <button class="invoice-copy-button moneybird-export-button" type="button" id="moneybird-export" hidden>Naar Moneybird</button>
+        <button class="invoice-copy-button moneybird-export-button" type="button" id="moneybird-export" hidden>Naar boekhouding</button>
         <p class="copy-status" id="copy-status" aria-live="polite"></p>
       </div>
 
@@ -11625,6 +11644,24 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
   const responseCache = new Map();
   const pendingRequests = new Map();
   const cacheLimits = Object.freeze({ maxEntries: 80 });
+  const providerLabels = Object.freeze({ moneybird: "Moneybird" });
+
+  function providerName(provider) {
+    const key = String(provider || "").trim().toLowerCase();
+    if (!key) return "boekhouding";
+    return providerLabels[key] || key
+      .split(/[-_\s]+/)
+      .filter(Boolean)
+      .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+      .join(" ");
+  }
+
+  function exportConnectionState(result = {}) {
+    const connection = result.connection || null;
+    const ready = result.ready === true;
+    const provider = ready ? String(result.provider || connection?.provider || "") : "";
+    return Object.freeze({ connection, ready, provider, providerName: providerName(provider) });
+  }
 
   function cacheKey(action, payload) {
     return `${action}:${JSON.stringify(payload || {})}`;
@@ -11731,6 +11768,8 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
 
   globalThis.OveruurtjeAccounting = Object.freeze({
     status: () => invoke("status", {}, { cacheTtlMs: 15000 }),
+    exportConnectionState,
+    providerName,
     startOAuth: () => invoke("startOAuth"),
     connectDevelopment: async () => {
       const result = await invoke("connectDevelopment");
@@ -13400,6 +13439,11 @@ globalThis.TariffCalculator = {
   let mfaVerificationPromise = null;
   let socialAuthActions = null;
 
+  function revealSessionUi() {
+    document.documentElement.classList.remove("auth-pending");
+    document.documentElement.classList.add("auth-ready");
+  }
+
   function showToast(message) {
     if (globalThis.OveruurtjeAnalytics?.showToast) {
       globalThis.OveruurtjeAnalytics.showToast(message);
@@ -14027,14 +14071,6 @@ globalThis.TariffCalculator = {
       } catch (error) {
         console.warn("Profiel kon niet worden geladen.", error);
       }
-      try {
-        // A browser push endpoint can survive logout. Re-attach it to the
-        // current account after login so notifications never follow the
-        // previous user of this device.
-        await globalThis.OveruurtjePush?.refresh?.();
-      } catch (error) {
-        console.warn("Pushabonnement kon niet opnieuw worden gekoppeld.", error);
-      }
     }
 
     const subscription = subscriptions.resolve(profile);
@@ -14046,6 +14082,15 @@ globalThis.TariffCalculator = {
     });
     renderHeader(currentContext);
     document.dispatchEvent(new CustomEvent("overuurtje:user-context", { detail: currentContext }));
+    revealSessionUi();
+
+    if (authState.user) {
+      // Push recovery may use the network, but it must never delay the
+      // visible account session while navigating between pages.
+      globalThis.OveruurtjePush?.refresh?.().catch((error) => {
+        console.warn("Pushabonnement kon niet opnieuw worden gekoppeld.", error);
+      });
+    }
 
     if (
       authState.user
@@ -14226,7 +14271,12 @@ globalThis.TariffCalculator = {
     currentContext = Object.freeze({ ...currentContext, profile: event.detail });
     renderHeader(currentContext);
   });
-  auth.subscribe(buildContext);
+  auth.subscribe((authState) => {
+    // The first synchronous state only means that stored auth is being read.
+    // Rendering it as a guest causes a visible guest-to-account flash.
+    if (authState.loading) return;
+    buildContext(authState);
+  });
 
   globalThis.OveruurtjeSessionUI = Object.freeze({
     ready,
@@ -27545,21 +27595,22 @@ let calculationIsStale = false;
 let latestResult = null;
 let accountingVisibilityRequest = 0;
 
+function applyAccountingExportState(result) {
+  if (!moneybirdExportButton) return;
+  const state = accountingService?.exportConnectionState?.(result) || { ready: false };
+  moneybirdExportButton.hidden = !(currentUserContext?.isPro && state.ready);
+  if (!moneybirdExportButton.hidden) moneybirdExportButton.textContent = `Naar ${state.providerName}`;
+}
+
 async function updateAccountingExportVisibility(context) {
   if (!moneybirdExportButton) return;
   const request = ++accountingVisibilityRequest;
   moneybirdExportButton.hidden = true;
   if (!context?.auth?.user || !context?.isPro || !accountingService) return;
   try {
-    const connection = (await accountingService.status()).connection;
+    const status = await accountingService.status();
     if (request !== accountingVisibilityRequest) return;
-    moneybirdExportButton.hidden = !(
-      connection?.status === "connected"
-      && (connection.administration_id || connection.administrationId)
-    );
-    if (!moneybirdExportButton.hidden) {
-      moneybirdExportButton.textContent = connection.provider === "moneybird" ? "Naar Moneybird" : "Naar boekhouding";
-    }
+    applyAccountingExportState(status);
   } catch {
     if (request === accountingVisibilityRequest) moneybirdExportButton.hidden = true;
   }
@@ -27861,6 +27912,7 @@ async function rememberCurrentClient() {
 
 function applyAccountSettings(accountSettings, isPro) {
   if (!accountSettings) return;
+  resetDailyExtras();
   currentAccountSettings = accountSettings;
   accountEquipmentVisibility = isPro
     ? { drone: accountSettings.droneVisible, ronin: accountSettings.roninVisible }
@@ -27907,11 +27959,6 @@ function applyAccountSettings(accountSettings, isPro) {
     choice.hidden = !input.checked;
     input.disabled = !input.checked;
   });
-  if (isPro) {
-    form.elements.namedItem("enableDroneTariff").checked = false;
-    form.elements.namedItem("enableRonin4dTariff").checked = false;
-  }
-  form.elements.namedItem("parkingCosts").value = "0";
   updateDepartmentVisibility();
   updateKilometerVisibility();
   updateParkingVisibility();
@@ -27926,34 +27973,23 @@ function selectedWorkFunction() {
 }
 
 function getWorkFunctionPreset() {
-  const formData = new FormData(form);
   return {
     settings: getSettingsFromForm(),
-    extras: {
-      enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
-      enableRonin4dTariff: readCheckbox(formData, "enableRonin4dTariff"),
-      enableKilometers: readCheckbox(formData, "enableKilometers"),
-      enableParkingCosts: readCheckbox(formData, "enableParkingCosts"),
-      enableTravelDay: readCheckbox(formData, "enableTravelDay"),
-      travelRegion: formData.get("travelRegion") || "within_europe",
-      customEquipmentIds: getSelectedCustomEquipment()
-        .filter((item) => item.enabled)
-        .map((item) => item.id)
-    }
+    // Extra's horen bij een specifieke werkdag en zijn nooit functiestandaarden.
+    extras: {}
   };
 }
 
-function applyWorkFunctionExtras(extras = {}) {
+function resetDailyExtras() {
   ["enableDroneTariff", "enableRonin4dTariff", "enableKilometers", "enableParkingCosts", "enableTravelDay"].forEach((name) => {
     const field = form.elements.namedItem(name);
-    if (field && !field.disabled && Object.hasOwn(extras, name)) field.checked = Boolean(extras[name]);
+    if (field) field.checked = false;
   });
-  if (extras.travelRegion && form.elements.namedItem("travelRegion")) {
-    form.elements.namedItem("travelRegion").value = extras.travelRegion;
-  }
-  const selectedEquipment = new Set(extras.customEquipmentIds || []);
+  if (form.elements.namedItem("kilometers")) form.elements.namedItem("kilometers").value = "0";
+  if (form.elements.namedItem("parkingCosts")) form.elements.namedItem("parkingCosts").value = "0";
+  if (form.elements.namedItem("travelRegion")) form.elements.namedItem("travelRegion").value = "within_europe";
   customEquipmentOptions.querySelectorAll("[data-custom-equipment-id]").forEach((field) => {
-    field.checked = selectedEquipment.has(field.dataset.customEquipmentId);
+    field.checked = false;
   });
 }
 
@@ -28012,11 +28048,9 @@ function applyWorkFunction(workFunction, { preserveRate = false, preserveSetting
   updateRateSettingsVisibility();
   updateNightSettingsVisibility();
   updatePauseVisibility();
-  if (!preserveSettings) {
-    applyWorkFunctionExtras(preset.extras);
-    updateKilometerVisibility();
-    updateParkingVisibility();
-  }
+  updateKilometerVisibility();
+  updateParkingVisibility();
+  updateTravelVisibility();
 }
 
 async function syncActiveWorkFunction() {
@@ -28581,6 +28615,7 @@ function applyWorkdaySnapshot(workday, { projectContext = null, freeActive = fal
   form.elements.namedItem("breakMinutes").value = String(snapshot.breakMinutes || 0);
 
   const extras = snapshot.extras || {};
+  resetDailyExtras();
   [
     "enableDroneTariff", "enableRonin4dTariff", "enableKilometers", "enableParkingCosts", "enableTravelDay"
   ].forEach((name) => {
@@ -29285,6 +29320,7 @@ async function hydrateAccountSettings(context) {
     };
     renderCustomEquipment([]);
     renderWorkFunctions([]);
+    resetDailyExtras();
     currentWorkdayId = null;
     currentShareWorkdayId = null;
     currentSharedSource = null;
@@ -30410,7 +30446,10 @@ details.open = localStorage.getItem("cameraTariefSettingsOpen") === "true";
 updateWorkdaySaveAccess();
 
 document.addEventListener("overuurtje:user-context", (event) => hydrateAccountSettings(event.detail));
-document.addEventListener("overuurtje:accounting-connection", () => updateAccountingExportVisibility(currentUserContext));
+document.addEventListener("overuurtje:accounting-connection", (event) => {
+  if (event.detail) applyAccountingExportState(event.detail);
+  else void updateAccountingExportVisibility(currentUserContext);
+});
 sessionUi?.ready.then(hydrateAccountSettings);
 
     </script>
