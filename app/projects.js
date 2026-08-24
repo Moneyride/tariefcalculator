@@ -180,14 +180,24 @@
     });
   }
 
-  function totals(days) {
+  function canCalculateDay(data) {
+    return Boolean(data?.enableTravelDay || (data?.startTime && data?.endTime));
+  }
+
+  function totals(days, { allowIncomplete = false } = {}) {
     return days.reduce((all, day) => {
-      const result = calculate(storedDayData(day));
+      const data = storedDayData(day);
+      if (allowIncomplete && !canCalculateDay(data)) {
+        all.incomplete += 1;
+        return all;
+      }
+      const result = calculate(data);
       all.amount += result.subtotalExVat; all.hours += result.totalHours; all.overtime += result.overtimeHours;
       all.night += result.nightHours; all.kilometers += result.kilometers; all.parking += result.parkingAmount;
       all.surcharges += result.overtimeAmount + result.nightAmount + result.droneTariffAmount + result.ronin4dTariffAmount + result.customEquipmentAmount;
+      all.completed += 1;
       return all;
-    }, { amount: 0, hours: 0, overtime: 0, night: 0, kilometers: 0, parking: 0, surcharges: 0 });
+    }, { amount: 0, hours: 0, overtime: 0, night: 0, kilometers: 0, parking: 0, surcharges: 0, completed: 0, incomplete: 0 });
   }
 
   function overlapsProjectListMonth(project) {
@@ -482,19 +492,23 @@
   }
 
   function renderOverview({ resetCarousel = true } = {}) {
-    const project = current.project; const total = totals(current.days);
+    const project = current.project; const total = totals(current.days, { allowIncomplete: true });
     if (resetCarousel) carouselIndex = 0;
     carouselIndex = Math.max(0, Math.min(carouselIndex, current.days.length - 1));
     document.querySelector("#overview-name").textContent = project.name;
     document.querySelector("#overview-meta").textContent = `${project.clientName ? `${project.clientName} · ` : ""}${formatDate(project.startDate)} - ${formatDate(project.endDate)} · ${current.days.length} werkdagen`;
-    document.querySelector("#project-metrics").innerHTML = [
+    const metrics = [
       ["Gewerkte uren", `${number.format(total.hours)} uur`],
       ["Overuren", `${number.format(total.overtime)} uur`], ["Nachturen", `${number.format(total.night)} uur`],
       ["Kilometers", `${number.format(total.kilometers)} km`], ["Parkeer/onkosten", euro.format(total.parking)], ["Toeslagen", euro.format(total.surcharges)],
-      ["Totaal exclusief btw", euro.format(total.amount), "primary"]
-    ].map(([label, value, className = ""]) => `<div class="${className}"><span>${label}</span><strong>${value}</strong></div>`).join("");
+      [total.incomplete ? "Totaal afgeronde dagen" : "Totaal exclusief btw", euro.format(total.amount), "primary"]
+    ];
+    if (total.incomplete) metrics.splice(6, 0, ["Nog afronden", `${total.incomplete} werkdag${total.incomplete === 1 ? "" : "en"}`]);
+    document.querySelector("#project-metrics").innerHTML = metrics
+      .map(([label, value, className = ""]) => `<div class="${className}"><span>${label}</span><strong>${value}</strong></div>`).join("");
     document.querySelector("#project-day-list").innerHTML = current.days.map((day) => {
-      const data = storedDayData(day); const result = calculate(data);
+      const data = storedDayData(day);
+      const result = canCalculateDay(data) ? calculate(data) : null;
       const isSource = day.id === copyTimesSourceId;
       const isTarget = copyTimesTargetIds.has(day.id);
       const copyClass = `${isSource ? " is-copy-source" : ""}${isTarget ? " is-copy-target" : ""}`;
@@ -506,8 +520,8 @@
         : `<button type="button" class="project-times-copy-trigger" data-copy-project-times="${day.id}">Tijden kopiëren</button>`;
       return `<article class="project-day-card ${copyClass.trim()}" data-day-card data-day-id="${day.id}">
         <button type="button" class="project-day-open" data-open-project-day="${day.id}" ${copyTimesSourceId ? `aria-pressed="${isTarget}"` : ""}>
-          <span><strong>${formatDate(day.workDate)}</strong><small>${data.startTime} - ${data.endTime}${result.endsNextDay ? " (+1 dag)" : ""} · ${summaryText(result)}</small><small class="project-day-sharing" data-project-day-sharing="${day.id}"></small>${copyBadge}</span>
-          <strong>${euro.format(result.subtotalExVat)}</strong>
+          <span><strong>${formatDate(day.workDate)}</strong><small>${data.startTime || "-"} - ${data.endTime || "eindtijd open"}${result?.endsNextDay ? " (+1 dag)" : ""} · ${result ? summaryText(result) : "Nog niet afgerond"}</small><small class="project-day-sharing" data-project-day-sharing="${day.id}"></small>${copyBadge}</span>
+          <strong>${result ? euro.format(result.subtotalExVat) : "Concept"}</strong>
         </button>
         ${copyAction}
       </article>`;

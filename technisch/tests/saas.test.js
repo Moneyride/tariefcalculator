@@ -644,6 +644,10 @@ test("projectpagina hergebruikt de calculator en projectsservice", async () => {
   assert.match(script, /Factuurtekst gekopieerd/);
   assert.match(script, /parameters\.get\("day"\)/);
   assert.match(script, /openProject\(requested, requestedDay\)/);
+  assert.match(script, /function canCalculateDay\(data\)/);
+  assert.match(script, /totals\(current\.days, \{ allowIncomplete: true \}\)/);
+  assert.match(script, /data\.endTime \|\| "eindtijd open"/);
+  assert.match(script, /result \? euro\.format\(result\.subtotalExVat\) : "Concept"/);
 });
 
 test("Werkdagen bewaren versieerbare calculatorsnapshots met Pro-RLS", async () => {
