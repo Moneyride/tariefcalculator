@@ -31,16 +31,34 @@ html.auth-pending .app-shell {
 }
 
 html.auth-ready .app-shell {
-  animation: session-ui-reveal 120ms ease-out both;
+  opacity: 1;
 }
 
-@keyframes session-ui-reveal {
-  from { opacity: 0; }
-  to { opacity: 1; }
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: page-leave 90ms ease-out both;
+}
+
+::view-transition-new(root) {
+  animation: page-enter 130ms ease-out both;
+}
+
+@keyframes page-leave {
+  to { opacity: 0.92; }
+}
+
+@keyframes page-enter {
+  from { opacity: 0.92; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html.auth-ready .app-shell { animation: none; }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
 }
 
 @media screen {

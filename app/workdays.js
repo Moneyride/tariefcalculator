@@ -26,6 +26,7 @@
   let ownedWorkdays = [];
   let receivedShares = [];
   let accountingHistory = { exports: [], items: [] };
+  let loadedContextKey = "";
   let visibleMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12);
   const monthFormat = new Intl.DateTimeFormat("nl-NL", { month: "long", year: "numeric" });
 
@@ -280,9 +281,12 @@
     }
   }
 
-  async function load(context) {
+  async function load(context, { force = false } = {}) {
     currentContext = context;
     const user = context.auth.user;
+    const contextKey = `${user?.id || "guest"}:${context.subscription.plan}:${context.subscription.isMock}:${location.search}`;
+    if (!force && loadedContextKey === contextKey) return;
+    loadedContextKey = contextKey;
     loggedOut.hidden = Boolean(user);
     upgrade.hidden = !user || context.isPro;
     content.hidden = !user || !context.isPro;
@@ -306,6 +310,7 @@
       renderReceived(received);
       await loadInvite(context);
     } catch (error) {
+      loadedContextKey = "";
       sessionUi.showToast(error.message || "Werkdagen konden niet worden geladen.");
     }
   }
@@ -333,7 +338,7 @@
   document.querySelector("#cancel-workday-delete").addEventListener("click", () => closeDialog(deleteDialog));
   document.querySelector("#keep-workday").addEventListener("click", () => closeDialog(deleteDialog));
   document.addEventListener("overuurtje:shares-changed", () => {
-    if (currentContext) load(currentContext);
+    if (currentContext) load(currentContext, { force: true });
   });
   document.querySelector("#confirm-workday-delete").addEventListener("click", async () => {
     if ((!pendingDeleteId && !pendingDeleteShareId) || !currentContext?.auth.user) return;
@@ -349,7 +354,7 @@
       pendingDeleteId = null;
       pendingDeleteShareId = null;
       closeDialog(deleteDialog);
-      await load(currentContext);
+      await load(currentContext, { force: true });
       sessionUi.showToast(removedShare ? "Gedeelde werkdag verwijderd." : "Werkdag verwijderd.");
     } catch (error) {
       sessionUi.showToast(error.message || "Verwijderen is niet gelukt.");

@@ -110,7 +110,8 @@ test("service worker bewaart de app-shell maar nooit API-verkeer", async () => {
   assert.match(worker, /url\.origin !== self\.location\.origin/);
   assert.match(worker, /url\.pathname\.startsWith\("\/api\/"\)/);
   assert.match(worker, /url\.pathname\.startsWith\("\/\.netlify\/functions\/"\)/);
-  assert.match(worker, /networkFirst\(request/);
+  assert.match(worker, /cacheFirstWithRefresh\(event/);
+  assert.match(worker, /event\.waitUntil\(refresh\.catch/);
 });
 
 test("service worker toont algemene Web Push-meldingen en opent de juiste app-route", async () => {

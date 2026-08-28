@@ -79,6 +79,7 @@
   });
   const pushService = globalThis.OveruurtjePush;
   let currentContext = null;
+  let loadedAccountContextKey = "";
   let loadedSettings = settingsService.defaults;
   let workFunctions = [];
   let customEquipment = [];
@@ -614,7 +615,19 @@
     setVisible(unavailable, !authState.loading && !authState.available);
     setVisible(loggedOut, authState.available && !authState.user);
     setVisible(content, Boolean(authState.user));
-    if (!authState.user) return;
+    if (!authState.user) {
+      loadedAccountContextKey = "";
+      return;
+    }
+
+    email.textContent = authState.user.email || "-";
+    created.textContent = formatDate(context.profile?.createdAt || authState.user.created_at);
+    profileNameForm.elements.namedItem("displayName").value = context.profile?.displayName || "";
+    renderProfileAvatar(context.profile);
+    renderSubscription(context.subscription, context.profile);
+    const accountContextKey = `${authState.user.id}:${context.subscription.plan}:${context.subscription.isMock}`;
+    if (loadedAccountContextKey === accountContextKey) return;
+    loadedAccountContextKey = accountContextKey;
 
     try {
       await pushService?.refresh();
@@ -623,11 +636,6 @@
     }
     await renderNotificationPermission();
 
-    email.textContent = authState.user.email || "-";
-    created.textContent = formatDate(context.profile?.createdAt || authState.user.created_at);
-    profileNameForm.elements.namedItem("displayName").value = context.profile?.displayName || "";
-    renderProfileAvatar(context.profile);
-    renderSubscription(context.subscription, context.profile);
     await renderMfaStatus();
 
     try {
@@ -653,6 +661,7 @@
         settingsStatus.textContent = "Een deel van de cloudgegevens is nog niet beschikbaar. Controleer of alle Supabase-migrations zijn uitgevoerd.";
       }
     } catch (error) {
+      loadedAccountContextKey = "";
       console.warn("Accountinstellingen of apparatuur konden niet worden geladen.", error);
       settingsStatus.textContent = "Instellingen konden nog niet volledig worden geladen.";
       populateSettings(null);

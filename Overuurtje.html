@@ -78,16 +78,34 @@ html.auth-pending .app-shell {
 }
 
 html.auth-ready .app-shell {
-  animation: session-ui-reveal 120ms ease-out both;
+  opacity: 1;
 }
 
-@keyframes session-ui-reveal {
-  from { opacity: 0; }
-  to { opacity: 1; }
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: page-leave 90ms ease-out both;
+}
+
+::view-transition-new(root) {
+  animation: page-enter 130ms ease-out both;
+}
+
+@keyframes page-leave {
+  to { opacity: 0.92; }
+}
+
+@keyframes page-enter {
+  from { opacity: 0.92; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html.auth-ready .app-shell { animation: none; }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
 }
 
 @media screen {
@@ -13457,6 +13475,8 @@ globalThis.TariffCalculator = {
   const PROFILE_CACHE_MAX_AGE = 30 * 60 * 1000;
   let profileLoadPromise = null;
   let profileLoadUserId = "";
+  let contextBuildPromise = null;
+  let contextBuildKey = "";
 
   function readCachedProfile(user) {
     if (!user?.id) return null;
@@ -14126,7 +14146,7 @@ globalThis.TariffCalculator = {
     if (projectsLink) projectsLink.href = config.projectsUrl;
   }
 
-  async function buildContext(authState) {
+  async function buildContextOnce(authState) {
     handlePasswordRecovery(authState);
     handlePasswordResetNotice(authState);
     if (authState.user && !authState.recovery) {
@@ -14211,6 +14231,22 @@ globalThis.TariffCalculator = {
       contextPromiseResolve(currentContext);
     }
     return currentContext;
+  }
+
+  function buildContext(authState) {
+    const key = [
+      authState.user?.id || "guest",
+      authState.recovery ? "recovery" : "standard",
+      authState.session?.access_token || "no-session"
+    ].join(":");
+    if (contextBuildPromise && contextBuildKey === key) return contextBuildPromise;
+
+    contextBuildKey = key;
+    contextBuildPromise = buildContextOnce(authState).finally(() => {
+      contextBuildPromise = null;
+      contextBuildKey = "";
+    });
+    return contextBuildPromise;
   }
 
   async function submitAuth(event) {

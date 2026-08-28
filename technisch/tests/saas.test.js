@@ -1674,6 +1674,17 @@ test("paginanavigatie hergebruikt kort de bevestigde profilsessie", async () => 
   assert.match(script, /const PROFILE_CACHE_KEY = "overuurtjeSessionProfile"/);
   assert.match(script, /cached\?\.userId !== user\.id/);
   assert.match(script, /backgroundProfileRefresh = loadFreshProfile\(authState\.user\)/);
+  assert.match(script, /contextBuildPromise && contextBuildKey === key/);
   assert.match(script, /document\.dispatchEvent\(new CustomEvent\("overuurtje:user-context"/);
   assert.match(script, /clearCachedProfile\(\)/);
+});
+
+test("zware paginadata wordt niet dubbel geladen door event en ready-promise", async () => {
+  const workdays = await readFile(path.join(rootDirectory, "app/workdays.js"), "utf8");
+  const account = await readFile(path.join(rootDirectory, "app/account.js"), "utf8");
+  const dashboard = await readFile(path.join(rootDirectory, "app/dashboard.js"), "utf8");
+
+  assert.match(workdays, /if \(!force && loadedContextKey === contextKey\) return/);
+  assert.match(account, /if \(loadedAccountContextKey === accountContextKey\) return/);
+  assert.match(dashboard, /if \(loadedContextKey === key\) \{\s*return;/);
 });

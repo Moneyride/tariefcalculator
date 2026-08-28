@@ -61,6 +61,8 @@
   const PROFILE_CACHE_MAX_AGE = 30 * 60 * 1000;
   let profileLoadPromise = null;
   let profileLoadUserId = "";
+  let contextBuildPromise = null;
+  let contextBuildKey = "";
 
   function readCachedProfile(user) {
     if (!user?.id) return null;
@@ -730,7 +732,7 @@
     if (projectsLink) projectsLink.href = config.projectsUrl;
   }
 
-  async function buildContext(authState) {
+  async function buildContextOnce(authState) {
     handlePasswordRecovery(authState);
     handlePasswordResetNotice(authState);
     if (authState.user && !authState.recovery) {
@@ -815,6 +817,22 @@
       contextPromiseResolve(currentContext);
     }
     return currentContext;
+  }
+
+  function buildContext(authState) {
+    const key = [
+      authState.user?.id || "guest",
+      authState.recovery ? "recovery" : "standard",
+      authState.session?.access_token || "no-session"
+    ].join(":");
+    if (contextBuildPromise && contextBuildKey === key) return contextBuildPromise;
+
+    contextBuildKey = key;
+    contextBuildPromise = buildContextOnce(authState).finally(() => {
+      contextBuildPromise = null;
+      contextBuildKey = "";
+    });
+    return contextBuildPromise;
   }
 
   async function submitAuth(event) {

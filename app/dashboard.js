@@ -367,7 +367,6 @@
 
     const key = `${user.id}:${context.isPro}`;
     if (loadedContextKey === key) {
-      await loadCrewCard(context.profile, currentRecords);
       return;
     }
     loadedContextKey = key;

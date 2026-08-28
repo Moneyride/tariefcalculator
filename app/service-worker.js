@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "overuurtje-app-v52";
+const CACHE_NAME = "overuurtje-app-v53";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -78,19 +78,6 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-async function networkFirst(request, fallbackUrl = null) {
-  const cache = await caches.open(CACHE_NAME);
-  try {
-    const response = await fetch(request);
-    if (response.ok) await cache.put(request, response.clone());
-    return response;
-  } catch {
-    return (await cache.match(request, { ignoreSearch: true }))
-      || (fallbackUrl ? await cache.match(fallbackUrl, { ignoreSearch: true }) : null)
-      || Response.error();
-  }
-}
-
 async function cacheFirst(request) {
   const cache = await caches.open(CACHE_NAME);
   const cached = await cache.match(request, { ignoreSearch: true });
@@ -99,6 +86,31 @@ async function cacheFirst(request) {
   const response = await fetch(request);
   if (response.ok) await cache.put(request, response.clone());
   return response;
+}
+
+async function cacheFirstWithRefresh(event, fallbackUrl = null) {
+  const { request } = event;
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request, { ignoreSearch: true });
+  const refresh = fetch(request).then(async (response) => {
+    if (response.ok) {
+      await cache.delete(request, { ignoreSearch: true });
+      await cache.put(request, response.clone());
+    }
+    return response;
+  });
+
+  if (cached) {
+    event.waitUntil(refresh.catch(() => {}));
+    return cached;
+  }
+
+  try {
+    return await refresh;
+  } catch {
+    return (fallbackUrl ? await cache.match(fallbackUrl, { ignoreSearch: true }) : null)
+      || Response.error();
+  }
 }
 
 self.addEventListener("fetch", (event) => {
@@ -110,13 +122,13 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/.netlify/functions/")) return;
 
   if (request.mode === "navigate") {
-    event.respondWith(networkFirst(request, "./index.html"));
+    event.respondWith(cacheFirstWithRefresh(event, "./index.html"));
     return;
   }
 
   if (["script", "style", "worker"].includes(request.destination)
     || url.pathname.endsWith("runtime-config.js")) {
-    event.respondWith(networkFirst(request));
+    event.respondWith(cacheFirstWithRefresh(event));
     return;
   }
 
