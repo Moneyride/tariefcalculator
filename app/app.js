@@ -1654,8 +1654,7 @@ async function initializeWorkdayContext() {
 
     const activeShares = await findActiveReceivedShare();
     if (activeShares.selected) {
-      activeSharedWorkday = activeShares.selected;
-      location.replace(`index.html?shared=${encodeURIComponent(activeShares.selected.id)}`);
+      await applyReceivedSharedWorkday(activeShares.selected);
       return;
     }
 
@@ -1763,15 +1762,29 @@ async function restoreSharedTimesFromUrl() {
     || currentUserContext?.subscription?.isMock
   ) return false;
 
+  if (currentReceivedShareId === shareId) return true;
+
   try {
     const received = await shareService.listReceived();
     const shared = received.find((item) => item.id === shareId);
     if (!shared) return false;
-    const privateSnapshot = shared.recipientCalculationData
-      && typeof shared.recipientCalculationData === "object"
-      ? shared.recipientCalculationData
-      : {};
-    sessionStorage.setItem("overuurtjeSharedTimesImport", JSON.stringify({
+    return applyReceivedSharedWorkday(shared);
+  } catch (error) {
+    console.warn("De gedeelde werkdag kon niet vanuit de link worden hersteld.", error);
+    return false;
+  }
+}
+
+async function applyReceivedSharedWorkday(shared) {
+  const privateSnapshot = shared.recipientCalculationData
+    && typeof shared.recipientCalculationData === "object"
+    ? shared.recipientCalculationData
+    : {};
+  applyWorkdaySnapshot({
+    id: null,
+    name: shared.workdayName || "",
+    workDate: shared.workDate,
+    calculationData: {
       ...privateSnapshot,
       schemaVersion: privateSnapshot.schemaVersion || 1,
       workdayName: shared.workdayName || "",
@@ -1784,16 +1797,12 @@ async function restoreSharedTimesFromUrl() {
       sharedSourceType: shared.sourceType || "",
       sharedSourceId: shared.sourceId || "",
       sharedOwnerName: shared.ownerName || ""
-    }));
-    applySharedTimesImport();
-    activeSharedWorkday = shared;
-    hideActiveSharedReminder();
-    await shareService.markShareNotificationsRead(shareId);
-    return true;
-  } catch (error) {
-    console.warn("De gedeelde werkdag kon niet vanuit de link worden hersteld.", error);
-    return false;
-  }
+    }
+  }, { freeActive: true });
+  activeSharedWorkday = shared;
+  hideActiveSharedReminder();
+  await shareService.markShareNotificationsRead(shared.id).catch(() => {});
+  return true;
 }
 
 async function hydrateAccountSettings(context) {

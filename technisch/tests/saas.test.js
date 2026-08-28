@@ -1386,7 +1386,8 @@ test("actieve gedeelde werkdagen blijven herkenbaar na navigatie en openen direc
   assert.match(calculatorHtml, /id="shared-completion-dialog"/);
   assert.match(calculatorHtml, /id="shared-resume-dialog"/);
   assert.match(calculatorScript, /async function findActiveReceivedShare\(\)/);
-  assert.match(calculatorScript, /const activeShares = await findActiveReceivedShare\(\)[\s\S]*location\.replace\(`index\.html\?shared=/);
+  assert.match(calculatorScript, /const activeShares = await findActiveReceivedShare\(\)[\s\S]*applyReceivedSharedWorkday\(activeShares\.selected\)/);
+  assert.match(calculatorScript, /function applyReceivedSharedWorkday\(shared\)[\s\S]*applyWorkdaySnapshot/);
   assert.match(calculatorScript, /!persistedWorkdayEndTime[\s\S]{0,180}hasAcceptedSharedRecipients\(\)/);
   assert.match(sessionUi, /config\.calculatorUrl\}\?shared=/);
   assert.match(pushFunction, /if \(delivery\.share_id\)[\s\S]{0,120}\/index\.html\?shared=/);
@@ -1613,7 +1614,7 @@ test("geclaimde uitnodigingen worden geaccepteerd en blijven de actieve gedeelde
   assert.match(repairMigration, /create trigger mark_claimed_workday_share_accepted/i);
   assert.match(repairMigration, /select s\.recipient_id, false[\s\S]*s\.accepted_at is not null/i);
   assert.match(workdaysScript, /shareService\.claimInvite\(token\)[\s\S]*shareService\.accept\(shareId\)/i);
-  assert.match(calculatorScript, /const activeShares = await findActiveReceivedShare\(\)[\s\S]*location\.replace\(`index\.html\?shared=/i);
+  assert.match(calculatorScript, /const activeShares = await findActiveReceivedShare\(\)[\s\S]*applyReceivedSharedWorkday\(activeShares\.selected\)/i);
   assert.doesNotMatch(calculatorScript, /activeShares\.length && !activeContextIsSuppressed\(\)/i);
 });
 
@@ -1661,8 +1662,18 @@ test("tijdmeldingen blijven in het notificatieoverzicht zonder in-app popup", as
 
 test("Vandaag opent de voorkeurswerkdag zonder overbodige keuze-popup", async () => {
   const script = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
-  assert.match(script, /const activeShares = await findActiveReceivedShare\(\)[\s\S]*location\.replace\(`index\.html\?shared=/);
+  assert.match(script, /const activeShares = await findActiveReceivedShare\(\)[\s\S]*applyReceivedSharedWorkday\(activeShares\.selected\)/);
+  assert.doesNotMatch(script, /activeShares\.selected[\s\S]{0,160}location\.replace/);
   assert.match(script, /const active = freeActiveWorkdayService\.load\(currentAccountUser\.id\)[\s\S]*applyFreeActiveWorkday\(active\)/);
   assert.match(script, /const preferred = await findPreferredOwnDateEntry\(\)[\s\S]*openExistingDateEntry\(preferred\)/);
   assert.doesNotMatch(script, /const preferred = await findPreferredOwnDateEntry\(\)[\s\S]{0,160}openNativeDialog\(todayWorkdayDialog\)/);
+});
+
+test("paginanavigatie hergebruikt kort de bevestigde profilsessie", async () => {
+  const script = await readFile(path.join(rootDirectory, "app/saas/sessionUi.js"), "utf8");
+  assert.match(script, /const PROFILE_CACHE_KEY = "overuurtjeSessionProfile"/);
+  assert.match(script, /cached\?\.userId !== user\.id/);
+  assert.match(script, /backgroundProfileRefresh = loadFreshProfile\(authState\.user\)/);
+  assert.match(script, /document\.dispatchEvent\(new CustomEvent\("overuurtje:user-context"/);
+  assert.match(script, /clearCachedProfile\(\)/);
 });

@@ -57,6 +57,52 @@
   let expiredTrialNoticeHandled = false;
   let mfaVerificationPromise = null;
   let socialAuthActions = null;
+  const PROFILE_CACHE_KEY = "overuurtjeSessionProfile";
+  const PROFILE_CACHE_MAX_AGE = 30 * 60 * 1000;
+  let profileLoadPromise = null;
+  let profileLoadUserId = "";
+
+  function readCachedProfile(user) {
+    if (!user?.id) return null;
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(PROFILE_CACHE_KEY) || "null");
+      if (
+        cached?.userId !== user.id
+        || !cached.profile
+        || Date.now() - Number(cached.cachedAt || 0) > PROFILE_CACHE_MAX_AGE
+      ) return null;
+      return cached.profile;
+    } catch {
+      return null;
+    }
+  }
+
+  function cacheProfile(user, profile) {
+    if (!user?.id || !profile) return;
+    try {
+      sessionStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({
+        userId: user.id,
+        profile,
+        cachedAt: Date.now()
+      }));
+    } catch {
+      // De app blijft volledig werken wanneer sessieopslag niet beschikbaar is.
+    }
+  }
+
+  function clearCachedProfile() {
+    try { sessionStorage.removeItem(PROFILE_CACHE_KEY); } catch { /* niets te wissen */ }
+  }
+
+  function loadFreshProfile(user) {
+    if (profileLoadPromise && profileLoadUserId === user?.id) return profileLoadPromise;
+    profileLoadUserId = user?.id || "";
+    profileLoadPromise = profiles.getForUser(user).finally(() => {
+      profileLoadPromise = null;
+      profileLoadUserId = "";
+    });
+    return profileLoadPromise;
+  }
 
   function revealSessionUi() {
     document.documentElement.classList.remove("auth-pending");
@@ -696,11 +742,18 @@
       }
     }
     let profile = null;
+    let backgroundProfileRefresh = null;
     if (authState.user) {
-      try {
-        profile = await profiles.getForUser(authState.user);
-      } catch (error) {
-        console.warn("Profiel kon niet worden geladen.", error);
+      profile = readCachedProfile(authState.user);
+      if (profile) {
+        backgroundProfileRefresh = loadFreshProfile(authState.user);
+      } else {
+        try {
+          profile = await loadFreshProfile(authState.user);
+          cacheProfile(authState.user, profile);
+        } catch (error) {
+          console.warn("Profiel kon niet worden geladen.", error);
+        }
       }
     }
 
@@ -714,6 +767,27 @@
     renderHeader(currentContext);
     document.dispatchEvent(new CustomEvent("overuurtje:user-context", { detail: currentContext }));
     revealSessionUi();
+
+    if (backgroundProfileRefresh) {
+      backgroundProfileRefresh.then((freshProfile) => {
+        cacheProfile(authState.user, freshProfile);
+        if (
+          auth.getState().user?.id !== authState.user.id
+          || JSON.stringify(freshProfile) === JSON.stringify(profile)
+        ) return;
+        const freshSubscription = subscriptions.resolve(freshProfile);
+        currentContext = Object.freeze({
+          auth: auth.getState(),
+          profile: freshProfile,
+          subscription: freshSubscription,
+          isPro: freshSubscription.isPro
+        });
+        renderHeader(currentContext);
+        document.dispatchEvent(new CustomEvent("overuurtje:user-context", { detail: currentContext }));
+      }).catch((error) => {
+        console.warn("Profiel kon niet op de achtergrond worden ververst.", error);
+      });
+    }
 
     if (authState.user) {
       // Push recovery may use the network, but it must never delay the
@@ -886,7 +960,10 @@
     }
     const { error } = await auth.signOut();
     if (error) showToast(error.message);
-    else showToast("Je bent uitgelogd.");
+    else {
+      clearCachedProfile();
+      showToast("Je bent uitgelogd.");
+    }
   }));
   upgradeButtons.forEach((button) => button.addEventListener("click", () => {
     if (button.dataset.subscriptionUpgrade === "signup") beginUpgrade();
@@ -900,6 +977,7 @@
   document.addEventListener("overuurtje:subscription-changed", () => buildContext(auth.getState()));
   document.addEventListener("overuurtje:profile-updated", (event) => {
     currentContext = Object.freeze({ ...currentContext, profile: event.detail });
+    cacheProfile(currentContext.auth.user, event.detail);
     renderHeader(currentContext);
   });
   auth.subscribe((authState) => {
