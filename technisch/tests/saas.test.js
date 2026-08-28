@@ -648,6 +648,13 @@ test("projectpagina hergebruikt de calculator en projectsservice", async () => {
   assert.match(script, /totals\(current\.days, \{ allowIncomplete: true \}\)/);
   assert.match(script, /data\.endTime \|\| "eindtijd open"/);
   assert.match(script, /result \? euro\.format\(result\.subtotalExVat\) : "Concept"/);
+  assert.match(html, /id="edit-project-rules"/);
+  assert.match(html, /id="project-rules-dialog"/);
+  assert.match(script, /current\.days\.map\(\(day\) => \(\{[\s\S]*calculationData: \{ \.\.\.\(day\.calculationData \|\| defaultDayData\(\)\), \.\.\.rules \}/);
+  assert.match(html, /alle werkdagen binnen dit project, ook voor dagen die al voorbij zijn/);
+  assert.match(script, /Tot nu toe verdiend · inclusief vandaag/);
+  assert.match(script, /function initialCarouselIndex\(\)/);
+  assert.match(script, /project-day-today-label/);
 });
 
 test("Werkdagen bewaren versieerbare calculatorsnapshots met Pro-RLS", async () => {
@@ -1379,7 +1386,7 @@ test("actieve gedeelde werkdagen blijven herkenbaar na navigatie en openen direc
   assert.match(calculatorHtml, /id="shared-completion-dialog"/);
   assert.match(calculatorHtml, /id="shared-resume-dialog"/);
   assert.match(calculatorScript, /async function findActiveReceivedShare\(\)/);
-  assert.match(calculatorScript, /kind:\s*"shared",\s*share:\s*activeShare/);
+  assert.match(calculatorScript, /const activeShares = await findActiveReceivedShare\(\)[\s\S]*location\.replace\(`index\.html\?shared=/);
   assert.match(calculatorScript, /!persistedWorkdayEndTime[\s\S]{0,180}hasAcceptedSharedRecipients\(\)/);
   assert.match(sessionUi, /config\.calculatorUrl\}\?shared=/);
   assert.match(pushFunction, /if \(delivery\.share_id\)[\s\S]{0,120}\/index\.html\?shared=/);
@@ -1640,4 +1647,22 @@ test("bewaarde sessie wordt zonder tijdelijke gastweergave opgebouwd", async () 
     const html = await readFile(path.join(rootDirectory, "app", page), "utf8");
     assert.match(html, /<html lang="nl" class="auth-pending">/);
   }
+});
+
+test("tijdmeldingen blijven in het notificatieoverzicht zonder in-app popup", async () => {
+  const script = await readFile(path.join(rootDirectory, "app/saas/sessionUi.js"), "utf8");
+  assert.match(script, /function notificationCategory\(item\)/);
+  assert.match(script, /"workday_start_owner"/);
+  assert.match(script, /"workday_overtime_soon"/);
+  assert.match(script, /"workday_night_soon"/);
+  assert.match(script, /notificationCategory\(item\) === "important"/);
+  assert.doesNotMatch(script, /passiveTypes = new Set\(\[[\s\S]*"workday_shared"/);
+});
+
+test("Vandaag opent de voorkeurswerkdag zonder overbodige keuze-popup", async () => {
+  const script = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
+  assert.match(script, /const activeShares = await findActiveReceivedShare\(\)[\s\S]*location\.replace\(`index\.html\?shared=/);
+  assert.match(script, /const active = freeActiveWorkdayService\.load\(currentAccountUser\.id\)[\s\S]*applyFreeActiveWorkday\(active\)/);
+  assert.match(script, /const preferred = await findPreferredOwnDateEntry\(\)[\s\S]*openExistingDateEntry\(preferred\)/);
+  assert.doesNotMatch(script, /const preferred = await findPreferredOwnDateEntry\(\)[\s\S]{0,160}openNativeDialog\(todayWorkdayDialog\)/);
 });

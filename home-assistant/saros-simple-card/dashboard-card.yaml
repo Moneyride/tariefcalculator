@@ -1,0 +1,33 @@
+type: custom:saros-simple-card
+name: Saros 20
+entity: vacuum.saros_20
+cleaning_mode_entity: select.saros_20_schoonmaakmodus
+rooms:
+  - name: Woonkamer
+    area_id: woonkamer
+    floor: Begane grond
+  - name: Gang
+    area_id: gang
+    floor: Begane grond
+  - name: Keuken
+    area_id: keuken
+    floor: Begane grond
+  - name: Eetkamer
+    area_id: eetkamer
+    floor: Begane grond
+  - name: Badkamer
+    area_id: badkamer
+    floor: Eerste verdieping
+  - name: Overloop
+    area_id: overloop
+    floor: Eerste verdieping
+  - name: Slaapkamer
+    area_id: slaapkamer
+    floor: Eerste verdieping
+  - name: Waskamer
+    area_id: waskamer
+    floor: Eerste verdieping
+  - name: Babykamer
+    area_id: babykamer
+    floor: Eerste verdieping
+

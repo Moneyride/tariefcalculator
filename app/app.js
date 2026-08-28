@@ -1655,32 +1655,21 @@ async function initializeWorkdayContext() {
     const activeShares = await findActiveReceivedShare();
     if (activeShares.selected) {
       activeSharedWorkday = activeShares.selected;
-      const ownEntries = await listOwnEntriesForSharedDate(activeShares.selected.workDate);
-      if (activeShares.all.length === 1 && ownEntries.length === 0) {
-        location.replace(`index.html?shared=${encodeURIComponent(activeShares.selected.id)}`);
-        return;
-      }
-      todayWorkday = { kind: "shared", share: activeShares.selected };
-      configureTodayWorkdayDialog(todayWorkday);
-      openNativeDialog(todayWorkdayDialog);
+      location.replace(`index.html?shared=${encodeURIComponent(activeShares.selected.id)}`);
       return;
     }
 
     if (!currentUserContext?.isPro) {
       const active = freeActiveWorkdayService.load(currentAccountUser.id);
       if (active) {
-        todayWorkday = { kind: "free-active", workday: active };
-        configureTodayWorkdayDialog(todayWorkday);
-        openNativeDialog(todayWorkdayDialog);
+        applyFreeActiveWorkday(active);
       }
       return;
     }
 
     const preferred = await findPreferredOwnDateEntry();
     if (preferred) {
-      todayWorkday = preferred;
-      configureTodayWorkdayDialog(todayWorkday);
-      openNativeDialog(todayWorkdayDialog);
+      openExistingDateEntry(preferred);
     }
   } catch (error) {
     console.warn("Opgeslagen werkdagen konden niet worden gecontroleerd.", error);

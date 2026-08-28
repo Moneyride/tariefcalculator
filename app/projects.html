@@ -146,7 +146,7 @@
         </section>
 
         <section id="project-overview-view" hidden>
-          <div class="project-overview-head account-section"><div><p class="account-section-kicker">Projectoverzicht</p><h2 id="overview-name"></h2><p id="overview-meta"></p></div><div class="project-head-actions"><button class="saas-secondary-button" id="edit-project" type="button">Project wijzigen</button><button class="text-action danger-action" id="delete-project" type="button">Verwijderen</button></div></div>
+          <div class="project-overview-head account-section"><div><p class="account-section-kicker">Projectoverzicht</p><h2 id="overview-name"></h2><p id="overview-meta"></p></div><div class="project-head-actions"><button class="saas-secondary-button" id="edit-project-rules" type="button">Projectinstellingen</button><button class="saas-secondary-button" id="edit-project" type="button">Project wijzigen</button><button class="text-action danger-action" id="delete-project" type="button">Verwijderen</button></div></div>
           <div class="project-metrics" id="project-metrics"></div>
           <section class="account-section project-days-section">
             <div class="account-section-heading project-days-heading">
@@ -300,6 +300,32 @@
       </div>
       <button class="saas-primary-button" type="button" data-project-invite-accept hidden>Project bekijken</button>
       <p class="saas-form-status" data-project-invite-status aria-live="polite"></p>
+    </dialog>
+    <dialog class="saas-dialog project-rules-dialog" id="project-rules-dialog" aria-labelledby="project-rules-title">
+      <button class="dialog-close" type="button" data-project-rules-close aria-label="Sluiten">&times;</button>
+      <p class="dialog-eyebrow">Projectinstellingen</p>
+      <h2 id="project-rules-title">Werkregels aanpassen</h2>
+      <p>Deze regels gelden voor alle werkdagen binnen dit project, ook voor dagen die al voorbij zijn. Tijden, tarieven en extra’s per dag blijven behouden.</p>
+      <form id="project-rules-form">
+        <label class="project-rules-select"><span>Normale werkdag</span><select name="normalDayHours"><option value="10">10 uur</option><option value="12">12 uur</option></select></label>
+        <div class="day-option-list project-rules-options">
+          <label class="checkbox-label"><input type="checkbox" name="enableHalfDayUnder6Hours"><span>Halve dag t/m 6 uur (75%)</span></label>
+          <label class="checkbox-label"><input type="checkbox" name="enableOvertime10To12"><span>Overuren 10-12 uur (150%)</span></label>
+          <label class="checkbox-label"><input type="checkbox" name="enableOvertimeFrom12"><span>Overuren vanaf 12 uur (200%)</span></label>
+          <label class="checkbox-label"><input type="checkbox" name="enableOvertimeFrom14"><span>Overuren vanaf 14 uur (250%)</span></label>
+          <label class="checkbox-label"><input type="checkbox" name="enableNightTariff"><span>Nacht tarief</span></label>
+        </div>
+        <div class="project-rules-night" data-project-rules-night>
+          <label><span>Nachtperiode start</span><input type="time" name="nightStart" value="00:00"></label>
+          <label><span>Nachtperiode einde</span><input type="time" name="nightEnd" value="06:00"></label>
+          <label><span>Totaalpercentage nachtuur</span><span class="suffixed-input"><input type="number" name="nightTotalPercent" min="100" max="600" step="1" value="200" required><span>%</span></span></label>
+        </div>
+        <div class="dialog-action-stack project-rules-actions">
+          <button class="saas-primary-button" type="submit">Instellingen opslaan</button>
+          <button class="saas-secondary-button" type="button" data-project-rules-close>Annuleren</button>
+          <p class="saas-form-status" data-project-rules-status aria-live="polite"></p>
+        </div>
+      </form>
     </dialog>
     <div class="site-toast" id="site-toast" role="status" aria-live="polite" hidden></div>
   </body>

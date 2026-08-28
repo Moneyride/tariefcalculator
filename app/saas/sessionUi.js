@@ -354,6 +354,18 @@
     return `${item.actorName} heeft een werkdag met je gedeeld.`;
   }
 
+  function notificationCategory(item) {
+    const passiveTypes = new Set([
+      "workday_start_owner",
+      "workday_started",
+      "workday_overtime_soon",
+      "workday_night_soon",
+      "workday_times_updated",
+      "push_test"
+    ]);
+    return passiveTypes.has(item?.type) ? "notification-only" : "important";
+  }
+
   function notificationHref(item) {
     if (item.type === "badge_earned") return config.dashboardUrl;
     if (["trial_ending", "trial_expired"].includes(item.type)) return config.accountUrl;
@@ -416,7 +428,7 @@
   }
 
   function maybeShowNotificationPrompt(items) {
-    const newestUnread = items.find((item) => !item.readAt);
+    const newestUnread = items.find((item) => !item.readAt && notificationCategory(item) === "important");
     if (!newestUnread || pendingNotificationPrompt?.id === newestUnread.id) return;
     const promptKey = `overuurtjeNotificationPrompt:${newestUnread.id}`;
     if (sessionStorage.getItem(promptKey)) return;

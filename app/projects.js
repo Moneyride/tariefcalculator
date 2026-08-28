@@ -25,6 +25,8 @@
   const sharedProjectList = document.querySelector("#shared-project-list");
   const sharedProjectDialog = document.querySelector("#shared-project-dialog");
   const projectInviteDialog = document.querySelector("#project-invite-dialog");
+  const projectRulesDialog = document.querySelector("#project-rules-dialog");
+  const projectRulesForm = document.querySelector("#project-rules-form");
   const projectClientInput = form.elements.namedItem("clientName");
   const projectClientSuggestions = document.querySelector("#project-client-suggestions");
   let context = null;
@@ -200,6 +202,83 @@
       all.completed += 1;
       return all;
     }, { amount: 0, hours: 0, overtime: 0, night: 0, kilometers: 0, parking: 0, surcharges: 0, completed: 0, incomplete: 0 });
+  }
+
+  function todayValue() {
+    return isoDate(new Date());
+  }
+
+  function initialCarouselIndex() {
+    const todayIndex = current?.days?.findIndex((day) => day.workDate === todayValue()) ?? -1;
+    if (todayIndex < 0) return 0;
+    return matchMedia("(max-width: 760px)").matches ? todayIndex : Math.max(0, todayIndex - 1);
+  }
+
+  function projectRulesSourceDay() {
+    const today = todayValue();
+    return current?.days?.find((day) => day.workDate === today)
+      || current?.days?.find((day) => day.workDate > today)
+      || current?.days?.at(-1)
+      || null;
+  }
+
+  function updateProjectRulesNightVisibility() {
+    const enabled = projectRulesForm?.elements.namedItem("enableNightTariff")?.checked;
+    const fields = projectRulesDialog?.querySelector("[data-project-rules-night]");
+    if (fields) fields.hidden = !enabled;
+  }
+
+  function openProjectRules() {
+    const source = projectRulesSourceDay();
+    if (!source || !projectRulesDialog || !projectRulesForm) return;
+    const data = storedDayData(source);
+    projectRulesForm.elements.normalDayHours.value = String(data.normalDayHours || 10);
+    projectRulesForm.elements.enableHalfDayUnder6Hours.checked = Boolean(data.enableHalfDayUnder6Hours);
+    projectRulesForm.elements.enableOvertime10To12.checked = Boolean(data.enableOvertime10To12);
+    projectRulesForm.elements.enableOvertimeFrom12.checked = Boolean(data.enableOvertimeFrom12);
+    projectRulesForm.elements.enableOvertimeFrom14.checked = Boolean(data.enableOvertimeFrom14);
+    projectRulesForm.elements.enableNightTariff.checked = Boolean(data.enableNightTariff);
+    projectRulesForm.elements.nightStart.value = data.nightStart || "00:00";
+    projectRulesForm.elements.nightEnd.value = data.nightEnd || "06:00";
+    projectRulesForm.elements.nightTotalPercent.value = String(100 + Number(data.nightSurchargePercent ?? 100));
+    projectRulesDialog.querySelector("[data-project-rules-status]").textContent = "";
+    updateProjectRulesNightVisibility();
+    openDialog(projectRulesDialog);
+  }
+
+  async function saveProjectRules(event) {
+    event.preventDefault();
+    const status = projectRulesDialog.querySelector("[data-project-rules-status]");
+    const data = new FormData(projectRulesForm);
+    const checked = (name) => data.get(name) === "on";
+    const rules = {
+      normalDayHours: Number(data.get("normalDayHours")) || 10,
+      enableHalfDayUnder6Hours: checked("enableHalfDayUnder6Hours"),
+      enableOvertime10To12: checked("enableOvertime10To12"),
+      enableOvertimeFrom12: checked("enableOvertimeFrom12"),
+      enableOvertimeFrom14: checked("enableOvertimeFrom14"),
+      enableNightTariff: checked("enableNightTariff"),
+      nightStart: data.get("nightStart") || "00:00",
+      nightEnd: data.get("nightEnd") || "06:00",
+      nightSurchargePercent: Math.max(0, Number(data.get("nightTotalPercent")) - 100)
+    };
+    const projectDays = current.days;
+    if (!projectDays.length) {
+      status.textContent = "Dit project heeft nog geen werkdagen.";
+      return;
+    }
+    current.days = current.days.map((day) => ({
+      ...day,
+      calculationData: { ...(day.calculationData || defaultDayData()), ...rules }
+    }));
+    try {
+      current = await projects.replaceDays(context.auth.user.id, current.project.id, current.days, options());
+      closeDialog(projectRulesDialog);
+      renderOverview();
+      sessionUi.showToast(`Projectinstellingen bijgewerkt voor alle ${projectDays.length} projectdag${projectDays.length === 1 ? "" : "en"}.`);
+    } catch (error) {
+      status.textContent = error.message || "Projectinstellingen opslaan is niet gelukt.";
+    }
   }
 
   function overlapsProjectListMonth(project) {
@@ -494,8 +573,10 @@
   }
 
   function renderOverview({ resetCarousel = true } = {}) {
-    const project = current.project; const total = totals(current.days, { allowIncomplete: true });
-    if (resetCarousel) carouselIndex = 0;
+    const project = current.project;
+    const total = totals(current.days, { allowIncomplete: true });
+    const earned = totals(current.days.filter((day) => day.workDate <= todayValue()), { allowIncomplete: true });
+    if (resetCarousel) carouselIndex = initialCarouselIndex();
     carouselIndex = Math.max(0, Math.min(carouselIndex, current.days.length - 1));
     document.querySelector("#overview-name").textContent = project.name;
     document.querySelector("#overview-meta").textContent = `${project.clientName ? `${project.clientName} · ` : ""}${formatDate(project.startDate)} - ${formatDate(project.endDate)} · ${current.days.length} werkdagen`;
@@ -503,7 +584,8 @@
       ["Gewerkte uren", `${number.format(total.hours)} uur`],
       ["Overuren", `${number.format(total.overtime)} uur`], ["Nachturen", `${number.format(total.night)} uur`],
       ["Kilometers", `${number.format(total.kilometers)} km`], ["Parkeer/onkosten", euro.format(total.parking)], ["Toeslagen", euro.format(total.surcharges)],
-      [total.incomplete ? "Totaal afgeronde dagen" : "Totaal exclusief btw", euro.format(total.amount), "primary"]
+      ["Gepland projecttotaal", euro.format(total.amount)],
+      ["Tot nu toe verdiend · inclusief vandaag", euro.format(earned.amount), "primary"]
     ];
     if (total.incomplete) metrics.splice(6, 0, ["Nog afronden", `${total.incomplete} werkdag${total.incomplete === 1 ? "" : "en"}`]);
     document.querySelector("#project-metrics").innerHTML = metrics
@@ -513,16 +595,17 @@
       const result = canCalculateDay(data) ? calculate(data) : null;
       const isSource = day.id === copyTimesSourceId;
       const isTarget = copyTimesTargetIds.has(day.id);
-      const copyClass = `${isSource ? " is-copy-source" : ""}${isTarget ? " is-copy-target" : ""}`;
+      const isToday = day.workDate === todayValue();
+      const copyClass = `${isToday ? " is-today" : ""}${isSource ? " is-copy-source" : ""}${isTarget ? " is-copy-target" : ""}`;
       const copyBadge = isSource
         ? `<span class="project-day-copy-badge">Bron</span>`
         : isTarget ? `<span class="project-day-copy-badge">Geselecteerd</span>` : "";
       const copyAction = copyTimesSourceId
         ? ""
         : `<button type="button" class="project-times-copy-trigger" data-copy-project-times="${day.id}">Tijden kopiëren</button>`;
-      return `<article class="project-day-card ${copyClass.trim()}" data-day-card data-day-id="${day.id}">
+      return `<article class="project-day-card ${copyClass.trim()}" data-day-card data-day-id="${day.id}" ${isToday ? 'aria-current="date"' : ""}>
         <button type="button" class="project-day-open" data-open-project-day="${day.id}" ${copyTimesSourceId ? `aria-pressed="${isTarget}"` : ""}>
-          <span><strong>${formatDate(day.workDate)}</strong><small>${data.startTime || "-"} - ${data.endTime || "eindtijd open"}${result?.endsNextDay ? " (+1 dag)" : ""} · ${result ? summaryText(result) : "Nog niet afgerond"}</small><small class="project-day-sharing" data-project-day-sharing="${day.id}"></small>${copyBadge}</span>
+          <span><strong>${formatDate(day.workDate)}${isToday ? '<em class="project-day-today-label">Vandaag</em>' : ""}</strong><small>${data.startTime || "-"} - ${data.endTime || "eindtijd open"}${result?.endsNextDay ? " (+1 dag)" : ""} · ${result ? summaryText(result) : "Nog niet afgerond"}</small><small class="project-day-sharing" data-project-day-sharing="${day.id}"></small>${copyBadge}</span>
           <strong>${result ? euro.format(result.subtotalExVat) : "Concept"}</strong>
         </button>
         ${copyAction}
@@ -918,6 +1001,15 @@
     if (current) renderOverview(); else renderProjectList();
   });
   document.querySelector("#edit-project").addEventListener("click", () => openProjectForm(current.project));
+  document.querySelector("#edit-project-rules")?.addEventListener("click", openProjectRules);
+  projectRulesForm?.addEventListener("submit", saveProjectRules);
+  projectRulesForm?.elements.namedItem("enableNightTariff")?.addEventListener("change", updateProjectRulesNightVisibility);
+  projectRulesDialog?.querySelectorAll("[data-project-rules-close]").forEach((button) => {
+    button.addEventListener("click", () => closeDialog(projectRulesDialog));
+  });
+  projectRulesDialog?.addEventListener("click", (event) => {
+    if (event.target === projectRulesDialog) closeDialog(projectRulesDialog);
+  });
   document.querySelector("#back-to-projects").addEventListener("click", renderProjectList);
   document.querySelector("#delete-project").addEventListener("click", async () => { if (!confirm(`Project “${current.project.name}” en alle werkdagen verwijderen?`)) return; await projects.remove(context.auth.user.id, current.project.id, options()); current = null; await loadList(); });
   document.querySelector("#paste-project-times").addEventListener("click", pasteProjectTimes);

@@ -208,6 +208,9 @@ html.auth-ready .app-shell {
   .project-day-list { display: grid; grid-auto-columns: calc((100% - 24px) / 3); grid-auto-flow: column; gap: 12px; min-width: 0; overflow-x: auto; padding: 2px 2px 14px; scroll-behavior: smooth; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-inline: contain; touch-action: pan-x; }
   .project-day-list::-webkit-scrollbar { display: none; }
   .project-day-card { display: grid; grid-template-rows: 1fr auto; min-height: 145px; padding: 0; overflow: hidden; scroll-snap-align: start; scroll-snap-stop: always; }
+  .project-day-card.is-today { border-color: rgba(255,106,26,.78); box-shadow: inset 0 0 0 2px rgba(255,106,26,.18), 0 10px 24px rgba(255,106,26,.1); }
+  .project-day-card.is-today .project-day-open > span > strong { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
+  .project-day-today-label { padding: 4px 7px; border-radius: 999px; background: var(--orange); color: #fff; font-size: .64rem; font-style: normal; line-height: 1; text-transform: uppercase; }
   .project-day-sharing { color: #d94f00; font-weight: 700; }
   .project-day-open { display: flex; width: 100%; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 17px 17px 10px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
   .project-day-open span:first-child { align-self: stretch; }
@@ -299,6 +302,14 @@ html.auth-ready .app-shell {
   .day-copy-panel .copy-controls { margin-top: 16px; }
   .day-editor-actions { gap: 14px; margin-top: 28px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,.46); }
   .day-editor-actions .saas-form-status { flex-basis: 100%; margin: 0; }
+  .project-rules-dialog { width: min(620px, calc(100% - 28px)); max-height: min(820px, calc(100dvh - 28px)); overflow-y: auto; }
+  .project-rules-dialog form { display: grid; gap: 18px; margin-top: 20px; }
+  .project-rules-select, .project-rules-night label { display: grid; gap: 7px; color: var(--accent-dark); font-weight: 750; }
+  .project-rules-options { display: grid; gap: 4px; }
+  .project-rules-night { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 16px; border: 1px solid rgba(31,67,53,.1); border-radius: 14px; background: rgba(255,255,255,.28); }
+  .project-rules-night label:last-child { grid-column: 1 / -1; }
+  .project-rules-night[hidden] { display: none; }
+  .project-rules-actions { margin-top: 0; }
   .invoice-copy-button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 12px 18px; border: 1px solid rgba(23,63,54,.28); border-radius: 12px; background: rgba(23,63,54,.92); color: #fff; font: inherit; font-weight: 750; cursor: pointer; box-shadow: 0 8px 20px rgba(23,63,54,.12); transition: transform 150ms ease, background-color 150ms ease, box-shadow 150ms ease; }
   .invoice-copy-button svg { width: 18px; height: 18px; flex: 0 0 auto; }
   .invoice-copy-button:hover { transform: translateY(-1px); background: var(--accent-dark); color: #fff; box-shadow: 0 10px 24px rgba(23,63,54,.16); }
@@ -319,6 +330,7 @@ html.auth-ready .app-shell {
   .project-overview-head, .account-section-heading { align-items: flex-start; }
   .project-overview-head, .project-head-actions { flex-direction: column; }
   .project-head-actions { align-items: stretch; width: 100%; }
+  .project-head-actions .saas-secondary-button { flex: 1 1 auto; }
   .project-metrics { grid-template-columns: 1fr 1fr; }
   .project-metrics > div.primary { grid-column: 1 / -1; }
   .project-shell #project-list-view, .project-shell #project-form-view, .project-shell #project-overview-view, .project-shell #day-editor-view { width: calc(100% - 24px); }
@@ -334,6 +346,7 @@ html.auth-ready .app-shell {
   .day-option-with-value { flex-wrap: wrap; }
   .inline-day-value { margin-left: auto; }
   .project-night-period { margin-left: 0; }
+  .project-rules-dialog { max-height: calc(100dvh - max(20px, env(safe-area-inset-top)) - max(20px, env(safe-area-inset-bottom))); }
 }
 
 @media screen and (max-width: 480px) {
@@ -348,6 +361,8 @@ html.auth-ready .app-shell {
   .project-times-copy-bar > div { justify-content: space-between; }
   .inline-day-value { width: 100%; margin: 0 0 10px 53px; }
   .project-form-actions > button, .copy-controls > button, .project-overview-actions > button { width: 100%; }
+  .project-rules-night { grid-template-columns: 1fr; }
+  .project-rules-night label:last-child { grid-column: auto; }
   .day-copy-panel { padding: 18px 0; }
   .day-editor-actions { padding-top: 22px; }
   .project-calendar { padding: 16px 12px; }
@@ -13735,6 +13750,18 @@ globalThis.TariffCalculator = {
     return `${item.actorName} heeft een werkdag met je gedeeld.`;
   }
 
+  function notificationCategory(item) {
+    const passiveTypes = new Set([
+      "workday_start_owner",
+      "workday_started",
+      "workday_overtime_soon",
+      "workday_night_soon",
+      "workday_times_updated",
+      "push_test"
+    ]);
+    return passiveTypes.has(item?.type) ? "notification-only" : "important";
+  }
+
   function notificationHref(item) {
     if (item.type === "badge_earned") return config.dashboardUrl;
     if (["trial_ending", "trial_expired"].includes(item.type)) return config.accountUrl;
@@ -13797,7 +13824,7 @@ globalThis.TariffCalculator = {
   }
 
   function maybeShowNotificationPrompt(items) {
-    const newestUnread = items.find((item) => !item.readAt);
+    const newestUnread = items.find((item) => !item.readAt && notificationCategory(item) === "important");
     if (!newestUnread || pendingNotificationPrompt?.id === newestUnread.id) return;
     const promptKey = `overuurtjeNotificationPrompt:${newestUnread.id}`;
     if (sessionStorage.getItem(promptKey)) return;
@@ -29149,32 +29176,21 @@ async function initializeWorkdayContext() {
     const activeShares = await findActiveReceivedShare();
     if (activeShares.selected) {
       activeSharedWorkday = activeShares.selected;
-      const ownEntries = await listOwnEntriesForSharedDate(activeShares.selected.workDate);
-      if (activeShares.all.length === 1 && ownEntries.length === 0) {
-        location.replace(`index.html?shared=${encodeURIComponent(activeShares.selected.id)}`);
-        return;
-      }
-      todayWorkday = { kind: "shared", share: activeShares.selected };
-      configureTodayWorkdayDialog(todayWorkday);
-      openNativeDialog(todayWorkdayDialog);
+      location.replace(`index.html?shared=${encodeURIComponent(activeShares.selected.id)}`);
       return;
     }
 
     if (!currentUserContext?.isPro) {
       const active = freeActiveWorkdayService.load(currentAccountUser.id);
       if (active) {
-        todayWorkday = { kind: "free-active", workday: active };
-        configureTodayWorkdayDialog(todayWorkday);
-        openNativeDialog(todayWorkdayDialog);
+        applyFreeActiveWorkday(active);
       }
       return;
     }
 
     const preferred = await findPreferredOwnDateEntry();
     if (preferred) {
-      todayWorkday = preferred;
-      configureTodayWorkdayDialog(todayWorkday);
-      openNativeDialog(todayWorkdayDialog);
+      openExistingDateEntry(preferred);
     }
   } catch (error) {
     console.warn("Opgeslagen werkdagen konden niet worden gecontroleerd.", error);
