@@ -18,6 +18,8 @@
   const dateLong = new Intl.DateTimeFormat("nl-NL", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
   const monthLong = new Intl.DateTimeFormat("nl-NL", { month: "long", year: "numeric" });
   const views = ["project-list-view", "project-form-view", "project-overview-view", "day-editor-view"];
+  const pageBackButton = document.querySelector("#project-page-back");
+  const newProjectButton = document.querySelector("#new-project");
   const list = document.querySelector("#project-list");
   const form = document.querySelector("#project-form");
   const dayForm = document.querySelector("#day-form");
@@ -59,7 +61,14 @@
     return match ? `${match[3]}-${match[2]}-${match[1]}` : String(iso || "");
   };
   const options = () => ({ mock: Boolean(context?.subscription.isMock) });
-  const show = (id) => views.forEach((view) => { document.querySelector(`#${view}`).hidden = view !== id; });
+  function show(id) {
+    views.forEach((view) => { document.querySelector(`#${view}`).hidden = view !== id; });
+    const showingList = id === "project-list-view";
+    pageBackButton.hidden = showingList;
+    newProjectButton.hidden = !showingList || !context?.isPro;
+    if (!showingList) sharedProjectsSection.hidden = true;
+    else renderSharedProjects();
+  }
   const setDirty = (value) => { dirty = value; };
   const openDialog = (dialog) => typeof dialog.showModal === "function" ? dialog.showModal() : dialog.setAttribute("open", "");
 
@@ -580,16 +589,30 @@
     carouselIndex = Math.max(0, Math.min(carouselIndex, current.days.length - 1));
     document.querySelector("#overview-name").textContent = project.name;
     document.querySelector("#overview-meta").textContent = `${project.clientName ? `${project.clientName} · ` : ""}${formatDate(project.startDate)} - ${formatDate(project.endDate)} · ${current.days.length} werkdagen`;
+    const elapsedDays = current.days.filter((day) => day.workDate <= todayValue()).length;
+    const progress = current.days.length ? Math.min(100, (elapsedDays / current.days.length) * 100) : 0;
+    const todayIndex = current.days.findIndex((day) => day.workDate === todayValue());
+    const progressRing = document.querySelector("#project-progress-ring");
+    progressRing.style.setProperty("--project-progress", `${progress * 3.6}deg`);
+    progressRing.setAttribute("aria-valuenow", String(Math.round(progress)));
+    document.querySelector("#project-progress-count").textContent = `${elapsedDays}/${current.days.length}`;
+    document.querySelector("#project-progress-status").textContent = todayIndex >= 0
+      ? `Vandaag is projectdag ${todayIndex + 1} van ${current.days.length}.`
+      : elapsedDays === 0
+        ? "De eerste projectdag moet nog beginnen."
+        : elapsedDays >= current.days.length
+          ? "Alle geplande projectdagen zijn geweest."
+          : `${elapsedDays} van de ${current.days.length} projectdagen zijn geweest.`;
+    document.querySelector("#project-earned-total").textContent = euro.format(earned.amount);
     const metrics = [
       ["Gewerkte uren", `${number.format(total.hours)} uur`],
       ["Overuren", `${number.format(total.overtime)} uur`], ["Nachturen", `${number.format(total.night)} uur`],
       ["Kilometers", `${number.format(total.kilometers)} km`], ["Parkeer/onkosten", euro.format(total.parking)], ["Toeslagen", euro.format(total.surcharges)],
-      ["Gepland projecttotaal", euro.format(total.amount)],
-      ["Tot nu toe verdiend · inclusief vandaag", euro.format(earned.amount), "primary"]
+      ["Gepland projecttotaal", euro.format(total.amount)]
     ];
     if (total.incomplete) metrics.splice(6, 0, ["Nog afronden", `${total.incomplete} werkdag${total.incomplete === 1 ? "" : "en"}`]);
     document.querySelector("#project-metrics").innerHTML = metrics
-      .map(([label, value, className = ""]) => `<div class="${className}"><span>${label}</span><strong>${value}</strong></div>`).join("");
+      .map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join("");
     document.querySelector("#project-day-list").innerHTML = current.days.map((day) => {
       const data = storedDayData(day);
       const result = canCalculateDay(data) ? calculate(data) : null;
@@ -968,7 +991,7 @@
     } catch (error) { document.querySelector("#projects-unavailable").hidden = false; document.querySelector("#projects-error").textContent = error.message; }
   }
 
-  document.querySelector("#new-project").addEventListener("click", () => openProjectForm());
+  newProjectButton.addEventListener("click", () => openProjectForm());
   document.querySelector("#share-project").addEventListener("click", () => {
     if (current?.project.id) shareUi?.open({ sourceType: "project", sourceId: current.project.id });
   });
@@ -1010,7 +1033,7 @@
   projectRulesDialog?.addEventListener("click", (event) => {
     if (event.target === projectRulesDialog) closeDialog(projectRulesDialog);
   });
-  document.querySelector("#back-to-projects").addEventListener("click", renderProjectList);
+  pageBackButton.addEventListener("click", renderProjectList);
   document.querySelector("#delete-project").addEventListener("click", async () => { if (!confirm(`Project “${current.project.name}” en alle werkdagen verwijderen?`)) return; await projects.remove(context.auth.user.id, current.project.id, options()); current = null; await loadList(); });
   document.querySelector("#paste-project-times").addEventListener("click", pasteProjectTimes);
   document.querySelector("#cancel-project-times").addEventListener("click", cancelCopyTimes);

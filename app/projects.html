@@ -71,7 +71,7 @@
         </header>
 
         <div class="account-page-topbar project-topbar">
-          <a class="back-link" href="account.html">&#8592; Account</a>
+          <button class="back-link project-page-back" id="project-page-back" type="button" hidden>&#8592; Projecten</button>
           <div><p class="account-kicker">Overuurtje Pro</p><h1>Projecten</h1></div>
           <button class="saas-primary-button" id="new-project" type="button">Nieuw project</button>
         </div>
@@ -146,8 +146,21 @@
         </section>
 
         <section id="project-overview-view" hidden>
-          <div class="project-overview-head account-section"><div><p class="account-section-kicker">Projectoverzicht</p><h2 id="overview-name"></h2><p id="overview-meta"></p></div><div class="project-head-actions"><button class="saas-secondary-button" id="edit-project-rules" type="button">Projectinstellingen</button><button class="saas-secondary-button" id="edit-project" type="button">Project wijzigen</button><button class="text-action danger-action" id="delete-project" type="button">Verwijderen</button></div></div>
-          <div class="project-metrics" id="project-metrics"></div>
+          <div class="project-overview-head"><div><p class="account-section-kicker">Projectoverzicht</p><h2 id="overview-name"></h2><p id="overview-meta"></p></div></div>
+          <section class="account-section project-progress-section" aria-labelledby="project-progress-title">
+            <div class="project-progress-visual">
+              <div class="project-progress-ring" id="project-progress-ring" role="progressbar" aria-labelledby="project-progress-title" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div><strong id="project-progress-count">0/0</strong><span>projectdagen</span></div>
+              </div>
+              <div class="project-progress-copy">
+                <p class="account-section-kicker">Voortgang</p>
+                <h3 id="project-progress-title">Projectplanning</h3>
+                <p id="project-progress-status"></p>
+              </div>
+            </div>
+            <div class="project-earned-total"><span>Tot nu toe verdiend</span><strong id="project-earned-total">€ 0,00</strong></div>
+            <dl class="project-metrics" id="project-metrics"></dl>
+          </section>
           <section class="account-section project-days-section">
             <div class="account-section-heading project-days-heading">
               <div><p class="account-section-kicker">Werkdagen</p><h2>Projectdagen</h2></div>
@@ -175,8 +188,15 @@
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="m8.6 10.7 6.8-4.1M8.6 13.3l6.8 4.1"></path></svg>
               Deel project
             </button>
-            <button class="saas-secondary-button" id="back-to-projects" type="button">Alle projecten</button>
           </div>
+          <section class="account-section project-management-section">
+            <div><p class="account-section-kicker">Beheer</p><h2>Project beheren</h2></div>
+            <div class="project-head-actions">
+              <button class="saas-secondary-button" id="edit-project-rules" type="button">Projectinstellingen</button>
+              <button class="saas-secondary-button" id="edit-project" type="button">Project wijzigen</button>
+              <button class="text-action danger-action" id="delete-project" type="button">Verwijderen</button>
+            </div>
+          </section>
         </section>
 
         <section id="day-editor-view" hidden>
