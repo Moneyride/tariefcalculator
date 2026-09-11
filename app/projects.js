@@ -60,6 +60,10 @@
     const match = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
     return match ? `${match[3]}-${match[2]}-${match[1]}` : String(iso || "");
   };
+  const formatHoursDate = (iso) => {
+    const match = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    return match ? `${match[3]}/${match[2]}` : String(iso || "");
+  };
   const options = () => ({ mock: Boolean(context?.subscription.isMock) });
   function show(id) {
     views.forEach((view) => { document.querySelector(`#${view}`).hidden = view !== id; });
@@ -877,6 +881,35 @@
     }
   }
 
+  function buildHoursLine(day, data) {
+    return `${formatHoursDate(day.workDate)} Tijden: ${data.startTime || "--:--"} - ${data.endTime || "--:--"}`;
+  }
+
+  async function copyDayHours() {
+    const day = current?.days.find((item) => item.id === currentDayId);
+    if (!day) return;
+    try {
+      await writeClipboard(buildHoursLine(day, readDayForm()));
+      sessionUi.showToast("Uren gekopieerd.");
+    } catch (error) {
+      sessionUi.showToast(error.message || "Kopiëren is niet gelukt.");
+    }
+  }
+
+  async function copyProjectHours() {
+    if (!current?.days?.length) return;
+    try {
+      const lines = current.days
+        .slice()
+        .sort((a, b) => a.workDate.localeCompare(b.workDate))
+        .map((day) => buildHoursLine(day, storedDayData(day)));
+      await writeClipboard(lines.join("\n"));
+      sessionUi.showToast("Uren van het project gekopieerd.");
+    } catch (error) {
+      sessionUi.showToast(error.message || "Kopiëren is niet gelukt.");
+    }
+  }
+
   function updateDayConditionalFields() {
     document.querySelectorAll("#day-form .conditional-field[data-for]").forEach((field) => {
       field.hidden = !dayForm.elements.namedItem(field.dataset.for).checked;
@@ -1047,6 +1080,8 @@
   document.querySelector("#copy-all-days").addEventListener("click", () => copyDay(current.days.filter((day) => day.id !== currentDayId).map((day) => day.id)));
   document.querySelector("#copy-selected-days").addEventListener("click", () => copyDay(Array.from(document.querySelectorAll("#copy-day-targets input:checked"), (input) => input.value)));
   document.querySelector("#copy-day-invoice").addEventListener("click", copyDayForInvoice);
+  document.querySelector("#copy-day-hours")?.addEventListener("click", copyDayHours);
+  document.querySelector("#copy-project-hours")?.addEventListener("click", copyProjectHours);
   document.querySelector("#share-project-day").addEventListener("click", () => {
     if (currentDayId) shareUi?.open({ sourceType: "project_day", sourceId: currentDayId });
   });

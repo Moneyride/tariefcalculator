@@ -111,7 +111,7 @@ test("projectdagen worden niet geblokkeerd door verborgen irrelevante instelling
   assert.match(script, /function calculationValidationFields\(settings, formData\)/);
   assert.match(script, /if \(settings\.rateMode === "hour"\)/);
   assert.match(script, /if \(settings\.enableNightTariff\)/);
-  assert.match(script, /if \(!validateCalculationInputs\(settings, formData\)\) return;/);
+  assert.match(script, /if \(!validateCalculationInputs\(settings, formData, \{ silent \}\)\) return null;/);
   assert.doesNotMatch(script, /!form\.reportValidity\(\) \|\| !settingsForm\.reportValidity\(\)/);
   assert.match(script, /if \(currentProjectDayContext && !endTimeField\.value\) \{\s*liveWorkdayArmed = true;/);
 });

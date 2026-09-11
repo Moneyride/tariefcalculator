@@ -158,19 +158,39 @@ test("delen gebruikt alleen een directe uitnodigingslink en ondersteunt QR", asy
   assert.match(shareLanding, /sourceType === "project" \? "projects\.html" : "workdays\.html"/);
 });
 
-test("berekenen blijft de hoofdactie en bewaren staat onderaan voor het resultaat", async () => {
+test("Pro rekent live, Free houdt berekenen en de afsluitactie blijft voor het resultaat", async () => {
   const html = await readFile(path.join(rootDirectory, "app/index.html"), "utf8");
+  const script = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
   const result = html.indexOf('class="result-panel"');
   const actions = html.indexOf('class="footer-actions"');
   const calculate = html.indexOf('id="recalculate"');
   const newCalculation = html.indexOf('id="new-calculation"');
   const saveWorkday = html.indexOf('id="save-workday"');
   assert.ok(result >= 0 && actions > result);
-  assert.ok(calculate >= 0 && newCalculation > calculate && saveWorkday > newCalculation && saveWorkday < result);
+  assert.ok(newCalculation >= 0 && newCalculation < calculate && calculate < saveWorkday && saveWorkday < result);
+  assert.match(html, /data-workday-save-label>Dag afsluiten</);
+  assert.match(script, /recalculateButton\.hidden = isPro/);
+  assert.match(script, /scheduleAutomaticCalculation/);
+  assert.match(script, /finishAndSaveWorkday/);
   assert.match(html, /class="invoice-copy-button"[^>]+id="copy-summary"/);
+  assert.match(html, /id="copy-hours">Uren kopiëren/);
   assert.match(html, /id="save-workday"/);
   assert.doesNotMatch(html, /id="share-current-workday"/);
   assert.doesNotMatch(html, /id="share-site"/);
+});
+
+test("uren kopiëren is beschikbaar voor een werkdag en een volledig project", async () => {
+  const calculatorHtml = await readFile(path.join(rootDirectory, "app/index.html"), "utf8");
+  const calculatorScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
+  const projectsHtml = await readFile(path.join(rootDirectory, "app/projects.html"), "utf8");
+  const projectsScript = await readFile(path.join(rootDirectory, "app/projects.js"), "utf8");
+
+  assert.match(calculatorHtml, /id="copy-hours">Uren kopiëren/);
+  assert.match(calculatorScript, /`\$\{formatHoursDate\(date\)\} Tijden: \$\{startTime\} - \$\{endTime\}`/);
+  assert.match(projectsHtml, /id="copy-day-hours"[^>]*>Uren kopiëren/);
+  assert.match(projectsHtml, /id="copy-project-hours"[^>]*>Uren kopiëren/);
+  assert.match(projectsScript, /lines\.join\("\\n"\)/);
+  assert.match(projectsScript, /formatHoursDate\(day\.workDate\)/);
 });
 
 test("opslaan en PDF gebruiken consistente lijniconen zonder PDF-lettermerk", async () => {
@@ -319,7 +339,8 @@ test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", asy
   assert.ok(calculatorHtml.indexOf("saas/freeActiveWorkdayService.js") < calculatorHtml.indexOf("app.js"));
   assert.match(calculatorHtml, /id="account-login"/);
   assert.match(calculatorHtml, /data-workday-save-label/);
-  assert.match(calculatorHtml, /Bewaar voor later/);
+  assert.match(calculatorHtml, /Dag afsluiten/);
+  assert.match(calculatorScript, /"Bewaar voor later"/);
   assert.match(calculatorHtml, /data-pro-badge/);
   assert.match(calculatorScript, /const hasSharedRecipient = !isSharedReceiver/);
   assert.match(calculatorScript, /Opslaan werkt gedeelde tijden bij voor je collega's/);
@@ -330,7 +351,7 @@ test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", asy
   const workdayNameTag = calculatorHtml.match(/<label[^>]+id="workday-name-field"[^>]*>/)?.[0] || "";
   assert.doesNotMatch(workdayNameTag, /\shidden(?:\s|=|>)/);
   assert.match(calculatorScript, /workdayNameField\.hidden = isProjectDay/);
-  const summaryStart = calculatorScript.indexOf("function buildSummary(result)");
+  const summaryStart = calculatorScript.indexOf("function buildSummary(result, endTimeOverride = \"\")");
   const summaryEnd = calculatorScript.indexOf("async function syncFreeSharedWorkdaySource", summaryStart);
   const invoiceSummarySource = calculatorScript.slice(summaryStart, summaryEnd);
   assert.match(invoiceSummarySource, /Werkdag:/);

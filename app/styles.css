@@ -4145,72 +4145,6 @@ dd {
   display: none;
 }
 
-.account-settings-entry {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 0;
-}
-
-.calculator-settings-shortcut {
-  position: absolute;
-  z-index: 8;
-  top: 22px;
-  right: 26px;
-}
-
-.account-settings-entry.calculator-settings-shortcut a {
-  width: auto;
-  min-width: 0;
-  height: auto;
-  min-height: 0;
-  justify-content: center;
-  padding: 7px;
-  border-radius: 0;
-  background: transparent;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  box-shadow: none;
-}
-
-.account-settings-entry.calculator-settings-shortcut a:hover,
-.account-settings-entry.calculator-settings-shortcut a:focus-visible {
-  background: transparent;
-  color: var(--orange);
-  box-shadow: none;
-}
-
-.account-settings-entry.calculator-settings-shortcut .settings-icon {
-  font-size: 1.35rem;
-  line-height: 1;
-}
-
-/* A settings shortcut should read as a lone tool icon, not as a fourth action button. */
-.calculator-glass .account-settings-entry.calculator-settings-shortcut,
-.main-glass .account-settings-entry.calculator-settings-shortcut {
-  top: 13px;
-}
-
-.calculator-glass .account-settings-entry.calculator-settings-shortcut a,
-.main-glass .account-settings-entry.calculator-settings-shortcut a,
-.calculator-glass .account-settings-entry.calculator-settings-shortcut a:hover,
-.calculator-glass .account-settings-entry.calculator-settings-shortcut a:focus-visible,
-.main-glass .account-settings-entry.calculator-settings-shortcut a:hover,
-.main-glass .account-settings-entry.calculator-settings-shortcut a:focus-visible {
-  display: inline-flex;
-  width: 28px;
-  min-width: 0;
-  height: 28px;
-  min-height: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  box-shadow: none;
-}
-
 .participant-chip.is-account {
   display: inline-flex;
   align-items: center;
@@ -4232,59 +4166,6 @@ dd {
   border-radius: 50%;
   background: rgba(255, 106, 26, 0.11);
   font-size: 0.86rem;
-  line-height: 1;
-}
-
-.account-settings-entry[hidden] {
-  display: none;
-}
-
-.account-settings-entry > div {
-  display: grid;
-  gap: 2px;
-}
-
-.account-settings-entry strong {
-  color: var(--accent-dark);
-  font-size: 0.88rem;
-}
-
-.account-settings-entry > div span {
-  color: var(--muted);
-  font-size: 0.74rem;
-  font-weight: 600;
-}
-
-.account-settings-entry a {
-  display: inline-flex;
-  align-items: center;
-  flex: 0 0 auto;
-  gap: 8px;
-  min-height: 42px;
-  padding: 9px 14px;
-  border: 1px solid rgba(31, 67, 53, 0.14);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.48);
-  color: var(--accent-dark);
-  font-size: 0.78rem;
-  font-weight: 800;
-  text-decoration: none;
-  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
-}
-
-.account-settings-entry a:hover {
-  border-color: rgba(255, 106, 26, 0.32);
-  background: rgba(255, 255, 255, 0.68);
-  transform: translateY(-1px);
-}
-
-.account-settings-entry a:focus-visible {
-  outline: 3px solid rgba(255, 106, 26, 0.16);
-  outline-offset: 2px;
-}
-
-.settings-icon {
-  font-size: 1rem;
   line-height: 1;
 }
 
@@ -4650,7 +4531,7 @@ summary:hover {
 
 .footer-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: stretch;
   gap: 14px;
   margin-top: 0;
@@ -4665,7 +4546,7 @@ summary:hover {
 }
 
 .footer-actions:has(#moneybird-export[hidden]) {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .footer-actions .secondary {
@@ -4675,13 +4556,15 @@ summary:hover {
 
 .footer-actions button {
   width: 100%;
-  min-height: 64px;
+  min-height: 50px;
   min-width: 0;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 .invoice-copy-button {
-  min-height: 64px;
-  font-size: 1rem;
+  min-height: 50px;
+  font-size: 0.92rem;
 }
 
 .footer-actions .copy-status {
@@ -6826,22 +6709,6 @@ html.is-pwa summary {
     border-radius: 0 0 24px 24px;
   }
 
-  .account-settings-entry {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .account-settings-entry a {
-    justify-content: center;
-    width: 100%;
-  }
-
-  .account-settings-shortcut {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 7px;
-  }
   .app-shell {
     width: 100%;
     padding: 0 0 24px;
@@ -7289,6 +7156,23 @@ html.is-pwa summary {
 .workday-save-button:hover {
   background: rgba(255, 255, 255, 0.76);
   color: var(--accent-dark);
+}
+
+.workday-save-button.is-day-finish {
+  border-color: var(--orange);
+  background: var(--orange);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(255, 106, 26, 0.22);
+}
+
+.workday-save-button.is-day-finish:hover {
+  border-color: var(--orange-dark);
+  background: var(--orange-dark);
+  color: #fff;
+}
+
+.workday-save-button.is-day-finish [data-workday-save-hint] {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .workday-save-button.is-pro-locked {
@@ -7963,19 +7847,6 @@ html.is-pwa summary {
   .calculate-action {
     margin: 22px 18px 0;
     padding-top: 20px;
-  }
-
-  .calculator-settings-shortcut {
-    top: 17px;
-    right: 18px;
-  }
-
-  .account-settings-entry.calculator-settings-shortcut a {
-    width: auto;
-    min-width: 0;
-    height: auto;
-    min-height: 0;
-    padding: 7px;
   }
 
   .workday-action-group {
@@ -8926,28 +8797,74 @@ html.is-pwa summary {
   background: rgba(255, 255, 255, 0.46);
 }
 
+.calculator-top-actions {
+  display: flex;
+  justify-content: center;
+  padding: 20px 30px 0;
+}
+
 .new-calculation-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  min-height: 42px;
-  padding: 9px 18px;
-  border: 1px solid rgba(31, 67, 53, 0.14);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.5);
+  width: auto;
+  min-height: 38px;
+  padding: 8px 16px;
+  border: 1px solid rgba(31, 67, 53, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.42);
   color: var(--accent-dark);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 750;
   text-decoration: none;
-  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+  transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
 }
 
 .new-calculation-link:hover {
-  border-color: rgba(255, 106, 26, 0.28);
-  background: rgba(255, 255, 255, 0.72);
-  color: var(--accent-dark);
-  transform: translateY(-1px);
+  border-color: rgba(255, 106, 26, 0.35);
+  background: rgba(255, 255, 255, 0.64);
+  color: var(--orange-dark);
+}
+
+.save-confirmation {
+  position: fixed;
+  z-index: 120;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 10px;
+  background: rgba(23, 63, 54, 0.94);
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(16, 40, 34, 0.2);
+  font-size: 0.78rem;
+  font-weight: 750;
+  opacity: 0;
+  transform: translate(-50%, 8px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.save-confirmation[hidden] {
+  display: none;
+}
+
+.save-confirmation.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.save-confirmation svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* Crew Card and badge collection */
@@ -9242,25 +9159,4 @@ button.crew-badge:disabled { cursor: default; }
   }
   .account-heading-actions .sync-state { font-size: 0.72rem; white-space: nowrap; }
   .subscription-choice-state { max-width: 112px; line-height: 1.2; text-align: right; white-space: normal; }
-}
-
-@media (max-width: 760px) {
-  .calculator-glass .account-settings-entry.calculator-settings-shortcut,
-  .main-glass .account-settings-entry.calculator-settings-shortcut {
-    top: 10px;
-    right: 16px;
-  }
-
-  .calculator-glass .account-settings-entry.calculator-settings-shortcut a,
-  .main-glass .account-settings-entry.calculator-settings-shortcut a {
-    width: 28px;
-    min-width: 0;
-    height: 28px;
-    min-height: 0;
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-  }
 }

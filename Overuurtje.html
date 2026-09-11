@@ -4192,72 +4192,6 @@ dd {
   display: none;
 }
 
-.account-settings-entry {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 0;
-}
-
-.calculator-settings-shortcut {
-  position: absolute;
-  z-index: 8;
-  top: 22px;
-  right: 26px;
-}
-
-.account-settings-entry.calculator-settings-shortcut a {
-  width: auto;
-  min-width: 0;
-  height: auto;
-  min-height: 0;
-  justify-content: center;
-  padding: 7px;
-  border-radius: 0;
-  background: transparent;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  box-shadow: none;
-}
-
-.account-settings-entry.calculator-settings-shortcut a:hover,
-.account-settings-entry.calculator-settings-shortcut a:focus-visible {
-  background: transparent;
-  color: var(--orange);
-  box-shadow: none;
-}
-
-.account-settings-entry.calculator-settings-shortcut .settings-icon {
-  font-size: 1.35rem;
-  line-height: 1;
-}
-
-/* A settings shortcut should read as a lone tool icon, not as a fourth action button. */
-.calculator-glass .account-settings-entry.calculator-settings-shortcut,
-.main-glass .account-settings-entry.calculator-settings-shortcut {
-  top: 13px;
-}
-
-.calculator-glass .account-settings-entry.calculator-settings-shortcut a,
-.main-glass .account-settings-entry.calculator-settings-shortcut a,
-.calculator-glass .account-settings-entry.calculator-settings-shortcut a:hover,
-.calculator-glass .account-settings-entry.calculator-settings-shortcut a:focus-visible,
-.main-glass .account-settings-entry.calculator-settings-shortcut a:hover,
-.main-glass .account-settings-entry.calculator-settings-shortcut a:focus-visible {
-  display: inline-flex;
-  width: 28px;
-  min-width: 0;
-  height: 28px;
-  min-height: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  box-shadow: none;
-}
-
 .participant-chip.is-account {
   display: inline-flex;
   align-items: center;
@@ -4279,59 +4213,6 @@ dd {
   border-radius: 50%;
   background: rgba(255, 106, 26, 0.11);
   font-size: 0.86rem;
-  line-height: 1;
-}
-
-.account-settings-entry[hidden] {
-  display: none;
-}
-
-.account-settings-entry > div {
-  display: grid;
-  gap: 2px;
-}
-
-.account-settings-entry strong {
-  color: var(--accent-dark);
-  font-size: 0.88rem;
-}
-
-.account-settings-entry > div span {
-  color: var(--muted);
-  font-size: 0.74rem;
-  font-weight: 600;
-}
-
-.account-settings-entry a {
-  display: inline-flex;
-  align-items: center;
-  flex: 0 0 auto;
-  gap: 8px;
-  min-height: 42px;
-  padding: 9px 14px;
-  border: 1px solid rgba(31, 67, 53, 0.14);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.48);
-  color: var(--accent-dark);
-  font-size: 0.78rem;
-  font-weight: 800;
-  text-decoration: none;
-  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
-}
-
-.account-settings-entry a:hover {
-  border-color: rgba(255, 106, 26, 0.32);
-  background: rgba(255, 255, 255, 0.68);
-  transform: translateY(-1px);
-}
-
-.account-settings-entry a:focus-visible {
-  outline: 3px solid rgba(255, 106, 26, 0.16);
-  outline-offset: 2px;
-}
-
-.settings-icon {
-  font-size: 1rem;
   line-height: 1;
 }
 
@@ -4697,7 +4578,7 @@ summary:hover {
 
 .footer-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: stretch;
   gap: 14px;
   margin-top: 0;
@@ -4712,7 +4593,7 @@ summary:hover {
 }
 
 .footer-actions:has(#moneybird-export[hidden]) {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .footer-actions .secondary {
@@ -4722,13 +4603,15 @@ summary:hover {
 
 .footer-actions button {
   width: 100%;
-  min-height: 64px;
+  min-height: 50px;
   min-width: 0;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 .invoice-copy-button {
-  min-height: 64px;
-  font-size: 1rem;
+  min-height: 50px;
+  font-size: 0.92rem;
 }
 
 .footer-actions .copy-status {
@@ -6873,22 +6756,6 @@ html.is-pwa summary {
     border-radius: 0 0 24px 24px;
   }
 
-  .account-settings-entry {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .account-settings-entry a {
-    justify-content: center;
-    width: 100%;
-  }
-
-  .account-settings-shortcut {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 7px;
-  }
   .app-shell {
     width: 100%;
     padding: 0 0 24px;
@@ -7336,6 +7203,23 @@ html.is-pwa summary {
 .workday-save-button:hover {
   background: rgba(255, 255, 255, 0.76);
   color: var(--accent-dark);
+}
+
+.workday-save-button.is-day-finish {
+  border-color: var(--orange);
+  background: var(--orange);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(255, 106, 26, 0.22);
+}
+
+.workday-save-button.is-day-finish:hover {
+  border-color: var(--orange-dark);
+  background: var(--orange-dark);
+  color: #fff;
+}
+
+.workday-save-button.is-day-finish [data-workday-save-hint] {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .workday-save-button.is-pro-locked {
@@ -8010,19 +7894,6 @@ html.is-pwa summary {
   .calculate-action {
     margin: 22px 18px 0;
     padding-top: 20px;
-  }
-
-  .calculator-settings-shortcut {
-    top: 17px;
-    right: 18px;
-  }
-
-  .account-settings-entry.calculator-settings-shortcut a {
-    width: auto;
-    min-width: 0;
-    height: auto;
-    min-height: 0;
-    padding: 7px;
   }
 
   .workday-action-group {
@@ -8973,28 +8844,74 @@ html.is-pwa summary {
   background: rgba(255, 255, 255, 0.46);
 }
 
+.calculator-top-actions {
+  display: flex;
+  justify-content: center;
+  padding: 20px 30px 0;
+}
+
 .new-calculation-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  min-height: 42px;
-  padding: 9px 18px;
-  border: 1px solid rgba(31, 67, 53, 0.14);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.5);
+  width: auto;
+  min-height: 38px;
+  padding: 8px 16px;
+  border: 1px solid rgba(31, 67, 53, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.42);
   color: var(--accent-dark);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 750;
   text-decoration: none;
-  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+  transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
 }
 
 .new-calculation-link:hover {
-  border-color: rgba(255, 106, 26, 0.28);
-  background: rgba(255, 255, 255, 0.72);
-  color: var(--accent-dark);
-  transform: translateY(-1px);
+  border-color: rgba(255, 106, 26, 0.35);
+  background: rgba(255, 255, 255, 0.64);
+  color: var(--orange-dark);
+}
+
+.save-confirmation {
+  position: fixed;
+  z-index: 120;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 10px;
+  background: rgba(23, 63, 54, 0.94);
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(16, 40, 34, 0.2);
+  font-size: 0.78rem;
+  font-weight: 750;
+  opacity: 0;
+  transform: translate(-50%, 8px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.save-confirmation[hidden] {
+  display: none;
+}
+
+.save-confirmation.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.save-confirmation svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* Crew Card and badge collection */
@@ -9291,27 +9208,6 @@ button.crew-badge:disabled { cursor: default; }
   .subscription-choice-state { max-width: 112px; line-height: 1.2; text-align: right; white-space: normal; }
 }
 
-@media (max-width: 760px) {
-  .calculator-glass .account-settings-entry.calculator-settings-shortcut,
-  .main-glass .account-settings-entry.calculator-settings-shortcut {
-    top: 10px;
-    right: 16px;
-  }
-
-  .calculator-glass .account-settings-entry.calculator-settings-shortcut a,
-  .main-glass .account-settings-entry.calculator-settings-shortcut a {
-    width: 28px;
-    min-width: 0;
-    height: 28px;
-    min-height: 0;
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-  }
-}
-
     </style>
     <script src="saas/freeActiveWorkdayService.js?v=20260731a" defer></script>
     <script src="saas/badgeService.js?v=20260810b" defer></script>
@@ -9349,6 +9245,9 @@ button.crew-badge:disabled { cursor: default; }
 
       <section class="calculator-grid">
         <form class="input-panel" id="calculator-form">
+          <div class="calculator-top-actions">
+            <a class="new-calculation-link" id="new-calculation" href="index.html?new=1">Nieuwe berekening</a>
+          </div>
           <aside class="shared-receiver-context" id="shared-receiver-context" hidden>
             <div class="shared-receiver-copy">
               <span>Gedeeld met jou</span>
@@ -9367,11 +9266,6 @@ button.crew-badge:disabled { cursor: default; }
               <small id="active-shared-reminder-copy"></small>
             </span>
             <button type="button" id="open-active-shared">Openen</button>
-          </aside>
-          <aside class="account-settings-entry calculator-settings-shortcut" id="account-settings-entry" hidden>
-            <a href="account.html#calculator-settings" aria-label="Rekeninstellingen openen" title="Rekeninstellingen">
-              <span class="settings-icon" aria-hidden="true">&#9881;</span>
-            </a>
           </aside>
           <section class="form-section department-section">
             <h3>Functie</h3>
@@ -9573,7 +9467,6 @@ button.crew-badge:disabled { cursor: default; }
             </p>
             <div class="button-row">
               <button type="button" id="recalculate">Berekenen</button>
-              <a class="secondary new-calculation-link" id="new-calculation" href="index.html?new=1">Nieuwe berekening</a>
               <button class="workday-save-button is-pro-locked" type="button" id="save-workday" disabled>
                 <svg class="button-line-icon" aria-hidden="true" viewBox="0 0 24 24">
                   <path d="M5 3h12l2 2v16H5z"></path>
@@ -9581,7 +9474,7 @@ button.crew-badge:disabled { cursor: default; }
                   <path d="M8 21v-7h8v7"></path>
                 </svg>
                 <span class="workday-save-copy">
-                  <strong data-workday-save-label>Bewaar voor later</strong>
+                  <strong data-workday-save-label>Dag afsluiten</strong>
                   <span data-workday-save-hint>Bewaar datum, begintijd en instellingen</span>
                 </span>
                 <small data-workday-save-badge>Pro</small>
@@ -9747,6 +9640,7 @@ button.crew-badge:disabled { cursor: default; }
           <span data-pro-badge>Pro</span>
         </button>
         <button class="invoice-copy-button" type="button" id="copy-summary">Kopiëren voor factuur</button>
+        <button class="invoice-copy-button" type="button" id="copy-hours">Uren kopiëren</button>
         <button class="invoice-copy-button moneybird-export-button" type="button" id="moneybird-export" hidden>Naar boekhouding</button>
         <p class="copy-status" id="copy-status" aria-live="polite"></p>
       </div>
@@ -9931,6 +9825,14 @@ button.crew-badge:disabled { cursor: default; }
       <button class="saas-primary-button" type="button" data-pwa-dialog-close>Begrepen</button>
     </dialog>
 
+    <div class="save-confirmation" id="save-confirmation" role="status" aria-live="polite" hidden>
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M5 3h12l2 2v16H5z"></path>
+        <path d="M8 3v6h8V3"></path>
+        <path d="M8 21v-7h8v7"></path>
+      </svg>
+      <span>Opgeslagen</span>
+    </div>
     <div class="site-toast" id="site-toast" role="status" aria-live="polite" hidden></div>
     <script>
 window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
@@ -27677,13 +27579,13 @@ const nextDayNotice = document.querySelector("#next-day-notice");
 const calculationStatus = document.querySelector("#calculation-status");
 const recalculateButton = document.querySelector("#recalculate");
 const copyButton = document.querySelector("#copy-summary");
+const copyHoursButton = document.querySelector("#copy-hours");
 const moneybirdExportButton = document.querySelector("#moneybird-export");
 const pdfButton = document.querySelector("#save-pdf");
 const saveSettingsButton = document.querySelector("#save-settings");
 const copyStatus = document.querySelector("#copy-status");
 const settingsStatus = document.querySelector("#settings-status");
 const details = document.querySelector("#settings-panel");
-const accountSettingsEntry = document.querySelector("#account-settings-entry");
 const planningGrid = document.querySelector(".planning-grid");
 const planningBreakField = document.querySelector("#planning-break-field");
 const kilometerInput = document.querySelector("#kilometer-input");
@@ -27755,6 +27657,7 @@ const accountingExport = globalThis.OveruurtjeAccountingExport;
 const accountingUi = globalThis.OveruurtjeAccountingUi;
 const accountingService = globalThis.OveruurtjeAccounting;
 const participantDevToggle = document.querySelector("#participant-dev-toggle");
+const saveConfirmation = document.querySelector("#save-confirmation");
 
 const euroFormatter = new Intl.NumberFormat("nl-NL", {
   style: "currency",
@@ -27769,6 +27672,9 @@ const numberFormatter = new Intl.NumberFormat("nl-NL", {
 let calculationIsStale = false;
 let latestResult = null;
 let accountingVisibilityRequest = 0;
+let automaticCalculationFrame = 0;
+let saveConfirmationTimer = 0;
+let finishInProgress = false;
 
 function applyAccountingExportState(result) {
   if (!moneybirdExportButton) return;
@@ -28999,7 +28905,9 @@ function hideActiveSharedReminder() {
 }
 
 async function findActiveReceivedShare() {
-  if (!shareService || currentUserContext?.subscription?.isMock) return null;
+  if (!shareService || currentUserContext?.subscription?.isMock) {
+    return { selected: null, all: [] };
+  }
   const received = await shareService.listReceived();
   const active = received
     .filter((item) => item.acceptedAt && !item.endTime)
@@ -29063,7 +28971,7 @@ async function persistFreeActiveWorkday(snapshot, { showToast = true } = {}) {
   return saved;
 }
 
-async function persistWorkday(snapshot, id = null) {
+async function persistWorkday(snapshot, id = null, { showToast = true } = {}) {
   const saved = await workdayService.save(currentAccountUser.id, {
     id,
     name: snapshot.workdayName,
@@ -29082,12 +28990,12 @@ async function persistWorkday(snapshot, id = null) {
   const url = new URL(location.href);
   url.searchParams.set("workday", saved.id);
   history.replaceState({}, "", url);
-  sessionUi?.showToast("Werkdag opgeslagen.");
+  if (showToast) sessionUi?.showToast("Werkdag opgeslagen.");
   await trackBadgeActivity("workday_saved", saved.id);
   return saved;
 }
 
-async function persistProjectDay(snapshot) {
+async function persistProjectDay(snapshot, { showToast = true } = {}) {
   if (!currentProjectDayContext?.project?.id || !currentProjectDayContext?.day?.id) {
     throw new Error("Projectdag niet gevonden.");
   }
@@ -29106,12 +29014,12 @@ async function persistProjectDay(snapshot) {
   persistedWorkdayEndTime = snapshot.endTime || "";
   updateWorkdaySaveAccess();
   refreshCurrentWorkdayParticipants();
-  sessionUi?.showToast("Projectdag opgeslagen.");
+  if (showToast) sessionUi?.showToast("Projectdag opgeslagen.");
   await trackBadgeActivity("project_day_saved", savedDay.id);
   return savedDay;
 }
 
-async function saveWorkday({ allowDuplicate = false, skipCompletionConfirmation = false } = {}) {
+async function saveWorkday({ allowDuplicate = false, skipCompletionConfirmation = false, showIndicator = false } = {}) {
   const date = form.elements.namedItem("date").value;
   if (!date) return;
   if (currentSharedSource && currentReceivedShareId && currentAccountUser) {
@@ -29136,7 +29044,7 @@ async function saveWorkday({ allowDuplicate = false, skipCompletionConfirmation 
     && snapshot.endTime
     && await hasAcceptedSharedRecipients()
   ) {
-    pendingSharedCompletionSave = { allowDuplicate };
+    pendingSharedCompletionSave = { allowDuplicate, showIndicator };
     sharedCompletionCopy.textContent = `De eindtijd is berekend op ${snapshot.endTime}. Na het opslaan krijgen je collega's een melding dat de werkdag is afgerond. Je kunt de tijden later altijd aanpassen.`;
     openNativeDialog(sharedCompletionDialog);
     return null;
@@ -29148,7 +29056,9 @@ async function saveWorkday({ allowDuplicate = false, skipCompletionConfirmation 
     }
     workdaySaveButton.disabled = true;
     try {
-      return await persistFreeActiveWorkday(snapshot);
+      const saved = await persistFreeActiveWorkday(snapshot, { showToast: !showIndicator });
+      if (saved && showIndicator) showSaveConfirmation("Opgeslagen bij Werkdagen");
+      return saved;
     } catch (error) {
       console.warn("Free-werkdag bewaren is mislukt.", error);
       sessionUi?.showToast(error.message || "Werkdag bewaren is niet gelukt.");
@@ -29161,21 +29071,27 @@ async function saveWorkday({ allowDuplicate = false, skipCompletionConfirmation 
   workdaySaveButton.disabled = true;
   try {
     if (currentProjectDayContext) {
-      return await persistProjectDay(snapshot);
+      const saved = await persistProjectDay(snapshot, { showToast: !showIndicator });
+      if (saved && showIndicator) showSaveConfirmation("Opgeslagen in Projecten");
+      return saved;
     }
     if (currentWorkdayId) {
-      return await persistWorkday(snapshot, currentWorkdayId);
+      const saved = await persistWorkday(snapshot, currentWorkdayId, { showToast: !showIndicator });
+      if (saved && showIndicator) showSaveConfirmation("Opgeslagen bij Werkdagen");
+      return saved;
     }
     if (!allowDuplicate) {
       const existing = await listExistingDateEntries(date);
       if (existing.length) {
-        pendingDuplicateWorkday = { snapshot, existing: existing[0] };
+        pendingDuplicateWorkday = { snapshot, existing: existing[0], showIndicator };
         configureDuplicateWorkdayDialog(existing[0]);
         openNativeDialog(duplicateWorkdayDialog);
         return;
       }
     }
-    return await persistWorkday(snapshot);
+    const saved = await persistWorkday(snapshot, null, { showToast: !showIndicator });
+    if (saved && showIndicator) showSaveConfirmation("Opgeslagen bij Werkdagen");
+    return saved;
   } catch (error) {
     console.warn("Werkdag opslaan is mislukt.", error);
     sessionUi?.showToast(error.message || "Werkdag opslaan is niet gelukt.");
@@ -29223,19 +29139,26 @@ function updateWorkdaySaveAccess() {
   }
   workdaySaveButton.disabled = !hasDate;
   workdaySaveButton.classList.toggle("is-pro-locked", !isSharedReceiver && !isPro && !canSaveFreeActive);
+  workdaySaveButton.classList.toggle("is-day-finish", isPro && !isSharedReceiver);
+  recalculateButton.hidden = isPro;
+  if (isPro) calculationStatus.hidden = true;
   if (workdaySaveLabel) {
-    workdaySaveLabel.textContent = isProjectDay
-      ? "Projectdag bijwerken"
-      : isSharedReceiver
-        ? "Mijn instellingen opslaan"
-      : currentWorkdayId
-        ? "Werkdag bijwerken"
-      : "Bewaar voor later";
+    workdaySaveLabel.textContent = isSharedReceiver
+      ? "Mijn instellingen opslaan"
+      : isPro
+        ? "Dag afsluiten"
+        : currentWorkdayId
+          ? "Werkdag bijwerken"
+          : "Bewaar voor later";
   }
   if (workdaySaveHint) {
     workdaySaveHint.hidden = false;
     workdaySaveHint.textContent = isSharedReceiver
       ? "Bewaar je eigen extra's en berekening bij deze gedeelde dag"
+      : isPro && isProjectDay
+        ? "Stop de tijd en sla deze projectdag op"
+      : isPro
+        ? "Stop de tijd en sla deze werkdag op"
       : hasSharedRecipient
         ? "Opslaan werkt gedeelde tijden bij voor je collega's"
         : canSaveFreeActive
@@ -29390,7 +29313,6 @@ function scheduleAccountSettingsSync() {
 function updateSettingsScope() {
   const hasAccount = Boolean(currentAccountUser);
   details.hidden = hasAccount;
-  accountSettingsEntry.hidden = !hasAccount;
   if (hasAccount) details.open = false;
   updateRateSettingsVisibility();
 }
@@ -29477,6 +29399,7 @@ async function applyReceivedSharedWorkday(shared) {
 async function hydrateAccountSettings(context) {
   currentUserContext = context;
   currentAccountUser = context.auth.user;
+  updateWorkdaySaveAccess();
   void updateAccountingExportVisibility(context);
   const pdfProBadge = pdfButton?.querySelector("[data-pro-badge]");
   if (pdfProBadge) pdfProBadge.hidden = context.isPro;
@@ -29569,6 +29492,7 @@ async function hydrateAccountSettings(context) {
     renderWorkFunctions(context.isPro ? functions : []);
     refreshPlanningSuggestions();
     updateCalculation();
+    scheduleAutomaticCalculation();
     try {
       // Reconcile historical or previously missed badge awards whenever an
       // authenticated calculator session becomes ready.
@@ -29587,6 +29511,7 @@ async function hydrateAccountSettings(context) {
     await initializeWorkdayContext();
   }
   updateWorkdaySaveAccess();
+  scheduleAutomaticCalculation();
   if (!(await restoreSharedTimesFromUrl())) applySharedTimesImport();
 }
 
@@ -29603,6 +29528,11 @@ function formatEuro(value) {
 function formatInvoiceDate(value) {
   const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
   return match ? `${match[3]}-${match[2]}-${match[1]}` : String(value || "");
+}
+
+function formatHoursDate(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match ? `${match[3]}/${match[2]}` : String(value || "");
 }
 
 function setResult(name, value, formatter = formatHours) {
@@ -29737,11 +29667,11 @@ function renderPrintBreakdown(result) {
   );
 }
 
-function buildSummary(result) {
+function buildSummary(result, endTimeOverride = "") {
   const workdayName = String(form.elements.namedItem("workdayName")?.value || "").trim();
   const date = form.elements.namedItem("date").value;
   const startTime = form.elements.namedItem("startTime").value;
-  const endTime = form.elements.namedItem("endTime").value;
+  const endTime = endTimeOverride || form.elements.namedItem("endTime").value;
   const lines = [];
 
   if (workdayName) {
@@ -29832,10 +29762,12 @@ function calculationValidationFields(settings, formData) {
   return fields.filter((field) => field instanceof HTMLElement);
 }
 
-function validateCalculationInputs(settings, formData) {
+function validateCalculationInputs(settings, formData, { silent = false } = {}) {
   const invalidField = calculationValidationFields(settings, formData)
     .find((field) => typeof field.checkValidity === "function" && !field.checkValidity());
   if (!invalidField) return true;
+
+  if (silent) return false;
 
   const settingsDetails = invalidField.closest("details");
   if (settingsDetails) settingsDetails.open = true;
@@ -29847,17 +29779,18 @@ function validateCalculationInputs(settings, formData) {
   return false;
 }
 
-function updateCalculation(trackCompletion = false) {
+function updateCalculation(trackCompletion = false, { endTimeOverride = "", silent = false } = {}) {
   const endTimeField = form.elements.namedItem("endTime");
   const settings = getSettingsFromForm();
   const formData = new FormData(form);
   const isTravelDay = readCheckbox(formData, "enableTravelDay");
 
-  if (!validateCalculationInputs(settings, formData)) return;
-  if (!endTimeField.value && !isTravelDay) {
+  if (!validateCalculationInputs(settings, formData, { silent })) return null;
+  const calculationEndTime = endTimeOverride || endTimeField.value;
+  if (!calculationEndTime && !isTravelDay) {
     clearCalculationDisplay();
-    if (trackCompletion) sessionUi?.showToast("Vul eerst de eindtijd in om te berekenen.");
-    return;
+    if (trackCompletion && !silent) sessionUi?.showToast("Vul eerst de eindtijd in om te berekenen.");
+    return null;
   }
 
   const department = formData.get("department");
@@ -29867,7 +29800,7 @@ function updateCalculation(trackCompletion = false) {
     result = calculateTariff(
       {
         startTime: form.elements.namedItem("startTime").value,
-        endTime: form.elements.namedItem("endTime").value,
+        endTime: calculationEndTime,
         breakMinutes: settings.breakMinutes,
         rateMode: settings.rateMode,
         hourlyRate: settings.hourlyRate,
@@ -29889,8 +29822,8 @@ function updateCalculation(trackCompletion = false) {
   } catch (error) {
     console.warn("Berekening kon niet worden uitgevoerd.", error);
     clearCalculationDisplay();
-    sessionUi?.showToast(error.message || "De werkdag kon niet worden berekend.");
-    return;
+    if (!silent) sessionUi?.showToast(error.message || "De werkdag kon niet worden berekend.");
+    return null;
   }
 
   setResult("totalHours", result.totalHours);
@@ -29917,7 +29850,7 @@ function updateCalculation(trackCompletion = false) {
   if (travelResultRow) travelResultRow.hidden = !result.isTravelDay;
 
   nextDayNotice.hidden = !result.endsNextDay;
-  form.dataset.summary = buildSummary(result);
+  form.dataset.summary = buildSummary(result, calculationEndTime);
   latestResult = result;
   renderPrintBreakdown(result);
   calculationIsStale = false;
@@ -29945,13 +29878,26 @@ function updateCalculation(trackCompletion = false) {
       parking: readCheckbox(formData, "enableParkingCosts")
     });
   }
+  return result;
 }
 
 function wait(milliseconds) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }
 
-async function stopLiveWorkdayAndCalculate() {
+function showSaveConfirmation(label) {
+  if (!saveConfirmation) return;
+  clearTimeout(saveConfirmationTimer);
+  saveConfirmation.querySelector("span").textContent = label;
+  saveConfirmation.hidden = false;
+  requestAnimationFrame(() => saveConfirmation.classList.add("is-visible"));
+  saveConfirmationTimer = window.setTimeout(() => {
+    saveConfirmation.classList.remove("is-visible");
+    window.setTimeout(() => { saveConfirmation.hidden = true; }, 180);
+  }, 3000);
+}
+
+async function stopLiveWorkdayAndCalculate({ showToast = true } = {}) {
   const endTimeField = form.elements.namedItem("endTime");
   if (currentProjectDayContext && !endTimeField.value) {
     liveWorkdayArmed = true;
@@ -29963,8 +29909,7 @@ async function stopLiveWorkdayAndCalculate() {
     : null;
 
   if (!liveState?.active) {
-    updateCalculation(true);
-    return;
+    return updateCalculation(true);
   }
 
   const timeControl = endTimeField.closest(".time-control");
@@ -29992,8 +29937,27 @@ async function stopLiveWorkdayAndCalculate() {
   resumeLiveWorkdayButton.hidden = false;
   recalculateButton.disabled = false;
   liveWorkdayController?.update();
-  updateCalculation(true);
-  sessionUi?.showToast(`Werkdag gestopt om ${roundedEndTime}.`);
+  const result = updateCalculation(true);
+  if (showToast) sessionUi?.showToast(`Werkdag gestopt om ${roundedEndTime}.`);
+  return result;
+}
+
+async function finishAndSaveWorkday() {
+  if (finishInProgress) return null;
+  if (currentSharedSource) {
+    return saveWorkday();
+  }
+  finishInProgress = true;
+  try {
+    const endTimeField = form.elements.namedItem("endTime");
+    const isTravelDay = readCheckbox(new FormData(form), "enableTravelDay");
+    if (!endTimeField.value && !isTravelDay) liveWorkdayArmed = true;
+    const result = await stopLiveWorkdayAndCalculate({ showToast: false });
+    if (!result) return null;
+    return await saveWorkday({ showIndicator: true });
+  } finally {
+    finishInProgress = false;
+  }
 }
 
 function activateLiveWorkday() {
@@ -30132,7 +30096,57 @@ function updateDepartmentVisibility() {
 function markCalculationStale() {
   if (!form.dataset.summary) return;
   calculationIsStale = true;
-  calculationStatus.hidden = false;
+  calculationStatus.hidden = Boolean(currentUserContext?.isPro);
+}
+
+function scheduleAutomaticCalculation() {
+  if (!currentUserContext?.isPro) return;
+  cancelAnimationFrame(automaticCalculationFrame);
+  automaticCalculationFrame = requestAnimationFrame(() => {
+    automaticCalculationFrame = 0;
+    const liveState = liveWorkday?.getState(readLiveWorkdayState());
+    const endTimeOverride = liveState?.active ? liveWorkday.roundedCurrentTime() : "";
+    if (
+      endTimeOverride
+      && form.dataset.liveCalculationEnd === endTimeOverride
+      && !calculationIsStale
+    ) return;
+    updateCalculation(false, { endTimeOverride, silent: true });
+    if (endTimeOverride) form.dataset.liveCalculationEnd = endTimeOverride;
+    else delete form.dataset.liveCalculationEnd;
+  });
+}
+
+function currentHoursCopyText() {
+  const date = form.elements.namedItem("date").value;
+  const startTime = form.elements.namedItem("startTime").value;
+  const endTimeField = form.elements.namedItem("endTime");
+  const liveState = liveWorkday?.getState(readLiveWorkdayState());
+  const endTime = endTimeField.value || (liveState?.active ? liveWorkday.roundedCurrentTime() : "");
+  if (!date || !startTime || !endTime) return "";
+  return `${formatHoursDate(date)} Tijden: ${startTime} - ${endTime}`;
+}
+
+async function copyHours() {
+  const text = currentHoursCopyText();
+  if (!text) {
+    copyStatus.textContent = "Vul eerst de begin- en eindtijd in.";
+    setTimeout(() => { copyStatus.textContent = ""; }, 2200);
+    return;
+  }
+  try {
+    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
+    else copyWithTextarea(text);
+    copyStatus.textContent = "Uren gekopieerd";
+  } catch {
+    try {
+      copyWithTextarea(text);
+      copyStatus.textContent = "Uren gekopieerd";
+    } catch {
+      copyStatus.textContent = "Kopiëren is niet toegestaan door de browser.";
+    }
+  }
+  setTimeout(() => { copyStatus.textContent = ""; }, 2000);
 }
 
 async function copySummary() {
@@ -30272,7 +30286,10 @@ function initializeLiveWorkday() {
   liveWorkdayController = liveWorkday.createController({
     read: readLiveWorkdayState,
     render: renderLiveWorkday,
-    onTick: () => workdayNotificationController?.check()
+    onTick: () => {
+      workdayNotificationController?.check();
+      scheduleAutomaticCalculation();
+    }
   });
 }
 
@@ -30292,6 +30309,7 @@ initializeLiveWorkday();
 
 form.addEventListener("input", () => {
   markCalculationStale();
+  scheduleAutomaticCalculation();
   liveWorkdayController?.update();
   updateResumeLiveAccess();
 });
@@ -30331,11 +30349,13 @@ form.addEventListener("change", (event) => {
   }
   scheduleActiveWorkFunctionSync();
   if (event.target.name === "date") updateWorkdaySaveAccess();
+  scheduleAutomaticCalculation();
   liveWorkdayController?.update();
   updateResumeLiveAccess();
 });
 settingsForm.addEventListener("input", (event) => {
   markCalculationStale();
+  scheduleAutomaticCalculation();
   updateGuestExplanationLink(getSettingsFromForm());
   if (["dayRate", "hourlyRate", "normalDayHours", "minimumHours", "kilometerRate"].includes(event.target.name)) scheduleAccountSettingsSync();
   scheduleActiveWorkFunctionSync();
@@ -30348,6 +30368,7 @@ settingsForm.addEventListener("change", () => {
   updateGuestExplanationLink(getSettingsFromForm());
   scheduleAccountSettingsSync();
   scheduleActiveWorkFunctionSync();
+  scheduleAutomaticCalculation();
   liveWorkdayController?.update();
 });
 function requestCalculation() {
@@ -30392,7 +30413,10 @@ confirmSharedCalculationButton?.addEventListener("click", () => {
 document.querySelectorAll("[data-shared-calculation-cancel]").forEach((button) => {
   button.addEventListener("click", () => closeNativeDialog(unfinishedSharedWorkdayDialog));
 });
-workdaySaveButton?.addEventListener("click", () => saveWorkday());
+workdaySaveButton?.addEventListener("click", () => {
+  if (currentUserContext?.isPro && !currentSharedSource) finishAndSaveWorkday();
+  else saveWorkday();
+});
 
 async function openCurrentWorkdayShare() {
   if (!currentAccountUser) {
@@ -30492,11 +30516,13 @@ document.querySelector("#open-existing-workday")?.addEventListener("click", () =
 });
 document.querySelector("#create-duplicate-workday")?.addEventListener("click", async () => {
   const snapshot = pendingDuplicateWorkday?.snapshot;
+  const showIndicator = Boolean(pendingDuplicateWorkday?.showIndicator);
   pendingDuplicateWorkday = null;
   closeNativeDialog(duplicateWorkdayDialog);
   if (!snapshot) return;
   try {
-    await persistWorkday(snapshot);
+    const saved = await persistWorkday(snapshot, null, { showToast: !showIndicator });
+    if (saved && showIndicator) showSaveConfirmation("Opgeslagen bij Werkdagen");
   } catch (error) {
     sessionUi?.showToast(error.message || "Werkdag opslaan is niet gelukt.");
   } finally {
@@ -30559,6 +30585,7 @@ document.querySelectorAll("[data-shared-resume-cancel]").forEach((button) => {
   button.addEventListener("click", () => closeNativeDialog(sharedResumeDialog));
 });
 copyButton.addEventListener("click", copySummary);
+copyHoursButton?.addEventListener("click", copyHours);
 moneybirdExportButton?.addEventListener("click", () => {
   globalThis.OveruurtjeFeatureGate.require("accounting_export", currentUserContext, () => {
     try {
