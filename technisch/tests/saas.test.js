@@ -331,6 +331,7 @@ test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", asy
   const calculatorHtml = await readFile(path.join(rootDirectory, "app/index.html"), "utf8");
   const accountHtml = await readFile(path.join(rootDirectory, "app/account.html"), "utf8");
   const calculatorScript = await readFile(path.join(rootDirectory, "app/app.js"), "utf8");
+  const accountScript = await readFile(path.join(rootDirectory, "app/account.js"), "utf8");
   const sessionUiScript = await readFile(path.join(rootDirectory, "app/saas/sessionUi.js"), "utf8");
 
   assert.ok(calculatorHtml.indexOf("saas/authService.js") < calculatorHtml.indexOf("app.js"));
@@ -373,8 +374,10 @@ test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", asy
   assert.match(accountHtml, /id="compact-function-setting"/);
   assert.match(accountHtml, /id="account-function-select"/);
   assert.match(accountHtml, /id="add-function-button"/);
-  assert.doesNotMatch(calculatorHtml, /id="calculator-function"/);
-  assert.match(calculatorHtml, /id="active-function-name"/);
+  assert.match(calculatorHtml, /id="calculator-function"/);
+  assert.doesNotMatch(calculatorHtml, /id="active-function-name"/);
+  assert.doesNotMatch(calculatorHtml, /id="save-settings"/);
+  assert.doesNotMatch(accountHtml, />Instellingen opslaan</);
   assert.match(accountHtml, /name="nightStart"/);
   assert.match(accountHtml, /data-subscription-upgrade/);
   assert.match(accountHtml, /id="subscription-monthly-price"/);
@@ -390,11 +393,10 @@ test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", asy
   assert.match(sessionUiScript, /Controleer je inbox/);
   assert.match(sessionUiScript, /openSignupConfirmation\(email\)/);
   assert.match(sessionUiScript, /authEmail\.value = pendingSignupEmail/);
-  const saveSettingsStart = calculatorScript.indexOf("function saveCurrentSettings()");
-  const closeSettings = calculatorScript.indexOf("details.open = false", saveSettingsStart);
-  const backgroundSync = calculatorScript.indexOf("void syncAccountSettings()", saveSettingsStart);
-  assert.ok(saveSettingsStart >= 0 && closeSettings > saveSettingsStart);
-  assert.ok(backgroundSync > closeSettings);
+  assert.match(calculatorScript, /async function selectCalculatorWorkFunction/);
+  assert.match(calculatorScript, /calculatorFunctionSelect\?\.addEventListener\("change"/);
+  assert.match(accountScript, /async function persistAccountSettings/);
+  assert.match(accountScript, /function scheduleSettingsSave/);
   assert.doesNotMatch(calculatorScript, /lockedEquipmentSettings/);
 });
 

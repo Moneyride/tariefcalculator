@@ -11,7 +11,6 @@ const copyButton = document.querySelector("#copy-summary");
 const copyHoursButton = document.querySelector("#copy-hours");
 const moneybirdExportButton = document.querySelector("#moneybird-export");
 const pdfButton = document.querySelector("#save-pdf");
-const saveSettingsButton = document.querySelector("#save-settings");
 const copyStatus = document.querySelector("#copy-status");
 const settingsStatus = document.querySelector("#settings-status");
 const details = document.querySelector("#settings-panel");
@@ -22,7 +21,8 @@ const parkingInput = document.querySelector("#parking-input");
 const inputOptions = document.querySelector(".input-options");
 const optionsToggle = document.querySelector("#toggle-extras");
 const departmentSwitch = document.querySelector(".department-switch");
-const activeFunctionName = document.querySelector("#active-function-name");
+const calculatorFunctionField = document.querySelector("#calculator-function-field");
+const calculatorFunctionSelect = document.querySelector("#calculator-function");
 const projectCreateLink = document.querySelector("#project-create-link");
 const workdaySaveButton = document.querySelector("#save-workday");
 const workdaySaveLabel = workdaySaveButton?.querySelector("[data-workday-save-label]");
@@ -507,20 +507,28 @@ function renderWorkFunctions(items) {
   workFunctions = items;
   const isPro = Boolean(currentUserContext?.isPro);
   activeWorkFunction = isPro ? (items.find((item) => item.isDefault) || items[0] || null) : null;
-  activeFunctionName.hidden = !activeWorkFunction;
+  calculatorFunctionSelect.replaceChildren(...items.map((item) => {
+    const option = document.createElement("option");
+    option.value = item.id;
+    option.textContent = item.name;
+    return option;
+  }));
+  calculatorFunctionField.hidden = !activeWorkFunction;
   departmentSwitch.hidden = Boolean(activeWorkFunction);
   if (!isPro || !items.length) {
-    activeFunctionName.textContent = "";
+    calculatorFunctionSelect.value = "";
     return;
   }
   applyWorkFunction(activeWorkFunction);
+  globalThis.OveruurtjeSelectUI?.enhanceAll(form);
 }
 
 function applyWorkFunction(workFunction, { preserveRate = false, preserveSettings = false } = {}) {
   if (!workFunction) return;
   activeWorkFunction = workFunction;
-  activeFunctionName.textContent = workFunction.name;
-  activeFunctionName.hidden = false;
+  calculatorFunctionSelect.value = workFunction.id;
+  globalThis.OveruurtjeSelectUI?.refresh(calculatorFunctionSelect);
+  calculatorFunctionField.hidden = false;
   departmentSwitch.hidden = true;
   const departmentField = form.querySelector(`input[name="department"][value="${workFunction.department}"]`);
   if (departmentField) departmentField.checked = true;
@@ -583,6 +591,30 @@ function scheduleActiveWorkFunctionSync() {
   if (!currentUserContext?.isPro || !activeWorkFunction) return;
   clearTimeout(functionSyncTimer);
   functionSyncTimer = setTimeout(() => syncActiveWorkFunction(), 900);
+}
+
+async function selectCalculatorWorkFunction(functionId) {
+  if (!currentAccountUser || !currentUserContext?.isPro) return;
+  const next = workFunctions.find((item) => item.id === functionId);
+  if (!next || next.id === activeWorkFunction?.id) return;
+
+  clearTimeout(functionSyncTimer);
+  await syncActiveWorkFunction();
+  const currentNext = workFunctions.find((item) => item.id === functionId) || next;
+  applyWorkFunction(currentNext);
+  markCalculationStale();
+  scheduleAutomaticCalculation();
+
+  try {
+    await functionService.setDefault(currentAccountUser.id, currentNext.id);
+    workFunctions = workFunctions.map((item) => ({ ...item, isDefault: item.id === currentNext.id }));
+    activeWorkFunction = workFunctions.find((item) => item.id === currentNext.id) || currentNext;
+    await syncAccountSettings();
+    sessionUi?.showToast(`${currentNext.name} geselecteerd.`);
+  } catch (error) {
+    console.warn("De gekozen functie kon niet als standaard worden opgeslagen.", error);
+    sessionUi?.showToast("De functie is gekozen, maar kon nog niet worden gesynchroniseerd.");
+  }
 }
 
 function renderCustomEquipment(items) {
@@ -2411,29 +2443,6 @@ async function resumeLiveWorkday() {
   activateLiveWorkday();
 }
 
-function saveCurrentSettings() {
-  if (!settingsForm.reportValidity()) {
-    sessionUi?.showToast("Controleer de gemarkeerde instellingen.");
-    return;
-  }
-
-  saveSettings(getSettingsFromForm());
-  details.open = false;
-  settingsStatus.textContent = "";
-
-  if (!currentAccountUser) {
-    sessionUi?.showToast("Instellingen lokaal opgeslagen.");
-    return;
-  }
-
-  clearTimeout(cloudSyncTimer);
-  void syncAccountSettings().then((saved) => {
-    sessionUi?.showToast(saved
-      ? "Instellingen opgeslagen en gesynchroniseerd."
-      : "Lokaal opgeslagen; cloudsync is niet gelukt.");
-  });
-}
-
 function updateNightSettingsVisibility() {
   const nightEnabled = settingsForm.elements.namedItem("enableNightTariff").checked;
   document.querySelector("#night-time-settings").hidden = !nightEnabled;
@@ -2786,6 +2795,10 @@ settingsForm.addEventListener("input", (event) => {
   markCalculationStale();
   scheduleAutomaticCalculation();
   updateGuestExplanationLink(getSettingsFromForm());
+  if (settingsForm.checkValidity()) {
+    saveSettings(getSettingsFromForm());
+    settingsStatus.textContent = "Automatisch opgeslagen.";
+  }
   if (["dayRate", "hourlyRate", "normalDayHours", "minimumHours", "kilometerRate"].includes(event.target.name)) scheduleAccountSettingsSync();
   scheduleActiveWorkFunctionSync();
 });
@@ -2795,10 +2808,17 @@ settingsForm.addEventListener("change", () => {
   updatePauseVisibility();
   markCalculationStale();
   updateGuestExplanationLink(getSettingsFromForm());
+  if (settingsForm.checkValidity()) {
+    saveSettings(getSettingsFromForm());
+    settingsStatus.textContent = "Automatisch opgeslagen.";
+  }
   scheduleAccountSettingsSync();
   scheduleActiveWorkFunctionSync();
   scheduleAutomaticCalculation();
   liveWorkdayController?.update();
+});
+calculatorFunctionSelect?.addEventListener("change", () => {
+  void selectCalculatorWorkFunction(calculatorFunctionSelect.value);
 });
 function requestCalculation() {
   if (currentSharedSource && !currentSharedSourceEndTime && !sharedReceiverCalculatedEarly) {
@@ -3046,7 +3066,6 @@ moneybirdExportButton?.addEventListener("click", () => {
     }
   });
 });
-saveSettingsButton.addEventListener("click", saveCurrentSettings);
 pdfButton.addEventListener("click", () => {
   globalThis.OveruurtjeFeatureGate.require("pdf_export", currentUserContext, () => {
     void trackBadgeActivity("pdf_generated", currentWorkdayId || currentProjectDayContext?.day?.id || null);

@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "overuurtje-app-v57";
+const CACHE_NAME = "overuurtje-app-v58";
 const APP_SHELL = [
   "./",
   "./index.html",

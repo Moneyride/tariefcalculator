@@ -84,6 +84,9 @@
   let workFunctions = [];
   let customEquipment = [];
   let displayedFunctionId = null;
+  let settingsSaveTimer = 0;
+  let settingsSaveQueue = Promise.resolve();
+  let saveCustomEquipmentWithSettings = false;
   let verifiedMfaFactor = null;
   let pendingMfaFactorId = null;
   const fallbackShopifyPricing = Object.freeze({
@@ -528,6 +531,53 @@
     }));
   }
 
+  async function persistAccountSettings() {
+    if (!currentContext?.auth.user) return;
+    if (!settingsForm.checkValidity()) {
+      settingsStatus.textContent = "Controleer de gemarkeerde instelling.";
+      return;
+    }
+    const userId = currentContext.auth.user.id;
+    const settings = readSettings();
+    const selected = selectedWorkFunction();
+    settingsStatus.textContent = "Wijzigingen opslaan…";
+
+    try {
+      const tasks = [settingsService.save(userId, settings)];
+      if (currentContext.subscription.isPro && selected && !String(selected.id).startsWith("standard-")) {
+        tasks.push(functionService.update(userId, selected.id, {
+          ...selected,
+          dayRate: Number(settingsForm.elements.namedItem("defaultDayRate").value) || 0,
+          calculationSettings: functionCalculationSettings(selected)
+        }));
+        if (saveCustomEquipmentWithSettings) {
+          tasks.push(...readEquipmentRows().map((item) => equipmentService.update(userId, item.id, item)));
+        }
+      }
+      saveCustomEquipmentWithSettings = false;
+      const [savedSettings, savedFunction, ...savedEquipment] = await Promise.all(tasks);
+      loadedSettings = savedSettings || loadedSettings;
+      if (savedFunction?.id) {
+        workFunctions = workFunctions.map((item) => item.id === savedFunction.id ? savedFunction : item);
+        displayedFunctionId = savedFunction.id;
+      }
+      if (savedEquipment.length) customEquipment = savedEquipment;
+      settingsStatus.textContent = "Automatisch opgeslagen en gesynchroniseerd.";
+    } catch (error) {
+      settingsStatus.textContent = error.message || "Automatisch opslaan is niet gelukt.";
+    }
+  }
+
+  function scheduleSettingsSave(delay = 650, { includeCustomEquipment = false } = {}) {
+    if (!currentContext?.auth.user) return;
+    saveCustomEquipmentWithSettings ||= includeCustomEquipment;
+    clearTimeout(settingsSaveTimer);
+    settingsStatus.textContent = "Wijzigingen opslaan…";
+    settingsSaveTimer = setTimeout(() => {
+      settingsSaveQueue = settingsSaveQueue.then(() => persistAccountSettings());
+    }, delay);
+  }
+
   function updateDepartmentFields() {
     const selectedFunction = selectedWorkFunction();
     const isCamera = currentContext?.subscription.isPro && selectedFunction
@@ -748,46 +798,24 @@
       profileAvatarInput.value = "";
     }
   });
-  settingsForm.addEventListener("input", () => updateExplanationLink(readSettings()));
-  settingsForm.addEventListener("change", () => {
+  settingsForm.addEventListener("input", (event) => {
+    updateExplanationLink(readSettings());
+    if (!event.target.closest("#add-function-form, #add-equipment-form")) {
+      scheduleSettingsSave(650, { includeCustomEquipment: Boolean(event.target.closest("[data-equipment-id]")) });
+    }
+  });
+  settingsForm.addEventListener("change", (event) => {
     updateDepartmentFields();
     updateRateFields();
     updateNightFields();
     updateExplanationLink(readSettings());
-  });
-  settingsForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    if (!settingsForm.reportValidity() || !currentContext?.auth.user) return;
-    settingsStatus.textContent = "Opslaan…";
-    try {
-      const userId = currentContext.auth.user.id;
-      const updates = currentContext.subscription.isPro
-        ? readEquipmentRows().map((item) => equipmentService.update(userId, item.id, item))
-        : [];
-      if (currentContext.subscription.isPro) {
-        let selected = selectedWorkFunction();
-        if (selected) {
-          if (String(selected.id).startsWith("standard-")) {
-            const persisted = await functionService.ensureStandards(userId, [], readSettings());
-            selected = persisted.find((item) => item.name === selected.name) || persisted[0];
-          }
-          await functionService.update(userId, selected.id, {
-            ...selected,
-            dayRate: Number(settingsForm.elements.namedItem("defaultDayRate").value) || 0,
-            isDefault: false,
-            calculationSettings: functionCalculationSettings(selected)
-          });
-          await functionService.setDefault(userId, selected.id);
-        }
-      }
-      const [savedSettings] = await Promise.all([settingsService.save(userId, readSettings()), ...updates]);
-      loadedSettings = savedSettings || loadedSettings;
-      if (currentContext.subscription.isPro) renderFunctions(await functionService.list(userId));
-      if (updates.length) renderEquipment(await equipmentService.list(userId));
-      settingsStatus.textContent = "Instellingen opgeslagen en gesynchroniseerd.";
-    } catch (error) {
-      settingsStatus.textContent = error.message || "Opslaan is niet gelukt.";
+    if (event.target !== functionSelect && !event.target.closest("#add-function-form, #add-equipment-form")) {
+      scheduleSettingsSave(100, { includeCustomEquipment: Boolean(event.target.closest("[data-equipment-id]")) });
     }
+  });
+  settingsForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    scheduleSettingsSave(0);
   });
 
   addFunctionButton.addEventListener("click", () => {
@@ -807,7 +835,8 @@
     }
     settingsStatus.textContent = "Functie toevoegen…";
     try {
-      const createdFunction = await functionService.create(currentContext.auth.user.id, {
+      const userId = currentContext.auth.user.id;
+      const createdFunction = await functionService.create(userId, {
         name,
         department: selectedWorkFunction()?.department || loadedSettings.defaultDepartment,
         dayRate: Number(settingsForm.elements.namedItem("defaultDayRate").value) || 0,
@@ -815,21 +844,25 @@
         sortOrder: workFunctions.length,
         calculationSettings: functionCalculationSettings(selectedWorkFunction())
       });
-      renderFunctions([...workFunctions, createdFunction]);
-      functionSelect.value = createdFunction.id;
-      applyFunctionSettings(createdFunction);
+      await functionService.setDefault(userId, createdFunction.id);
+      renderFunctions([
+        ...workFunctions.map((item) => ({ ...item, isDefault: false })),
+        { ...createdFunction, isDefault: true }
+      ]);
       defaultDayRateLabel.textContent = `Dagtarief voor ${createdFunction.name}`;
       addFunctionForm.hidden = true;
       newFunctionName.value = "";
-      settingsStatus.textContent = "Functie toegevoegd. Vul het dagtarief in en sla de instellingen op.";
+      settingsStatus.textContent = "Functie toegevoegd en geselecteerd.";
+      scheduleSettingsSave(0);
     } catch (error) {
       settingsStatus.textContent = error.message || "Toevoegen is niet gelukt.";
     }
   });
 
   functionSelect.addEventListener("change", async () => {
-    const selected = selectedWorkFunction();
+    let selected = selectedWorkFunction();
     if (!selected) return;
+    clearTimeout(settingsSaveTimer);
     const previous = workFunctions.find((item) => item.id === displayedFunctionId);
     if (previous && previous.id !== selected.id && currentContext?.subscription.isPro) {
       try {
@@ -843,10 +876,19 @@
         settingsStatus.textContent = error.message || "De vorige functie-instellingen konden niet worden opgeslagen.";
       }
     }
+    selected = workFunctions.find((item) => item.id === selected.id) || selected;
+    try {
+      await functionService.setDefault(currentContext.auth.user.id, selected.id);
+      workFunctions = workFunctions.map((item) => ({ ...item, isDefault: item.id === selected.id }));
+      selected = workFunctions.find((item) => item.id === selected.id) || selected;
+    } catch (error) {
+      settingsStatus.textContent = error.message || "De gekozen functie kon niet worden opgeslagen.";
+    }
     applyFunctionSettings(selected);
     defaultDayRateLabel.textContent = `Dagtarief voor ${selected.name}`;
     removeFunctionButton.disabled = functionService.isStandard(selected);
     updateDepartmentFields();
+    scheduleSettingsSave(0);
   });
 
   removeFunctionButton.addEventListener("click", async () => {
