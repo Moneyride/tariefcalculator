@@ -45,6 +45,13 @@
 .account-shell .account-client-section[open] > summary::after { transform: rotate(225deg); }
 .account-disclosure > summary:focus-visible { outline: 2px solid var(--orange); outline-offset: -2px; }
 .account-disclosure-body { padding: 0 4px 26px; min-width: 0; }
+.account-shell .account-disclosure[open],
+.account-shell .account-client-section[open] {
+  margin-bottom: 20px;
+  border-bottom: 2px solid rgba(31,67,53,.25);
+}
+.account-shell .account-client-section > summary > span { display: grid; gap: 5px; }
+.account-shell .account-client-subtitle { color: var(--muted); font-size: .82rem; font-weight: 500; }
 .account-disclosure-toolbar > div:first-child { display: none; }
 .account-disclosure-toolbar { justify-content: flex-end; gap: 12px; }
 .account-disclosure-toolbar:not(:has(a, button, .sync-state, .feature-plan-pill)) { display: none; }
@@ -68,6 +75,11 @@
 .account-shell .account-mfa-compact,
 .account-shell .account-notification-compact { border: 0; border-top: 1px solid rgba(31,67,53,.12); padding: 18px 0; }
 .account-shell .account-inline-form { padding: 0; border: 0; }
+.account-shell .account-credentials-grid .account-inline-form { grid-template-rows: none; align-content: start; }
+.account-shell #password-fields[hidden] { display: none; }
+.account-shell .profile-name-form .account-facts-identity { margin: 0; }
+.account-shell .account-facts-identity dd { overflow-wrap: anywhere; }
+.account-shell .account-session-actions { margin-top: 24px; padding-top: 18px; border-top: 1px solid rgba(31,67,53,.12); }
 .account-shell .account-client-section > p,
 .account-shell .account-client-section > .client-manager { margin: 0 4px 20px; }
 .account-shell .account-save-row { padding: 12px 4px; font-size: .8rem; }
@@ -108,6 +120,10 @@
   .account-shell .account-credentials-grid { grid-template-columns: 1fr; gap: 24px; }
   .account-shell .account-heading-actions { width: auto; }
   .account-shell .account-fields { gap: 16px; }
+  .account-shell .account-mfa-compact,
+  .account-shell .account-notification-compact { grid-template-columns: 1fr; gap: 10px; }
+  .account-shell .account-mfa-compact .saas-secondary-button,
+  .account-shell .account-notification-compact .saas-secondary-button { width: 100%; }
   .account-shell .custom-account-equipment { grid-template-columns: minmax(0, 1fr) 44px; gap: 8px 12px; }
   .account-shell .custom-account-equipment .account-toggle-row { grid-column: 1; grid-row: 1; }
   .account-shell .custom-account-equipment .equipment-amount-field { grid-column: 1; grid-row: 2; }

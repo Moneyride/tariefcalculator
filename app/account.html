@@ -27,7 +27,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260730a">
     <link rel="stylesheet" href="styles.css?v=20260922b">
-    <link rel="stylesheet" href="accountLayout.css?v=20260922b">
+    <link rel="stylesheet" href="accountLayout.css?v=20260922c">
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20260722a" defer></script>
@@ -51,7 +51,7 @@
     <script src="selectUi.js?v=20260922b" defer></script>
     <script src="timePicker.js?v=20260730a" defer></script>
     <script src="avatarCropper.js?v=20260809a" defer></script>
-    <script src="account.js?v=20260922b" defer></script>
+    <script src="account.js?v=20260922c" defer></script>
     <script src="accountAccounting.js?v=20260824a" defer></script>
     <script src="accountLayout.js?v=20260922b" defer></script>
     <script src="pwa.js?v=20260731a" defer></script>
@@ -115,9 +115,6 @@
                 <h2>Jouw gegevens</h2>
               </div>
             </div>
-            <dl class="account-facts account-facts-identity">
-              <div><dt>E-mail</dt><dd id="account-email">-</dd></div>
-            </dl>
             <div class="account-credentials-grid">
               <form class="account-inline-form profile-name-form" id="profile-name-form">
                 <div class="profile-avatar-control">
@@ -131,17 +128,19 @@
                   <input type="text" name="displayName" maxlength="80" autocomplete="given-name" placeholder="Vul hier jouw naam in">
                   <small>Deze nickname is zichtbaar voor collega's met wie je werktijden deelt.</small>
                 </label>
-                <button class="saas-secondary-button" type="submit">Opslaan</button>
+                <dl class="account-facts account-facts-identity">
+                  <div><dt>E-mail</dt><dd id="account-email">-</dd></div>
+                </dl>
                 <p class="saas-form-status" id="profile-name-status" aria-live="polite"></p>
                 <p class="saas-form-status" id="profile-avatar-status" aria-live="polite"></p>
               </form>
               <form class="account-inline-form" id="password-form">
-                <label>
+                <button class="saas-secondary-button" id="password-action" type="button">Wachtwoord wijzigen</button>
+                <label id="password-fields" hidden>
                   <span>Nieuw wachtwoord</span>
-                  <input type="password" name="password" autocomplete="new-password" minlength="8" required>
+                  <input type="password" name="password" autocomplete="new-password" minlength="8" required disabled>
                   <small>Gebruik minimaal 8 tekens, met minstens één hoofdletter en één cijfer.</small>
                 </label>
-                <button class="saas-secondary-button" type="submit">Wachtwoord wijzigen</button>
                 <p class="saas-form-status" id="password-status" aria-live="polite"></p>
               </form>
             </div>
@@ -166,10 +165,6 @@
                 <span data-notification-switch-label>Inschakelen</span>
               </button>
               <p class="saas-form-status" id="account-notification-status" aria-live="polite"></p>
-            </div>
-            <div class="account-session-actions">
-              <button class="text-action danger-action" type="button" data-auth-logout>Uitloggen</button>
-              <button class="text-action subscription-stop-action" id="account-subscription-stop" type="button" data-subscription-manage hidden>Abonnement stoppen</button>
             </div>
           </section>
 
@@ -316,6 +311,7 @@
               <summary>
                 <span>
                   <strong>Vaste opdrachtgevers</strong>
+                  <small class="account-client-subtitle">Snelle keuzes voor je werkdagen en projecten</small>
                 </span>
               </summary>
               <p>Gebruik deze namen als snelle keuze in de calculator en bij projecten.</p>
@@ -476,6 +472,9 @@
                 <option value="pro">Simuleer Pro</option>
               </select>
             </label>
+            <div class="account-session-actions">
+              <button class="text-action subscription-stop-action" id="account-subscription-stop" type="button" data-subscription-manage hidden>Abonnement stoppen</button>
+            </div>
           </section>
         </div>
 

@@ -758,23 +758,33 @@
     await renderNotificationPermission();
   });
   void renderNotificationPermission();
-  profileNameForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
+  let nicknameSaveQueue = Promise.resolve();
+  async function saveNickname() {
     if (!currentContext?.auth.user || !profileNameForm.reportValidity()) return;
+    const field = profileNameForm.elements.namedItem("displayName");
+    const value = field.value.trim();
+    if (value === (currentContext.profile?.displayName || "")) return;
     profileNameStatus.textContent = "Opslaan…";
     try {
       const profile = await profileService.saveDisplayName(
         currentContext.auth.user,
-        profileNameForm.elements.namedItem("displayName").value
+        value
       );
       currentContext = { ...currentContext, profile };
-      profileNameForm.elements.namedItem("displayName").value = profile.displayName;
+      if (field.value.trim() === value) field.value = profile.displayName;
       renderProfileAvatar(profile);
       profileNameStatus.textContent = "Nickname opgeslagen.";
       document.dispatchEvent(new CustomEvent("overuurtje:profile-updated", { detail: profile }));
     } catch (error) {
       profileNameStatus.textContent = error.message || "Nickname opslaan is niet gelukt.";
     }
+  }
+  profileNameForm.elements.namedItem("displayName").addEventListener("blur", () => {
+    nicknameSaveQueue = nicknameSaveQueue.then(saveNickname);
+  });
+  profileNameForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    profileNameForm.elements.namedItem("displayName").blur();
   });
   profileAvatarInput?.addEventListener("change", async () => {
     const file = profileAvatarInput.files?.[0];
@@ -942,6 +952,17 @@
     }
   });
 
+  const passwordAction = document.querySelector("#password-action");
+  const passwordFields = document.querySelector("#password-fields");
+  passwordAction.addEventListener("click", (event) => {
+    if (!passwordFields.hidden) return;
+    event.preventDefault();
+    passwordFields.hidden = false;
+    passwordForm.elements.namedItem("password").disabled = false;
+    passwordAction.textContent = "Nieuw wachtwoord bevestigen";
+    passwordForm.elements.namedItem("password").focus();
+    passwordAction.type = "submit";
+  });
   passwordForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!passwordForm.reportValidity()) return;
@@ -959,6 +980,10 @@
       return;
     }
     passwordForm.reset();
+    passwordFields.hidden = true;
+    passwordForm.elements.namedItem("password").disabled = true;
+    passwordAction.type = "button";
+    passwordAction.textContent = "Wachtwoord wijzigen";
     passwordStatus.textContent = "Wachtwoord gewijzigd.";
   });
 
