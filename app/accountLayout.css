@@ -1,0 +1,85 @@
+.account-shell .account-content,
+.account-shell .account-settings-form { gap: 0; }
+.account-shell .account-section {
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid rgba(31,67,53,.18);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.account-disclosure > summary,
+.account-shell .account-client-section > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 86px;
+  padding: 20px 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--accent-dark);
+  cursor: pointer;
+  list-style: none;
+}
+.account-disclosure > summary::-webkit-details-marker,
+.account-shell .account-client-section > summary::-webkit-details-marker { display: none; }
+.account-disclosure > summary > span { display: grid; gap: 5px; }
+.account-disclosure > summary strong,
+.account-shell .account-client-section > summary strong { font-size: 1.05rem; }
+.account-disclosure > summary small { color: var(--muted); font-size: .82rem; font-weight: 500; }
+.account-disclosure > summary::after,
+.account-shell .account-client-section > summary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  flex: 0 0 8px;
+  margin: 0 8px 4px;
+}
+.account-disclosure[open] > summary::after,
+.account-shell .account-client-section[open] > summary::after { transform: rotate(225deg); }
+.account-disclosure > summary:focus-visible { outline: 2px solid var(--orange); outline-offset: -2px; }
+.account-disclosure-body { padding: 0 4px 26px; min-width: 0; }
+.account-disclosure-toolbar > div:first-child { display: none; }
+.account-disclosure-toolbar { justify-content: flex-end; gap: 12px; }
+.account-disclosure-toolbar:not(:has(a, button, .sync-state, .feature-plan-pill)) { display: none; }
+.account-shell .account-settings-group { margin-top: 18px; }
+.account-shell .account-settings-toggle-grid { grid-template-columns: 1fr; gap: 0; }
+.account-shell .account-toggle-row,
+.account-shell .account-equipment-row,
+.account-shell .account-mfa-compact,
+.account-shell .account-notification-compact,
+.account-shell .account-inline-form,
+.account-shell .account-facts,
+.account-shell .account-settings-group,
+.account-shell .pro-feature-row {
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.account-shell .account-toggle-row { border: 0; border-bottom: 1px solid rgba(31,67,53,.1); padding: 14px 0; }
+.account-shell .account-equipment-row { border: 0; border-bottom: 1px solid rgba(31,67,53,.1); padding: 14px 0; }
+.account-shell .account-equipment-row .account-toggle-row { border: 0; }
+.account-shell .account-mfa-compact,
+.account-shell .account-notification-compact { border: 0; border-top: 1px solid rgba(31,67,53,.12); padding: 18px 0; }
+.account-shell .account-inline-form { padding: 0; border: 0; }
+.account-shell .account-client-section > p,
+.account-shell .account-client-section > .client-manager { margin: 0 4px 20px; }
+.account-shell .account-save-row { padding: 12px 4px; font-size: .8rem; }
+.account-shell .subscription-plan-option { border-radius: 8px; box-shadow: none; }
+.account-shell .account-section input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.account-shell .styled-select-trigger { min-height: 46px; padding-top: 10px; padding-bottom: 10px; }
+@media (max-width: 760px) {
+  .account-shell .account-content { width: calc(100% - 32px); padding-top: 12px; }
+  .account-shell .account-section { padding: 0; }
+  .account-disclosure > summary { min-height: 80px; padding: 18px 2px; }
+  .account-disclosure-body { padding-inline: 2px; }
+  .account-shell .account-credentials-grid { grid-template-columns: 1fr; gap: 24px; }
+  .account-shell .account-heading-actions { width: auto; }
+  .account-shell .account-fields { gap: 16px; }
+}

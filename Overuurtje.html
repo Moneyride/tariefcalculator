@@ -3647,15 +3647,7 @@ select:focus {
 }
 
 .styled-select-native {
-  position: absolute !important;
-  width: 1px !important;
-  min-height: 1px !important;
-  height: 1px !important;
-  padding: 0 !important;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  opacity: 0;
-  pointer-events: none;
+  display: none !important;
 }
 
 .styled-select-trigger {
@@ -27366,7 +27358,11 @@ var qrcode = function() {
       item.setAttribute("role", "option");
       item.setAttribute("aria-selected", String(option.selected));
       item.textContent = option.textContent;
-      item.addEventListener("click", () => {
+      item.addEventListener("click", (event) => {
+        // Voorkom dat een omliggend label na de aangepaste keuze alsnog de
+        // verborgen native iOS-select activeert.
+        event.preventDefault();
+        event.stopPropagation();
         if (option.disabled) return;
         select.value = option.value;
         select.dispatchEvent(new Event("input", { bubbles: true }));
@@ -27404,7 +27400,11 @@ var qrcode = function() {
     select.classList.add("styled-select-native");
     enhanced.set(select, control);
 
-    trigger.addEventListener("click", () => {
+    trigger.addEventListener("click", (event) => {
+      // De trigger staat vaak in een label. Zonder preventDefault opent iOS
+      // naast deze keuzelijst ook zijn eigen selectiewiel.
+      event.preventDefault();
+      event.stopPropagation();
       const willOpen = !control.classList.contains("is-open");
       close();
       if (!willOpen || select.disabled) return;

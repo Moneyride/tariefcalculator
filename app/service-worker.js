@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "overuurtje-app-v58";
+const CACHE_NAME = "overuurtje-app-v60";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -25,6 +25,8 @@ const APP_SHELL = [
   "./app.js",
   "./dashboard.js",
   "./account.js",
+  "./accountLayout.js",
+  "./accountLayout.css",
   "./workdays.js",
   "./projects.js",
   "./pwa.js",

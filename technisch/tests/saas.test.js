@@ -400,6 +400,20 @@ test("SaaS-services laden voor calculatorcode en accountpagina is aanwezig", asy
   assert.doesNotMatch(calculatorScript, /lockedEquipmentSettings/);
 });
 
+test("aangepaste dropdowns openen op iPhone niet ook de native select", async () => {
+  const selectUi = await readFile(path.join(rootDirectory, "app/selectUi.js"), "utf8");
+  const styles = await readFile(path.join(rootDirectory, "app/styles.css"), "utf8");
+  const pages = ["index.html", "account.html", "projects.html"];
+
+  assert.match(selectUi, /item\.addEventListener\("click", \(event\) => \{[\s\S]{0,180}event\.preventDefault\(\);[\s\S]{0,80}event\.stopPropagation\(\);/);
+  assert.match(selectUi, /trigger\.addEventListener\("click", \(event\) => \{[\s\S]{0,220}event\.preventDefault\(\);[\s\S]{0,80}event\.stopPropagation\(\);/);
+  assert.match(styles, /\.styled-select-native\s*\{[^}]*display:\s*none\s*!important;/);
+  for (const page of pages) {
+    const html = await readFile(path.join(rootDirectory, "app", page), "utf8");
+    assert.match(html, /selectUi\.js\?v=20260922b/);
+  }
+});
+
 test("het accountmenu heeft op iedere apppagina een vaste link naar Vandaag", async () => {
   const pages = ["index.html", "account.html", "dashboard.html", "workdays.html", "projects.html"];
   for (const page of pages) {

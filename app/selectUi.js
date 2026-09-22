@@ -34,7 +34,11 @@
       item.setAttribute("role", "option");
       item.setAttribute("aria-selected", String(option.selected));
       item.textContent = option.textContent;
-      item.addEventListener("click", () => {
+      item.addEventListener("click", (event) => {
+        // Voorkom dat een omliggend label na de aangepaste keuze alsnog de
+        // verborgen native iOS-select activeert.
+        event.preventDefault();
+        event.stopPropagation();
         if (option.disabled) return;
         select.value = option.value;
         select.dispatchEvent(new Event("input", { bubbles: true }));
@@ -72,7 +76,11 @@
     select.classList.add("styled-select-native");
     enhanced.set(select, control);
 
-    trigger.addEventListener("click", () => {
+    trigger.addEventListener("click", (event) => {
+      // De trigger staat vaak in een label. Zonder preventDefault opent iOS
+      // naast deze keuzelijst ook zijn eigen selectiewiel.
+      event.preventDefault();
+      event.stopPropagation();
       const willOpen = !control.classList.contains("is-open");
       close();
       if (!willOpen || select.disabled) return;
