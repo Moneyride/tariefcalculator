@@ -337,9 +337,9 @@
       ? await pushService.inspect()
       : { state: "unsupported" };
     const labels = {
-      subscribed: "Meldingen uitschakelen",
-      ready: "Meldingen inschakelen",
-      prompt: "Meldingen inschakelen",
+      subscribed: "Uitschakelen",
+      ready: "Inschakelen",
+      prompt: "Inschakelen",
       denied: "Geblokkeerd in browser",
       unsupported: "Niet ondersteund",
       unconfigured: "Nog niet ingesteld",
@@ -354,7 +354,6 @@
       "ios-install-required": "Open Overuurtje vanaf je iPhone-beginscherm om meldingen in te schakelen."
     };
     accountEnableNotifications.dataset.pushState = result.state;
-    accountEnableNotifications.setAttribute("aria-checked", String(result.state === "subscribed"));
     accountEnableNotifications.disabled = ["denied", "unsupported", "unconfigured"].includes(result.state);
     const label = accountEnableNotifications.querySelector("[data-notification-switch-label]");
     if (label) label.textContent = labels[result.state] || "Meldingen inschakelen";
@@ -771,10 +770,10 @@
       currentContext = { ...currentContext, profile };
       profileNameForm.elements.namedItem("displayName").value = profile.displayName;
       renderProfileAvatar(profile);
-      profileNameStatus.textContent = "Voornaam opgeslagen.";
+      profileNameStatus.textContent = "Nickname opgeslagen.";
       document.dispatchEvent(new CustomEvent("overuurtje:profile-updated", { detail: profile }));
     } catch (error) {
-      profileNameStatus.textContent = error.message || "Voornaam opslaan is niet gelukt.";
+      profileNameStatus.textContent = error.message || "Nickname opslaan is niet gelukt.";
     }
   });
   profileAvatarInput?.addEventListener("change", async () => {

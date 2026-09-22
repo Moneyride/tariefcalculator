@@ -11,7 +11,7 @@
 
   function enhanceSections() {
     content.querySelectorAll(".account-section:not(details)").forEach((section) => {
-      if (section.dataset.disclosureReady) return;
+      if (section.id === "account-details" || section.dataset.disclosureReady) return;
       section.dataset.disclosureReady = "true";
       const heading = section.querySelector("h2");
       if (!heading) return;

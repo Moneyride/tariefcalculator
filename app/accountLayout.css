@@ -72,6 +72,32 @@
 .account-shell .account-client-section > .client-manager { margin: 0 4px 20px; }
 .account-shell .account-save-row { padding: 12px 4px; font-size: .8rem; }
 .account-shell .subscription-plan-option { border-radius: 8px; box-shadow: none; }
+.account-shell #account-details { padding: 20px 4px 26px; }
+.account-shell .account-facts-identity { grid-template-columns: minmax(0, 1fr); }
+.account-shell .account-facts-identity > div {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 16px;
+}
+.account-shell .account-facts-identity dd { margin: 0; text-align: left; }
+.account-shell .custom-account-equipment {
+  grid-template-columns: minmax(0, 1fr) 180px 44px;
+}
+.account-shell .custom-account-equipment .remove-equipment-button {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  margin: 0;
+  align-self: center;
+  justify-self: end;
+  display: grid;
+  place-items: center;
+}
+.account-shell .subscription-plan-grid { gap: 24px; margin-block: 26px; }
+.account-shell .subscription-current-summary { margin-bottom: 24px; }
+.account-shell .subscription-management { margin-top: 24px; }
 .account-shell .account-section input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
 .account-shell .styled-select-trigger { min-height: 46px; padding-top: 10px; padding-bottom: 10px; }
 @media (max-width: 760px) {
@@ -82,4 +108,8 @@
   .account-shell .account-credentials-grid { grid-template-columns: 1fr; gap: 24px; }
   .account-shell .account-heading-actions { width: auto; }
   .account-shell .account-fields { gap: 16px; }
+  .account-shell .custom-account-equipment { grid-template-columns: minmax(0, 1fr) 44px; gap: 8px 12px; }
+  .account-shell .custom-account-equipment .account-toggle-row { grid-column: 1; grid-row: 1; }
+  .account-shell .custom-account-equipment .equipment-amount-field { grid-column: 1; grid-row: 2; }
+  .account-shell .custom-account-equipment .remove-equipment-button { grid-column: 2; grid-row: 1; }
 }
