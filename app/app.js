@@ -1503,6 +1503,7 @@ async function saveWorkday({ allowDuplicate = false, skipCompletionConfirmation 
     !skipCompletionConfirmation
     && !persistedWorkdayEndTime
     && snapshot.endTime
+    && snapshot.date <= localDateValue()
     && await hasAcceptedSharedRecipients()
   ) {
     pendingSharedCompletionSave = { allowDuplicate, showIndicator };
@@ -1607,13 +1608,13 @@ function updateWorkdaySaveAccess() {
     workdaySaveLabel.textContent = isSharedReceiver
       ? "Mijn instellingen opslaan"
       : isPro
-        ? "Dag afsluiten"
+        ? liveWorkday.getSaveAction({ date: form.elements.namedItem("date").value, endTime: form.elements.namedItem("endTime").value }).label
         : currentWorkdayId
           ? "Werkdag bijwerken"
           : "Bewaar voor later";
   }
   if (workdaySaveHint) {
-    workdaySaveHint.hidden = false;
+    workdaySaveHint.hidden = isPro && !isSharedReceiver;
     workdaySaveHint.textContent = isSharedReceiver
       ? "Bewaar je eigen extra's en berekening bij deze gedeelde dag"
       : isPro && isProjectDay
@@ -2410,6 +2411,12 @@ async function finishAndSaveWorkday() {
   }
   finishInProgress = true;
   try {
+    const action = liveWorkday.getSaveAction({
+      date: form.elements.namedItem("date").value,
+      endTime: form.elements.namedItem("endTime").value
+    });
+    // Planning and interim saves must not synthesize an end time or stop live mode.
+    if (action.kind !== "finish") return await saveWorkday({ showIndicator: true });
     const endTimeField = form.elements.namedItem("endTime");
     const isTravelDay = readCheckbox(new FormData(form), "enableTravelDay");
     if (!endTimeField.value && !isTravelDay) liveWorkdayArmed = true;
@@ -2432,6 +2439,7 @@ function activateLiveWorkday() {
   resumeLiveWorkdayButton.hidden = true;
   clearCalculationDisplay();
   liveWorkdayController?.update();
+  updateWorkdaySaveAccess();
   sessionUi?.showToast("Live tijd hervat.");
 }
 
@@ -2745,7 +2753,8 @@ updateParkingVisibility();
 updateTravelVisibility();
 initializeLiveWorkday();
 
-form.addEventListener("input", () => {
+form.addEventListener("input", (event) => {
+  if (["date", "endTime"].includes(event.target.name)) updateWorkdaySaveAccess();
   markCalculationStale();
   scheduleAutomaticCalculation();
   liveWorkdayController?.update();
@@ -2786,7 +2795,7 @@ form.addEventListener("change", (event) => {
     scheduleAccountSettingsSync();
   }
   scheduleActiveWorkFunctionSync();
-  if (event.target.name === "date") updateWorkdaySaveAccess();
+  if (["date", "endTime"].includes(event.target.name)) updateWorkdaySaveAccess();
   scheduleAutomaticCalculation();
   liveWorkdayController?.update();
   updateResumeLiveAccess();

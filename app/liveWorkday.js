@@ -19,6 +19,12 @@
     return localDateValue(previousDate);
   }
 
+  function getSaveAction({ date, endTime }, now = new Date()) {
+    if (date && date > localDateValue(now)) return { kind: "plan", label: "Werkdag inplannen" };
+    if (!endTime) return { kind: "save", label: "Werkdag bewaren" };
+    return { kind: "finish", label: "Dag afsluiten" };
+  }
+
   function parseTime(value) {
     const match = /^(\d{2}):(\d{2})$/.exec(String(value || ""));
     if (!match) return null;
@@ -149,6 +155,7 @@
     FRAMES_PER_SECOND,
     localDateValue,
     previousLocalDateValue,
+    getSaveAction,
     parseTime,
     roundedCurrentTime,
     formatDuration,

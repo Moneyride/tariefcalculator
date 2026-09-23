@@ -930,6 +930,8 @@
   async function persistDays(message) {
     current = await projects.replaceDays(context.auth.user.id, current.project.id, current.days, options());
     setDirty(false); document.querySelector("#day-form-status").textContent = message;
+    // The database may already have awarded a badge during the day update.
+    document.dispatchEvent(new CustomEvent("overuurtje:badges-updated"));
   }
 
   async function saveDay(event) {

@@ -66,12 +66,20 @@ as $$
     select count(distinct work_date) as days from facts group by date_trunc('month', work_date)
   ), weeks as (
     select count(distinct work_date) as days from facts group by date_trunc('week', work_date)
+  ), my_sources as (
+    select distinct coalesce(workday_id, project_day_id) as source_id
+    from public.workday_shares
+    where accepted_at is not null and (owner_id = p_user or recipient_id = p_user)
+  ), relevant_shares as (
+    select s.* from public.workday_shares s join my_sources m
+      on m.source_id = coalesce(s.workday_id, s.project_day_id)
+    where s.accepted_at is not null
   ), memberships as (
     select distinct coalesce(workday_id, project_day_id) as source_id, owner_id as member_id
-    from public.workday_shares where accepted_at is not null
+    from relevant_shares
     union
     select distinct coalesce(workday_id, project_day_id), recipient_id
-    from public.workday_shares where accepted_at is not null and recipient_id is not null
+    from relevant_shares where recipient_id is not null
   ), crew as (
     -- Colleagues on the same day also count when neither is the owner.
     select other.member_id, count(distinct other.source_id) as days
@@ -174,7 +182,7 @@ language plpgsql security definer set search_path = public
 as $$
 begin
   if auth.uid() is null then return; end if;
-  if p_event_key not in ('calculator_calculated', 'pdf_generated', 'project_pdf_generated', 'workday_saved', 'project_day_saved') then
+  if p_event_key is null or p_event_key not in ('calculator_calculated', 'pdf_generated', 'project_pdf_generated', 'workday_saved', 'project_day_saved') then
     raise exception 'Onbekende badge-activiteit.';
   end if;
   perform pg_advisory_xact_lock(hashtextextended(auth.uid()::text, 0));

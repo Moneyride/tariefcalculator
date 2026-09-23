@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import vm from "node:vm";
 
 await import("../../app/liveWorkday.js");
 await import("../../app/workdayNotifications.js");
@@ -9,6 +10,37 @@ await import("../../app/statsEngine.js");
 const live = globalThis.OveruurtjeLiveWorkday;
 const reminders = globalThis.OveruurtjeWorkdayNotifications;
 const stats = globalThis.OveruurtjeStats;
+
+test("opslaan onderscheidt een planning, open werkdag en afgesloten dag", () => {
+  const now = new Date(2026, 8, 23, 10, 0);
+  assert.deepEqual(live.getSaveAction({ date: "2026-09-24", endTime: "" }, now), { kind: "plan", label: "Werkdag inplannen" });
+  assert.equal(live.getSaveAction({ date: "2026-09-24", endTime: "18:00" }, now).kind, "plan");
+  assert.deepEqual(live.getSaveAction({ date: "2026-09-23", endTime: "" }, now), { kind: "save", label: "Werkdag bewaren" });
+  assert.equal(live.getSaveAction({ date: "2026-09-22", endTime: "" }, now).kind, "save");
+  assert.deepEqual(live.getSaveAction({ date: "2026-09-23", endTime: "18:00" }, now), { kind: "finish", label: "Dag afsluiten" });
+  assert.equal(live.getSaveAction({ date: "2026-09-22", endTime: "01:00" }, now).kind, "finish");
+});
+
+test("inplannen en tussentijds bewaren slaan op zonder de tijd te stoppen", async () => {
+  const app = await readFile(new URL("../../app/app.js", import.meta.url), "utf8");
+  const implementation = app.slice(app.indexOf("async function finishAndSaveWorkday()"), app.indexOf("function activateLiveWorkday()"));
+  for (const [date, endTime, expectedStops] of [["2099-01-01", "", 0], ["2099-01-01", "18:00", 0], ["2020-01-01", "", 0], ["2020-01-01", "18:00", 1]]) {
+    let stops = 0; let saves = 0;
+    const context = vm.createContext({
+      finishInProgress: false, currentSharedSource: null, liveWorkday: live,
+      form: { elements: { namedItem: (name) => ({value: name === "date" ? date : endTime}) } },
+      FormData: class {}, readCheckbox: () => false,
+      stopLiveWorkdayAndCalculate: async () => { stops++; return {}; },
+      saveWorkday: async () => { saves++; return {date,endTime}; }
+    });
+    vm.runInContext(implementation,context);
+    const saved = await context.finishAndSaveWorkday();
+    assert.equal(stops, expectedStops);
+    assert.equal(saves, 1);
+    assert.equal(saved.endTime, endTime);
+    assert.equal(context.finishInProgress, false);
+  }
+});
 
 test("tijdkeuze rondt de lokale tijd af naar het dichtstbijzijnde kwartier", () => {
   assert.equal(live.roundedCurrentTime(new Date(2026, 6, 27, 8, 7)), "08:00");
