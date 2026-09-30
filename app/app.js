@@ -1608,7 +1608,7 @@ function updateWorkdaySaveAccess() {
     workdaySaveLabel.textContent = isSharedReceiver
       ? "Mijn instellingen opslaan"
       : isPro
-        ? liveWorkday.getSaveAction({ date: form.elements.namedItem("date").value, endTime: form.elements.namedItem("endTime").value }).label
+        ? liveWorkday.getSaveAction({ ...readLiveWorkdayState(), endTime: form.elements.namedItem("endTime").value }).label
         : currentWorkdayId
           ? "Werkdag bijwerken"
           : "Bewaar voor later";
@@ -2412,10 +2412,11 @@ async function finishAndSaveWorkday() {
   finishInProgress = true;
   try {
     const action = liveWorkday.getSaveAction({
+      ...readLiveWorkdayState(),
       date: form.elements.namedItem("date").value,
       endTime: form.elements.namedItem("endTime").value
     });
-    // Planning and interim saves must not synthesize an end time or stop live mode.
+    // Only a running day or an explicit end time can close the day.
     if (action.kind !== "finish") return await saveWorkday({ showIndicator: true });
     const endTimeField = form.elements.namedItem("endTime");
     const isTravelDay = readCheckbox(new FormData(form), "enableTravelDay");
@@ -2708,6 +2709,10 @@ function updateResumeLiveAccess() {
 
 function renderLiveWorkday(state) {
   if (!liveWorkdayStatus || !liveWorkdayDuration) return;
+  if (currentUserContext?.isPro && !currentSharedSource && workdaySaveLabel) {
+    const label = liveWorkday.getSaveAction({ ...readLiveWorkdayState(), endTime: form.elements.namedItem("endTime").value }).label;
+    if (workdaySaveLabel.textContent !== label) workdaySaveLabel.textContent = label;
+  }
   liveWorkdayStatus.hidden = !state.active;
   liveEndTimecode.hidden = !state.active;
   liveEndTimecode.closest(".time-control")?.classList.toggle("is-live", state.active);

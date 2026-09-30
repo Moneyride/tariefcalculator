@@ -19,6 +19,10 @@ test("opslaan onderscheidt een planning, open werkdag en afgesloten dag", () => 
   assert.equal(live.getSaveAction({ date: "2026-09-22", endTime: "" }, now).kind, "save");
   assert.deepEqual(live.getSaveAction({ date: "2026-09-23", endTime: "18:00" }, now), { kind: "finish", label: "Dag afsluiten" });
   assert.equal(live.getSaveAction({ date: "2026-09-22", endTime: "01:00" }, now).kind, "finish");
+  assert.equal(live.getSaveAction({ date: "2026-09-23", startTime: "08:00", endTime: "", armed: true }, now).kind, "finish");
+  assert.equal(live.getSaveAction({ date: "2026-09-22", startTime: "18:00", endTime: "", armed: true }, now).kind, "finish");
+  assert.equal(live.getSaveAction({ date: "2026-09-23", startTime: "18:00", endTime: "", armed: true }, now).kind, "save");
+  assert.equal(live.getSaveAction({ date: "2026-09-24", startTime: "08:00", endTime: "", armed: true }, now).kind, "plan");
 });
 
 test("inplannen en tussentijds bewaren slaan op zonder de tijd te stoppen", async () => {
@@ -28,6 +32,7 @@ test("inplannen en tussentijds bewaren slaan op zonder de tijd te stoppen", asyn
     let stops = 0; let saves = 0;
     const context = vm.createContext({
       finishInProgress: false, currentSharedSource: null, liveWorkday: live,
+      readLiveWorkdayState: () => ({ armed: false }),
       form: { elements: { namedItem: (name) => ({value: name === "date" ? date : endTime}) } },
       FormData: class {}, readCheckbox: () => false,
       stopLiveWorkdayAndCalculate: async () => { stops++; return {}; },
@@ -38,6 +43,29 @@ test("inplannen en tussentijds bewaren slaan op zonder de tijd te stoppen", asyn
     assert.equal(stops, expectedStops);
     assert.equal(saves, 1);
     assert.equal(saved.endTime, endTime);
+    assert.equal(context.finishInProgress, false);
+  }
+});
+
+test("de oranje knop stopt en bewaart een actieve dag met open eindtijd", async () => {
+  const app = await readFile(new URL("../../app/app.js", import.meta.url), "utf8");
+  const implementation = app.slice(app.indexOf("async function finishAndSaveWorkday()"), app.indexOf("function activateLiveWorkday()"));
+  const now = new Date(2026, 8, 25, 1, 0);
+  for (const date of ["2026-09-25", "2026-09-24"]) {
+    const end = { value: "" };
+    let stopped = false;
+    const state = {date, startTime: date.endsWith("25") ? "00:15" : "18:00", endTime: "", armed: true};
+    const context = vm.createContext({
+      finishInProgress: false, currentSharedSource: null, liveWorkdayArmed: true,
+      liveWorkday: { getSaveAction: (data) => live.getSaveAction(data, now) },
+      readLiveWorkdayState: () => state,
+      form: {elements: {namedItem: (name) => name === "date" ? {value:date} : end}},
+      FormData: class {}, readCheckbox: () => false,
+      stopLiveWorkdayAndCalculate: async () => { stopped = true; end.value = "01:00"; return {}; },
+      saveWorkday: async () => { assert.ok(stopped); return end.value; }
+    });
+    vm.runInContext(implementation, context);
+    assert.equal(await context.finishAndSaveWorkday(), "01:00");
     assert.equal(context.finishInProgress, false);
   }
 });

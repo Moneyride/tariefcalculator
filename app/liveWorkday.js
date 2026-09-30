@@ -19,8 +19,9 @@
     return localDateValue(previousDate);
   }
 
-  function getSaveAction({ date, endTime }, now = new Date()) {
+  function getSaveAction({ date, startTime, endTime, armed = false }, now = new Date()) {
     if (date && date > localDateValue(now)) return { kind: "plan", label: "Werkdag inplannen" };
+    if (getState({ date, startTime, endTime, armed, now }).active) return { kind: "finish", label: "Dag afsluiten" };
     if (!endTime) return { kind: "save", label: "Werkdag bewaren" };
     return { kind: "finish", label: "Dag afsluiten" };
   }

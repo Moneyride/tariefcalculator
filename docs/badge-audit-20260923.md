@@ -77,7 +77,8 @@ niet dat het besturingssysteem de PDF daadwerkelijk heeft opgeslagen.
 ## Werkdagknop
 
 - Toekomstige datum: Werkdag inplannen.
-- Vandaag of eerder zonder eindtijd: Werkdag bewaren.
+- Actieve dag zonder eindtijd (ook na middernacht): Dag afsluiten; stopt en bewaart de tijd.
+- Nog niet actieve dag zonder eindtijd: Werkdag bewaren.
 - Vandaag of eerder met eindtijd: Dag afsluiten.
 
 Inplannen en bewaren vullen geen eindtijd in en stoppen de live-tijd niet.
