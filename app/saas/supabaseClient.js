@@ -6,6 +6,29 @@
   const SDK_URL = new URL("vendor/supabase.js", config.calculatorUrl).href;
   let clientPromise = null;
   let sdkPromise = null;
+  let clockRecoveryWait = null;
+
+  async function fetchWithClockRecovery(input, options) {
+    const request = new Request(input, options);
+    const retry = request.clone();
+    const response = await globalThis.fetch(request);
+    const url = new URL(request.url);
+    if (url.origin !== new URL(config.supabaseUrl).origin
+      || !url.pathname.startsWith("/rest/v1/") || response.status !== 401) return response;
+    let error;
+    try { error = await response.clone().json(); } catch { return response; }
+    if (error.code !== "PGRST303" || !/JWT issued at future/i.test(error.message || "")) return response;
+    // Authentication rejected this request before any database operation ran.
+    // Keep the same token and retry once; refreshing would issue a newer token.
+    if (!clockRecoveryWait) {
+      clockRecoveryWait = new Promise(resolve => setTimeout(resolve, 1500)).finally(() => {
+        clockRecoveryWait = null;
+      });
+    }
+    await clockRecoveryWait;
+    if (request.signal.aborted) return response;
+    return globalThis.fetch(retry);
+  }
 
   function isConfigured() {
     return Boolean(config?.supabaseUrl && config?.supabaseAnonKey);
@@ -48,6 +71,7 @@
       config.supabaseUrl,
       config.supabaseAnonKey,
       {
+        global: { fetch: fetchWithClockRecovery },
         auth: {
           persistSession: true,
           autoRefreshToken: true,

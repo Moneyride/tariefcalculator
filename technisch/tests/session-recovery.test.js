@@ -5,6 +5,29 @@ import { readFile } from "node:fs/promises";
 
 const read = (file) => readFile(new URL(`../../app/${file}`, import.meta.url), "utf8");
 
+test("Supabase herhaalt alleen een expliciet geweigerde future-JWT request, maximaal eenmaal", async () => {
+  let options; let calls = 0;
+  let failure = { code: "PGRST303", message: "JWT issued at future" };
+  const context = vm.createContext({ URL, Request,
+    setTimeout: callback => { queueMicrotask(callback); return 1; }, clearTimeout,
+    fetch: async request => {
+      calls++;
+      assert.equal(await request.text(), "payload");
+      return new Response(JSON.stringify(failure), { status: 401 });
+    },
+    OveruurtjeConfig: { calculatorUrl: "https://app.test/index.html", supabaseUrl: "https://db.test", supabaseAnonKey: "public" },
+    supabase: { createClient: (_url, _key, value) => { options = value; return {}; } }
+  });
+  vm.runInContext(await read("saas/supabaseClient.js"), context);
+  await context.OveruurtjeSupabase.getClient();
+  await options.global.fetch("https://db.test/rest/v1/rpc/get_my_account_profile", { method: "POST", body: "payload" });
+  assert.equal(calls, 2);
+  calls = 0;
+  failure = { code: "PGRST303", message: "JWT expired" };
+  await options.global.fetch("https://db.test/rest/v1/profiles", { method: "POST", body: "payload" });
+  assert.equal(calls, 1);
+});
+
 test("eigen profielcontrole behoudt betaald Pro zonder directe tabeltoegang", async () => {
   const context = vm.createContext({ URL, console,
     OveruurtjeSupabase: { getClient: async () => ({

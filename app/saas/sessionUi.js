@@ -787,7 +787,9 @@
           console.warn("Profiel kon niet worden geladen.", error);
           profileError = true;
           const code = String(error?.code || "");
-          profileErrorMessage = code === "42501"
+          profileErrorMessage = code === "PGRST303" && /JWT issued at future/i.test(error?.message || "")
+            ? "Supabase weigert tijdelijk je inlogsessie door een fout in de servertijdcontrole. Probeer het opnieuw. Blijft dit gebeuren, meld dit bij de beheerder."
+            : code === "42501"
             ? "Supabase blokkeert het uitlezen van je profiel. Voer de profielcontrole-migratie uit."
             : ["42703", "PGRST204"].includes(code)
               ? "De profielvelden in Supabase zijn niet volledig bijgewerkt. Voer de profielcontrole-migratie uit."
