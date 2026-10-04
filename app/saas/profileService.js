@@ -80,6 +80,16 @@
     const client = await supabaseService.getClient();
     if (!client) throw new Error("Accountgegevens kunnen niet worden opgehaald.");
 
+    // The server checks auth.uid() and returns only the current user's public
+    // profile fields, independently of browser table grants and optional columns.
+    const ownProfile = await client.rpc("get_my_account_profile");
+    if (!ownProfile.error) {
+      if (!ownProfile.data) throw new Error("Je accountprofiel ontbreekt. Neem contact op met de beheerder.");
+      const profile = await saveProviderAvatarIfMissing(client, user, ownProfile.data);
+      return normalize(profile, user);
+    }
+    if (!["PGRST202", "42883"].includes(ownProfile.error.code)) throw ownProfile.error;
+
     let { data, error } = await selectProfile(client, user.id, PROFILE_COLUMNS);
 
     // Keep login working while a new deployment and migration roll out.

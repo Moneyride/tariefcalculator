@@ -5,6 +5,33 @@ import { readFile } from "node:fs/promises";
 
 const read = (file) => readFile(new URL(`../../app/${file}`, import.meta.url), "utf8");
 
+test("eigen profielcontrole behoudt betaald Pro zonder directe tabeltoegang", async () => {
+  const context = vm.createContext({ URL, console,
+    OveruurtjeSupabase: { getClient: async () => ({
+      rpc: async (name) => {
+        assert.equal(name, "get_my_account_profile");
+        return { data: { id: "paid", is_pro: true, subscription_status: "active", avatar_url: "https://example.test/photo.jpg" }, error: null };
+      },
+      from: () => { throw new Error("permission denied for table profiles"); }
+    }) }
+  });
+  vm.runInContext(await read("saas/profileService.js"), context);
+  const profile = await context.OveruurtjeProfiles.getForUser({ id: "paid" });
+  assert.equal(profile.isPro, true);
+  assert.equal(profile.avatarUrl, "https://example.test/photo.jpg");
+});
+
+test("profielcontrole verbergt fouten en ontbrekende accounts niet als Free", async () => {
+  let response = { data: null, error: { code: "42501", message: "permission denied" } };
+  const context = vm.createContext({ URL, console,
+    OveruurtjeSupabase: { getClient: async () => ({ rpc: async () => response }) }
+  });
+  vm.runInContext(await read("saas/profileService.js"), context);
+  await assert.rejects(context.OveruurtjeProfiles.getForUser({ id: "paid" }), error => error.code === "42501");
+  response = { data: null, error: null };
+  await assert.rejects(context.OveruurtjeProfiles.getForUser({ id: "paid" }), /accountprofiel ontbreekt/);
+});
+
 test("PWA haalt online de gevraagde nieuwe code op in plaats van een oude cacheversie", async () => {
   const entries = new Map([["https://example.test/liveWorkday.js", new Response("old")]]);
   const key = (request) => typeof request === "string" ? request : request.url;

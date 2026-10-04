@@ -773,6 +773,7 @@
     }
     let profile = null;
     let profileError = false;
+    let profileErrorMessage = "";
     let backgroundProfileRefresh = null;
     if (authState.user) {
       profile = readCachedProfile(authState.user);
@@ -785,6 +786,13 @@
         } catch (error) {
           console.warn("Profiel kon niet worden geladen.", error);
           profileError = true;
+          const code = String(error?.code || "");
+          profileErrorMessage = code === "42501"
+            ? "Supabase blokkeert het uitlezen van je profiel. Voer de profielcontrole-migratie uit."
+            : ["42703", "PGRST204"].includes(code)
+              ? "De profielvelden in Supabase zijn niet volledig bijgewerkt. Voer de profielcontrole-migratie uit."
+              : "Je profiel en abonnement konden niet worden gecontroleerd.";
+          if (/^[A-Z0-9]{3,12}$/.test(code)) profileErrorMessage += ` (Code: ${code})`;
           if (currentContext.auth.user?.id === authState.user.id) profile = currentContext.profile;
         }
       }
@@ -802,7 +810,7 @@
     renderHeader(currentContext);
     showSessionNotice(authState.error
       ? "Inloggen kon niet worden geladen. Controleer je verbinding."
-      : profileError ? "Je bent ingelogd, maar je profiel en abonnement konden niet worden gecontroleerd." : "");
+      : profileError ? `Je bent ingelogd. ${profileErrorMessage}` : "");
     document.dispatchEvent(new CustomEvent("overuurtje:user-context", { detail: currentContext }));
     revealSessionUi();
 

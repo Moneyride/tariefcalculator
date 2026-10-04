@@ -10377,6 +10377,16 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     const client = await supabaseService.getClient();
     if (!client) throw new Error("Accountgegevens kunnen niet worden opgehaald.");
 
+    // The server checks auth.uid() and returns only the current user's public
+    // profile fields, independently of browser table grants and optional columns.
+    const ownProfile = await client.rpc("get_my_account_profile");
+    if (!ownProfile.error) {
+      if (!ownProfile.data) throw new Error("Je accountprofiel ontbreekt. Neem contact op met de beheerder.");
+      const profile = await saveProviderAvatarIfMissing(client, user, ownProfile.data);
+      return normalize(profile, user);
+    }
+    if (!["PGRST202", "42883"].includes(ownProfile.error.code)) throw ownProfile.error;
+
     let { data, error } = await selectProfile(client, user.id, PROFILE_COLUMNS);
 
     // Keep login working while a new deployment and migration roll out.
@@ -14138,6 +14148,7 @@ globalThis.TariffCalculator = {
     }
     let profile = null;
     let profileError = false;
+    let profileErrorMessage = "";
     let backgroundProfileRefresh = null;
     if (authState.user) {
       profile = readCachedProfile(authState.user);
@@ -14150,6 +14161,13 @@ globalThis.TariffCalculator = {
         } catch (error) {
           console.warn("Profiel kon niet worden geladen.", error);
           profileError = true;
+          const code = String(error?.code || "");
+          profileErrorMessage = code === "42501"
+            ? "Supabase blokkeert het uitlezen van je profiel. Voer de profielcontrole-migratie uit."
+            : ["42703", "PGRST204"].includes(code)
+              ? "De profielvelden in Supabase zijn niet volledig bijgewerkt. Voer de profielcontrole-migratie uit."
+              : "Je profiel en abonnement konden niet worden gecontroleerd.";
+          if (/^[A-Z0-9]{3,12}$/.test(code)) profileErrorMessage += ` (Code: ${code})`;
           if (currentContext.auth.user?.id === authState.user.id) profile = currentContext.profile;
         }
       }
@@ -14167,7 +14185,7 @@ globalThis.TariffCalculator = {
     renderHeader(currentContext);
     showSessionNotice(authState.error
       ? "Inloggen kon niet worden geladen. Controleer je verbinding."
-      : profileError ? "Je bent ingelogd, maar je profiel en abonnement konden niet worden gecontroleerd." : "");
+      : profileError ? `Je bent ingelogd. ${profileErrorMessage}` : "");
     document.dispatchEvent(new CustomEvent("overuurtje:user-context", { detail: currentContext }));
     revealSessionUi();
 
