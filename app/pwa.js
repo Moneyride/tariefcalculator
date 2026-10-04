@@ -188,7 +188,8 @@
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
     window.addEventListener("load", () => {
       navigator.serviceWorker.register(new URL("service-worker.js", document.baseURI), {
-        scope: "./"
+        scope: "./",
+        updateViaCache: "none"
       }).catch(() => {
         // De calculator blijft zonder service worker volledig bruikbaar.
       });

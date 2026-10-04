@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "overuurtje-app-v64";
+const CACHE_NAME = "overuurtje-app-v65";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -32,6 +32,7 @@ const APP_SHELL = [
   "./pwa.js",
   "./saas/config.js",
   "./saas/supabaseClient.js",
+  "./vendor/supabase.js",
   "./saas/pushService.js",
   "./saas/authService.js",
   "./saas/profileService.js",
@@ -90,28 +91,27 @@ async function cacheFirst(request) {
   return response;
 }
 
-async function cacheFirstWithRefresh(event, fallbackUrl = null) {
+async function networkFirst(event, fallbackUrl = null) {
   const { request } = event;
   const cache = await caches.open(CACHE_NAME);
-  const cached = await cache.match(request, { ignoreSearch: true });
-  const refresh = fetch(request).then(async (response) => {
-    if (response.ok) {
-      await cache.delete(request, { ignoreSearch: true });
-      await cache.put(request, response.clone());
-    }
-    return response;
-  });
-
-  if (cached) {
-    event.waitUntil(refresh.catch(() => {}));
-    return cached;
-  }
-
+  const url = new URL(request.url);
+  const baseUrl = `${url.origin}${url.pathname}`;
+  const cacheKey = request.mode === "navigate" ? baseUrl : request;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4000);
   try {
-    return await refresh;
+    // Do not serve an older script for a new ?v= deployment while online.
+    const response = await fetch(request, { cache: "no-cache", signal: controller.signal });
+    if (!response.ok) throw new Error("Appbestand niet beschikbaar");
+    await cache.put(cacheKey, response.clone());
+    return response;
   } catch {
-    return (fallbackUrl ? await cache.match(fallbackUrl, { ignoreSearch: true }) : null)
+    return await cache.match(cacheKey)
+      || await cache.match(baseUrl)
+      || (fallbackUrl ? await cache.match(fallbackUrl) : null)
       || Response.error();
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -124,13 +124,13 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/.netlify/functions/")) return;
 
   if (request.mode === "navigate") {
-    event.respondWith(cacheFirstWithRefresh(event, "./index.html"));
+    event.respondWith(networkFirst(event, "./index.html"));
     return;
   }
 
   if (["script", "style", "worker"].includes(request.destination)
     || url.pathname.endsWith("runtime-config.js")) {
-    event.respondWith(cacheFirstWithRefresh(event));
+    event.respondWith(networkFirst(event));
     return;
   }
 

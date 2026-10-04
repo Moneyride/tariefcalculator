@@ -137,6 +137,7 @@ let customEquipment = [];
 let workFunctions = [];
 let activeWorkFunction = null;
 let hydratedAccountUserId = null;
+let hydratedAccountIsPro = null;
 let cloudSyncTimer = null;
 let functionSyncTimer = null;
 let currentWorkdayId = null;
@@ -1910,10 +1911,11 @@ async function hydrateAccountSettings(context) {
     if (!(await restoreSharedTimesFromUrl())) applySharedTimesImport();
     return;
   }
-  if (hydratedAccountUserId === currentAccountUser.id) return;
+  if (hydratedAccountUserId === currentAccountUser.id && hydratedAccountIsPro === context.isPro) return;
   currentShareWorkdayId = null;
   workdayContextInitializedFor = null;
   hydratedAccountUserId = currentAccountUser.id;
+  hydratedAccountIsPro = context.isPro;
 
   try {
     const [savedResult, functionsResult, equipmentResult, workdaysResult] = await Promise.allSettled([

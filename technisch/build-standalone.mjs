@@ -9,6 +9,7 @@ const appDirectory = path.join(rootDirectory, "app");
 const scriptFiles = [
   "runtime-config.js",
   "saas/config.js",
+  "vendor/supabase.js",
   "saas/supabaseClient.js",
   "saas/pushService.js",
   "saas/authService.js",
@@ -59,7 +60,9 @@ scriptFiles.forEach((file) => {
 
 standalone = standalone.replace(
   /\n  <\/body>/,
-  `${scripts.map((script) => `\n    <script>\n${script}\n    </script>`).join("")}\n  </body>`
+  `${scripts.map((script, index) => scriptFiles[index] === "vendor/supabase.js"
+    ? `\n    <script src="data:text/javascript;base64,${Buffer.from(script).toString("base64")}"></script>`
+    : `\n    <script>\n${script}\n    </script>`).join("")}\n  </body>`
 );
 
 await writeFile(path.join(rootDirectory, "Overuurtje.html"), standalone);

@@ -13,6 +13,8 @@
     recovery: false
   });
   let initializationPromise = null;
+  let subscribedClient = null;
+  let authRevision = 0;
 
   function readRecoveryMarker() {
     try {
@@ -51,7 +53,8 @@
   }
 
   function publish(nextState) {
-    state = Object.freeze({ ...state, ...nextState, loading: false });
+    authRevision += 1;
+    state = Object.freeze({ ...state, error: null, ...nextState, loading: false });
     listeners.forEach((listener) => listener(state));
     document.dispatchEvent(new CustomEvent("overuurtje:auth-state", { detail: state }));
     return state;
@@ -64,19 +67,26 @@
       const client = await supabaseService.getClient();
       if (!client) return publish({ available: false, user: null, session: null, recovery: false });
 
-      const { data, error } = await client.auth.getSession();
-      if (error) throw error;
-
-      client.auth.onAuthStateChange((event, session) => {
-        if (event === "PASSWORD_RECOVERY") writeRecoveryMarker(true);
-        if (event === "SIGNED_OUT") writeRecoveryMarker(false);
-        publish({
-          available: true,
-          session,
-          user: session?.user || null,
-          recovery: event === "PASSWORD_RECOVERY" || (Boolean(session) && readRecoveryMarker())
+      // Subscribe before reading storage: a failed session restore must not
+      // prevent a later successful sign-in from reaching the interface.
+      if (subscribedClient !== client) {
+        client.auth.onAuthStateChange((event, session) => {
+          if (event === "PASSWORD_RECOVERY") writeRecoveryMarker(true);
+          if (event === "SIGNED_OUT") writeRecoveryMarker(false);
+          publish({
+            available: true,
+            session,
+            user: session?.user || null,
+            recovery: event === "PASSWORD_RECOVERY" || (Boolean(session) && readRecoveryMarker())
+          });
         });
-      });
+        subscribedClient = client;
+      }
+
+      const revision = authRevision;
+      const { data, error } = await client.auth.getSession();
+      if (authRevision !== revision) return state;
+      if (error) throw error;
 
       const recovery = Boolean(data.session) && (recoveryRequestedByUrl() || readRecoveryMarker());
       if (recovery) writeRecoveryMarker(true);
@@ -86,13 +96,10 @@
         user: data.session?.user || null,
         recovery
       });
-    })().catch((error) => publish({
-      available: false,
-      error,
-      user: null,
-      session: null,
-      recovery: false
-    }));
+    })().catch((error) => {
+      initializationPromise = null;
+      return publish({ available: false, error, user: null, session: null, recovery: false });
+    });
 
     return initializationPromise;
   }
@@ -104,6 +111,7 @@
   }
 
   async function withClient(callback) {
+    await initialize();
     const client = await supabaseService.getClient();
     if (!client) throw new Error("Accounts zijn nog niet geconfigureerd.");
     return callback(client);

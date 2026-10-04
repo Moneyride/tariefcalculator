@@ -78,7 +78,7 @@
   async function getForUser(user) {
     if (!user) return null;
     const client = await supabaseService.getClient();
-    if (!client) return normalize(null, user);
+    if (!client) throw new Error("Accountgegevens kunnen niet worden opgehaald.");
 
     let { data, error } = await selectProfile(client, user.id, PROFILE_COLUMNS);
 

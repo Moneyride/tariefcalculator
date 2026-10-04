@@ -63,6 +63,33 @@
   let profileLoadUserId = "";
   let contextBuildPromise = null;
   let contextBuildKey = "";
+  let contextGeneration = 0;
+  let sessionNotice = null;
+
+  function showSessionNotice(message = "") {
+    if (!sessionNotice && message) {
+      sessionNotice = document.createElement("div");
+      sessionNotice.className = "saas-form-status";
+      sessionNotice.setAttribute("role", "status");
+      const copy = document.createElement("span");
+      const retry = document.createElement("button");
+      retry.type = "button";
+      retry.className = "text-action";
+      retry.textContent = "Opnieuw proberen";
+      retry.addEventListener("click", async () => {
+        retry.disabled = true;
+        try {
+          if (auth.getState().error) await auth.initialize();
+          await buildContext(auth.getState());
+        } finally { retry.disabled = false; }
+      });
+      sessionNotice.append(copy, document.createTextNode(" "), retry);
+      (document.querySelector(".page-header") || document.querySelector("main") || document.body).after(sessionNotice);
+    }
+    if (!sessionNotice) return;
+    sessionNotice.hidden = !message;
+    sessionNotice.querySelector("span").textContent = message;
+  }
 
   function readCachedProfile(user) {
     if (!user?.id) return null;
@@ -733,6 +760,7 @@
   }
 
   async function buildContextOnce(authState) {
+    const generation = ++contextGeneration;
     handlePasswordRecovery(authState);
     handlePasswordResetNotice(authState);
     if (authState.user && !authState.recovery) {
@@ -744,6 +772,7 @@
       }
     }
     let profile = null;
+    let profileError = false;
     let backgroundProfileRefresh = null;
     if (authState.user) {
       profile = readCachedProfile(authState.user);
@@ -755,39 +784,47 @@
           cacheProfile(authState.user, profile);
         } catch (error) {
           console.warn("Profiel kon niet worden geladen.", error);
+          profileError = true;
+          if (currentContext.auth.user?.id === authState.user.id) profile = currentContext.profile;
         }
       }
     }
 
+    if (generation !== contextGeneration) return currentContext;
     const subscription = subscriptions.resolve(profile);
     currentContext = Object.freeze({
       auth: authState,
       profile,
+      profileError,
       subscription,
       isPro: subscription.isPro
     });
     renderHeader(currentContext);
+    showSessionNotice(authState.error
+      ? "Inloggen kon niet worden geladen. Controleer je verbinding."
+      : profileError ? "Je bent ingelogd, maar je profiel en abonnement konden niet worden gecontroleerd." : "");
     document.dispatchEvent(new CustomEvent("overuurtje:user-context", { detail: currentContext }));
     revealSessionUi();
 
     if (backgroundProfileRefresh) {
       backgroundProfileRefresh.then((freshProfile) => {
+        if (generation !== contextGeneration || auth.getState().user?.id !== authState.user.id) return;
         cacheProfile(authState.user, freshProfile);
-        if (
-          auth.getState().user?.id !== authState.user.id
-          || JSON.stringify(freshProfile) === JSON.stringify(profile)
-        ) return;
+        if (JSON.stringify(freshProfile) === JSON.stringify(profile)) return;
         const freshSubscription = subscriptions.resolve(freshProfile);
         currentContext = Object.freeze({
           auth: auth.getState(),
           profile: freshProfile,
+          profileError: false,
           subscription: freshSubscription,
           isPro: freshSubscription.isPro
         });
         renderHeader(currentContext);
+        showSessionNotice();
         document.dispatchEvent(new CustomEvent("overuurtje:user-context", { detail: currentContext }));
       }).catch((error) => {
         console.warn("Profiel kon niet op de achtergrond worden ververst.", error);
+        if (generation === contextGeneration) showSessionNotice("Je profiel kon niet worden bijgewerkt. De laatst geladen gegevens blijven staan.");
       });
     }
 
@@ -828,10 +865,13 @@
     if (contextBuildPromise && contextBuildKey === key) return contextBuildPromise;
 
     contextBuildKey = key;
-    contextBuildPromise = buildContextOnce(authState).finally(() => {
-      contextBuildPromise = null;
-      contextBuildKey = "";
+    const pending = buildContextOnce(authState).finally(() => {
+      if (contextBuildPromise === pending) {
+        contextBuildPromise = null;
+        contextBuildKey = "";
+      }
     });
+    contextBuildPromise = pending;
     return contextBuildPromise;
   }
 
