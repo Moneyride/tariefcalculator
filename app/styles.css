@@ -3560,6 +3560,42 @@ label {
   transform: translate(3px, 1px) rotate(28deg);
 }
 
+.pause-control {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 48px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(31, 67, 53, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.pause-control button {
+  width: 48px;
+  min-height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.pause-control button:disabled { opacity: 0.35; cursor: default; }
+.pause-control button:hover:not(:disabled) { background: rgba(31, 67, 53, 0.08); }
+.pause-control input[type="text"] {
+  min-width: 0;
+  min-height: 54px;
+  padding: 10px 4px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 .time-control {
   position: relative;
   display: flex;

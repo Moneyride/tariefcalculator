@@ -14,7 +14,7 @@
     <link rel="icon" href="favicon.ico" sizes="any">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260730a">
-    <link rel="stylesheet" href="styles.css?v=20260922b">
+    <link rel="stylesheet" href="styles.css?v=20261004a">
     <script>window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};window.gtag("consent","default",{analytics_storage:"denied",ad_storage:"denied",ad_user_data:"denied",ad_personalization:"denied"});</script>
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
@@ -42,6 +42,7 @@
     <script src="qrCode.js?v=20260730a" defer></script>
     <script src="saas/shareUi.js?v=20260731b" defer></script>
     <script src="interactionGuard.js?v=20260730a" defer></script>
+    <script src="pauseControl.js?v=20261004a" defer></script>
     <script src="selectUi.js?v=20260922b" defer></script>
     <script src="timePicker.js?v=20260730a" defer></script>
     <script src="projects.js?v=20260923a" defer></script>
@@ -225,7 +226,7 @@
                 <label><span>Tarief</span><span class="prefixed-input"><span>€</span><input name="rateAmount" type="number" min="0" step="0.01" required></span></label>
                 <label data-project-rate-setting="day-hours"><span>Werkdag</span><select name="normalDayHours"><option value="10">Gebaseerd op 10 uur</option><option value="12">Gebaseerd op 12 uur</option></select></label>
                 <label data-project-rate-setting="minimum-hours" hidden><span>Minimale afname</span><select name="minimumHours"><option value="0">Geen</option><option value="1">1 uur</option><option value="2">2 uur</option><option value="3">3 uur</option><option value="4">4 uur</option><option value="5">5 uur</option><option value="6">6 uur</option><option value="7">7 uur</option><option value="8">8 uur</option><option value="9">9 uur</option><option value="10">10 uur</option><option value="11">11 uur</option><option value="12">12 uur</option></select></label>
-                <label><span>Pauze</span><select name="breakMinutes"><option value="0">Geen</option><option value="15">15 minuten</option><option value="30">30 minuten</option><option value="45">45 minuten</option><option value="60">1 uur</option><option value="90">1,5 uur</option><option value="120">2 uur</option></select></label>
+                <label><span>Pauze</span><select name="breakMinutes"><option value="0">Geen</option><option value="15">15 minuten</option><option value="30">30 minuten</option><option value="45">45 minuten</option><option value="60">1 uur</option><option value="75">1,25 uur</option><option value="90">1,5 uur</option><option value="105">1,75 uur</option><option value="120">2 uur</option></select></label>
               </div>
             </div>
             <div class="day-options-grid">

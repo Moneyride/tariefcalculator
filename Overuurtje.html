@@ -3607,6 +3607,42 @@ label {
   transform: translate(3px, 1px) rotate(28deg);
 }
 
+.pause-control {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 48px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(31, 67, 53, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.pause-control button {
+  width: 48px;
+  min-height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.pause-control button:disabled { opacity: 0.35; cursor: default; }
+.pause-control button:hover:not(:disabled) { background: rgba(31, 67, 53, 0.08); }
+.pause-control input[type="text"] {
+  min-width: 0;
+  min-height: 54px;
+  padding: 10px 4px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 .time-control {
   position: relative;
   display: flex;
@@ -9378,7 +9414,9 @@ button.crew-badge:disabled { cursor: default; }
                 <option value="30">30 minuten</option>
                 <option value="45">45 minuten</option>
                 <option value="60">1 uur</option>
+                <option value="75">1,25 uur</option>
                 <option value="90">1,5 uur</option>
+                <option value="105">1,75 uur</option>
                 <option value="120">2 uur</option>
               </select>
             </label>
@@ -27433,6 +27471,72 @@ var qrcode = function() {
     moveThresholdPx: MOVE_THRESHOLD_PX
   });
 })(globalThis);
+
+    </script>
+    <script>
+(function initializePauseControls() {
+  "use strict";
+
+  document.querySelectorAll('select[name="breakMinutes"]').forEach((select) => {
+    const value = document.createElement("input");
+    value.type = "hidden";
+    value.name = select.name;
+    value.value = select.value || "0";
+    const control = document.createElement("div");
+    control.className = "pause-control";
+    const less = document.createElement("button");
+    const more = document.createElement("button");
+    const display = document.createElement("input");
+    for (const button of [less, more]) button.type = "button";
+    less.textContent = "−";
+    more.textContent = "+";
+    less.setAttribute("aria-label", "Pauze 15 minuten korter");
+    more.setAttribute("aria-label", "Pauze 15 minuten langer");
+    display.type = "text";
+    display.inputMode = "text";
+    display.setAttribute("aria-label", "Pauze in uren en minuten");
+    display.autocomplete = "off";
+    display.placeholder = "0:00";
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+    function render() {
+      const minutes = Math.max(0, Number(value.value) || 0);
+      display.value = `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
+      less.disabled = minutes === 0;
+      more.disabled = minutes >= 1440;
+    }
+    // Loading a saved day sets the form value directly; keep its display in sync.
+    Object.defineProperty(value, "value", {
+      get() { return descriptor.get.call(this); },
+      set(next) { descriptor.set.call(this, next); render(); }
+    });
+    function commit(minutes) {
+      display.setCustomValidity("");
+      value.value = String(minutes);
+      value.dispatchEvent(new Event("input", { bubbles: true }));
+      value.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    less.addEventListener("click", () => commit(Math.max(0, Number(value.value) - 15)));
+    more.addEventListener("click", () => commit(Math.min(1440, Number(value.value) + 15)));
+    display.addEventListener("input", () => display.setCustomValidity(""));
+    display.addEventListener("change", () => {
+      const match = /^(\d{1,2}):([0-5]\d)$/.exec(display.value.trim());
+      const minutes = match ? Number(match[1]) * 60 + Number(match[2]) : NaN;
+      if (!Number.isFinite(minutes) || minutes > 1440 || minutes % 15 !== 0) {
+        render();
+        display.setCustomValidity("Gebruik kwartieren, bijvoorbeeld 0:15, 1:30 of 2:00.");
+        display.reportValidity();
+        return;
+      }
+      commit(minutes);
+    });
+    display.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") { event.preventDefault(); display.blur(); }
+    });
+    control.append(less, display, more, value);
+    select.replaceWith(control);
+    render();
+  });
+})();
 
     </script>
     <script>
