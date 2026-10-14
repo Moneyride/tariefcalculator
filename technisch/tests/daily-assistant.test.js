@@ -11,6 +11,41 @@ const live = globalThis.OveruurtjeLiveWorkday;
 const reminders = globalThis.OveruurtjeWorkdayNotifications;
 const stats = globalThis.OveruurtjeStats;
 
+test("projectdagen beginnen zonder eindtijd en pauzes gebruiken de kwartierkiezer", async () => {
+  const projects = await readFile(new URL("../../app/projects.js", import.meta.url), "utf8");
+  assert.match(projects, /startTime: "08:00", endTime: ""/);
+  for (const file of ["index.html", "projects.html"]) {
+    const html = await readFile(new URL(`../../app/${file}`, import.meta.url), "utf8");
+    for (const field of ["breakStartTime", "breakEndTime"]) {
+      assert.match(html, new RegExp(`name="${field}"[^>]*data-time-picker[^>]*readonly`));
+      assert.doesNotMatch(html, new RegExp(`type="time"[^>]*name="${field}"`));
+    }
+  }
+});
+
+test("planning bewaart geen eindtijd of berekend resultaat, historische dagen wel", async () => {
+  const app = await readFile(new URL("../../app/app.js", import.meta.url), "utf8");
+  const implementation = app.slice(app.indexOf("function buildWorkdaySnapshot()"), app.indexOf("function projectDayToWorkdaySnapshot("));
+  const now = new Date(2026, 9, 14, 7, 55);
+  for (const [date, expectedEnd] of [["2026-10-15", ""], ["2026-10-14", ""], ["2026-10-13", "18:00"]]) {
+    const values = { date, startTime: "08:00", endTime: "18:00" };
+    const context = vm.createContext({
+      form: { elements: { namedItem: (name) => ({value:values[name] || ""}) } },
+      FormData: class { get() { return null; } },
+      getSettingsFromForm: () => ({breakMinutes:0}),
+      liveWorkday: { getSaveAction: (data) => live.getSaveAction(data, now) },
+      currentSharedSource: null, currentProjectDayContext: null, currentSharedOwnerName: "",
+      selectedWorkFunction: () => null, readCheckbox: () => false, readNumber: () => 0,
+      getSelectedCustomEquipment: () => [], latestResult: {totalHours:10}, calculationIsStale:false
+    });
+    vm.runInContext(implementation, context);
+    const snapshot = context.buildWorkdaySnapshot();
+    assert.equal(snapshot.startTime, "08:00");
+    assert.equal(snapshot.endTime, expectedEnd);
+    assert.equal(snapshot.result === null, !expectedEnd);
+  }
+});
+
 test("live pauzetijd trekt alleen de al verstreken pauze af", () => {
   const base = { armed: true, date: "2026-10-13", startTime: "08:00", endTime: "", enableTimedBreak: true, breakStartTime: "13:00", breakEndTime: "14:00" };
   assert.equal(live.getState({ ...base, now: new Date(2026, 9, 13, 12, 0) }).workedMinutes, 240);
@@ -28,7 +63,8 @@ test("opslaan onderscheidt een planning, open werkdag en afgesloten dag", () => 
   assert.equal(live.getSaveAction({ date: "2026-09-22", endTime: "01:00" }, now).kind, "finish");
   assert.equal(live.getSaveAction({ date: "2026-09-23", startTime: "08:00", endTime: "", armed: true }, now).kind, "finish");
   assert.equal(live.getSaveAction({ date: "2026-09-22", startTime: "18:00", endTime: "", armed: true }, now).kind, "finish");
-  assert.equal(live.getSaveAction({ date: "2026-09-23", startTime: "18:00", endTime: "", armed: true }, now).kind, "save");
+  assert.equal(live.getSaveAction({ date: "2026-09-23", startTime: "18:00", endTime: "", armed: true }, now).kind, "plan");
+  assert.deepEqual(live.getSaveAction({ date: "2026-09-23", startTime: "18:00", endTime: "20:00" }, now), { kind: "plan", label: "Begintijd bewaren" });
   assert.equal(live.getSaveAction({ date: "2026-09-24", startTime: "08:00", endTime: "", armed: true }, now).kind, "plan");
 });
 
@@ -37,19 +73,21 @@ test("inplannen en tussentijds bewaren slaan op zonder de tijd te stoppen", asyn
   const implementation = app.slice(app.indexOf("async function finishAndSaveWorkday()"), app.indexOf("function activateLiveWorkday()"));
   for (const [date, endTime, expectedStops] of [["2099-01-01", "", 0], ["2099-01-01", "18:00", 0], ["2020-01-01", "", 0], ["2020-01-01", "18:00", 1]]) {
     let stops = 0; let saves = 0;
+    const end = { value: endTime, dataset: {} };
     const context = vm.createContext({
       finishInProgress: false, currentSharedSource: null, liveWorkday: live,
+      liveWorkdayArmed: false, liveWorkdayController: null, clearCalculationDisplay: () => {},
       readLiveWorkdayState: () => ({ armed: false }),
-      form: { elements: { namedItem: (name) => ({value: name === "date" ? date : endTime}) } },
+      form: { elements: { namedItem: (name) => name === "date" ? {value:date} : end } },
       FormData: class {}, readCheckbox: () => false,
       stopLiveWorkdayAndCalculate: async () => { stops++; return {}; },
-      saveWorkday: async () => { saves++; return {date,endTime}; }
+      saveWorkday: async () => { saves++; return {date,endTime:end.value}; }
     });
     vm.runInContext(implementation,context);
     const saved = await context.finishAndSaveWorkday();
     assert.equal(stops, expectedStops);
     assert.equal(saves, 1);
-    assert.equal(saved.endTime, endTime);
+    assert.equal(saved.endTime, date === "2099-01-01" ? "" : endTime);
     assert.equal(context.finishInProgress, false);
   }
 });

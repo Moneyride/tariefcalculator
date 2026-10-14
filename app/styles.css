@@ -3587,6 +3587,12 @@ label {
   margin-top: 12px;
 }
 .project-pause-times input { min-width: 0; max-width: 100%; }
+.project-pause-times > .time-field,
+.project-pause-times .time-control { min-width: 0; width: 100%; }
+.project-pause-times .time-field { margin: 0; }
+.project-pause-times .time-control input[data-time-picker] { box-sizing: border-box; padding-left: 12px; }
+.project-pause-times .time-picker { width: min(240px, calc(100vw - 64px)); }
+.project-pause-times > .time-field:last-child .time-picker { left: auto; right: 0; }
 .travel-time-fields { display: grid; gap: 12px; min-width: 0; }
 .field-hint { margin: 4px 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .project-overtime-notice, .project-overtime-balance {

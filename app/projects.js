@@ -130,7 +130,7 @@
       ? "hour"
       : defaultFunction ? "day" : (accountSettings.defaultRateMode === "hour" ? "hour" : "day");
     return {
-      startTime: "08:00", endTime: "18:00", breakMinutes: 0,
+      startTime: "08:00", endTime: "", breakMinutes: 0,
       workFunctionId: defaultFunction?.id || "",
       workFunctionName: defaultFunction?.name || "",
       department: defaultFunction?.department || accountSettings.defaultDepartment,
@@ -202,10 +202,13 @@
     return Boolean(data?.enableTravelDay || (data?.startTime && data?.endTime));
   }
 
-  function totals(days, { allowIncomplete = false } = {}) {
+  function totals(days, { allowIncomplete = false, includePlanning = false } = {}) {
     const total = days.reduce((all, day) => {
       const data = storedDayData(day);
       if (allowIncomplete && !canCalculateDay(data)) {
+        if (includePlanning && day.workDate >= todayValue()) {
+          all.amount += Number(data.rateAmount) * (data.rateMode === "hour" ? Number(data.normalDayHours) : 1);
+        }
         all.incomplete += 1;
         return all;
       }
@@ -649,7 +652,7 @@
 
   function renderOverview({ resetCarousel = true } = {}) {
     const project = current.project;
-    const total = totals(current.days, { allowIncomplete: true });
+    const total = totals(current.days, { allowIncomplete: true, includePlanning: true });
     const earned = totals(current.days.filter((day) => day.workDate <= todayValue()), { allowIncomplete: true });
     if (resetCarousel) carouselIndex = initialCarouselIndex();
     carouselIndex = Math.max(0, Math.min(carouselIndex, current.days.length - 1));

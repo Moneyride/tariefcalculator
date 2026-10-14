@@ -14,7 +14,7 @@
     <link rel="icon" href="favicon.ico" sizes="any">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260730a">
-    <link rel="stylesheet" href="styles.css?v=20261013a">
+    <link rel="stylesheet" href="styles.css?v=20261014a">
     <script>window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};window.gtag("consent","default",{analytics_storage:"denied",ad_storage:"denied",ad_user_data:"denied",ad_personalization:"denied"});</script>
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
@@ -44,8 +44,8 @@
     <script src="interactionGuard.js?v=20260730a" defer></script>
     <script src="pauseControl.js?v=20261004a" defer></script>
     <script src="selectUi.js?v=20260922b" defer></script>
-    <script src="timePicker.js?v=20260730a" defer></script>
-    <script src="projects.js?v=20261013a" defer></script>
+    <script src="timePicker.js?v=20261014a" defer></script>
+    <script src="projects.js?v=20261014a" defer></script>
     <script src="pwa.js?v=20261004a" defer></script>
   </head>
   <body>
@@ -241,7 +241,10 @@
                 <h3>Registratie</h3>
                 <label><span>Dagnotities</span><textarea name="dayNotes" rows="3" maxlength="5000"></textarea></label>
                 <label class="checkbox-label"><input type="checkbox" name="enableTimedBreak"><span>Pauze met begin- en eindtijd</span></label>
-                <div class="conditional-field project-pause-times" data-for="enableTimedBreak"><label><span>Pauze vanaf</span><input type="time" name="breakStartTime" step="900"></label><label><span>Pauze tot</span><input type="time" name="breakEndTime" step="900"></label></div>
+                <div class="conditional-field project-pause-times" data-for="enableTimedBreak">
+                  <div class="time-field"><label for="project-break-start">Pauze vanaf</label><div class="time-control"><input id="project-break-start" type="text" name="breakStartTime" data-time-picker readonly><button class="time-picker-trigger" type="button" aria-label="Pauze vanaf kiezen"><span class="clock-icon" aria-hidden="true"></span></button></div></div>
+                  <div class="time-field"><label for="project-break-end">Pauze tot</label><div class="time-control"><input id="project-break-end" type="text" name="breakEndTime" data-time-picker readonly><button class="time-picker-trigger" type="button" aria-label="Pauze tot kiezen"><span class="clock-icon" aria-hidden="true"></span></button></div></div>
+                </div>
                 <label class="checkbox-label"><input type="checkbox" name="enableTravelDay"><span>Reisdag</span></label>
                 <div class="conditional-field" data-for="enableTravelDay">
                   <label><span>Reisgebied</span><select name="travelRegion"><option value="within_europe">Binnen Europa</option><option value="outside_europe">Buiten Europa</option></select></label>

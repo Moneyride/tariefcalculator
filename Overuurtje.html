@@ -3634,6 +3634,12 @@ label {
   margin-top: 12px;
 }
 .project-pause-times input { min-width: 0; max-width: 100%; }
+.project-pause-times > .time-field,
+.project-pause-times .time-control { min-width: 0; width: 100%; }
+.project-pause-times .time-field { margin: 0; }
+.project-pause-times .time-control input[data-time-picker] { box-sizing: border-box; padding-left: 12px; }
+.project-pause-times .time-picker { width: min(240px, calc(100vw - 64px)); }
+.project-pause-times > .time-field:last-child .time-picker { left: auto; right: 0; }
 .travel-time-fields { display: grid; gap: 12px; min-width: 0; }
 .field-hint { margin: 4px 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .project-overtime-notice, .project-overtime-balance {
@@ -9464,8 +9470,8 @@ button.crew-badge:disabled { cursor: default; }
             <div id="project-pause-period" hidden>
               <label class="checkbox-label"><input type="checkbox" name="enableTimedBreak"><span>Pauze met begin- en eindtijd</span></label>
               <div class="project-pause-times" id="project-pause-times" hidden>
-                <label><span>Pauze vanaf</span><input type="time" name="breakStartTime" step="900" value="13:00"></label>
-                <label><span>Pauze tot</span><input type="time" name="breakEndTime" step="900" value="14:00"></label>
+                <div class="time-field"><label for="breakStartTime">Pauze vanaf</label><div class="time-control"><input id="breakStartTime" type="text" name="breakStartTime" value="13:00" data-time-picker readonly><button class="time-picker-trigger" type="button" aria-label="Pauze vanaf kiezen"><span class="clock-icon" aria-hidden="true"></span></button></div></div>
+                <div class="time-field"><label for="breakEndTime">Pauze tot</label><div class="time-control"><input id="breakEndTime" type="text" name="breakEndTime" value="14:00" data-time-picker readonly><button class="time-picker-trigger" type="button" aria-label="Pauze tot kiezen"><span class="clock-icon" aria-hidden="true"></span></button></div></div>
               </div>
               <p class="field-hint" id="travel-pause-time-hint" hidden>Pauzetijden gebruiken de lokale tijd van de vertreklocatie.</p>
             </div>
@@ -13150,6 +13156,10 @@ globalThis.TariffCalculator = {
 
   function getSaveAction({ date, startTime, endTime, armed = false }, now = new Date()) {
     if (date && date > localDateValue(now)) return { kind: "plan", label: "Werkdag inplannen" };
+    if (date === localDateValue(now) && parseTime(startTime) !== null
+      && parseTime(startTime) > now.getHours() * 60 + now.getMinutes()) {
+      return { kind: "plan", label: "Begintijd bewaren" };
+    }
     if (getState({ date, startTime, endTime, armed, now }).active) return { kind: "finish", label: "Dag afsluiten" };
     if (!endTime) return { kind: "save", label: "Werkdag bewaren" };
     return { kind: "finish", label: "Dag afsluiten" };
@@ -27936,7 +27946,7 @@ var qrcode = function() {
     const open = (event) => {
       event.preventDefault();
       event.stopPropagation();
-      if (field.dataset.sharedLocked === "true" || trigger.disabled) return;
+      if (field.disabled || field.dataset.sharedLocked === "true" || trigger.disabled) return;
       if (
         field.hasAttribute("data-time-picker-current")
         && field.dataset.timePicked !== "true"
@@ -28613,7 +28623,13 @@ function renderCustomEquipment(items) {
 function buildWorkdaySnapshot() {
   const formData = new FormData(form);
   const settings = getSettingsFromForm();
-  const endTime = form.elements.namedItem("endTime").value;
+  const enteredEndTime = form.elements.namedItem("endTime").value;
+  const planning = !currentSharedSource && liveWorkday.getSaveAction({
+    date: form.elements.namedItem("date").value,
+    startTime: form.elements.namedItem("startTime").value,
+    endTime: enteredEndTime
+  }).kind === "plan";
+  const endTime = planning ? "" : enteredEndTime;
   return {
     schemaVersion: 1,
     workdayName: String(form.elements.namedItem("workdayName")?.value || "").trim(),
@@ -29104,7 +29120,9 @@ function updateSharedReceiverMode() {
 }
 
 function applyWorkdaySnapshot(workday, { projectContext = null, freeActive = false } = {}) {
-  const snapshot = workday?.calculationData || {};
+  const storedSnapshot = workday?.calculationData || {};
+  const planning = !storedSnapshot.sharedSourceId && liveWorkday.getSaveAction(storedSnapshot).kind === "plan";
+  const snapshot = planning ? { ...storedSnapshot, endTime: "" } : storedSnapshot;
   if (!snapshot.date) return;
 
   persistedWorkdayEndTime = snapshot.endTime || "";
@@ -30441,7 +30459,19 @@ async function finishAndSaveWorkday() {
       endTime: form.elements.namedItem("endTime").value
     });
     // Only a running day or an explicit end time can close the day.
-    if (action.kind !== "finish") return await saveWorkday({ showIndicator: true });
+    if (action.kind !== "finish") {
+      if (action.kind === "plan") {
+        const plannedEnd = form.elements.namedItem("endTime");
+        plannedEnd.value = "";
+        delete plannedEnd.dataset.timePicked;
+        delete plannedEnd.dataset.timeRestored;
+        delete plannedEnd.dataset.liveStopped;
+        liveWorkdayArmed = true;
+        clearCalculationDisplay();
+        liveWorkdayController?.update();
+      }
+      return await saveWorkday({ showIndicator: true });
+    }
     const endTimeField = form.elements.namedItem("endTime");
     const isTravelDay = readCheckbox(new FormData(form), "enableTravelDay");
     if (!endTimeField.value && !isTravelDay) liveWorkdayArmed = true;
@@ -30863,6 +30893,15 @@ projectCreateLink?.addEventListener("click", (event) => {
   sessionUi?.openUpgrade();
 });
 form.addEventListener("change", (event) => {
+  if (["date", "startTime"].includes(event.target.name) && !currentSharedSource
+    && liveWorkday.getSaveAction(readLiveWorkdayState()).kind === "plan") {
+    const end = form.elements.namedItem("endTime");
+    end.value = "";
+    delete end.dataset.timePicked;
+    delete end.dataset.timeRestored;
+    delete end.dataset.liveStopped;
+    liveWorkdayArmed = true;
+  }
   if (
     event.target.name === "startTime"
     && event.target.dataset.timePicked === "true"

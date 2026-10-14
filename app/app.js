@@ -637,7 +637,13 @@ function renderCustomEquipment(items) {
 function buildWorkdaySnapshot() {
   const formData = new FormData(form);
   const settings = getSettingsFromForm();
-  const endTime = form.elements.namedItem("endTime").value;
+  const enteredEndTime = form.elements.namedItem("endTime").value;
+  const planning = !currentSharedSource && liveWorkday.getSaveAction({
+    date: form.elements.namedItem("date").value,
+    startTime: form.elements.namedItem("startTime").value,
+    endTime: enteredEndTime
+  }).kind === "plan";
+  const endTime = planning ? "" : enteredEndTime;
   return {
     schemaVersion: 1,
     workdayName: String(form.elements.namedItem("workdayName")?.value || "").trim(),
@@ -1128,7 +1134,9 @@ function updateSharedReceiverMode() {
 }
 
 function applyWorkdaySnapshot(workday, { projectContext = null, freeActive = false } = {}) {
-  const snapshot = workday?.calculationData || {};
+  const storedSnapshot = workday?.calculationData || {};
+  const planning = !storedSnapshot.sharedSourceId && liveWorkday.getSaveAction(storedSnapshot).kind === "plan";
+  const snapshot = planning ? { ...storedSnapshot, endTime: "" } : storedSnapshot;
   if (!snapshot.date) return;
 
   persistedWorkdayEndTime = snapshot.endTime || "";
@@ -2465,7 +2473,19 @@ async function finishAndSaveWorkday() {
       endTime: form.elements.namedItem("endTime").value
     });
     // Only a running day or an explicit end time can close the day.
-    if (action.kind !== "finish") return await saveWorkday({ showIndicator: true });
+    if (action.kind !== "finish") {
+      if (action.kind === "plan") {
+        const plannedEnd = form.elements.namedItem("endTime");
+        plannedEnd.value = "";
+        delete plannedEnd.dataset.timePicked;
+        delete plannedEnd.dataset.timeRestored;
+        delete plannedEnd.dataset.liveStopped;
+        liveWorkdayArmed = true;
+        clearCalculationDisplay();
+        liveWorkdayController?.update();
+      }
+      return await saveWorkday({ showIndicator: true });
+    }
     const endTimeField = form.elements.namedItem("endTime");
     const isTravelDay = readCheckbox(new FormData(form), "enableTravelDay");
     if (!endTimeField.value && !isTravelDay) liveWorkdayArmed = true;
@@ -2887,6 +2907,15 @@ projectCreateLink?.addEventListener("click", (event) => {
   sessionUi?.openUpgrade();
 });
 form.addEventListener("change", (event) => {
+  if (["date", "startTime"].includes(event.target.name) && !currentSharedSource
+    && liveWorkday.getSaveAction(readLiveWorkdayState()).kind === "plan") {
+    const end = form.elements.namedItem("endTime");
+    end.value = "";
+    delete end.dataset.timePicked;
+    delete end.dataset.timeRestored;
+    delete end.dataset.liveStopped;
+    liveWorkdayArmed = true;
+  }
   if (
     event.target.name === "startTime"
     && event.target.dataset.timePicked === "true"
