@@ -63,7 +63,7 @@
     ].map((part) => String(part).padStart(2, "0")).join(":");
   }
 
-  function getState({ armed = false, date, startTime, endTime, breakMinutes = 0, now = new Date() }) {
+  function getState({ armed = false, date, startTime, endTime, breakMinutes = 0, enableTimedBreak = false, breakStartTime, breakEndTime, enableTravelDay = false, travelTimeDifferenceMinutes = 0, now = new Date() }) {
     const startMinutes = parseTime(startTime);
     const isToday = date === localDateValue(now);
     const isYesterday = date === previousLocalDateValue(now);
@@ -78,13 +78,25 @@
     }
 
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const elapsedSinceStart = currentMinutes - startMinutes + (isYesterday ? MINUTES_PER_DAY : 0);
+    const elapsedSinceStart = currentMinutes - startMinutes + (isYesterday ? MINUTES_PER_DAY : 0)
+      - (enableTravelDay ? Number(travelTimeDifferenceMinutes) || 0 : 0);
     if (elapsedSinceStart < 0) {
       return { active: false, elapsedMinutes: 0, workedMinutes: 0 };
     }
 
     const elapsedMinutes = Math.floor(elapsedSinceStart / QUARTER_MINUTES) * QUARTER_MINUTES;
-    const workedMinutes = Math.max(0, elapsedMinutes - Math.max(0, Number(breakMinutes) || 0));
+    let appliedBreak = Math.max(0, Number(breakMinutes) || 0);
+    if (enableTimedBreak) {
+      let pauseStart = parseTime(breakStartTime);
+      let pauseEnd = parseTime(breakEndTime);
+      appliedBreak = 0;
+      if (pauseStart !== null && pauseEnd !== null && pauseStart !== pauseEnd) {
+        if (pauseStart < startMinutes) pauseStart += MINUTES_PER_DAY;
+        while (pauseEnd <= pauseStart) pauseEnd += MINUTES_PER_DAY;
+        appliedBreak = Math.max(0, Math.min(startMinutes + elapsedMinutes, pauseEnd) - Math.max(startMinutes, pauseStart));
+      }
+    }
+    const workedMinutes = Math.max(0, elapsedMinutes - appliedBreak);
     return {
       active: true,
       elapsedMinutes,

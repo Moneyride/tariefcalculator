@@ -3607,6 +3607,43 @@ label {
   transform: translate(3px, 1px) rotate(28deg);
 }
 
+.day-registration-details {
+  display: grid;
+  gap: 16px;
+  margin: 0 24px 24px;
+  min-width: 0;
+}
+.day-registration-details textarea {
+  display: block;
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  margin-top: 8px;
+  padding: 12px 16px;
+  border: 1px solid rgba(31, 67, 53, 0.15);
+  border-radius: 8px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.62);
+  font: inherit;
+}
+.day-registration-details > .saas-form-status:empty { display: none; }
+.project-pause-times {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.project-pause-times input { min-width: 0; max-width: 100%; }
+.travel-time-fields { display: grid; gap: 12px; min-width: 0; }
+.field-hint { margin: 4px 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.project-overtime-notice, .project-overtime-balance {
+  margin: 16px 0;
+  padding: 16px 0;
+  border-top: 1px solid rgba(31, 67, 53, 0.15);
+  border-bottom: 1px solid rgba(31, 67, 53, 0.15);
+}
+.project-overtime-notice { padding: 16px; }
+
 .pause-control {
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr) 48px;
@@ -9423,6 +9460,18 @@ button.crew-badge:disabled { cursor: default; }
             </div>
           </section>
 
+          <section class="day-registration-details">
+            <div id="project-pause-period" hidden>
+              <label class="checkbox-label"><input type="checkbox" name="enableTimedBreak"><span>Pauze met begin- en eindtijd</span></label>
+              <div class="project-pause-times" id="project-pause-times" hidden>
+                <label><span>Pauze vanaf</span><input type="time" name="breakStartTime" step="900" value="13:00"></label>
+                <label><span>Pauze tot</span><input type="time" name="breakEndTime" step="900" value="14:00"></label>
+              </div>
+              <p class="field-hint" id="travel-pause-time-hint" hidden>Pauzetijden gebruiken de lokale tijd van de vertreklocatie.</p>
+            </div>
+            <label><span>Dagnotities</span><textarea name="dayNotes" rows="3" maxlength="5000" placeholder="Bijvoorbeeld dronevluchten, Ronin of afspraken"></textarea></label>
+            <p class="saas-form-status" id="day-notes-status" role="status"></p>
+          </section>
           <section class="form-section options-section">
             <button class="options-toggle" id="toggle-extras" type="button" aria-expanded="false" aria-controls="extra-options">
               <span>Extra’s</span>
@@ -9462,6 +9511,11 @@ button.crew-badge:disabled { cursor: default; }
                     <option value="outside_europe">Buiten Europa</option>
                   </select>
                 </label>
+              </div>
+              <div class="travel-time-fields" id="travel-time-fields" hidden>
+                <label><span>Tijdsverschil aankomst ten opzichte van vertrek</span><span class="suffixed-input"><input type="number" name="travelTimeDifferenceHours" min="-26" max="26" step="0.25" value="0"><span>uur</span></span></label>
+                <p class="field-hint">Een uur vroeger op de aankomstlocatie? Vul −1 in. Gebruik lokale vertrek- en aankomsttijden.</p>
+                <label><span>Aankomstdag</span><select name="travelArrivalDayOffset"><option value="">Automatisch</option><option value="0">Zelfde dag</option><option value="1">Volgende dag</option><option value="2">Twee dagen later</option></select></label>
               </div>
               <div class="extra-option is-pro-locked" id="drone-option" role="button" tabindex="0" aria-label="Drone tarief is beschikbaar met Pro">
                 <label class="checkbox-label">
@@ -9605,6 +9659,7 @@ button.crew-badge:disabled { cursor: default; }
       </details>
 
         <section class="result-panel" aria-live="polite">
+          <p class="project-overtime-notice" id="project-overtime-notice" hidden>Overuren blijven geregistreerd en worden na afronding van het project met onderuren verrekend. Ze zijn nog niet opgenomen in dit dagtotaal.</p>
           <div class="result-header">
             <h2>Resultaat</h2>
           </div>
@@ -9705,6 +9760,7 @@ button.crew-badge:disabled { cursor: default; }
             <div><dt>Datum</dt><dd data-print="date">-</dd></div>
             <div><dt>Tijden</dt><dd data-print="times">-</dd></div>
             <div data-print-row="break" hidden><dt>Pauze</dt><dd data-print="breakMinutes">-</dd></div>
+            <div data-print-row="projectBalance" hidden><dt>Overuren</dt><dd data-print="projectBalance">-</dd></div>
             <div><dt>Totaal gewerkt</dt><dd data-print="totalHours">-</dd></div>
           </dl>
         </header>
@@ -10953,12 +11009,13 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
 
   const supabaseService = globalThis.OveruurtjeSupabase;
   const STORAGE_KEY = "overuurtjeMockProjects";
-  const PROJECT_COLUMNS = "id,user_id,name,client_name,start_date,end_date,notes,created_at,updated_at";
+  const PROJECT_COLUMNS = "id,user_id,name,client_name,start_date,end_date,notes,work_rules,created_at,updated_at";
   const DAY_COLUMNS = "id,project_id,user_id,work_date,calculation_data,created_at,updated_at";
 
   const normalizeProject = (row) => ({
     id: row.id, userId: row.user_id, name: row.name, clientName: row.client_name || "",
     startDate: row.start_date, endDate: row.end_date, notes: row.notes || "",
+    workRules: row.work_rules || {},
     createdAt: row.created_at, updatedAt: row.updated_at
   });
   const normalizeDay = (row) => ({
@@ -10974,6 +11031,22 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     const value = await supabaseService.getClient();
     if (!value) throw new Error("Supabase is niet beschikbaar.");
     return value;
+  }
+
+  async function saveWorkRules(userId, projectId, workRules, options = {}) {
+    if (isMock(options)) {
+      const store = readMock();
+      const project = store[userId]?.projects?.[projectId];
+      if (!project) throw new Error("Project niet gevonden.");
+      project.workRules = workRules;
+      project.updatedAt = new Date().toISOString();
+      writeMock(store);
+      return project;
+    }
+    const db = await client();
+    const { data, error } = await db.from("projects").update({ work_rules: workRules }).eq("id", projectId).eq("user_id", userId).select(PROJECT_COLUMNS).single();
+    if (error) throw error;
+    return normalizeProject(data);
   }
 
   async function list(userId, options = {}) {
@@ -11065,7 +11138,7 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     if (isMock(options)) {
       const all = readMock(); const store = all[userId] || { projects: {}, days: {} };
       const old = values.id ? store.projects[values.id] : null;
-      const project = { id: values.id || mockId(), userId, name: values.name.trim(), clientName: values.clientName?.trim() || "", startDate: values.startDate, endDate: values.endDate, notes: values.notes?.trim() || "", createdAt: old?.createdAt || now, updatedAt: now };
+      const project = { id: values.id || mockId(), userId, name: values.name.trim(), clientName: values.clientName?.trim() || "", startDate: values.startDate, endDate: values.endDate, notes: values.notes?.trim() || "", workRules: old?.workRules || {}, createdAt: old?.createdAt || now, updatedAt: now };
       store.projects[project.id] = project; all[userId] = store; writeMock(all); return project;
     }
     const db = await client();
@@ -11173,6 +11246,7 @@ window.OVERUURTJE_RUNTIME_CONFIG = Object.freeze({
     listDaysByDate,
     listAllDays,
     saveProject,
+    saveWorkRules,
     replaceDays,
     saveDay,
     remove
@@ -11932,6 +12006,39 @@ function getWorkInterval(startTime, endTime) {
   };
 }
 
+function getTravelInterval(input) {
+  const start = parseTimeToMinutes(input.startTime);
+  const localEnd = parseTimeToMinutes(input.endTime);
+  const offset = Number(input.travelTimeDifferenceMinutes) || 0;
+  if (Math.abs(offset) > 26 * 60) throw new Error("Controleer het tijdsverschil van je reis.");
+  const explicitDay = input.travelArrivalDayOffset !== undefined && input.travelArrivalDayOffset !== "";
+  const dayOffset = explicitDay ? Number(input.travelArrivalDayOffset) : (localEnd - offset <= start ? 1 : 0);
+  const end = localEnd + dayOffset * MINUTES_PER_DAY - offset;
+  if (end <= start || dayOffset < 0 || dayOffset > 2) throw new Error("Controleer de aankomstdag en het tijdsverschil.");
+  return { start, end, totalMinutes: end - start, endsNextDay: dayOffset > 0 };
+}
+
+function timedBreak(interval, input) {
+  if (!input.enableTimedBreak) return null;
+  if (!input.breakStartTime || !input.breakEndTime) throw new Error("Vul de begin- en eindtijd van de pauze in.");
+  let start = parseTimeToMinutes(input.breakStartTime);
+  let end = parseTimeToMinutes(input.breakEndTime);
+  if (start === end) return null;
+  if (start < interval.start) start += MINUTES_PER_DAY;
+  while (end <= start) end += MINUTES_PER_DAY;
+  start = Math.max(start, interval.start);
+  end = Math.min(end, interval.end);
+  return end > start ? { start, end } : null;
+}
+
+function paidNightWindows(windows, pause) {
+  return windows.flatMap(window => {
+    const before = { start: window.start, end: Math.min(window.end, pause.start) };
+    const after = { start: Math.max(window.start, pause.end) - (pause.end - pause.start), end: window.end - (pause.end - pause.start) };
+    return [before, after].filter(part => part.end > part.start);
+  });
+}
+
 function getOverlapMinutes(aStart, aEnd, bStart, bEnd) {
   return Math.max(0, Math.min(aEnd, bEnd) - Math.max(aStart, bStart));
 }
@@ -12105,9 +12212,14 @@ function calculateTariff(input, customSettings = {}) {
   const hasTimes = Boolean(input.startTime && input.endTime);
   if (!isTravelDay && !hasTimes) throw new Error("Vul een start- en eindtijd in.");
   const interval = hasTimes
-    ? getWorkInterval(input.startTime, input.endTime)
+    ? (isTravelDay ? getTravelInterval(input) : getWorkInterval(input.startTime, input.endTime))
     : { start: 0, end: 0, totalMinutes: 0, endsNextDay: false };
-  const breakMinutes = Math.min(interval.totalMinutes, Math.max(0, Number(input.breakMinutes) || 0));
+  const pause = timedBreak(interval, input);
+  const breakMinutes = input.enableTimedBreak
+    ? (pause ? pause.end - pause.start : 0)
+    : Math.min(interval.totalMinutes, Math.max(0, Number(input.breakMinutes) || 0));
+  const calculationInterval = pause ? { ...interval, end: interval.end - breakMinutes } : interval;
+  const calculationBreakMinutes = pause ? 0 : breakMinutes;
   const workedMinutes = interval.totalMinutes - breakMinutes;
   const totalHours = minutesToHours(workedMinutes);
   const rateMode = input.rateMode === "hour" ? "hour" : "day";
@@ -12117,7 +12229,7 @@ function calculateTariff(input, customSettings = {}) {
   const regularHours = Math.min(totalHours, settings.normalDayHours);
 
   const normalMinutes = settings.normalDayHours * MINUTES_PER_HOUR;
-  const overtimeStart = interval.start + normalMinutes + breakMinutes;
+  const overtimeStart = interval.start + normalMinutes + calculationBreakMinutes;
   const overtimeEnabled = Boolean(
     settings.enableOvertime10To12
     || settings.enableOvertimeFrom12
@@ -12126,12 +12238,13 @@ function calculateTariff(input, customSettings = {}) {
   const overtimeMinutes = overtimeEnabled ? Math.max(0, workedMinutes - normalMinutes) : 0;
   const overtimeHours = minutesToHours(overtimeMinutes);
 
-  const nightWindows = hasTimes ? getNightWindows(interval, settings) : [];
-  const rawNightMinutes = getTotalOverlapWithWindows(interval.start, interval.end, nightWindows);
+  const actualNightWindows = hasTimes ? getNightWindows(interval, settings) : [];
+  const nightWindows = pause ? paidNightWindows(actualNightWindows, pause) : actualNightWindows;
+  const rawNightMinutes = getTotalOverlapWithWindows(calculationInterval.start, calculationInterval.end, nightWindows);
   const roundedNightMinutes = roundUpToInterval(rawNightMinutes, settings.nightRoundingMinutes);
 
   const rawNightOvertimeMinutes =
-    overtimeMinutes > 0 ? getTotalOverlapWithWindows(overtimeStart, interval.end, nightWindows) : 0;
+    overtimeMinutes > 0 ? getTotalOverlapWithWindows(overtimeStart, calculationInterval.end, nightWindows) : 0;
   const roundedNightOvertimeMinutes = Math.min(
     roundedNightMinutes,
     roundUpToInterval(rawNightOvertimeMinutes, settings.nightRoundingMinutes)
@@ -12183,13 +12296,13 @@ function calculateTariff(input, customSettings = {}) {
   const nightTariffEnabled = Boolean(settings.enableNightTariff) && !isTravelDay;
   const pureNightAmount = pureNightHours * hourlyRate * settings.pureNightSurchargeFactor;
   const nightOvertimeSurcharge = calculateNightOvertimeSurcharge(
-    interval,
+    calculationInterval,
     nightWindows,
     rawNightOvertimeMinutes,
     roundedNightOvertimeMinutes,
     hourlyRate,
     settings,
-    breakMinutes
+    calculationBreakMinutes
   );
   const overlapNightAmount = nightOvertimeSurcharge.amount;
   const nightAmount = nightTariffEnabled ? pureNightAmount + overlapNightAmount : 0;
@@ -12208,7 +12321,8 @@ function calculateTariff(input, customSettings = {}) {
   const customEquipmentAmount = customEquipmentItems.reduce((total, item) => total + item.amount, 0);
   const extraTariffAmount = droneTariffAmount + ronin4dTariffAmount + customEquipmentAmount + kilometerAmount + parkingAmount;
 
-  const appliedOvertimeAmount = isTravelDay ? 0 : overtimeAmount;
+  const overtimeDeferred = Boolean(input.deferProjectOvertime);
+  const appliedOvertimeAmount = isTravelDay || overtimeDeferred ? 0 : overtimeAmount;
   const subtotalExVat = baseAmount + appliedOvertimeAmount + nightAmount + extraTariffAmount;
   const vatAmount = subtotalExVat * (settings.vatPercent / 100);
   const totalIncVat = subtotalExVat + vatAmount;
@@ -12217,6 +12331,9 @@ function calculateTariff(input, customSettings = {}) {
     settings,
     interval,
     rateMode,
+    overtimeDeferred,
+    deferredOvertimeAmount: overtimeDeferred ? overtimeAmount : 0,
+    travelTimeDifferenceMinutes: isTravelDay ? Number(input.travelTimeDifferenceMinutes) || 0 : 0,
     breakMinutes,
     workedMinutes,
     hourlyRate,
@@ -12226,7 +12343,7 @@ function calculateTariff(input, customSettings = {}) {
     hourlyMinimumAmount,
     minimumAdjustmentAmount,
     totalHours,
-    overtimeHours: isTravelDay ? 0 : overtimeHours,
+    overtimeHours: overtimeDeferred ? Math.max(0, totalHours - settings.normalDayHours) : isTravelDay ? 0 : overtimeHours,
     standardOvertimeHours: isTravelDay ? 0 : overtime.standardOvertimeHours,
     overtime10To12Hours: isTravelDay ? 0 : overtime.overtime10To12Hours,
     overtimeFrom12Hours: isTravelDay ? 0 : overtime.overtimeFrom12Hours,
@@ -12237,12 +12354,12 @@ function calculateTariff(input, customSettings = {}) {
     nightOvertimeHours: nightTariffEnabled ? nightOvertimeHours : 0,
     pureNightHours: nightTariffEnabled ? pureNightHours : 0,
     baseAmount,
-    standardOvertimeAmount: isTravelDay ? 0 : overtime.standardOvertimeAmount,
-    overtime10To12Amount: isTravelDay ? 0 : overtime.overtime10To12Amount,
-    overtimeFrom12Amount: isTravelDay ? 0 : overtime.overtimeFrom12Amount,
-    overtimeFrom14Amount: isTravelDay ? 0 : overtime.overtimeFrom14Amount,
-    firstOvertimeAmount: isTravelDay ? 0 : overtime.overtime10To12Amount,
-    nextOvertimeAmount: isTravelDay ? 0 : overtime.overtimeFrom12Amount + overtime.overtimeFrom14Amount,
+    standardOvertimeAmount: isTravelDay || overtimeDeferred ? 0 : overtime.standardOvertimeAmount,
+    overtime10To12Amount: isTravelDay || overtimeDeferred ? 0 : overtime.overtime10To12Amount,
+    overtimeFrom12Amount: isTravelDay || overtimeDeferred ? 0 : overtime.overtimeFrom12Amount,
+    overtimeFrom14Amount: isTravelDay || overtimeDeferred ? 0 : overtime.overtimeFrom14Amount,
+    firstOvertimeAmount: isTravelDay || overtimeDeferred ? 0 : overtime.overtime10To12Amount,
+    nextOvertimeAmount: isTravelDay || overtimeDeferred ? 0 : overtime.overtimeFrom12Amount + overtime.overtimeFrom14Amount,
     overtimeAmount: appliedOvertimeAmount,
     pureNightAmount: nightTariffEnabled ? pureNightAmount : 0,
     overlapNightAmount: nightTariffEnabled ? overlapNightAmount : 0,
@@ -12346,6 +12463,12 @@ globalThis.TariffCalculator = {
       startTime: snapshot.startTime,
       endTime: snapshot.endTime,
       breakMinutes: Number(snapshot.breakMinutes ?? settings.breakMinutes ?? 0),
+      enableTimedBreak: Boolean(snapshot.enableTimedBreak),
+      breakStartTime: snapshot.breakStartTime,
+      breakEndTime: snapshot.breakEndTime,
+      deferProjectOvertime: Boolean(snapshot.deferProjectOvertime),
+      travelTimeDifferenceMinutes: Number(snapshot.travelTimeDifferenceMinutes) || 0,
+      travelArrivalDayOffset: snapshot.travelArrivalDayOffset ?? "",
       rateMode: settings.rateMode || snapshot.rateMode || "day",
       hourlyRate: Number(settings.hourlyRate || snapshot.hourlyRate || 0),
       enableDroneTariff: Boolean(extras.enableDroneTariff),
@@ -12398,6 +12521,7 @@ globalThis.TariffCalculator = {
         ["overtime_250", result.overtimeFrom14Hours, result.overtimeFrom14Amount, "Overuren 250%"]
       ];
       overtime.forEach(([category, hours, amount, description]) => {
+        if (result.overtimeDeferred) return;
         if (Number(hours) > 0) lines.push(line(category, `${description} – ${Number(hours).toLocaleString("nl-NL")} uur`, hours, "uur", Number(amount) / Number(hours), vat, source));
       });
       if (Number(result.nightHours) > 0) {
@@ -12440,6 +12564,8 @@ globalThis.TariffCalculator = {
   }
 
   function fromProject(project, days) {
+    const balancing = Boolean(project.workRules?.balanceOvertime);
+    const balance = balancing ? projectBalance(project, days) : null;
     const selected = (days || []).filter((day) => day.selected !== false);
     const models = selected.map((day) => {
       const data = day.calculationData || day.calculation_data || {};
@@ -12449,6 +12575,7 @@ globalThis.TariffCalculator = {
         workDate: day.workDate || day.work_date || data.date,
         calculationData: {
           ...data,
+          deferProjectOvertime: balancing,
           date: day.workDate || day.work_date || data.date,
           clientName: project.clientName || project.client_name || data.clientName
         }
@@ -12464,9 +12591,18 @@ globalThis.TariffCalculator = {
         lineItems: model.lineItems.map((item) => ({ ...item, source }))
       };
     });
+    if (balancing && balance.settled && balance.amount > 0) {
+      if (selected.length !== (days || []).length) throw new Error("Exporteer alle projectdagen samen om het verrekende urensaldo mee te nemen.");
+      const target = models.at(-1);
+      balance.bands.filter(band => band.remaining > 0).forEach(band => {
+        const item = line(`overtime_${band.percent}`, `Urensaldo project ${band.percent}% – ${band.remaining.toLocaleString("nl-NL")} uur`, band.remaining, "uur", band.unitPrice, band.vatPercent, target.sourceItems[0]);
+        if (item) target.lineItems.push({ ...item, projectSettlement: true });
+      });
+    }
     return {
       schemaVersion: 1,
       sourceType: "project", sourceId: project.id,
+      requiresFullProject: Boolean(balancing && balance.settled && balance.amount > 0),
       sourceItems: models.flatMap((model) => model.sourceItems.map((item) => ({ ...item, sourceType: "project_day" }))),
       date: new Date().toISOString().slice(0, 10),
       customer: { name: project.clientName || project.client_name || "", localKey: customerKey(project.clientName || project.client_name), key: customerKey(project.clientName || project.client_name) },
@@ -12477,12 +12613,55 @@ globalThis.TariffCalculator = {
     };
   }
 
+  function projectBalance(project, days, now = new Date()) {
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const sorted = [...(days || [])].sort((a, b) => String(a.id).localeCompare(String(b.id)));
+    const prepared = sorted.map(day => {
+      const snapshot = normalizeSnapshot(day.calculationData || day.calculation_data || {});
+      const result = snapshot.startTime && snapshot.endTime ? calculationFromSnapshot({ ...snapshot, deferProjectOvertime: true }) : null;
+      return { day, snapshot, result, normal: Number(snapshot.settings.normalDayHours) || 10 };
+    });
+    const signature = JSON.stringify(prepared.map(({ day, snapshot, result, normal }) => [
+      day.id, day.workDate || day.work_date, snapshot.startTime || "", snapshot.endTime || "", normal,
+      snapshot.enableTimedBreak ? [snapshot.breakStartTime || "", snapshot.breakEndTime || ""] : null,
+      Number(snapshot.travelTimeDifferenceMinutes) || 0, String(snapshot.travelArrivalDayOffset ?? ""),
+      result && [result.totalHours, result.hourlyRate, result.baseAmount, result.nightAmount, result.extraTariffAmount,
+        result.travelPercent, result.breakMinutes, result.customEquipmentItems,
+        globalThis.TariffCalculator.calculateOvertimeAmount(result.totalHours, result.hourlyRate, result.settings),
+        Boolean(result.settings.enableOvertime10To12 || result.settings.enableOvertimeFrom12 || result.settings.enableOvertimeFrom14)]
+    ]));
+    const entries = prepared.filter(({ day, result }) => result && (day.workDate || day.work_date) <= today);
+    const overtime = entries.reduce((sum, item) => sum + Math.max(0, item.result.totalHours - item.normal), 0);
+    const undertime = entries.reduce((sum, item) => sum + Math.max(0, item.normal - item.result.totalHours), 0);
+    const complete = sorted.length > 0 && entries.length === sorted.length;
+    const payableHours = Math.max(0, overtime - undertime);
+    const bands = entries.flatMap(({ result }) => {
+      const settings = result.settings;
+      if (!settings.enableOvertime10To12 && !settings.enableOvertimeFrom12 && !settings.enableOvertimeFrom14) return [];
+      const rates = globalThis.TariffCalculator.calculateOvertimeAmount(result.totalHours, result.hourlyRate, settings);
+      return [["standardOvertime", 100], ["overtime10To12", 150], ["overtimeFrom12", 200], ["overtimeFrom14", 250]]
+        .map(([key, percent]) => ({ percent, hours: rates[`${key}Hours`], remaining: rates[`${key}Hours`], unitPrice: result.hourlyRate * percent / 100, vatPercent: settings.vatPercent }))
+        .filter(band => band.hours > 0);
+    }).sort((a, b) => b.percent - a.percent || b.unitPrice - a.unitPrice);
+    let credit = undertime;
+    for (const band of bands) {
+      const removed = Math.min(credit, band.hours);
+      band.remaining -= removed;
+      credit -= removed;
+    }
+    const settled = Boolean(complete && project.workRules?.settlement?.signature === signature);
+    const estimatedAmount = roundMoney(bands.reduce((sum, band) => sum + band.remaining * band.unitPrice, 0));
+    return { overtime, undertime, payableHours, complete, settled, signature, bands, estimatedAmount, amount: settled ? estimatedAmount : 0 };
+  }
+
   function withSourceItems(exportModel, selectedIds) {
     const ids = new Set(selectedIds || []);
+    const partialSettlement = exportModel.requiresFullProject && exportModel.sourceItems.some(item => !ids.has(item.sourceId));
     return {
       ...exportModel,
+      selectionError: partialSettlement ? "Selecteer alle projectdagen om het verrekende urensaldo correct te exporteren." : "",
       sourceItems: exportModel.sourceItems.filter((item) => ids.has(item.sourceId)),
-      lineItems: exportModel.lineItems.filter((item) => ids.has(item.source?.sourceId))
+      lineItems: exportModel.lineItems.filter((item) => ids.has(item.source?.sourceId) && !(partialSettlement && item.projectSettlement))
     };
   }
 
@@ -12506,6 +12685,7 @@ globalThis.TariffCalculator = {
     fromProject,
     withSourceItems,
     summarizeTotals,
+    projectBalance,
     customerKey
   });
 })();
@@ -12622,7 +12802,7 @@ globalThis.TariffCalculator = {
   function syncSubmitState() {
     const submit = ensureDialog().querySelector("button[type='submit']");
     const confirmed = dialog.querySelector("input[name='confirmReexport']").checked;
-    submit.disabled = !previewReady || creatingDraft || (requiresReexport && !confirmed);
+    submit.disabled = !previewReady || creatingDraft || (requiresReexport && !confirmed) || Boolean(originalModel && selectedModel().selectionError);
   }
   function createdExportIds() {
     const created = new Set((exportHistory.exports || []).filter((item) => item.status === "created").map((item) => item.id));
@@ -12715,6 +12895,7 @@ globalThis.TariffCalculator = {
 
   function renderLines() {
     const model = selectedModel();
+    if (originalModel.requiresFullProject) status(model.selectionError);
     const root = dialog.querySelector(".accounting-lines");
     root.innerHTML = `<div class="accounting-line accounting-line-head"><span>Omschrijving</span><span>Aantal</span><span>Prijs</span><span>Btw</span><span>Bedrag</span></div>`;
     summarizePreviewLines(model.lineItems).forEach((item) => {
@@ -12841,6 +13022,7 @@ globalThis.TariffCalculator = {
     event.preventDefault();
     const form = event.currentTarget;
     const activeModel = selectedModel();
+    if (activeModel.selectionError) { status(activeModel.selectionError); return; }
     if (!activeModel.sourceItems.length || !activeModel.lineItems.length) { status("Selecteer minimaal één projectdag."); return; }
     const mustConfirmReexport = requiresReexport;
     if (mustConfirmReexport && !form.elements.confirmReexport.checked) { status("Bevestig dat je de reeds geëxporteerde dag opnieuw wilt meenemen."); return; }
@@ -13010,7 +13192,7 @@ globalThis.TariffCalculator = {
     ].map((part) => String(part).padStart(2, "0")).join(":");
   }
 
-  function getState({ armed = false, date, startTime, endTime, breakMinutes = 0, now = new Date() }) {
+  function getState({ armed = false, date, startTime, endTime, breakMinutes = 0, enableTimedBreak = false, breakStartTime, breakEndTime, enableTravelDay = false, travelTimeDifferenceMinutes = 0, now = new Date() }) {
     const startMinutes = parseTime(startTime);
     const isToday = date === localDateValue(now);
     const isYesterday = date === previousLocalDateValue(now);
@@ -13025,13 +13207,25 @@ globalThis.TariffCalculator = {
     }
 
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const elapsedSinceStart = currentMinutes - startMinutes + (isYesterday ? MINUTES_PER_DAY : 0);
+    const elapsedSinceStart = currentMinutes - startMinutes + (isYesterday ? MINUTES_PER_DAY : 0)
+      - (enableTravelDay ? Number(travelTimeDifferenceMinutes) || 0 : 0);
     if (elapsedSinceStart < 0) {
       return { active: false, elapsedMinutes: 0, workedMinutes: 0 };
     }
 
     const elapsedMinutes = Math.floor(elapsedSinceStart / QUARTER_MINUTES) * QUARTER_MINUTES;
-    const workedMinutes = Math.max(0, elapsedMinutes - Math.max(0, Number(breakMinutes) || 0));
+    let appliedBreak = Math.max(0, Number(breakMinutes) || 0);
+    if (enableTimedBreak) {
+      let pauseStart = parseTime(breakStartTime);
+      let pauseEnd = parseTime(breakEndTime);
+      appliedBreak = 0;
+      if (pauseStart !== null && pauseEnd !== null && pauseStart !== pauseEnd) {
+        if (pauseStart < startMinutes) pauseStart += MINUTES_PER_DAY;
+        while (pauseEnd <= pauseStart) pauseEnd += MINUTES_PER_DAY;
+        appliedBreak = Math.max(0, Math.min(startMinutes + elapsedMinutes, pauseEnd) - Math.max(startMinutes, pauseStart));
+      }
+    }
+    const workedMinutes = Math.max(0, elapsedMinutes - appliedBreak);
     return {
       active: true,
       elapsedMinutes,
@@ -28433,6 +28627,13 @@ function buildWorkdaySnapshot() {
     } : null,
     startTime: form.elements.namedItem("startTime").value,
     endTime,
+    dayNotes: String(formData.get("dayNotes") || "").trim(),
+    enableTimedBreak: Boolean(currentProjectDayContext && readCheckbox(formData, "enableTimedBreak")),
+    breakStartTime: formData.get("breakStartTime") || "",
+    breakEndTime: formData.get("breakEndTime") || "",
+    deferProjectOvertime: Boolean(currentProjectDayContext?.project?.workRules?.balanceOvertime),
+    travelTimeDifferenceMinutes: readNumber(formData, "travelTimeDifferenceHours") * 60,
+    travelArrivalDayOffset: formData.get("travelArrivalDayOffset") ?? "",
     breakMinutes: settings.breakMinutes,
     settings,
     extras: {
@@ -28504,6 +28705,13 @@ function projectDayToWorkdaySnapshot(project, day) {
     startTime: data.startTime || "08:00",
     endTime: data.endTime || "",
     breakMinutes: Number(data.breakMinutes) || 0,
+    dayNotes: data.dayNotes || "",
+    enableTimedBreak: Boolean(data.enableTimedBreak),
+    breakStartTime: data.breakStartTime || "13:00",
+    breakEndTime: data.breakEndTime || "14:00",
+    deferProjectOvertime: Boolean(project?.workRules?.balanceOvertime),
+    travelTimeDifferenceMinutes: Number(data.travelTimeDifferenceMinutes) || 0,
+    travelArrivalDayOffset: data.travelArrivalDayOffset ?? "",
     settings: {
       ...currentSettings,
       rateMode,
@@ -28554,6 +28762,13 @@ function workdaySnapshotToProjectDay(snapshot, existing = {}) {
     startTime: snapshot.startTime,
     endTime: snapshot.endTime,
     breakMinutes: Number(snapshot.breakMinutes) || 0,
+    dayNotes: snapshot.dayNotes || "",
+    enableTimedBreak: Boolean(snapshot.enableTimedBreak),
+    breakStartTime: snapshot.breakStartTime || "",
+    breakEndTime: snapshot.breakEndTime || "",
+    deferProjectOvertime: Boolean(snapshot.deferProjectOvertime),
+    travelTimeDifferenceMinutes: Number(snapshot.travelTimeDifferenceMinutes) || 0,
+    travelArrivalDayOffset: snapshot.travelArrivalDayOffset ?? "",
     workFunctionId: snapshot.workFunction?.id || existing.workFunctionId || "",
     workFunctionName: snapshot.workFunction?.name || existing.workFunctionName || "",
     department: snapshot.department || existing.department || "camera",
@@ -28938,6 +29153,14 @@ function applyWorkdaySnapshot(workday, { projectContext = null, freeActive = fal
   const snapshotFunction = workFunctions.find((item) => item.id === snapshot.workFunction?.id);
   if (snapshotFunction) applyWorkFunction(snapshotFunction, { preserveRate: true, preserveSettings: true });
   form.elements.namedItem("breakMinutes").value = String(snapshot.breakMinutes || 0);
+  form.elements.namedItem("dayNotes").value = snapshot.dayNotes || "";
+  document.querySelector("#day-notes-status").textContent = "";
+  form.elements.namedItem("enableTimedBreak").checked = Boolean(snapshot.enableTimedBreak);
+  form.elements.namedItem("breakStartTime").value = snapshot.breakStartTime || "13:00";
+  form.elements.namedItem("breakEndTime").value = snapshot.breakEndTime || "14:00";
+  form.elements.namedItem("travelTimeDifferenceHours").value = String((Number(snapshot.travelTimeDifferenceMinutes) || 0) / 60);
+  form.elements.namedItem("travelArrivalDayOffset").value = String(snapshot.travelArrivalDayOffset ?? "");
+  updateProjectPauseFields();
 
   const extras = snapshot.extras || {};
   resetDailyExtras();
@@ -29347,6 +29570,7 @@ async function saveWorkday({ allowDuplicate = false, skipCompletionConfirmation 
 }
 
 function updateWorkdaySaveAccess() {
+  updateProjectPauseFields();
   if (!workdaySaveButton) return;
   const hasDate = Boolean(form.elements.namedItem("date").value);
   const hasStartTime = Boolean(form.elements.namedItem("startTime").value);
@@ -29831,8 +30055,10 @@ function renderPrintBreakdown(result) {
   setPrintValue("times", startTime && endTime
     ? `${startTime} tot ${endTime}${result.endsNextDay ? " (volgende dag)" : ""}`
     : "Niet ingevuld");
-  setPrintValue("breakMinutes", result.breakMinutes ? `${result.breakMinutes} minuten` : "-");
+  setPrintValue("breakMinutes", result.breakMinutes ? `${result.breakMinutes} minuten${currentProjectDayContext && form.elements.namedItem("enableTimedBreak").checked ? ` (${form.elements.namedItem("breakStartTime").value} - ${form.elements.namedItem("breakEndTime").value})` : ""}` : "-");
   document.querySelector('[data-print-row="break"]').hidden = !result.breakMinutes;
+  document.querySelector('[data-print-row="projectBalance"]').hidden = !result.overtimeDeferred;
+  setPrintValue("projectBalance", `${formatHours(result.overtimeHours)} geregistreerd; verrekening na projectafronding, niet opgenomen in het dagtotaal.`);
   setPrintValue("totalHours", formatHours(result.totalHours));
   setPrintValue("subtotalExVat", euroFormatter.format(result.subtotalExVat));
   setPrintValue("vatAmount", euroFormatter.format(result.vatAmount));
@@ -29886,7 +30112,7 @@ function renderPrintBreakdown(result) {
     addPrintCalculationLine(
       lines,
       `Nachturen tijdens overuren tegen ${numberFormatter.format(nightSurchargeToTotalPercent(result.settings.nightSurchargePercent))}%`,
-      `${formatCalculation(item.hours, result.hourlyRate, item.surchargeFactor)} nachttoeslag op dit specifieke overuur (overuurvergoeding staat hierboven)`,
+      `${formatCalculation(item.hours, result.hourlyRate, item.surchargeFactor)} nachttoeslag op dit specifieke overuur (${result.overtimeDeferred ? "overuurvergoeding via projecturensaldo" : "overuurvergoeding staat hierboven"})`,
       item.amount
     );
   });
@@ -29934,6 +30160,9 @@ function buildSummary(result, endTimeOverride = "") {
   if (result.overtimeHours > 0) {
     lines.push(`Overuren: ${formatHours(result.overtimeHours)}`);
   }
+  if (result.overtimeDeferred) lines.push("Overuren worden na afronding van het project met onderuren verrekend; nog niet opgenomen in dit dagtotaal.");
+  if (result.isTravelDay && result.travelTimeDifferenceMinutes) lines.push(`Tijdsverschil aankomst: ${result.travelTimeDifferenceMinutes / 60} uur; tijden zijn lokaal.`);
+  if (result.breakMinutes) lines.push(`Pauze: ${result.breakMinutes} minuten${currentProjectDayContext && form.elements.namedItem("enableTimedBreak").checked ? ` (${form.elements.namedItem("breakStartTime").value} - ${form.elements.namedItem("breakEndTime").value})` : ""}`);
 
   if (result.nightHours > 0) {
     lines.push(`Nachturen: ${formatHours(result.nightHours)}`);
@@ -30005,6 +30234,10 @@ function calculationValidationFields(settings, formData) {
   if (readCheckbox(formData, "enableParkingCosts")) {
     fields.push(form.elements.namedItem("parkingCosts"));
   }
+  if (currentProjectDayContext && readCheckbox(formData, "enableTimedBreak")) {
+    fields.push(form.elements.namedItem("breakStartTime"), form.elements.namedItem("breakEndTime"));
+  }
+  if (readCheckbox(formData, "enableTravelDay")) fields.push(form.elements.namedItem("travelTimeDifferenceHours"));
   return fields.filter((field) => field instanceof HTMLElement);
 }
 
@@ -30048,6 +30281,12 @@ function updateCalculation(trackCompletion = false, { endTimeOverride = "", sile
         startTime: form.elements.namedItem("startTime").value,
         endTime: calculationEndTime,
         breakMinutes: settings.breakMinutes,
+        enableTimedBreak: Boolean(currentProjectDayContext && readCheckbox(formData, "enableTimedBreak")),
+        breakStartTime: formData.get("breakStartTime"),
+        breakEndTime: formData.get("breakEndTime"),
+        deferProjectOvertime: Boolean(currentProjectDayContext?.project?.workRules?.balanceOvertime),
+        travelTimeDifferenceMinutes: readNumber(formData, "travelTimeDifferenceHours") * 60,
+        travelArrivalDayOffset: formData.get("travelArrivalDayOffset") ?? "",
         rateMode: settings.rateMode,
         hourlyRate: settings.hourlyRate,
         enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
@@ -30084,6 +30323,7 @@ function updateCalculation(trackCompletion = false, { endTimeOverride = "", sile
   document.querySelector("[data-base-result]").hidden = Boolean(result.isTravelDay);
   setResult("travelDayAmount", result.travelDayAmount, formatEuro);
   setResult("overtimeAmount", result.overtimeAmount, formatEuro);
+  document.querySelector("#project-overtime-notice").hidden = !result.overtimeDeferred;
   setResult("nightAmount", result.nightAmount, formatEuro);
   setResult("droneTariffAmount", result.droneTariffAmount, formatEuro);
   setResult("ronin4dTariffAmount", result.ronin4dTariffAmount, formatEuro);
@@ -30253,9 +30493,23 @@ function updateRateSettingsVisibility() {
 
 function updatePauseVisibility() {
   const enabled = settingsForm.elements.namedItem("enableBreak").checked;
-  planningBreakField.hidden = !enabled;
+  planningBreakField.hidden = !enabled || Boolean(currentProjectDayContext && form.elements.namedItem("enableTimedBreak")?.checked);
   planningGrid.classList.toggle("has-break", enabled);
   if (!enabled) form.elements.namedItem("breakMinutes").value = "0";
+}
+
+function updateProjectPauseFields() {
+  const project = Boolean(currentProjectDayContext);
+  const active = project && form.elements.namedItem("enableTimedBreak").checked;
+  ["breakStartTime", "breakEndTime"].forEach(name => {
+    const input = form.elements.namedItem(name);
+    input.disabled = !active;
+    input.required = active;
+  });
+  document.querySelector("#project-pause-period").hidden = !project;
+  document.querySelector("#project-pause-times").hidden = !project || !form.elements.namedItem("enableTimedBreak").checked;
+  document.querySelector("#travel-pause-time-hint").hidden = !project || !form.elements.namedItem("enableTimedBreak").checked || !form.elements.namedItem("enableTravelDay").checked;
+  updatePauseVisibility();
 }
 
 function updateKilometerVisibility() {
@@ -30269,8 +30523,12 @@ function updateParkingVisibility() {
 }
 
 function updateTravelVisibility() {
+  updateProjectPauseFields();
   const enabled = Boolean(form.elements.namedItem("enableTravelDay")?.checked);
+  form.elements.namedItem("travelTimeDifferenceHours").disabled = !enabled;
+  form.elements.namedItem("travelArrivalDayOffset").disabled = !enabled;
   if (travelRegionInput) travelRegionInput.hidden = !enabled;
+  document.querySelector("#travel-time-fields").hidden = !enabled;
   if (travelResultRow) travelResultRow.hidden = !enabled;
   const startTime = form.elements.namedItem("startTime");
   const endTime = form.elements.namedItem("endTime");
@@ -30466,6 +30724,11 @@ function readLiveWorkdayState() {
       ? endTimeField.value
       : (endTimeIsFixed ? endTimeField.value : ""),
     breakMinutes: settings.breakMinutes,
+    enableTimedBreak: Boolean(currentProjectDayContext && form.elements.namedItem("enableTimedBreak").checked),
+    breakStartTime: form.elements.namedItem("breakStartTime").value,
+    breakEndTime: form.elements.namedItem("breakEndTime").value,
+    enableTravelDay: form.elements.namedItem("enableTravelDay").checked,
+    travelTimeDifferenceMinutes: Number(form.elements.namedItem("travelTimeDifferenceHours").value) * 60,
     normalDayHours: settings.normalDayHours,
     enableNightTariff: settings.enableNightTariff,
     nightStart: settings.nightStart
@@ -30543,11 +30806,42 @@ updateTravelVisibility();
 initializeLiveWorkday();
 
 form.addEventListener("input", (event) => {
+  if (event.target.name === "enableTimedBreak") updateProjectPauseFields();
   if (["date", "endTime"].includes(event.target.name)) updateWorkdaySaveAccess();
   markCalculationStale();
   scheduleAutomaticCalculation();
   liveWorkdayController?.update();
   updateResumeLiveAccess();
+});
+
+let noteSaveQueue = Promise.resolve();
+form.elements.namedItem("dayNotes").addEventListener("change", () => {
+  const note = form.elements.namedItem("dayNotes").value.trim();
+  const userId = currentAccountUser?.id;
+  const projectContext = currentProjectDayContext;
+  const workdayId = currentWorkdayId;
+  const mock = Boolean(currentUserContext?.subscription?.isMock);
+  const status = document.querySelector("#day-notes-status");
+  if (!userId || (!projectContext && !workdayId)) {
+    status.textContent = "Wordt met de dag opgeslagen.";
+    return;
+  }
+  status.textContent = "Notitie opslaan…";
+  noteSaveQueue = noteSaveQueue.catch(() => {}).then(async () => {
+    if (mock && projectContext) {
+      const latest = await projectService.get(userId, projectContext.project.id, { mock });
+      const day = latest.days.find(item => item.id === projectContext.day.id);
+      await projectService.saveDay(userId, latest.project.id, { ...day, calculationData: { ...day.calculationData, dayNotes: note } }, { mock });
+    } else if (mock && workdayId) {
+      const latest = await workdayService.get(userId, workdayId, { mock });
+      await workdayService.save(userId, { ...latest, calculationData: { ...latest.calculationData, dayNotes: note } }, { mock });
+    } else if (!mock) {
+      const client = await globalThis.OveruurtjeSupabase.getClient();
+      const { error } = await client.rpc("save_my_day_note", { p_source_type: projectContext ? "project_day" : "workday", p_source_id: projectContext?.day.id || workdayId, p_note: note });
+      if (error) throw error;
+    }
+    if (form.elements.namedItem("dayNotes").value.trim() === note) status.textContent = "Notitie opgeslagen.";
+  }).catch(() => { status.textContent = "Notitie kon niet worden opgeslagen. Bewaar de dag om het opnieuw te proberen."; });
 });
 form.addEventListener("click", (event) => {
   if (currentUserContext?.isPro) return;

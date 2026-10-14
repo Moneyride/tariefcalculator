@@ -14,7 +14,7 @@
     <link rel="icon" href="favicon.ico" sizes="any">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260730a">
-    <link rel="stylesheet" href="styles.css?v=20261004a">
+    <link rel="stylesheet" href="styles.css?v=20261013a">
     <script>window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};window.gtag("consent","default",{analytics_storage:"denied",ad_storage:"denied",ad_user_data:"denied",ad_personalization:"denied"});</script>
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
@@ -25,16 +25,16 @@
     <script src="saas/settingsService.js?v=20260729d" defer></script>
     <script src="saas/functionService.js?v=20260725a" defer></script>
     <script src="saas/equipmentService.js?v=20260822a" defer></script>
-    <script src="saas/projectService.js?v=20260728a" defer></script>
+    <script src="saas/projectService.js?v=20261013a" defer></script>
     <script src="saas/shareService.js?v=20260802a" defer></script>
     <script src="saas/badgeService.js?v=20260810b" defer></script>
     <script src="saas/crewCardUi.js?v=20260809c" defer></script>
     <script src="saas/subscriptionService.js?v=20260809a" defer></script>
     <script src="saas/featureGate.js?v=20260731b" defer></script>
     <script src="saas/accountingService.js?v=20260824a" defer></script>
-    <script src="calculator.js?v=20260822a" defer></script>
-    <script src="accountingExportModel.js?v=20260816b" defer></script>
-    <script src="accountingUi.js?v=20260816b" defer></script>
+    <script src="calculator.js?v=20261013a" defer></script>
+    <script src="accountingExportModel.js?v=20261013a" defer></script>
+    <script src="accountingUi.js?v=20261013a" defer></script>
     <script src="analytics.js?v=20260722q" defer></script>
     <script src="saas/sessionUi.js?v=20261004c" defer></script>
     <script src="vendor/jsQR.js?v=20260731a" defer></script>
@@ -45,7 +45,7 @@
     <script src="pauseControl.js?v=20261004a" defer></script>
     <script src="selectUi.js?v=20260922b" defer></script>
     <script src="timePicker.js?v=20260730a" defer></script>
-    <script src="projects.js?v=20260923a" defer></script>
+    <script src="projects.js?v=20261013a" defer></script>
     <script src="pwa.js?v=20261004a" defer></script>
   </head>
   <body>
@@ -161,6 +161,13 @@
             </div>
             <div class="project-earned-total"><span>Tot nu toe verdiend</span><strong id="project-earned-total">€ 0,00</strong></div>
             <dl class="project-metrics" id="project-metrics"></dl>
+            <div class="project-overtime-balance" id="project-overtime-balance" hidden>
+              <h3>Overuren en onderuren</h3>
+              <p id="project-balance-status"></p>
+              <dl class="project-metrics" id="project-balance-metrics"></dl>
+              <p id="project-balance-breakdown"></p>
+              <button class="saas-secondary-button" id="settle-project-overtime" type="button">Project afronden en uren verrekenen</button>
+            </div>
           </section>
           <section class="account-section project-days-section">
             <div class="account-section-heading project-days-heading">
@@ -230,6 +237,18 @@
               </div>
             </div>
             <div class="day-options-grid">
+              <section class="day-option-group">
+                <h3>Registratie</h3>
+                <label><span>Dagnotities</span><textarea name="dayNotes" rows="3" maxlength="5000"></textarea></label>
+                <label class="checkbox-label"><input type="checkbox" name="enableTimedBreak"><span>Pauze met begin- en eindtijd</span></label>
+                <div class="conditional-field project-pause-times" data-for="enableTimedBreak"><label><span>Pauze vanaf</span><input type="time" name="breakStartTime" step="900"></label><label><span>Pauze tot</span><input type="time" name="breakEndTime" step="900"></label></div>
+                <label class="checkbox-label"><input type="checkbox" name="enableTravelDay"><span>Reisdag</span></label>
+                <div class="conditional-field" data-for="enableTravelDay">
+                  <label><span>Reisgebied</span><select name="travelRegion"><option value="within_europe">Binnen Europa</option><option value="outside_europe">Buiten Europa</option></select></label>
+                  <label><span>Tijdsverschil aankomst</span><input type="number" name="travelTimeDifferenceHours" min="-26" max="26" step="0.25" value="0"></label>
+                  <label><span>Aankomstdag</span><select name="travelArrivalDayOffset"><option value="">Automatisch</option><option value="0">Zelfde dag</option><option value="1">Volgende dag</option><option value="2">Twee dagen later</option></select></label>
+                </div>
+              </section>
               <section class="day-option-group" aria-labelledby="work-rules-title">
                 <h3 id="work-rules-title">Werkregels</h3>
                 <div class="day-option-list">
@@ -324,6 +343,14 @@
       <button class="saas-primary-button" type="button" data-project-invite-accept hidden>Project bekijken</button>
       <p class="saas-form-status" data-project-invite-status aria-live="polite"></p>
     </dialog>
+    <dialog class="saas-dialog" id="project-settlement-dialog" aria-labelledby="project-settlement-title">
+      <button class="dialog-close" type="button" data-settlement-close aria-label="Sluiten">&times;</button>
+      <p class="dialog-eyebrow">Urensaldo</p>
+      <h2 id="project-settlement-title">Project afronden</h2>
+      <p id="project-settlement-summary"></p>
+      <div class="dialog-action-stack"><button class="saas-primary-button" id="confirm-project-settlement" type="button">Afronden en verrekenen</button><button class="saas-secondary-button" type="button" data-settlement-close>Annuleren</button></div>
+      <p class="saas-form-status" id="project-settlement-error" role="status"></p>
+    </dialog>
     <dialog class="saas-dialog project-rules-dialog" id="project-rules-dialog" aria-labelledby="project-rules-title">
       <button class="dialog-close" type="button" data-project-rules-close aria-label="Sluiten">&times;</button>
       <p class="dialog-eyebrow">Projectinstellingen</p>
@@ -337,7 +364,9 @@
           <label class="checkbox-label"><input type="checkbox" name="enableOvertimeFrom12"><span>Overuren vanaf 12 uur (200%)</span></label>
           <label class="checkbox-label"><input type="checkbox" name="enableOvertimeFrom14"><span>Overuren vanaf 14 uur (250%)</span></label>
           <label class="checkbox-label"><input type="checkbox" name="enableNightTariff"><span>Nacht tarief</span></label>
+          <label class="checkbox-label"><input type="checkbox" name="balanceOvertime"><span>Overuren verrekenen met onderuren</span></label>
         </div>
+        <p class="field-hint">Eén uur tegen één uur, inclusief reisdagen. Onderuren gaan eerst van de hoogste overuurstaffel af. Afrekening volgt bij het afronden van het project.</p>
         <div class="project-rules-night" data-project-rules-night>
           <label><span>Nachtperiode start</span><input type="time" name="nightStart" value="00:00"></label>
           <label><span>Nachtperiode einde</span><input type="time" name="nightEnd" value="06:00"></label>

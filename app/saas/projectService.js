@@ -3,12 +3,13 @@
 
   const supabaseService = globalThis.OveruurtjeSupabase;
   const STORAGE_KEY = "overuurtjeMockProjects";
-  const PROJECT_COLUMNS = "id,user_id,name,client_name,start_date,end_date,notes,created_at,updated_at";
+  const PROJECT_COLUMNS = "id,user_id,name,client_name,start_date,end_date,notes,work_rules,created_at,updated_at";
   const DAY_COLUMNS = "id,project_id,user_id,work_date,calculation_data,created_at,updated_at";
 
   const normalizeProject = (row) => ({
     id: row.id, userId: row.user_id, name: row.name, clientName: row.client_name || "",
     startDate: row.start_date, endDate: row.end_date, notes: row.notes || "",
+    workRules: row.work_rules || {},
     createdAt: row.created_at, updatedAt: row.updated_at
   });
   const normalizeDay = (row) => ({
@@ -24,6 +25,22 @@
     const value = await supabaseService.getClient();
     if (!value) throw new Error("Supabase is niet beschikbaar.");
     return value;
+  }
+
+  async function saveWorkRules(userId, projectId, workRules, options = {}) {
+    if (isMock(options)) {
+      const store = readMock();
+      const project = store[userId]?.projects?.[projectId];
+      if (!project) throw new Error("Project niet gevonden.");
+      project.workRules = workRules;
+      project.updatedAt = new Date().toISOString();
+      writeMock(store);
+      return project;
+    }
+    const db = await client();
+    const { data, error } = await db.from("projects").update({ work_rules: workRules }).eq("id", projectId).eq("user_id", userId).select(PROJECT_COLUMNS).single();
+    if (error) throw error;
+    return normalizeProject(data);
   }
 
   async function list(userId, options = {}) {
@@ -115,7 +132,7 @@
     if (isMock(options)) {
       const all = readMock(); const store = all[userId] || { projects: {}, days: {} };
       const old = values.id ? store.projects[values.id] : null;
-      const project = { id: values.id || mockId(), userId, name: values.name.trim(), clientName: values.clientName?.trim() || "", startDate: values.startDate, endDate: values.endDate, notes: values.notes?.trim() || "", createdAt: old?.createdAt || now, updatedAt: now };
+      const project = { id: values.id || mockId(), userId, name: values.name.trim(), clientName: values.clientName?.trim() || "", startDate: values.startDate, endDate: values.endDate, notes: values.notes?.trim() || "", workRules: old?.workRules || {}, createdAt: old?.createdAt || now, updatedAt: now };
       store.projects[project.id] = project; all[userId] = store; writeMock(all); return project;
     }
     const db = await client();
@@ -223,6 +240,7 @@
     listDaysByDate,
     listAllDays,
     saveProject,
+    saveWorkRules,
     replaceDays,
     saveDay,
     remove

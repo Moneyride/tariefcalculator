@@ -75,6 +75,7 @@
     if (snapshot.result) return snapshot.result;
     const settings = snapshot.settings || {};
     return calculator.calculateTariff({
+      ...snapshot,
       startTime: snapshot.startTime,
       endTime: snapshot.endTime,
       breakMinutes: snapshot.breakMinutes,

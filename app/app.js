@@ -651,6 +651,13 @@ function buildWorkdaySnapshot() {
     } : null,
     startTime: form.elements.namedItem("startTime").value,
     endTime,
+    dayNotes: String(formData.get("dayNotes") || "").trim(),
+    enableTimedBreak: Boolean(currentProjectDayContext && readCheckbox(formData, "enableTimedBreak")),
+    breakStartTime: formData.get("breakStartTime") || "",
+    breakEndTime: formData.get("breakEndTime") || "",
+    deferProjectOvertime: Boolean(currentProjectDayContext?.project?.workRules?.balanceOvertime),
+    travelTimeDifferenceMinutes: readNumber(formData, "travelTimeDifferenceHours") * 60,
+    travelArrivalDayOffset: formData.get("travelArrivalDayOffset") ?? "",
     breakMinutes: settings.breakMinutes,
     settings,
     extras: {
@@ -722,6 +729,13 @@ function projectDayToWorkdaySnapshot(project, day) {
     startTime: data.startTime || "08:00",
     endTime: data.endTime || "",
     breakMinutes: Number(data.breakMinutes) || 0,
+    dayNotes: data.dayNotes || "",
+    enableTimedBreak: Boolean(data.enableTimedBreak),
+    breakStartTime: data.breakStartTime || "13:00",
+    breakEndTime: data.breakEndTime || "14:00",
+    deferProjectOvertime: Boolean(project?.workRules?.balanceOvertime),
+    travelTimeDifferenceMinutes: Number(data.travelTimeDifferenceMinutes) || 0,
+    travelArrivalDayOffset: data.travelArrivalDayOffset ?? "",
     settings: {
       ...currentSettings,
       rateMode,
@@ -772,6 +786,13 @@ function workdaySnapshotToProjectDay(snapshot, existing = {}) {
     startTime: snapshot.startTime,
     endTime: snapshot.endTime,
     breakMinutes: Number(snapshot.breakMinutes) || 0,
+    dayNotes: snapshot.dayNotes || "",
+    enableTimedBreak: Boolean(snapshot.enableTimedBreak),
+    breakStartTime: snapshot.breakStartTime || "",
+    breakEndTime: snapshot.breakEndTime || "",
+    deferProjectOvertime: Boolean(snapshot.deferProjectOvertime),
+    travelTimeDifferenceMinutes: Number(snapshot.travelTimeDifferenceMinutes) || 0,
+    travelArrivalDayOffset: snapshot.travelArrivalDayOffset ?? "",
     workFunctionId: snapshot.workFunction?.id || existing.workFunctionId || "",
     workFunctionName: snapshot.workFunction?.name || existing.workFunctionName || "",
     department: snapshot.department || existing.department || "camera",
@@ -1156,6 +1177,14 @@ function applyWorkdaySnapshot(workday, { projectContext = null, freeActive = fal
   const snapshotFunction = workFunctions.find((item) => item.id === snapshot.workFunction?.id);
   if (snapshotFunction) applyWorkFunction(snapshotFunction, { preserveRate: true, preserveSettings: true });
   form.elements.namedItem("breakMinutes").value = String(snapshot.breakMinutes || 0);
+  form.elements.namedItem("dayNotes").value = snapshot.dayNotes || "";
+  document.querySelector("#day-notes-status").textContent = "";
+  form.elements.namedItem("enableTimedBreak").checked = Boolean(snapshot.enableTimedBreak);
+  form.elements.namedItem("breakStartTime").value = snapshot.breakStartTime || "13:00";
+  form.elements.namedItem("breakEndTime").value = snapshot.breakEndTime || "14:00";
+  form.elements.namedItem("travelTimeDifferenceHours").value = String((Number(snapshot.travelTimeDifferenceMinutes) || 0) / 60);
+  form.elements.namedItem("travelArrivalDayOffset").value = String(snapshot.travelArrivalDayOffset ?? "");
+  updateProjectPauseFields();
 
   const extras = snapshot.extras || {};
   resetDailyExtras();
@@ -1565,6 +1594,7 @@ async function saveWorkday({ allowDuplicate = false, skipCompletionConfirmation 
 }
 
 function updateWorkdaySaveAccess() {
+  updateProjectPauseFields();
   if (!workdaySaveButton) return;
   const hasDate = Boolean(form.elements.namedItem("date").value);
   const hasStartTime = Boolean(form.elements.namedItem("startTime").value);
@@ -2049,8 +2079,10 @@ function renderPrintBreakdown(result) {
   setPrintValue("times", startTime && endTime
     ? `${startTime} tot ${endTime}${result.endsNextDay ? " (volgende dag)" : ""}`
     : "Niet ingevuld");
-  setPrintValue("breakMinutes", result.breakMinutes ? `${result.breakMinutes} minuten` : "-");
+  setPrintValue("breakMinutes", result.breakMinutes ? `${result.breakMinutes} minuten${currentProjectDayContext && form.elements.namedItem("enableTimedBreak").checked ? ` (${form.elements.namedItem("breakStartTime").value} - ${form.elements.namedItem("breakEndTime").value})` : ""}` : "-");
   document.querySelector('[data-print-row="break"]').hidden = !result.breakMinutes;
+  document.querySelector('[data-print-row="projectBalance"]').hidden = !result.overtimeDeferred;
+  setPrintValue("projectBalance", `${formatHours(result.overtimeHours)} geregistreerd; verrekening na projectafronding, niet opgenomen in het dagtotaal.`);
   setPrintValue("totalHours", formatHours(result.totalHours));
   setPrintValue("subtotalExVat", euroFormatter.format(result.subtotalExVat));
   setPrintValue("vatAmount", euroFormatter.format(result.vatAmount));
@@ -2104,7 +2136,7 @@ function renderPrintBreakdown(result) {
     addPrintCalculationLine(
       lines,
       `Nachturen tijdens overuren tegen ${numberFormatter.format(nightSurchargeToTotalPercent(result.settings.nightSurchargePercent))}%`,
-      `${formatCalculation(item.hours, result.hourlyRate, item.surchargeFactor)} nachttoeslag op dit specifieke overuur (overuurvergoeding staat hierboven)`,
+      `${formatCalculation(item.hours, result.hourlyRate, item.surchargeFactor)} nachttoeslag op dit specifieke overuur (${result.overtimeDeferred ? "overuurvergoeding via projecturensaldo" : "overuurvergoeding staat hierboven"})`,
       item.amount
     );
   });
@@ -2152,6 +2184,9 @@ function buildSummary(result, endTimeOverride = "") {
   if (result.overtimeHours > 0) {
     lines.push(`Overuren: ${formatHours(result.overtimeHours)}`);
   }
+  if (result.overtimeDeferred) lines.push("Overuren worden na afronding van het project met onderuren verrekend; nog niet opgenomen in dit dagtotaal.");
+  if (result.isTravelDay && result.travelTimeDifferenceMinutes) lines.push(`Tijdsverschil aankomst: ${result.travelTimeDifferenceMinutes / 60} uur; tijden zijn lokaal.`);
+  if (result.breakMinutes) lines.push(`Pauze: ${result.breakMinutes} minuten${currentProjectDayContext && form.elements.namedItem("enableTimedBreak").checked ? ` (${form.elements.namedItem("breakStartTime").value} - ${form.elements.namedItem("breakEndTime").value})` : ""}`);
 
   if (result.nightHours > 0) {
     lines.push(`Nachturen: ${formatHours(result.nightHours)}`);
@@ -2223,6 +2258,10 @@ function calculationValidationFields(settings, formData) {
   if (readCheckbox(formData, "enableParkingCosts")) {
     fields.push(form.elements.namedItem("parkingCosts"));
   }
+  if (currentProjectDayContext && readCheckbox(formData, "enableTimedBreak")) {
+    fields.push(form.elements.namedItem("breakStartTime"), form.elements.namedItem("breakEndTime"));
+  }
+  if (readCheckbox(formData, "enableTravelDay")) fields.push(form.elements.namedItem("travelTimeDifferenceHours"));
   return fields.filter((field) => field instanceof HTMLElement);
 }
 
@@ -2266,6 +2305,12 @@ function updateCalculation(trackCompletion = false, { endTimeOverride = "", sile
         startTime: form.elements.namedItem("startTime").value,
         endTime: calculationEndTime,
         breakMinutes: settings.breakMinutes,
+        enableTimedBreak: Boolean(currentProjectDayContext && readCheckbox(formData, "enableTimedBreak")),
+        breakStartTime: formData.get("breakStartTime"),
+        breakEndTime: formData.get("breakEndTime"),
+        deferProjectOvertime: Boolean(currentProjectDayContext?.project?.workRules?.balanceOvertime),
+        travelTimeDifferenceMinutes: readNumber(formData, "travelTimeDifferenceHours") * 60,
+        travelArrivalDayOffset: formData.get("travelArrivalDayOffset") ?? "",
         rateMode: settings.rateMode,
         hourlyRate: settings.hourlyRate,
         enableDroneTariff: readCheckbox(formData, "enableDroneTariff"),
@@ -2302,6 +2347,7 @@ function updateCalculation(trackCompletion = false, { endTimeOverride = "", sile
   document.querySelector("[data-base-result]").hidden = Boolean(result.isTravelDay);
   setResult("travelDayAmount", result.travelDayAmount, formatEuro);
   setResult("overtimeAmount", result.overtimeAmount, formatEuro);
+  document.querySelector("#project-overtime-notice").hidden = !result.overtimeDeferred;
   setResult("nightAmount", result.nightAmount, formatEuro);
   setResult("droneTariffAmount", result.droneTariffAmount, formatEuro);
   setResult("ronin4dTariffAmount", result.ronin4dTariffAmount, formatEuro);
@@ -2471,9 +2517,23 @@ function updateRateSettingsVisibility() {
 
 function updatePauseVisibility() {
   const enabled = settingsForm.elements.namedItem("enableBreak").checked;
-  planningBreakField.hidden = !enabled;
+  planningBreakField.hidden = !enabled || Boolean(currentProjectDayContext && form.elements.namedItem("enableTimedBreak")?.checked);
   planningGrid.classList.toggle("has-break", enabled);
   if (!enabled) form.elements.namedItem("breakMinutes").value = "0";
+}
+
+function updateProjectPauseFields() {
+  const project = Boolean(currentProjectDayContext);
+  const active = project && form.elements.namedItem("enableTimedBreak").checked;
+  ["breakStartTime", "breakEndTime"].forEach(name => {
+    const input = form.elements.namedItem(name);
+    input.disabled = !active;
+    input.required = active;
+  });
+  document.querySelector("#project-pause-period").hidden = !project;
+  document.querySelector("#project-pause-times").hidden = !project || !form.elements.namedItem("enableTimedBreak").checked;
+  document.querySelector("#travel-pause-time-hint").hidden = !project || !form.elements.namedItem("enableTimedBreak").checked || !form.elements.namedItem("enableTravelDay").checked;
+  updatePauseVisibility();
 }
 
 function updateKilometerVisibility() {
@@ -2487,8 +2547,12 @@ function updateParkingVisibility() {
 }
 
 function updateTravelVisibility() {
+  updateProjectPauseFields();
   const enabled = Boolean(form.elements.namedItem("enableTravelDay")?.checked);
+  form.elements.namedItem("travelTimeDifferenceHours").disabled = !enabled;
+  form.elements.namedItem("travelArrivalDayOffset").disabled = !enabled;
   if (travelRegionInput) travelRegionInput.hidden = !enabled;
+  document.querySelector("#travel-time-fields").hidden = !enabled;
   if (travelResultRow) travelResultRow.hidden = !enabled;
   const startTime = form.elements.namedItem("startTime");
   const endTime = form.elements.namedItem("endTime");
@@ -2684,6 +2748,11 @@ function readLiveWorkdayState() {
       ? endTimeField.value
       : (endTimeIsFixed ? endTimeField.value : ""),
     breakMinutes: settings.breakMinutes,
+    enableTimedBreak: Boolean(currentProjectDayContext && form.elements.namedItem("enableTimedBreak").checked),
+    breakStartTime: form.elements.namedItem("breakStartTime").value,
+    breakEndTime: form.elements.namedItem("breakEndTime").value,
+    enableTravelDay: form.elements.namedItem("enableTravelDay").checked,
+    travelTimeDifferenceMinutes: Number(form.elements.namedItem("travelTimeDifferenceHours").value) * 60,
     normalDayHours: settings.normalDayHours,
     enableNightTariff: settings.enableNightTariff,
     nightStart: settings.nightStart
@@ -2761,11 +2830,42 @@ updateTravelVisibility();
 initializeLiveWorkday();
 
 form.addEventListener("input", (event) => {
+  if (event.target.name === "enableTimedBreak") updateProjectPauseFields();
   if (["date", "endTime"].includes(event.target.name)) updateWorkdaySaveAccess();
   markCalculationStale();
   scheduleAutomaticCalculation();
   liveWorkdayController?.update();
   updateResumeLiveAccess();
+});
+
+let noteSaveQueue = Promise.resolve();
+form.elements.namedItem("dayNotes").addEventListener("change", () => {
+  const note = form.elements.namedItem("dayNotes").value.trim();
+  const userId = currentAccountUser?.id;
+  const projectContext = currentProjectDayContext;
+  const workdayId = currentWorkdayId;
+  const mock = Boolean(currentUserContext?.subscription?.isMock);
+  const status = document.querySelector("#day-notes-status");
+  if (!userId || (!projectContext && !workdayId)) {
+    status.textContent = "Wordt met de dag opgeslagen.";
+    return;
+  }
+  status.textContent = "Notitie opslaan…";
+  noteSaveQueue = noteSaveQueue.catch(() => {}).then(async () => {
+    if (mock && projectContext) {
+      const latest = await projectService.get(userId, projectContext.project.id, { mock });
+      const day = latest.days.find(item => item.id === projectContext.day.id);
+      await projectService.saveDay(userId, latest.project.id, { ...day, calculationData: { ...day.calculationData, dayNotes: note } }, { mock });
+    } else if (mock && workdayId) {
+      const latest = await workdayService.get(userId, workdayId, { mock });
+      await workdayService.save(userId, { ...latest, calculationData: { ...latest.calculationData, dayNotes: note } }, { mock });
+    } else if (!mock) {
+      const client = await globalThis.OveruurtjeSupabase.getClient();
+      const { error } = await client.rpc("save_my_day_note", { p_source_type: projectContext ? "project_day" : "workday", p_source_id: projectContext?.day.id || workdayId, p_note: note });
+      if (error) throw error;
+    }
+    if (form.elements.namedItem("dayNotes").value.trim() === note) status.textContent = "Notitie opgeslagen.";
+  }).catch(() => { status.textContent = "Notitie kon niet worden opgeslagen. Bewaar de dag om het opnieuw te proberen."; });
 });
 form.addEventListener("click", (event) => {
   if (currentUserContext?.isPro) return;

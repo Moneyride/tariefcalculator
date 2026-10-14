@@ -166,6 +166,7 @@
     return {
       ...defaultDayData(),
       ...stored,
+      deferProjectOvertime: Boolean(current?.project?.workRules?.balanceOvertime),
       // Projectdagen van voor de instelbare nachttoeslag rekenden altijd met 100%.
       nightSurchargePercent: Object.hasOwn(stored, "nightSurchargePercent")
         ? Number(stored.nightSurchargePercent)
@@ -202,7 +203,7 @@
   }
 
   function totals(days, { allowIncomplete = false } = {}) {
-    return days.reduce((all, day) => {
+    const total = days.reduce((all, day) => {
       const data = storedDayData(day);
       if (allowIncomplete && !canCalculateDay(data)) {
         all.incomplete += 1;
@@ -215,11 +216,69 @@
       all.completed += 1;
       return all;
     }, { amount: 0, hours: 0, overtime: 0, night: 0, kilometers: 0, parking: 0, surcharges: 0, completed: 0, incomplete: 0 });
+    if (current?.project?.workRules?.balanceOvertime) {
+      const balance = accountingExport.projectBalance(current.project, current.days);
+      total.amount += balance.amount;
+      total.surcharges += balance.amount;
+    }
+    return total;
   }
 
   function todayValue() {
     return isoDate(new Date());
   }
+
+  function renderProjectBalance() {
+    const section = document.querySelector("#project-overtime-balance");
+    const enabled = Boolean(current?.project.workRules?.balanceOvertime);
+    section.hidden = !enabled;
+    if (!enabled) return;
+    const balance = accountingExport.projectBalance(current.project, current.days);
+    document.querySelector("#project-balance-status").textContent = balance.settled
+      ? "Project afgerond. Het verrekende urensaldo is opgenomen in het projecttotaal."
+      : "Overuren worden na afronding van het project naberekend. Ze zijn nog niet opgenomen in het factuurtotaal.";
+    document.querySelector("#project-balance-metrics").innerHTML = [
+      ["Geregistreerde overuren", `${number.format(balance.overtime)} uur`],
+      ["Geregistreerde onderuren", `${number.format(balance.undertime)} uur`],
+      ["Resterende overuren", `${number.format(balance.payableHours)} uur`],
+      [balance.settled ? "Verrekend bedrag" : "Voorlopig saldo", euro.format(balance.settled ? balance.amount : balance.estimatedAmount)]
+    ].map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join("");
+    document.querySelector("#project-balance-breakdown").textContent = balance.bands.filter(band => band.remaining > 0)
+      .map(band => `${number.format(band.remaining)} uur tegen ${band.percent}%`).join(" · ")
+      || "Geen overuren over na verrekening.";
+    const button = document.querySelector("#settle-project-overtime");
+    button.hidden = balance.settled;
+    button.disabled = !balance.complete;
+    button.title = balance.complete ? "" : "Vul eerst alle begin- en eindtijden in, ook van reisdagen, en rond de geplande dagen af.";
+  }
+
+  async function settleProjectOvertime() {
+    const balance = accountingExport.projectBalance(current.project, current.days);
+    if (!balance.complete) return;
+    document.querySelector("#project-settlement-summary").textContent = `Na verrekening blijft ${number.format(balance.payableHours)} uur over: ${euro.format(balance.estimatedAmount)} exclusief btw. Onderuren zijn eerst van de hoogste staffels afgehaald.`;
+    document.querySelector("#project-settlement-error").textContent = "";
+    openDialog(document.querySelector("#project-settlement-dialog"));
+  }
+
+  async function confirmProjectSettlement() {
+    const balance = accountingExport.projectBalance(current.project, current.days);
+    if (!balance.complete) return;
+    const button = document.querySelector("#confirm-project-settlement");
+    button.disabled = true;
+    try {
+      current.project = await projects.saveWorkRules(context.auth.user.id, current.project.id, {
+        ...current.project.workRules, settlement: { signature: balance.signature, confirmedAt: new Date().toISOString() }
+      }, options());
+      renderOverview({ resetCarousel: false });
+      closeDialog(document.querySelector("#project-settlement-dialog"));
+      sessionUi.showToast("Project afgerond en urensaldo verwerkt.");
+      document.dispatchEvent(new CustomEvent("overuurtje:badges-updated"));
+    } catch (error) { document.querySelector("#project-settlement-error").textContent = error.message; }
+    finally { button.disabled = false; }
+  }
+  document.querySelector("#settle-project-overtime")?.addEventListener("click", settleProjectOvertime);
+  document.querySelector("#confirm-project-settlement")?.addEventListener("click", confirmProjectSettlement);
+  document.querySelectorAll("[data-settlement-close]").forEach(button => button.addEventListener("click", () => closeDialog(document.querySelector("#project-settlement-dialog"))));
 
   function initialCarouselIndex() {
     const todayIndex = current?.days?.findIndex((day) => day.workDate === todayValue()) ?? -1;
@@ -251,6 +310,7 @@
     projectRulesForm.elements.enableOvertimeFrom12.checked = Boolean(data.enableOvertimeFrom12);
     projectRulesForm.elements.enableOvertimeFrom14.checked = Boolean(data.enableOvertimeFrom14);
     projectRulesForm.elements.enableNightTariff.checked = Boolean(data.enableNightTariff);
+    projectRulesForm.elements.balanceOvertime.checked = Boolean(current.project.workRules?.balanceOvertime);
     projectRulesForm.elements.nightStart.value = data.nightStart || "00:00";
     projectRulesForm.elements.nightEnd.value = data.nightEnd || "06:00";
     projectRulesForm.elements.nightTotalPercent.value = String(100 + Number(data.nightSurchargePercent ?? 100));
@@ -265,6 +325,7 @@
     const data = new FormData(projectRulesForm);
     const checked = (name) => data.get(name) === "on";
     const rules = {
+      deferProjectOvertime: checked("balanceOvertime"),
       normalDayHours: Number(data.get("normalDayHours")) || 10,
       enableHalfDayUnder6Hours: checked("enableHalfDayUnder6Hours"),
       enableOvertime10To12: checked("enableOvertime10To12"),
@@ -286,6 +347,7 @@
     }));
     try {
       current = await projects.replaceDays(context.auth.user.id, current.project.id, current.days, options());
+      current.project = await projects.saveWorkRules(context.auth.user.id, current.project.id, { ...current.project.workRules, balanceOvertime: checked("balanceOvertime"), settlement: null }, options());
       closeDialog(projectRulesDialog);
       renderOverview();
       sessionUi.showToast(`Projectinstellingen bijgewerkt voor alle ${projectDays.length} projectdag${projectDays.length === 1 ? "" : "en"}.`);
@@ -608,6 +670,7 @@
           ? "Alle geplande projectdagen zijn geweest."
           : `${elapsedDays} van de ${current.days.length} projectdagen zijn geweest.`;
     document.querySelector("#project-earned-total").textContent = euro.format(earned.amount);
+    renderProjectBalance();
     const metrics = [
       ["Gewerkte uren", `${number.format(total.hours)} uur`],
       ["Overuren", `${number.format(total.overtime)} uur`], ["Nachturen", `${number.format(total.night)} uur`],
@@ -808,7 +871,15 @@
       || workFunctions.find((item) => item.isDefault)
       || workFunctions[0];
     return {
+      ...existingData,
       startTime: data.get("startTime"), endTime: data.get("endTime"), breakMinutes: Number(data.get("breakMinutes")),
+      dayNotes: String(data.get("dayNotes") || "").trim(),
+      enableTimedBreak: checked("enableTimedBreak"), breakStartTime: data.get("breakStartTime"), breakEndTime: data.get("breakEndTime"),
+      enableTravelDay: checked("enableTravelDay"), travelRegion: data.get("travelRegion") || "within_europe",
+      travelPercent: data.get("travelRegion") === "outside_europe" ? accountSettings.travelOutsideEuropePercent : accountSettings.travelWithinEuropePercent,
+      travelTimeDifferenceMinutes: Number(data.get("travelTimeDifferenceHours")) * 60,
+      travelArrivalDayOffset: data.get("travelArrivalDayOffset") ?? "",
+      deferProjectOvertime: Boolean(current?.project.workRules?.balanceOvertime),
       workFunctionId: workFunction?.id || existingData.workFunctionId || "",
       workFunctionName: workFunction?.name || existingData.workFunctionName || "",
       department: workFunction?.department || existingData.department || accountSettings.defaultDepartment,
@@ -959,6 +1030,9 @@
     const pages = current.days.map((day) => {
       const data = storedDayData(day); const r = calculate(data);
       const lines = [
+        r.overtimeDeferred ? `<p>${number.format(r.overtimeHours)} overuren geregistreerd. Verrekening volgt in het projecturensaldo; niet opgenomen in dit dagtotaal.</p>` : "",
+        r.isTravelDay && r.travelTimeDifferenceMinutes ? `<p>Lokale vertrek- en aankomsttijd. Tijdsverschil aankomst: ${number.format(r.travelTimeDifferenceMinutes / 60)} uur.</p>` : "",
+        data.enableTimedBreak && r.breakMinutes ? `<p>Pauzetijd: ${escapeHtml(data.breakStartTime)} - ${escapeHtml(data.breakEndTime)} (${r.breakMinutes} minuten).</p>` : "",
         r.isTravelDay
           ? printLine(
             "Reisdagvergoeding",
@@ -977,7 +1051,7 @@
         printLine("Overuren 200%", `${number.format(r.overtimeFrom12Hours)} uur × ${euro.format(r.hourlyRate)} × 200%`, r.overtimeFrom12Amount),
         printLine("Overuren 250%", `${number.format(r.overtimeFrom14Hours)} uur × ${euro.format(r.hourlyRate)} × 250%`, r.overtimeFrom14Amount),
         printLine("Pure nachturen", `${number.format(r.pureNightHours)} uur tegen ${number.format(100 + r.settings.nightSurchargePercent)}% totaal`, r.pureNightAmount),
-        ...r.nightOvertimeSurchargeBreakdown.map((item) => printLine("Nachturen tijdens overuren", `${number.format(item.hours)} uur tegen ${number.format(100 + r.settings.nightSurchargePercent)}% nachttarief op dit specifieke overuur; de overuurvergoeding staat hierboven`, item.amount)),
+        ...r.nightOvertimeSurchargeBreakdown.map((item) => printLine("Nachturen tijdens overuren", `${number.format(item.hours)} uur tegen ${number.format(100 + r.settings.nightSurchargePercent)}% nachttarief op dit specifieke overuur; ${r.overtimeDeferred ? "overuurvergoeding via projecturensaldo" : "de overuurvergoeding staat hierboven"}`, item.amount)),
         printLine("Drone", "Vaste toeslag", r.droneTariffAmount), printLine("Ronin 4D", "Vaste toeslag", r.ronin4dTariffAmount),
         ...r.customEquipmentItems.map((item) => printLine(
           item.name,
@@ -987,9 +1061,11 @@
         printLine("Kilometers", `${number.format(r.kilometers)} km × ${euro.format(r.settings.kilometerRate)}`, r.kilometerAmount),
         printLine("Parkeer/onkosten", "Ingevoerd bedrag", r.parkingAmount)
       ].join("");
-      return `<section class="project-print-page"><header><img src="overuurtje-logo.png" alt=""><div><p>Projectdag · ${escapeHtml(p.name)}</p><h1>${formatDate(day.workDate)}</h1></div></header><dl class="project-print-meta">${data.workFunctionName ? `<div><dt>Functie</dt><dd>${escapeHtml(data.workFunctionName)}</dd></div>` : ""}${r.isTravelDay ? `<div><dt>Type</dt><dd>Reisdag · ${r.travelRegion === "outside_europe" ? "Buiten Europa" : "Binnen Europa"} · ${number.format(r.travelPercent)}%</dd></div>` : ""}<div><dt>Tijden</dt><dd>${data.startTime && data.endTime ? `${data.startTime} - ${data.endTime}${r.endsNextDay ? " (+1 dag)" : ""}` : "Niet ingevuld"}</dd></div>${data.breakMinutes ? `<div><dt>Pauze</dt><dd>${data.breakMinutes} minuten</dd></div>` : ""}<div><dt>Gewerkt</dt><dd>${number.format(r.totalHours)} uur</dd></div></dl><div class="project-print-lines">${lines}</div><table class="project-print-invoice"><tbody><tr><th>Totaal excl. btw</th><td>${euro.format(r.subtotalExVat)}</td></tr><tr><th>Btw 21%</th><td>${euro.format(r.vatAmount)}</td></tr><tr class="invoice-total"><th>Inclusief btw</th><td>${euro.format(r.totalIncVat)}</td></tr></tbody></table><footer>Powered by Reichgelt Media Group</footer></section>`;
+      return `<section class="project-print-page"><header><img src="overuurtje-logo.png" alt=""><div><p>Projectdag · ${escapeHtml(p.name)}</p><h1>${formatDate(day.workDate)}</h1></div></header><dl class="project-print-meta">${data.workFunctionName ? `<div><dt>Functie</dt><dd>${escapeHtml(data.workFunctionName)}</dd></div>` : ""}${r.isTravelDay ? `<div><dt>Type</dt><dd>Reisdag · ${r.travelRegion === "outside_europe" ? "Buiten Europa" : "Binnen Europa"} · ${number.format(r.travelPercent)}%</dd></div>` : ""}<div><dt>Tijden</dt><dd>${data.startTime && data.endTime ? `${data.startTime} - ${data.endTime}${r.endsNextDay ? " (+1 dag)" : ""}` : "Niet ingevuld"}</dd></div>${r.breakMinutes ? `<div><dt>Pauze</dt><dd>${r.breakMinutes} minuten</dd></div>` : ""}<div><dt>Gewerkt</dt><dd>${number.format(r.totalHours)} uur</dd></div></dl><div class="project-print-lines">${lines}</div><table class="project-print-invoice"><tbody><tr><th>Totaal excl. btw</th><td>${euro.format(r.subtotalExVat)}</td></tr><tr><th>Btw 21%</th><td>${euro.format(r.vatAmount)}</td></tr><tr class="invoice-total"><th>Inclusief btw</th><td>${euro.format(r.totalIncVat)}</td></tr></tbody></table><footer>Powered by Reichgelt Media Group</footer></section>`;
     }).join("");
-    document.querySelector("#project-print-root").innerHTML = summary + pages;
+    const balance = p.workRules?.balanceOvertime ? accountingExport.projectBalance(p, current.days) : null;
+    const balanceNote = balance ? `<div class="project-print-lines"><p>${balance.settled ? "Urensaldo verrekend" : "Overuren worden na afronding naberekend; niet opgenomen in het totaal"}. ${number.format(balance.overtime)} overuren − ${number.format(balance.undertime)} onderuren = ${number.format(balance.payableHours)} resterende uren. Reisdagen tellen mee; hoogste staffels eerst verrekend.</p>${balance.settled ? balance.bands.filter(band => band.remaining > 0).map(band => printLine(`Urensaldo ${band.percent}%`, `${number.format(band.remaining)} uur × ${euro.format(band.unitPrice)}`, band.remaining * band.unitPrice)).join("") : ""}</div>` : "";
+    document.querySelector("#project-print-root").innerHTML = summary.replace('<table class="project-print-totals">', `${balanceNote}<table class="project-print-totals">`) + pages;
     document.body.classList.add("is-printing-project");
   }
 

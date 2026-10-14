@@ -76,7 +76,7 @@ test("touchbewegingen openen geen calculatorvelden of tijdkiezer", async () => {
   assert.match(guard, /document\.addEventListener\("touchmove"/);
   assert.match(guard, /event\.stopImmediatePropagation\(\)/);
   assert.doesNotMatch(timePicker, /addEventListener\("touchend", open\)/);
-  assert.match(standaloneBuilder, /"interactionGuard\.js",\s*"selectUi\.js",\s*"timePicker\.js"/);
+  assert.match(standaloneBuilder, /"interactionGuard\.js",\s*"pauseControl\.js",\s*"selectUi\.js",\s*"timePicker\.js"/);
 });
 
 test("installatie-interface ondersteunt browserprompt en iPhone-beginscherm", async () => {

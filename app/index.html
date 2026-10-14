@@ -44,7 +44,7 @@
     <link rel="icon" type="image/png" sizes="512x512" href="favicon.png?v=20260718c">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260730a">
-    <link rel="stylesheet" href="styles.css?v=20261004a">
+    <link rel="stylesheet" href="styles.css?v=20261013a">
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
     <script src="saas/supabaseClient.js?v=20261004c" defer></script>
@@ -54,7 +54,7 @@
     <script src="saas/settingsService.js?v=20260729d" defer></script>
     <script src="saas/functionService.js?v=20260725a" defer></script>
     <script src="saas/equipmentService.js?v=20260822a" defer></script>
-    <script src="saas/projectService.js?v=20260728a" defer></script>
+    <script src="saas/projectService.js?v=20261013a" defer></script>
     <script src="saas/workdayService.js?v=20260727d" defer></script>
     <script src="saas/freeActiveWorkdayService.js?v=20260731a" defer></script>
     <script src="saas/shareService.js?v=20260802a" defer></script>
@@ -63,10 +63,10 @@
     <script src="saas/subscriptionService.js?v=20260809a" defer></script>
     <script src="saas/featureGate.js?v=20260731b" defer></script>
     <script src="saas/accountingService.js?v=20260824a" defer></script>
-    <script src="calculator.js?v=20260822a" defer></script>
-    <script src="accountingExportModel.js?v=20260816b" defer></script>
-    <script src="accountingUi.js?v=20260816b" defer></script>
-    <script src="liveWorkday.js?v=20260925a" defer></script>
+    <script src="calculator.js?v=20261013a" defer></script>
+    <script src="accountingExportModel.js?v=20261013a" defer></script>
+    <script src="accountingUi.js?v=20261013a" defer></script>
+    <script src="liveWorkday.js?v=20261013a" defer></script>
     <script src="workdayNotifications.js?v=20260729a" defer></script>
     <script src="analytics.js?v=20260722q" defer></script>
     <script src="saas/sessionUi.js?v=20261004c" defer></script>
@@ -78,7 +78,7 @@
     <script src="pauseControl.js?v=20261004a" defer></script>
     <script src="selectUi.js?v=20260922b" defer></script>
     <script src="timePicker.js?v=20260730a" defer></script>
-    <script src="app.js?v=20261004a" defer></script>
+    <script src="app.js?v=20261013a" defer></script>
     <script src="pwa.js?v=20261004a" defer></script>
   </head>
   <body class="calculator-page">
@@ -273,6 +273,18 @@
             </div>
           </section>
 
+          <section class="day-registration-details">
+            <div id="project-pause-period" hidden>
+              <label class="checkbox-label"><input type="checkbox" name="enableTimedBreak"><span>Pauze met begin- en eindtijd</span></label>
+              <div class="project-pause-times" id="project-pause-times" hidden>
+                <label><span>Pauze vanaf</span><input type="time" name="breakStartTime" step="900" value="13:00"></label>
+                <label><span>Pauze tot</span><input type="time" name="breakEndTime" step="900" value="14:00"></label>
+              </div>
+              <p class="field-hint" id="travel-pause-time-hint" hidden>Pauzetijden gebruiken de lokale tijd van de vertreklocatie.</p>
+            </div>
+            <label><span>Dagnotities</span><textarea name="dayNotes" rows="3" maxlength="5000" placeholder="Bijvoorbeeld dronevluchten, Ronin of afspraken"></textarea></label>
+            <p class="saas-form-status" id="day-notes-status" role="status"></p>
+          </section>
           <section class="form-section options-section">
             <button class="options-toggle" id="toggle-extras" type="button" aria-expanded="false" aria-controls="extra-options">
               <span>Extra’s</span>
@@ -312,6 +324,11 @@
                     <option value="outside_europe">Buiten Europa</option>
                   </select>
                 </label>
+              </div>
+              <div class="travel-time-fields" id="travel-time-fields" hidden>
+                <label><span>Tijdsverschil aankomst ten opzichte van vertrek</span><span class="suffixed-input"><input type="number" name="travelTimeDifferenceHours" min="-26" max="26" step="0.25" value="0"><span>uur</span></span></label>
+                <p class="field-hint">Een uur vroeger op de aankomstlocatie? Vul −1 in. Gebruik lokale vertrek- en aankomsttijden.</p>
+                <label><span>Aankomstdag</span><select name="travelArrivalDayOffset"><option value="">Automatisch</option><option value="0">Zelfde dag</option><option value="1">Volgende dag</option><option value="2">Twee dagen later</option></select></label>
               </div>
               <div class="extra-option is-pro-locked" id="drone-option" role="button" tabindex="0" aria-label="Drone tarief is beschikbaar met Pro">
                 <label class="checkbox-label">
@@ -455,6 +472,7 @@
       </details>
 
         <section class="result-panel" aria-live="polite">
+          <p class="project-overtime-notice" id="project-overtime-notice" hidden>Overuren blijven geregistreerd en worden na afronding van het project met onderuren verrekend. Ze zijn nog niet opgenomen in dit dagtotaal.</p>
           <div class="result-header">
             <h2>Resultaat</h2>
           </div>
@@ -555,6 +573,7 @@
             <div><dt>Datum</dt><dd data-print="date">-</dd></div>
             <div><dt>Tijden</dt><dd data-print="times">-</dd></div>
             <div data-print-row="break" hidden><dt>Pauze</dt><dd data-print="breakMinutes">-</dd></div>
+            <div data-print-row="projectBalance" hidden><dt>Overuren</dt><dd data-print="projectBalance">-</dd></div>
             <div><dt>Totaal gewerkt</dt><dd data-print="totalHours">-</dd></div>
           </dl>
         </header>

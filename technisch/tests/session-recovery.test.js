@@ -5,6 +5,23 @@ import { readFile } from "node:fs/promises";
 
 const read = (file) => readFile(new URL(`../../app/${file}`, import.meta.url), "utf8");
 
+test("versiegebonden appbestanden laden direct uit de juiste cache zonder netwerkrequest", async () => {
+  const entries = new Map([["https://app.test/app.js?v=one", new Response("one")]]);
+  const key = request => typeof request === "string" ? request : request.url;
+  let requests = 0;
+  const context = vm.createContext({ URL, Response, AbortController, setTimeout, clearTimeout,
+    self: { addEventListener() {}, location: { origin: "https://app.test" } },
+    caches: { open: async () => ({ match: async request => entries.get(key(request))?.clone(), put: async (request, response) => entries.set(key(request), response) }) },
+    fetch: async () => { requests++; return new Response("two"); }
+  });
+  vm.runInContext(await read("service-worker.js"), context);
+  const event = { request: { url: "https://app.test/app.js?v=one" }, waitUntil() {} };
+  assert.equal(await (await context.cachedAppFile(event)).text(), "one");
+  assert.equal(requests, 0);
+  assert.equal(await (await context.cachedAppFile({ ...event, request: { url: "https://app.test/app.js?v=two" } })).text(), "two");
+  assert.equal(requests, 1);
+});
+
 test("Supabase herhaalt alleen een expliciet geweigerde future-JWT request, maximaal eenmaal", async () => {
   let options; let calls = 0;
   let failure = { code: "PGRST303", message: "JWT issued at future" };

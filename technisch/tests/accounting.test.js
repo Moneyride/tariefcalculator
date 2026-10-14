@@ -11,6 +11,36 @@ await import(path.join(root, "app/accountingExportModel.js"));
 const calculator = globalThis.TariffCalculator;
 const accounting = globalThis.OveruurtjeAccountingExport;
 
+test("projectsaldo haalt onderuren eerst van 200% af en telt reisuren mee", () => {
+  const extras = { enableTravelDay: false, customEquipment: [] };
+  const days = [
+    { id: "long", workDate: "2026-08-14", calculationData: snapshot({ extras }) },
+    { id: "travel", workDate: "2026-08-15", calculationData: snapshot({ endTime: "15:00", extras: { ...extras, enableTravelDay: true, travelPercent: 75 } }) }
+  ];
+  const project = { id: "project", name: "Reis", workRules: { balanceOvertime: true } };
+  const balance = accounting.projectBalance(project, days, new Date("2026-08-16T12:00:00Z"));
+  assert.equal(balance.overtime, 4);
+  assert.equal(balance.undertime, 3);
+  assert.equal(balance.payableHours, 1);
+  assert.equal(balance.bands.find(band => band.percent === 200).remaining, 0);
+  assert.equal(balance.bands.find(band => band.percent === 150).remaining, 1);
+  assert.equal(balance.estimatedAmount, 67.5);
+  assert.equal(balance.amount, 0);
+  let model = accounting.fromProject(project, days);
+  assert.ok(!model.lineItems.some(line => line.category.startsWith("overtime_")));
+  project.workRules.settlement = { signature: balance.signature };
+  model = accounting.fromProject(project, days);
+  assert.equal(model.lineItems.filter(line => line.category.startsWith("overtime_")).length, 1);
+  assert.equal(model.lineItems.find(line => line.category === "overtime_150").lineTotal, 67.5);
+  const partial = accounting.withSourceItems(model, ["travel"]);
+  assert.match(partial.selectionError, /alle projectdagen/);
+  assert.ok(!partial.lineItems.some(line => line.projectSettlement));
+  days[0].calculationData.dayNotes = "Ronin gebruikt";
+  assert.equal(accounting.projectBalance(project, days).settled, true);
+  days[0].calculationData.endTime = "21:00";
+  assert.equal(accounting.projectBalance(project, days).settled, false);
+});
+
 function snapshot(overrides = {}) {
   return {
     date: "2026-08-14",

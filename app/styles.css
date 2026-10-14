@@ -3560,6 +3560,43 @@ label {
   transform: translate(3px, 1px) rotate(28deg);
 }
 
+.day-registration-details {
+  display: grid;
+  gap: 16px;
+  margin: 0 24px 24px;
+  min-width: 0;
+}
+.day-registration-details textarea {
+  display: block;
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  margin-top: 8px;
+  padding: 12px 16px;
+  border: 1px solid rgba(31, 67, 53, 0.15);
+  border-radius: 8px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.62);
+  font: inherit;
+}
+.day-registration-details > .saas-form-status:empty { display: none; }
+.project-pause-times {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.project-pause-times input { min-width: 0; max-width: 100%; }
+.travel-time-fields { display: grid; gap: 12px; min-width: 0; }
+.field-hint { margin: 4px 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.project-overtime-notice, .project-overtime-balance {
+  margin: 16px 0;
+  padding: 16px 0;
+  border-top: 1px solid rgba(31, 67, 53, 0.15);
+  border-bottom: 1px solid rgba(31, 67, 53, 0.15);
+}
+.project-overtime-notice { padding: 16px; }
+
 .pause-control {
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr) 48px;

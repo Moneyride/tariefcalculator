@@ -108,7 +108,7 @@
   function syncSubmitState() {
     const submit = ensureDialog().querySelector("button[type='submit']");
     const confirmed = dialog.querySelector("input[name='confirmReexport']").checked;
-    submit.disabled = !previewReady || creatingDraft || (requiresReexport && !confirmed);
+    submit.disabled = !previewReady || creatingDraft || (requiresReexport && !confirmed) || Boolean(originalModel && selectedModel().selectionError);
   }
   function createdExportIds() {
     const created = new Set((exportHistory.exports || []).filter((item) => item.status === "created").map((item) => item.id));
@@ -201,6 +201,7 @@
 
   function renderLines() {
     const model = selectedModel();
+    if (originalModel.requiresFullProject) status(model.selectionError);
     const root = dialog.querySelector(".accounting-lines");
     root.innerHTML = `<div class="accounting-line accounting-line-head"><span>Omschrijving</span><span>Aantal</span><span>Prijs</span><span>Btw</span><span>Bedrag</span></div>`;
     summarizePreviewLines(model.lineItems).forEach((item) => {
@@ -327,6 +328,7 @@
     event.preventDefault();
     const form = event.currentTarget;
     const activeModel = selectedModel();
+    if (activeModel.selectionError) { status(activeModel.selectionError); return; }
     if (!activeModel.sourceItems.length || !activeModel.lineItems.length) { status("Selecteer minimaal één projectdag."); return; }
     const mustConfirmReexport = requiresReexport;
     if (mustConfirmReexport && !form.elements.confirmReexport.checked) { status("Bevestig dat je de reeds geëxporteerde dag opnieuw wilt meenemen."); return; }

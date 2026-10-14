@@ -6,6 +6,39 @@ const { DEFAULT_SETTINGS, calculateTariff } = globalThis.TariffCalculator;
 
 const MONEY_PRECISION = 2;
 
+test("reisdag gebruikt lokale tijden met tijdsverschil zonder de vergoeding te verhogen", () => {
+  const result = calculateTariff({ startTime: "08:00", endTime: "18:00", enableTravelDay: true, travelTimeDifferenceMinutes: -60 }, DEFAULT_SETTINGS);
+  assert.equal(result.totalHours, 11);
+  assert.equal(result.subtotalExVat, 337.5);
+  assert.equal(result.overtimeAmount, 0);
+  const west = calculateTariff({ startTime: "10:00", endTime: "09:00", enableTravelDay: true, travelTimeDifferenceMinutes: -180 }, DEFAULT_SETTINGS);
+  assert.equal(west.totalHours, 2);
+});
+
+test("reisdag bewaart een expliciete aankomstdag", () => {
+  const result = calculateTariff({ startTime: "22:00", endTime: "02:00", enableTravelDay: true, travelTimeDifferenceMinutes: 60, travelArrivalDayOffset: 1 }, DEFAULT_SETTINGS);
+  assert.equal(result.totalHours, 3);
+  assert.throws(() => calculateTariff({ startTime: "22:00", endTime: "02:00", enableTravelDay: true, travelArrivalDayOffset: 0 }), /aankomstdag/);
+});
+
+test("pauzetijdvak wordt één keer afgetrokken en niet als nachtuur geteld", () => {
+  const result = calculateTariff({ startTime: "16:00", endTime: "03:00", breakMinutes: 60, enableTimedBreak: true, breakStartTime: "00:00", breakEndTime: "01:00" }, DEFAULT_SETTINGS);
+  assert.equal(result.totalHours, 10);
+  assert.equal(result.breakMinutes, 60);
+  assert.equal(result.nightHours, 2);
+  assert.equal(result.overtimeHours, 0);
+  assert.equal(result.nightAmount, 90);
+});
+
+test("projectverrekening houdt overuren zichtbaar maar buiten de dagfactuur", () => {
+  const result = calculateTariff({ startTime: "08:00", endTime: "22:00", deferProjectOvertime: true }, DEFAULT_SETTINGS);
+  assert.equal(result.overtimeHours, 4);
+  assert.equal(result.overtimeAmount, 0);
+  assert.equal(result.overtimeFrom12Amount, 0);
+  assert.equal(result.deferredOvertimeAmount, 315);
+  assert.equal(result.subtotalExVat, 450);
+});
+
 function calculate(startTime, endTime, settings = {}) {
   return calculateTariff({ startTime, endTime }, { ...DEFAULT_SETTINGS, ...settings });
 }

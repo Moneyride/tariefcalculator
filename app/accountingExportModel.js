@@ -64,6 +64,12 @@
       startTime: snapshot.startTime,
       endTime: snapshot.endTime,
       breakMinutes: Number(snapshot.breakMinutes ?? settings.breakMinutes ?? 0),
+      enableTimedBreak: Boolean(snapshot.enableTimedBreak),
+      breakStartTime: snapshot.breakStartTime,
+      breakEndTime: snapshot.breakEndTime,
+      deferProjectOvertime: Boolean(snapshot.deferProjectOvertime),
+      travelTimeDifferenceMinutes: Number(snapshot.travelTimeDifferenceMinutes) || 0,
+      travelArrivalDayOffset: snapshot.travelArrivalDayOffset ?? "",
       rateMode: settings.rateMode || snapshot.rateMode || "day",
       hourlyRate: Number(settings.hourlyRate || snapshot.hourlyRate || 0),
       enableDroneTariff: Boolean(extras.enableDroneTariff),
@@ -116,6 +122,7 @@
         ["overtime_250", result.overtimeFrom14Hours, result.overtimeFrom14Amount, "Overuren 250%"]
       ];
       overtime.forEach(([category, hours, amount, description]) => {
+        if (result.overtimeDeferred) return;
         if (Number(hours) > 0) lines.push(line(category, `${description} – ${Number(hours).toLocaleString("nl-NL")} uur`, hours, "uur", Number(amount) / Number(hours), vat, source));
       });
       if (Number(result.nightHours) > 0) {
@@ -158,6 +165,8 @@
   }
 
   function fromProject(project, days) {
+    const balancing = Boolean(project.workRules?.balanceOvertime);
+    const balance = balancing ? projectBalance(project, days) : null;
     const selected = (days || []).filter((day) => day.selected !== false);
     const models = selected.map((day) => {
       const data = day.calculationData || day.calculation_data || {};
@@ -167,6 +176,7 @@
         workDate: day.workDate || day.work_date || data.date,
         calculationData: {
           ...data,
+          deferProjectOvertime: balancing,
           date: day.workDate || day.work_date || data.date,
           clientName: project.clientName || project.client_name || data.clientName
         }
@@ -182,9 +192,18 @@
         lineItems: model.lineItems.map((item) => ({ ...item, source }))
       };
     });
+    if (balancing && balance.settled && balance.amount > 0) {
+      if (selected.length !== (days || []).length) throw new Error("Exporteer alle projectdagen samen om het verrekende urensaldo mee te nemen.");
+      const target = models.at(-1);
+      balance.bands.filter(band => band.remaining > 0).forEach(band => {
+        const item = line(`overtime_${band.percent}`, `Urensaldo project ${band.percent}% – ${band.remaining.toLocaleString("nl-NL")} uur`, band.remaining, "uur", band.unitPrice, band.vatPercent, target.sourceItems[0]);
+        if (item) target.lineItems.push({ ...item, projectSettlement: true });
+      });
+    }
     return {
       schemaVersion: 1,
       sourceType: "project", sourceId: project.id,
+      requiresFullProject: Boolean(balancing && balance.settled && balance.amount > 0),
       sourceItems: models.flatMap((model) => model.sourceItems.map((item) => ({ ...item, sourceType: "project_day" }))),
       date: new Date().toISOString().slice(0, 10),
       customer: { name: project.clientName || project.client_name || "", localKey: customerKey(project.clientName || project.client_name), key: customerKey(project.clientName || project.client_name) },
@@ -195,12 +214,55 @@
     };
   }
 
+  function projectBalance(project, days, now = new Date()) {
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const sorted = [...(days || [])].sort((a, b) => String(a.id).localeCompare(String(b.id)));
+    const prepared = sorted.map(day => {
+      const snapshot = normalizeSnapshot(day.calculationData || day.calculation_data || {});
+      const result = snapshot.startTime && snapshot.endTime ? calculationFromSnapshot({ ...snapshot, deferProjectOvertime: true }) : null;
+      return { day, snapshot, result, normal: Number(snapshot.settings.normalDayHours) || 10 };
+    });
+    const signature = JSON.stringify(prepared.map(({ day, snapshot, result, normal }) => [
+      day.id, day.workDate || day.work_date, snapshot.startTime || "", snapshot.endTime || "", normal,
+      snapshot.enableTimedBreak ? [snapshot.breakStartTime || "", snapshot.breakEndTime || ""] : null,
+      Number(snapshot.travelTimeDifferenceMinutes) || 0, String(snapshot.travelArrivalDayOffset ?? ""),
+      result && [result.totalHours, result.hourlyRate, result.baseAmount, result.nightAmount, result.extraTariffAmount,
+        result.travelPercent, result.breakMinutes, result.customEquipmentItems,
+        globalThis.TariffCalculator.calculateOvertimeAmount(result.totalHours, result.hourlyRate, result.settings),
+        Boolean(result.settings.enableOvertime10To12 || result.settings.enableOvertimeFrom12 || result.settings.enableOvertimeFrom14)]
+    ]));
+    const entries = prepared.filter(({ day, result }) => result && (day.workDate || day.work_date) <= today);
+    const overtime = entries.reduce((sum, item) => sum + Math.max(0, item.result.totalHours - item.normal), 0);
+    const undertime = entries.reduce((sum, item) => sum + Math.max(0, item.normal - item.result.totalHours), 0);
+    const complete = sorted.length > 0 && entries.length === sorted.length;
+    const payableHours = Math.max(0, overtime - undertime);
+    const bands = entries.flatMap(({ result }) => {
+      const settings = result.settings;
+      if (!settings.enableOvertime10To12 && !settings.enableOvertimeFrom12 && !settings.enableOvertimeFrom14) return [];
+      const rates = globalThis.TariffCalculator.calculateOvertimeAmount(result.totalHours, result.hourlyRate, settings);
+      return [["standardOvertime", 100], ["overtime10To12", 150], ["overtimeFrom12", 200], ["overtimeFrom14", 250]]
+        .map(([key, percent]) => ({ percent, hours: rates[`${key}Hours`], remaining: rates[`${key}Hours`], unitPrice: result.hourlyRate * percent / 100, vatPercent: settings.vatPercent }))
+        .filter(band => band.hours > 0);
+    }).sort((a, b) => b.percent - a.percent || b.unitPrice - a.unitPrice);
+    let credit = undertime;
+    for (const band of bands) {
+      const removed = Math.min(credit, band.hours);
+      band.remaining -= removed;
+      credit -= removed;
+    }
+    const settled = Boolean(complete && project.workRules?.settlement?.signature === signature);
+    const estimatedAmount = roundMoney(bands.reduce((sum, band) => sum + band.remaining * band.unitPrice, 0));
+    return { overtime, undertime, payableHours, complete, settled, signature, bands, estimatedAmount, amount: settled ? estimatedAmount : 0 };
+  }
+
   function withSourceItems(exportModel, selectedIds) {
     const ids = new Set(selectedIds || []);
+    const partialSettlement = exportModel.requiresFullProject && exportModel.sourceItems.some(item => !ids.has(item.sourceId));
     return {
       ...exportModel,
+      selectionError: partialSettlement ? "Selecteer alle projectdagen om het verrekende urensaldo correct te exporteren." : "",
       sourceItems: exportModel.sourceItems.filter((item) => ids.has(item.sourceId)),
-      lineItems: exportModel.lineItems.filter((item) => ids.has(item.source?.sourceId))
+      lineItems: exportModel.lineItems.filter((item) => ids.has(item.source?.sourceId) && !(partialSettlement && item.projectSettlement))
     };
   }
 
@@ -224,6 +286,7 @@
     fromProject,
     withSourceItems,
     summarizeTotals,
+    projectBalance,
     customerKey
   });
 })();

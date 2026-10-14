@@ -11,6 +11,13 @@ const live = globalThis.OveruurtjeLiveWorkday;
 const reminders = globalThis.OveruurtjeWorkdayNotifications;
 const stats = globalThis.OveruurtjeStats;
 
+test("live pauzetijd trekt alleen de al verstreken pauze af", () => {
+  const base = { armed: true, date: "2026-10-13", startTime: "08:00", endTime: "", enableTimedBreak: true, breakStartTime: "13:00", breakEndTime: "14:00" };
+  assert.equal(live.getState({ ...base, now: new Date(2026, 9, 13, 12, 0) }).workedMinutes, 240);
+  assert.equal(live.getState({ ...base, now: new Date(2026, 9, 13, 13, 30) }).workedMinutes, 300);
+  assert.equal(live.getState({ ...base, now: new Date(2026, 9, 13, 15, 0) }).workedMinutes, 360);
+});
+
 test("opslaan onderscheidt een planning, open werkdag en afgesloten dag", () => {
   const now = new Date(2026, 8, 23, 10, 0);
   assert.deepEqual(live.getSaveAction({ date: "2026-09-24", endTime: "" }, now), { kind: "plan", label: "Werkdag inplannen" });

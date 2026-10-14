@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "overuurtje-app-v66";
+const CACHE_NAME = "overuurtje-app-v67";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -116,6 +116,17 @@ async function networkFirst(event, fallbackUrl = null) {
   }
 }
 
+async function cachedAppFile(event, { navigation = false } = {}) {
+  const cache = await caches.open(CACHE_NAME);
+  const url = new URL(event.request.url);
+  const key = navigation ? `${url.origin}${url.pathname}` : event.request;
+  // Versioned files must match their full URL. Never use an older ?v= file.
+  const cached = await cache.match(key);
+  if (!cached) return networkFirst(event, navigation ? "./index.html" : null);
+  if (navigation) event.waitUntil(networkFirst(event).catch(() => {}));
+  return cached;
+}
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
@@ -125,13 +136,14 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/.netlify/functions/")) return;
 
   if (request.mode === "navigate") {
-    event.respondWith(networkFirst(event, "./index.html"));
+    event.respondWith(cachedAppFile(event, { navigation: true }));
     return;
   }
 
   if (["script", "style", "worker"].includes(request.destination)
     || url.pathname.endsWith("runtime-config.js")) {
-    event.respondWith(networkFirst(event));
+    event.respondWith(url.searchParams.has("v") && !url.pathname.endsWith("runtime-config.js")
+      ? cachedAppFile(event) : networkFirst(event));
     return;
   }
 

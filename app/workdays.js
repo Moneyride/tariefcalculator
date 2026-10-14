@@ -51,6 +51,8 @@
     const extras = snapshot.extras || {};
     try {
       const result = calculateTariff({
+        ...snapshot,
+        ...extras,
         startTime: snapshot.startTime,
         endTime: snapshot.endTime,
         breakMinutes: Number(snapshot.breakMinutes) || 0,
