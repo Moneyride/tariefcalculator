@@ -98,6 +98,22 @@ function timedBreak(interval, input) {
   return end > start ? { start, end } : null;
 }
 
+function formatWorkTimes(input) {
+  const full = `${input.startTime || "--:--"} - ${input.endTime || "--:--"}`;
+  if (!input.enableTimedBreak || !input.breakStartTime || !input.breakEndTime) return full;
+  if (!input.startTime || !input.endTime) {
+    return `${input.startTime || "--:--"} - ${input.breakStartTime}, ${input.breakEndTime} - ${input.endTime || "--:--"}`;
+  }
+  const interval = input.enableTravelDay ? getTravelInterval(input) : getWorkInterval(input.startTime, input.endTime);
+  const pause = timedBreak(interval, input);
+  if (!pause) return full;
+  const clock = value => `${String(Math.floor((value % MINUTES_PER_DAY) / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
+  const parts = [];
+  if (pause.start > interval.start) parts.push(`${input.startTime} - ${clock(pause.start)}`);
+  if (pause.end < interval.end) parts.push(`${clock(pause.end)} - ${input.endTime}`);
+  return parts.join(", ") || full;
+}
+
 function paidNightWindows(windows, pause) {
   return windows.flatMap(window => {
     const before = { start: window.start, end: Math.min(window.end, pause.start) };
@@ -453,6 +469,7 @@ function calculateTariff(input, customSettings = {}) {
 
 globalThis.TariffCalculator = {
   DEFAULT_SETTINGS,
+  formatWorkTimes,
   calculateOvertimeAmount,
   calculateTariff,
   getWorkInterval,

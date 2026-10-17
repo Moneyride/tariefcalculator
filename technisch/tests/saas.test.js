@@ -186,7 +186,9 @@ test("uren kopiëren is beschikbaar voor een werkdag en een volledig project", a
   const projectsScript = await readFile(path.join(rootDirectory, "app/projects.js"), "utf8");
 
   assert.match(calculatorHtml, /id="copy-hours">Uren kopiëren/);
-  assert.match(calculatorScript, /`\$\{formatHoursDate\(date\)\} Tijden: \$\{startTime\} - \$\{endTime\}`/);
+  assert.match(calculatorScript, /`\$\{formatHoursDate\(date\)\} Tijden: \$\{times\}`/);
+  assert.match(calculatorScript, /TariffCalculator\.formatWorkTimes/);
+  assert.match(projectsScript, /calculator\.formatWorkTimes\(data\)/);
   assert.match(projectsHtml, /id="copy-day-hours"[^>]*>Uren kopiëren/);
   assert.match(projectsHtml, /id="copy-project-hours"[^>]*>Uren kopiëren/);
   assert.match(projectsScript, /lines\.join\("\\n"\)/);

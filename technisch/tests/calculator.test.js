@@ -6,6 +6,17 @@ const { DEFAULT_SETTINGS, calculateTariff } = globalThis.TariffCalculator;
 
 const MONEY_PRECISION = 2;
 
+test("uren kopiëren splitst werkblokken rond de pauze, ook na middernacht", () => {
+  const format = globalThis.TariffCalculator.formatWorkTimes;
+  const day = {startTime:"08:00",endTime:"18:00",enableTimedBreak:true,breakStartTime:"13:00",breakEndTime:"14:00"};
+  assert.equal(format(day), "08:00 - 13:00, 14:00 - 18:00");
+  assert.equal(format({...day,enableTimedBreak:false}), "08:00 - 18:00");
+  assert.equal(format({...day,startTime:"20:00",endTime:"04:00",breakStartTime:"00:00",breakEndTime:"00:30"}), "20:00 - 00:00, 00:30 - 04:00");
+  assert.equal(format({...day,endTime:"12:00"}), "08:00 - 12:00");
+  assert.equal(format({...day,breakEndTime:"13:00"}), "08:00 - 18:00");
+  assert.equal(format({...day,endTime:""}), "08:00 - 13:00, 14:00 - --:--");
+});
+
 test("reisdag gebruikt lokale tijden met tijdsverschil zonder de vergoeding te verhogen", () => {
   const result = calculateTariff({ startTime: "08:00", endTime: "18:00", enableTravelDay: true, travelTimeDifferenceMinutes: -60 }, DEFAULT_SETTINGS);
   assert.equal(result.totalHours, 11);

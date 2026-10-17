@@ -970,7 +970,7 @@
   }
 
   function buildHoursLine(day, data) {
-    return `${formatHoursDate(day.workDate)} Tijden: ${data.startTime || "--:--"} - ${data.endTime || "--:--"}`;
+    return `${formatHoursDate(day.workDate)} Tijden: ${calculator.formatWorkTimes(data)}`;
   }
 
   async function copyDayHours() {

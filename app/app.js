@@ -2657,7 +2657,11 @@ function currentHoursCopyText() {
   const liveState = liveWorkday?.getState(readLiveWorkdayState());
   const endTime = endTimeField.value || (liveState?.active ? liveWorkday.roundedCurrentTime() : "");
   if (!date || !startTime || !endTime) return "";
-  return `${formatHoursDate(date)} Tijden: ${startTime} - ${endTime}`;
+  const times = globalThis.TariffCalculator.formatWorkTimes({
+    ...readLiveWorkdayState(), startTime, endTime,
+    travelArrivalDayOffset: form.elements.namedItem("travelArrivalDayOffset").value
+  });
+  return `${formatHoursDate(date)} Tijden: ${times}`;
 }
 
 async function copyHours() {
