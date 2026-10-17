@@ -14,7 +14,7 @@
     <link rel="icon" href="favicon.ico" sizes="any">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20260727a">
     <link rel="manifest" href="site.webmanifest?v=20260730a">
-    <link rel="stylesheet" href="styles.css?v=20261014a">
+    <link rel="stylesheet" href="styles.css?v=20261017a">
     <script>window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};window.gtag("consent","default",{analytics_storage:"denied",ad_storage:"denied",ad_user_data:"denied",ad_personalization:"denied"});</script>
     <script src="runtime-config.js?v=20260727a" defer></script>
     <script src="saas/config.js?v=20260727b" defer></script>
@@ -45,7 +45,7 @@
     <script src="pauseControl.js?v=20261004a" defer></script>
     <script src="selectUi.js?v=20260922b" defer></script>
     <script src="timePicker.js?v=20261014a" defer></script>
-    <script src="projects.js?v=20261014a" defer></script>
+    <script src="projects.js?v=20261017a" defer></script>
     <script src="pwa.js?v=20261004a" defer></script>
   </head>
   <body>
@@ -159,15 +159,8 @@
                 <p id="project-progress-status"></p>
               </div>
             </div>
-            <div class="project-earned-total"><span>Tot nu toe verdiend</span><strong id="project-earned-total">€ 0,00</strong></div>
             <dl class="project-metrics" id="project-metrics"></dl>
-            <div class="project-overtime-balance" id="project-overtime-balance" hidden>
-              <h3>Overuren en onderuren</h3>
-              <p id="project-balance-status"></p>
-              <dl class="project-metrics" id="project-balance-metrics"></dl>
-              <p id="project-balance-breakdown"></p>
-              <button class="saas-secondary-button" id="settle-project-overtime" type="button">Project afronden en uren verrekenen</button>
-            </div>
+            <div class="project-earned-total"><span>Tot nu toe verdiend</span><strong id="project-earned-total">€ 0,00</strong></div>
           </section>
           <section class="account-section project-days-section">
             <div class="account-section-heading project-days-heading">
@@ -201,6 +194,7 @@
           <section class="account-section project-management-section">
             <div><p class="account-section-kicker">Beheer</p><h2>Project beheren</h2></div>
             <div class="project-head-actions">
+              <button class="saas-secondary-button" id="settle-project-overtime" type="button" hidden>Project afronden en uren verrekenen</button>
               <button class="saas-secondary-button" id="edit-project-rules" type="button">Projectinstellingen</button>
               <button class="saas-secondary-button" id="edit-project" type="button">Project wijzigen</button>
               <button class="text-action danger-action" id="delete-project" type="button">Verwijderen</button>

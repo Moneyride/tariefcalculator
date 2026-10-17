@@ -202,9 +202,24 @@
     return Boolean(data?.enableTravelDay || (data?.startTime && data?.endTime));
   }
 
+  function isPlannedDay(day, now = new Date()) {
+    const date = isoDate(now);
+    if (day.workDate !== date) return day.workDate > date;
+    const start = day.calculationData?.startTime;
+    return Boolean(start && start > `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`);
+  }
+
   function totals(days, { allowIncomplete = false, includePlanning = false } = {}) {
     const total = days.reduce((all, day) => {
       const data = storedDayData(day);
+      if (isPlannedDay(day)) {
+        if (includePlanning) {
+          const base = Number(data.rateAmount) * (data.rateMode === "hour" ? Number(data.normalDayHours) : 1);
+          all.amount += data.enableTravelDay ? base * Number(data.travelPercent ?? (data.travelRegion === "outside_europe" ? data.travelOutsideEuropePercent : data.travelWithinEuropePercent)) / 100 : base;
+        }
+        all.incomplete += 1;
+        return all;
+      }
       if (allowIncomplete && !canCalculateDay(data)) {
         if (includePlanning && day.workDate >= todayValue()) {
           all.amount += Number(data.rateAmount) * (data.rateMode === "hour" ? Number(data.normalDayHours) : 1);
@@ -215,10 +230,11 @@
       const result = calculate(data);
       all.amount += result.subtotalExVat; all.hours += result.totalHours; all.overtime += result.overtimeHours;
       all.night += result.nightHours; all.kilometers += result.kilometers; all.parking += result.parkingAmount;
+      all.overtimeAmount += result.overtimeAmount;
       all.surcharges += result.overtimeAmount + result.nightAmount + result.droneTariffAmount + result.ronin4dTariffAmount + result.customEquipmentAmount;
       all.completed += 1;
       return all;
-    }, { amount: 0, hours: 0, overtime: 0, night: 0, kilometers: 0, parking: 0, surcharges: 0, completed: 0, incomplete: 0 });
+    }, { amount: 0, hours: 0, overtime: 0, overtimeAmount: 0, night: 0, kilometers: 0, parking: 0, surcharges: 0, completed: 0, incomplete: 0 });
     if (current?.project?.workRules?.balanceOvertime) {
       const balance = accountingExport.projectBalance(current.project, current.days);
       total.amount += balance.amount;
@@ -232,24 +248,11 @@
   }
 
   function renderProjectBalance() {
-    const section = document.querySelector("#project-overtime-balance");
     const enabled = Boolean(current?.project.workRules?.balanceOvertime);
-    section.hidden = !enabled;
+    const button = document.querySelector("#settle-project-overtime");
+    button.hidden = !enabled;
     if (!enabled) return;
     const balance = accountingExport.projectBalance(current.project, current.days);
-    document.querySelector("#project-balance-status").textContent = balance.settled
-      ? "Project afgerond. Het verrekende urensaldo is opgenomen in het projecttotaal."
-      : "Overuren worden na afronding van het project naberekend. Ze zijn nog niet opgenomen in het factuurtotaal.";
-    document.querySelector("#project-balance-metrics").innerHTML = [
-      ["Geregistreerde overuren", `${number.format(balance.overtime)} uur`],
-      ["Geregistreerde onderuren", `${number.format(balance.undertime)} uur`],
-      ["Resterende overuren", `${number.format(balance.payableHours)} uur`],
-      [balance.settled ? "Verrekend bedrag" : "Voorlopig saldo", euro.format(balance.settled ? balance.amount : balance.estimatedAmount)]
-    ].map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join("");
-    document.querySelector("#project-balance-breakdown").textContent = balance.bands.filter(band => band.remaining > 0)
-      .map(band => `${number.format(band.remaining)} uur tegen ${band.percent}%`).join(" · ")
-      || "Geen overuren over na verrekening.";
-    const button = document.querySelector("#settle-project-overtime");
     button.hidden = balance.settled;
     button.disabled = !balance.complete;
     button.title = balance.complete ? "" : "Vul eerst alle begin- en eindtijden in, ook van reisdagen, en rond de geplande dagen af.";
@@ -653,7 +656,8 @@
   function renderOverview({ resetCarousel = true } = {}) {
     const project = current.project;
     const total = totals(current.days, { allowIncomplete: true, includePlanning: true });
-    const earned = totals(current.days.filter((day) => day.workDate <= todayValue()), { allowIncomplete: true });
+    const earned = totals(current.days.filter((day) => !isPlannedDay(day)), { allowIncomplete: true });
+    const balance = project.workRules?.balanceOvertime ? accountingExport.projectBalance(project, current.days) : null;
     if (resetCarousel) carouselIndex = initialCarouselIndex();
     carouselIndex = Math.max(0, Math.min(carouselIndex, current.days.length - 1));
     document.querySelector("#overview-name").textContent = project.name;
@@ -675,17 +679,27 @@
     document.querySelector("#project-earned-total").textContent = euro.format(earned.amount);
     renderProjectBalance();
     const metrics = [
-      ["Gewerkte uren", `${number.format(total.hours)} uur`],
-      ["Overuren", `${number.format(total.overtime)} uur`], ["Nachturen", `${number.format(total.night)} uur`],
-      ["Kilometers", `${number.format(total.kilometers)} km`], ["Parkeer/onkosten", euro.format(total.parking)], ["Toeslagen", euro.format(total.surcharges)],
-      ["Gepland projecttotaal", euro.format(total.amount)]
+      ["Gewerkte uren", `${number.format(earned.hours)} uur`]
     ];
-    if (total.incomplete) metrics.splice(6, 0, ["Nog afronden", `${total.incomplete} werkdag${total.incomplete === 1 ? "" : "en"}`]);
+    if (balance) {
+      metrics.push(["Geregistreerde overuren", `${number.format(balance.overtime)} uur`]);
+      if (balance.undertime) metrics.push(["Geregistreerde onderuren", `${number.format(balance.undertime)} uur`]);
+      metrics.push([balance.settled ? "Verrekende overuren" : "Te verrekenen overuren", `${number.format(balance.payableHours)} uur`]);
+      metrics.push([balance.settled ? "Overurenbedrag" : "Overurenbedrag (voorlopig)", euro.format(balance.estimatedAmount)]);
+    } else if (earned.overtime) {
+      metrics.push(["Overuren", `${number.format(earned.overtime)} uur`], ["Overurenbedrag", euro.format(earned.overtimeAmount)]);
+    }
+    if (earned.night) metrics.push(["Nachturen", `${number.format(earned.night)} uur`]);
+    if (earned.kilometers) metrics.push(["Kilometers", `${number.format(earned.kilometers)} km`]);
+    if (earned.parking) metrics.push(["Parkeer/onkosten", euro.format(earned.parking)]);
+    if (earned.surcharges) metrics.push(["Toeslagen", euro.format(earned.surcharges)]);
+    metrics.push(["Gepland projecttotaal", euro.format(total.amount)]);
     document.querySelector("#project-metrics").innerHTML = metrics
       .map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join("");
     document.querySelector("#project-day-list").innerHTML = current.days.map((day) => {
       const data = storedDayData(day);
-      const result = canCalculateDay(data) ? calculate(data) : null;
+      const planned = isPlannedDay(day);
+      const result = !planned && canCalculateDay(data) ? calculate(data) : null;
       const isSource = day.id === copyTimesSourceId;
       const isTarget = copyTimesTargetIds.has(day.id);
       const isToday = day.workDate === todayValue();
